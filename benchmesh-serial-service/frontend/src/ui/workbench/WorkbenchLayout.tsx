@@ -178,6 +178,13 @@ export const WorkbenchLayout: React.FC<WorkbenchLayoutProps> = ({
 
   const apiOk = !loading && !error;
 
+  // Window control IPC handlers are optional (only wired up by the Electron preload
+  // script). Only render the buttons when they actually exist.
+  const hasWindowControls =
+    typeof window.electron?.minimize === 'function' &&
+    typeof window.electron?.maximize === 'function' &&
+    typeof window.electron?.close === 'function';
+
   return (
     <div className="workbench">
       {/* Header Bar */}
@@ -237,30 +244,32 @@ export const WorkbenchLayout: React.FC<WorkbenchLayoutProps> = ({
           </button>
         </div>
 
-        {/* Window Controls */}
-        <div className="window-controls">
-          <button
-            className="window-control-button"
-            onClick={handleMinimize}
-            title="Minimize"
-          >
-            <VscChromeMinimize size={14} />
-          </button>
-          <button
-            className="window-control-button"
-            onClick={handleMaximize}
-            title="Maximize"
-          >
-            <VscChromeMaximize size={14} />
-          </button>
-          <button
-            className="window-control-button window-control-close"
-            onClick={handleClose}
-            title="Close"
-          >
-            <VscChromeClose size={14} />
-          </button>
-        </div>
+        {/* Window Controls (only when the Electron IPC handlers exist) */}
+        {hasWindowControls && (
+          <div className="window-controls">
+            <button
+              className="window-control-button"
+              onClick={handleMinimize}
+              title="Minimize"
+            >
+              <VscChromeMinimize size={14} />
+            </button>
+            <button
+              className="window-control-button"
+              onClick={handleMaximize}
+              title="Maximize"
+            >
+              <VscChromeMaximize size={14} />
+            </button>
+            <button
+              className="window-control-button window-control-close"
+              onClick={handleClose}
+              title="Close"
+            >
+              <VscChromeClose size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Workbench Main Area */}

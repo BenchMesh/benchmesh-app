@@ -150,7 +150,6 @@ storybook-static/
 
 # Node-RED
 .node-red/
-package-lock.json
 
 # MCP Services
 mcp_services/**/__pycache__/
@@ -158,7 +157,8 @@ mcp_services/**/*.pyc
 mcp_services/**/venv/
 mcp_services/**/.pytest_cache/
 
-benchmesh-serial-service/:memory:/
 *.db
 
 /POC
+# Serena agent memories (local tooling state)
+.serena/

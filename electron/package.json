@@ -3,10 +3,10 @@
   "version": "0.0.51",
   "description": "BenchMesh Electron Wrapper - Desktop application for instrument control and automation",
   "license": "MIT",
-  "homepage": "https://github.com/yourusername/BenchMesh",
+  "homepage": "https://github.com/MarkoVcode/BenchMesh",
   "author": {
     "name": "BenchMesh Team",
-    "email": "team@benchmesh.local"
+    "email": "marek.kaszewski@googlemail.com"
   },
   "main": "main.js",
   "scripts": {
@@ -42,7 +42,7 @@
         "deb"
       ],
       "category": "Utility",
-      "maintainer": "BenchMesh Team <team@benchmesh.local>"
+      "maintainer": "BenchMesh Team <marek.kaszewski@googlemail.com>"
     },
     "win": {
       "target": [

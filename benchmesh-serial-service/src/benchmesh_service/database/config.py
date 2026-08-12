@@ -23,6 +23,10 @@ def get_database_path() -> str:
     # Check for explicit data directory override
     data_dir = os.environ.get('BENCHMESH_DATA_DIR')
 
+    # SQLite in-memory sentinel (used by tests): no file, no directory
+    if data_dir == ':memory:':
+        return ':memory:'
+
     if data_dir:
         db_path = Path(data_dir) / "recordings.db"
     else:

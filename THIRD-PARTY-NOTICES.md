@@ -16,11 +16,6 @@ BenchMesh includes or depends upon third-party software components that are dist
 - **Copyright**: Copyright (c) 2017-2021 Ingy döt Net, Copyright (c) 2006-2016 Kirill Simonov
 - **URL**: https://github.com/yaml/pyyaml
 
-### Loguru
-- **License**: MIT
-- **Copyright**: Copyright (c) 2018 Delgan
-- **URL**: https://github.com/Delgan/loguru
-
 ### FastAPI
 - **License**: MIT
 - **Copyright**: Copyright (c) 2018 Sebastián Ramírez

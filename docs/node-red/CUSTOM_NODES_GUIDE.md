@@ -273,7 +273,7 @@ msg.channel = '2';
 
 ## Support
 
-- GitHub Issues: https://github.com/yourusername/benchmesh/issues
+- GitHub Issues: https://github.com/MarkoVcode/BenchMesh/issues
 - Documentation: `/docs/`
 - Examples: `/docs/node-red/examples/`
 
