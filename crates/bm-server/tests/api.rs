@@ -248,6 +248,8 @@ async fn ui_is_served_with_spa_routes() {
     }
     let resp = router(f.state.clone()).oneshot(Request::get("/").body(Body::empty()).unwrap()).await.unwrap();
     assert!(resp.status().is_redirection());
+    let resp = router(f.state.clone()).oneshot(Request::get("/ui/").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(resp.headers().get(header::CACHE_CONTROL).unwrap(), "no-cache", "UI must be revalidated after upgrades");
 }
 
 #[tokio::test(flavor = "multi_thread")]

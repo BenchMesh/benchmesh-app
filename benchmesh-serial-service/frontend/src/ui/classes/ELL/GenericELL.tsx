@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useMeasurement } from '../../MeasurementContext'
 import { TestingInstrumentGrid } from '../../TestingInstrumentGrid'
 import { useRequestLog, loggedFetch } from '../../RequestLogContext'
+import { apiBaseUrl } from '../../../api/base'
 
 // Generic Electronic Load component
 // - Settings: Mode dropdown (like DMM) populated from /instruments/ELL/{device_id}
 // - Readings: U/I/P displays (like PSU) with measurement checkboxes
 export function GenericELL({ channelPath, registry }: { channelPath?: string, registry?: any }) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`
+  const apiBase = apiBaseUrl()
   const { registerSource } = useMeasurement()
   const { addLog } = useRequestLog()
 
@@ -377,9 +378,9 @@ function ReadonlyBigNumber({ kind, label, value, channelPath, parameter }: { kin
             </label>
           </div>
           <span className="psu-api" title={
-            kind === 'U' ? `GET ${channelPath}/query_output_voltage` :
-            kind === 'I' ? `GET ${channelPath}/query_output_current` :
-            kind === 'P' ? `GET ${channelPath}/query_output_power` : ''
+            kind === 'U' ? `GET ${channelPath}/output_voltage` :
+            kind === 'I' ? `GET ${channelPath}/output_current` :
+            kind === 'P' ? `GET ${channelPath}/output_power` : ''
           }>API</span>
         </>
       )}

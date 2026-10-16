@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useRequestLog, loggedFetch } from '../../RequestLogContext'
+import { apiBaseUrl } from '../../../api/base'
 
 interface TempOption {
   value?: string
@@ -23,7 +24,7 @@ interface GenericTempProps {
 }
 
 export function GenericTemp({ mode, channelPath, tempConfig, klass, deviceId, channel }: GenericTempProps) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`
+  const apiBase = apiBaseUrl()
   const { addLog } = useRequestLog()
   const [selectedSensor, setSelectedSensor] = useState<string>('')
   const [selectedScale, setSelectedScale] = useState<string>('')
@@ -48,7 +49,7 @@ export function GenericTemp({ mode, channelPath, tempConfig, klass, deviceId, ch
     setBusySensor(true)
     try {
       const ch = channel || '1'
-      const endpoint = `${apiBase}/instruments/${klass}/${deviceId}/${ch}/set_temp_sensor/${encodeURIComponent(newSensor)}`
+      const endpoint = `${apiBase}/instruments/${klass}/${deviceId}/${ch}/temp_sensor/${encodeURIComponent(newSensor)}`
       await loggedFetch(endpoint, {
         method: 'POST',
         instrument: deviceId,
@@ -72,7 +73,7 @@ export function GenericTemp({ mode, channelPath, tempConfig, klass, deviceId, ch
     setBusyScale(true)
     try {
       const ch = channel || '1'
-      const endpoint = `${apiBase}/instruments/${klass}/${deviceId}/${ch}/set_temp_scale/${encodeURIComponent(newScale)}`
+      const endpoint = `${apiBase}/instruments/${klass}/${deviceId}/${ch}/temp_scale/${encodeURIComponent(newScale)}`
       await loggedFetch(endpoint, {
         method: 'POST',
         instrument: deviceId,
@@ -120,7 +121,7 @@ export function GenericTemp({ mode, channelPath, tempConfig, klass, deviceId, ch
               </option>
             ))}
           </select>
-          <span className="psu-api" title={`POST /instruments/${klass || 'DMM'}/${deviceId || '{id}'}/${channel || '1'}/set_temp_sensor/{value}`}>API</span>
+          <span className="psu-api" title={`POST /instruments/${klass || 'DMM'}/${deviceId || '{id}'}/${channel || '1'}/temp_sensor/{value}`}>API</span>
         </div>
       )}
 
@@ -150,7 +151,7 @@ export function GenericTemp({ mode, channelPath, tempConfig, klass, deviceId, ch
               </option>
             ))}
           </select>
-          <span className="psu-api" title={`POST /instruments/${klass || 'DMM'}/${deviceId || '{id}'}/${channel || '1'}/set_temp_scale/{value}`}>API</span>
+          <span className="psu-api" title={`POST /instruments/${klass || 'DMM'}/${deviceId || '{id}'}/${channel || '1'}/temp_scale/{value}`}>API</span>
         </div>
       )}
     </div>

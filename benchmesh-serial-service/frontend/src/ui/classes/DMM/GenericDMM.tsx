@@ -4,13 +4,15 @@ import { GenericRange } from './GenericRange'
 import { GenericTemp } from './GenericTemp'
 import { CompactReading } from '../../components/CompactReading'
 import { useRequestLog, loggedFetch } from '../../RequestLogContext'
+import { apiBaseUrl } from '../../../api/base'
+import { displayedMode } from './dmmMode'
 
 // Generic DMM component styled similarly to GenericPSU
 // - Before rendering, fetch GET /instruments/DMM/{device_id} to obtain features (modes list)
 // - Settings: full-width dropdown to select mode; hover tooltip shows POST endpoint template
 // - Readings: placeholder big-number display U[V] with 5-digit readonly value
 export function GenericDMM({ channelPath, registry }: { channelPath?: string, registry?: any }) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`
+  const apiBase = apiBaseUrl()
   const { registerSource } = useMeasurement()
   const { addLog } = useRequestLog()
 
@@ -61,6 +63,12 @@ export function GenericDMM({ channelPath, registry }: { channelPath?: string, re
 
     return { measurementValue: value, unitPrefix: prefix }
   }, [registry, deviceId, klass, channel])
+
+  // Follow the mode the instrument reports (front-panel changes, other clients)
+  const reportedMode = deviceId && klass && channel ? registry?.[deviceId]?.[klass]?.[`status_ch${channel}`]?.MODE : undefined
+  useEffect(() => {
+    setMode((current) => displayedMode(current, reportedMode, modes))
+  }, [reportedMode, modes])
 
   // Update symbol and unit when mode changes
   useEffect(() => {
@@ -119,22 +127,12 @@ export function GenericDMM({ channelPath, registry }: { channelPath?: string, re
 
           setModes(mm)
           setModesData(mData)
-          if (!mode && mm.length) {
-            const firstMode = String(mm[0])
-            setMode(firstMode)
-            // Set initial symbol and unit from first mode
-            if (mData[firstMode]) {
-              setCurrentSymbol(mData[firstMode].symbol || 'U')
-              setCurrentUnit(mData[firstMode].unit || 'V')
-              setCurrentNote(mData[firstMode].note)
-            }
-          }
         }
       } catch {}
     }
     loadFeatures()
     return () => { cancelled = true }
-  }, [apiBase, deviceId, klass, mode, channel, addLog])
+  }, [apiBase, deviceId, klass, channel, addLog])
 
   const endpointTemplate = useMemo(() => {
     const k = klass || 'DMM'

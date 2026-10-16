@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 import { InstrumentPod } from '../InstrumentPod'
 import { MeasurementProvider } from '../MeasurementContext'
+import { RequestLogProvider } from '../RequestLogContext'
 
 const instruments = [
   {
@@ -61,9 +62,9 @@ const instruments = [
 function renderAll() {
   return instruments.map((inst) =>
     render(
-      <MeasurementProvider>
+      <RequestLogProvider><MeasurementProvider>
         <InstrumentPod instrument={inst as any} registry={{}} />
-      </MeasurementProvider>
+      </MeasurementProvider></RequestLogProvider>
     )
   )
 }
@@ -76,12 +77,9 @@ describe('ui_component-driven rendering', () => {
     expect(screen.getAllByText('Settings').length).toBeGreaterThanOrEqual(3)
     expect(screen.getAllByText('Readings').length).toBeGreaterThanOrEqual(3)
 
-    // ELL Generic face should at least render the channel path and exist in DOM
-    expect(screen.getByText('/instruments/ELL/eol-1/1')).toBeInTheDocument()
-
-    // DMM Generic face should render with its channel path
-    expect(screen.getByText('/instruments/DMM/psu-1/1')).toBeInTheDocument()
-    expect(screen.getByText('/instruments/DMM/dmm-1/1')).toBeInTheDocument()
+    // ELL and DMM faces render under their class titles
+    expect(screen.getByText('Electronic Load')).toBeInTheDocument()
+    expect(screen.getAllByText('Digital Multimeter').length).toBe(2)
   })
 
   it('falls back to UnknownInstrument when ui_component is unrecognized', () => {
@@ -93,9 +91,9 @@ describe('ui_component-driven rendering', () => {
       ]
     }
     render(
-      <MeasurementProvider>
+      <RequestLogProvider><MeasurementProvider>
         <InstrumentPod instrument={bogus as any} registry={{}} />
-      </MeasurementProvider>
+      </MeasurementProvider></RequestLogProvider>
     )
     // UnknownInstrument shows text including "Unknown Instrument" and component name
     expect(screen.getByText('Unknown Instrument')).toBeInTheDocument()

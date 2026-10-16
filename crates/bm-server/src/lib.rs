@@ -25,14 +25,16 @@ use std::time::Duration;
 
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{OriginalUri, Path, Query, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use bm_devicedef::{Link, Repr, ValueKind};
 use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::config::{str_field, validate_entry, ConfigFile, DeviceEntry};
@@ -69,11 +71,14 @@ pub fn router(state: S) -> Router {
         .route("/usbtmc-devices", get(usbtmc_devices))
         .route("/ws/registry", get(ws_registry));
     if let Some(ui) = &state.ui_dir {
+        // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
+        // stale index.html after an upgrade.
+        let no_cache = || SetResponseHeaderLayer::overriding(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
         let index = ServeFile::new(ui.join("index.html"));
         for spa in ["/ui/docs", "/ui/docs/", "/ui/metrics", "/ui/metrics/"] {
-            r = r.route_service(spa, index.clone());
+            r = r.route_service(spa, ServiceBuilder::new().layer(no_cache()).service(index.clone()));
         }
-        r = r.nest_service("/ui", ServeDir::new(ui).append_index_html_on_directories(true));
+        r = r.nest_service("/ui", ServiceBuilder::new().layer(no_cache()).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
     r.layer(CorsLayer::very_permissive()).with_state(state)
 }

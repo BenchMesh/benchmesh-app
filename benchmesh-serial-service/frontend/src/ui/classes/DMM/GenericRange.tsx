@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRequestLog, loggedFetch } from '../../RequestLogContext'
+import { apiBaseUrl } from '../../../api/base'
 
 interface RangeOption {
   value: string
@@ -16,7 +17,7 @@ interface GenericRangeProps {
 }
 
 export function GenericRange({ mode, ranges, channelPath, klass, deviceId, channel }: GenericRangeProps) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`
+  const apiBase = apiBaseUrl()
   const { addLog } = useRequestLog()
   const [selectedRange, setSelectedRange] = useState<string>('AUTO')
   const [isOpen, setIsOpen] = useState(false)

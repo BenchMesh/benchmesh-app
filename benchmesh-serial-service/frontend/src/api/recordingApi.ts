@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { wsUrl } from './base'
 
 export interface ChannelConfig {
   device_id: string;
@@ -110,8 +111,7 @@ export class RecordingApi {
   }
 
   createWebSocket(seriesId: number): WebSocket {
-    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProto}://${window.location.hostname}:57666/recordings/ws/${seriesId}`;
-    return new WebSocket(wsUrl);
+    const url = wsUrl(`/recordings/ws/${seriesId}`)
+    return new WebSocket(url);
   }
 }

@@ -30,6 +30,9 @@ class MockWebSocket {
 
 describe('App', () => {
   it('renders instrument card from API', async () => {
+    // Classic layout shows instrument cards; skip the first-run disclaimer
+    localStorage.setItem('benchmesh:disclaimer-accepted', 'true')
+    localStorage.setItem('benchmesh-interface-mode', 'classic')
     render(<App />)
     await waitFor(() => expect(screen.getByText('psu-1')).toBeInTheDocument())
     expect(screen.getByText('ACME PSU-1000')).toBeInTheDocument()

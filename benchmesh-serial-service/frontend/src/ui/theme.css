@@ -87,6 +87,17 @@ a{ color:var(--accent); text-decoration:none; }
 .psu-set{ font-size:10px; padding:2px 8px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text-1); border-radius:6px; cursor:pointer; }
 .psu-set:hover{ background:rgba(255,255,255,.05); }
 .psu-api{ font-size:9px; padding:1px 6px; border-radius:999px; background:rgba(96,165,250,.25); color:#bcd9ff; border:1px solid rgba(96,165,250,.35); line-height:1.6; }
+/* AWG channel panel */
+.awg-face{ border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.15)); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:8px; }
+.awg-section{ display:flex; flex-direction:column; gap:4px; }
+.awg-section-title{ font-size:10px; color:var(--text-2); text-transform:uppercase; letter-spacing:.6px; }
+.awg-row{ display:flex; justify-content:space-between; gap:12px; font-size:13px; }
+.awg-label{ color:var(--text-2); }
+.awg-value{ color:var(--text-1); font-variant-numeric:tabular-nums; }
+.awg-actions{ display:flex; align-items:center; gap:8px; }
+.awg-output{ font-size:11px; padding:3px 10px; border:1px solid var(--border); border-radius:6px; cursor:pointer; background:rgba(255,255,255,.03); color:var(--text-1); }
+.awg-output.on{ background:rgba(34,197,94,.25); border-color:rgba(34,197,94,.5); }
+.awg-output:disabled{ opacity:.5; cursor:default; }
 
 .wsdiag{ position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-2); }
 

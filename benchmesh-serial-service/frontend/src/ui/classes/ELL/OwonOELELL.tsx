@@ -3,12 +3,13 @@ import { useMeasurement } from '../../MeasurementContext'
 import { RemoteLockWarning } from '../../components/RemoteLockWarning'
 import { TestingInstrumentGrid } from '../../TestingInstrumentGrid'
 import { useRequestLog, loggedFetch } from '../../RequestLogContext'
+import { apiBaseUrl } from '../../../api/base'
 
 // OWON OEL Electronic Load component
 // - Settings: Mode dropdown (like DMM) populated from /instruments/ELL/{device_id}
 // - Readings: U/I/P displays (like PSU) with measurement checkboxes
 export function OwonOELELL({ channelPath, registry }: { channelPath?: string, registry?: any }) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`
+  const apiBase = apiBaseUrl()
   const { registerSource } = useMeasurement()
   const { addLog } = useRequestLog()
 
@@ -216,7 +217,7 @@ export function OwonOELELL({ channelPath, registry }: { channelPath?: string, re
     const k = klass || 'ELL'
     const did = deviceId || '{id}'
     const ch = channel || '1'
-    return `/instruments/${k}/${did}/${ch}/set_mode/{value}`
+    return `/instruments/${k}/${did}/${ch}/mode/{value}`
   }, [klass, deviceId, channel])
 
   const handleModeChange = async (newMode: string) => {
@@ -350,7 +351,7 @@ export function OwonOELELL({ channelPath, registry }: { channelPath?: string, re
                   gap: '8px',
                   opacity: busyRemote ? 0.5 : 1
                 }}
-                title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/set_remote/${remoteMode ? 'OFF' : 'ON'}`}
+                title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/remote/${remoteMode ? 'OFF' : 'ON'}`}
               >
                 <input
                   type="checkbox"
@@ -441,12 +442,12 @@ export function OwonOELELL({ channelPath, registry }: { channelPath?: string, re
                       className="psu-set"
                       type="button"
                       disabled={busySetpoint || !setpointValue}
-                      title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/set_${mode.toLowerCase()}/${setpointValue}`}
+                      title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/${mode.toLowerCase()}/${setpointValue}`}
                       onClick={handleSetpointSet}
                     >
                       {busySetpoint ? (<><span className="spinner"/>SET</>) : 'SET'}
                     </button>
-                    <span className="psu-api" title={`POST /instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/set_${mode.toLowerCase()}/{value}`}>API</span>
+                    <span className="psu-api" title={`POST /instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/${mode.toLowerCase()}/{value}`}>API</span>
                   </div>
                   <div style={{
                     fontSize: '11px',
@@ -464,7 +465,7 @@ export function OwonOELELL({ channelPath, registry }: { channelPath?: string, re
                   className={`psu-set psu-output ${inputEnabled ? 'danger' : ''}`}
                   style={{ width: '100%', padding: '8px 12px', fontSize: '12px' }}
                   onClick={handleInputToggle}
-                  title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/set_input/${inputEnabled ? 'OFF' : 'ON'}`}
+                  title={`POST ${apiBase}/instruments/${klass || 'ELL'}/${deviceId || '{id}'}/${channel || '1'}/input/${inputEnabled ? 'OFF' : 'ON'}`}
                 >
                   {busyInput ? (<><span className="spinner"/>{inputEnabled ? 'DISABLE INPUT' : 'ENABLE INPUT'}</>) : (inputEnabled ? 'DISABLE INPUT' : 'ENABLE INPUT')}
                 </button>
@@ -680,9 +681,9 @@ function ReadonlyBigNumber({ kind, label, value, channelPath, parameter }: { kin
             </label>
           </div>
           <span className="psu-api" title={
-            kind === 'U' ? `GET ${channelPath}/query_output_voltage` :
-            kind === 'I' ? `GET ${channelPath}/query_output_current` :
-            kind === 'P' ? `GET ${channelPath}/query_output_power` : ''
+            kind === 'U' ? `GET ${channelPath}/output_voltage` :
+            kind === 'I' ? `GET ${channelPath}/output_current` :
+            kind === 'P' ? `GET ${channelPath}/output_power` : ''
           }>API</span>
         </>
       )}

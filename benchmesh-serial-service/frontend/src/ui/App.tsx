@@ -5,6 +5,7 @@ import { RequestLogProvider } from './RequestLogContext'
 import { WorkbenchLayout } from './workbench/WorkbenchLayout'
 import { ClassicLayout } from './ClassicLayout'
 import { DisclaimerModal } from './DisclaimerModal'
+import { apiBaseUrl, wsUrl } from '../api/base'
 
 // Lazy load modal components to reduce initial bundle size
 const ConfigModal = lazy(() => import('./ConfigModal').then(m => ({ default: m.ConfigModal })))
@@ -16,7 +17,7 @@ function useApiBase() {
   // API is served by FastAPI app; assume same origin during production.
   // For local dev, we can compute from window.location.
   return useMemo(() => {
-    return `${window.location.protocol}//${window.location.hostname}:57666`
+    return apiBaseUrl()
   }, [])
 }
 
@@ -93,8 +94,7 @@ function useRegistrySocket(apiBase: string) {
     let ws: WebSocket | null = null
     let aliveTimer: any
     function connect() {
-      const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const url = `${wsProto}://${window.location.hostname}:57666/ws/registry`
+      const url = wsUrl(`/ws/registry`)
       try {
         ws = new WebSocket(url)
       } catch (e: any) {

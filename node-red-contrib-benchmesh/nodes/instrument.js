@@ -7,7 +7,7 @@ module.exports = function(RED) {
         node.apiBase = config.apiBase || 'http://localhost:57666';
 
         node.on('input', function(msg) {
-            // Expect msg.path like "/instruments/DMM/dmm-1/1/query_measurement"
+            // Expect msg.path like "/instruments/DMM/dmm-1/1/measurement" (partial operation names)
             const path = msg.path || config.path;
             const method = msg.method || config.method || 'GET';
 

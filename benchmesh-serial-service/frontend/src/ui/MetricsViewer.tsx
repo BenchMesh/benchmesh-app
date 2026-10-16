@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { wsUrl } from '../api/base'
 
 interface DeviceMetric {
   device_id: string
@@ -26,8 +27,7 @@ function useMetricsSocket(apiBase: string) {
     let ws: WebSocket | null = null
 
     function connect() {
-      const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const url = `${wsProto}://${window.location.hostname}:57666/ws/metrics`
+      const url = wsUrl(`/ws/metrics`)
 
       try {
         ws = new WebSocket(url)

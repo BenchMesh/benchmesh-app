@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import SwaggerUI from 'swagger-ui-react'
 import 'swagger-ui-react/swagger-ui.css'
+import { apiBaseUrl } from '../api/base'
 
 interface DocPage {
   id: string
@@ -31,7 +32,7 @@ export function DocsPage() {
 
   // Determine API base URL
   const apiBase = useMemo(() => {
-    return `${window.location.protocol}//${window.location.hostname}:57666`
+    return apiBaseUrl()
   }, [])
 
   // Load markdown files

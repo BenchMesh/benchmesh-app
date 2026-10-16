@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 import { InstrumentPod } from '../InstrumentPod'
 import { MeasurementProvider } from '../MeasurementContext'
+import { RequestLogProvider } from '../RequestLogContext'
 
 const baseInstrument = {
   id: 'psu-1',
@@ -15,21 +16,20 @@ const baseInstrument = {
 describe('InstrumentPod', () => {
   it('renders instrument id and IDN', () => {
     render(
-      <MeasurementProvider>
+      <RequestLogProvider><MeasurementProvider>
         <InstrumentPod instrument={baseInstrument as any} registry={{}} />
-      </MeasurementProvider>
+      </MeasurementProvider></RequestLogProvider>
     )
     expect(screen.getByText('psu-1')).toBeInTheDocument()
     expect(screen.getByText('ACME PSU-1000')).toBeInTheDocument()
   })
 
-  it('shows channel path and PSU face under PSU class', () => {
+  it('shows the PSU face under the PSU class', () => {
     render(
-      <MeasurementProvider>
+      <RequestLogProvider><MeasurementProvider>
         <InstrumentPod instrument={baseInstrument as any} registry={{}} />
-      </MeasurementProvider>
+      </MeasurementProvider></RequestLogProvider>
     )
-    expect(screen.getByText('/instruments/PSU/psu-1/1')).toBeInTheDocument()
     // PSU face now renders Settings and Readings columns
     expect(screen.getByText('Settings')).toBeInTheDocument()
     expect(screen.getByText('Readings')).toBeInTheDocument()

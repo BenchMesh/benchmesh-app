@@ -10,6 +10,7 @@ import { VscClose, VscChevronDown, VscChevronUp } from 'react-icons/vsc';
 import { ChannelPod } from '../../ClassPods';
 import { getClassDescription } from '../../instrumentClasses';
 import './editor.css';
+import { apiBaseUrl } from '../../../api/base'
 
 interface MosaicInstrumentWindowProps {
   id: string;
@@ -30,7 +31,7 @@ export const MosaicInstrumentWindow: React.FC<MosaicInstrumentWindowProps> = ({
 }) => {
   const [classFeatures, setClassFeatures] = useState<Record<string, any>>({});
   const [collapsedChannels, setCollapsedChannels] = useState<Set<string>>(new Set());
-  const apiBase = `${window.location.protocol}//${window.location.hostname}:57666`;
+  const apiBase = apiBaseUrl();
 
   // Get IDN from registry
   const idn = instrument.IDN || registry?.[instrument.id]?.IDN || '—';

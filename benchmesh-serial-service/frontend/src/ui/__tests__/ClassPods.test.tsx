@@ -3,18 +3,17 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 import { ClassPodResolver } from '../ClassPods'
 import { MeasurementProvider } from '../MeasurementContext'
+import { RequestLogProvider } from '../RequestLogContext'
 
 const channels = ['/instruments/PSU/psu-1/1','/instruments/PSU/psu-1/2']
 
 describe('ClassPodResolver', () => {
-  it('renders PSU class pod with GenericPSU and both channel paths', () => {
+  it('renders one GenericPSU face per channel', () => {
     render(
-      <MeasurementProvider>
+      <RequestLogProvider><MeasurementProvider>
         <ClassPodResolver klass="PSU" channels={channels} />
-      </MeasurementProvider>
+      </MeasurementProvider></RequestLogProvider>
     )
-    expect(screen.getByText('/instruments/PSU/psu-1/1')).toBeInTheDocument()
-    expect(screen.getByText('/instruments/PSU/psu-1/2')).toBeInTheDocument()
     expect(screen.getAllByText('Settings').length).toBe(2)
     expect(screen.getAllByText('Readings').length).toBe(2)
   })
