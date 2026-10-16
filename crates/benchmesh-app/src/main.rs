@@ -32,6 +32,35 @@ fn data_dir() -> PathBuf {
     })
 }
 
+/// SIGTERM (logout, shutdown, `kill`) and SIGINT exit like closing the window, so the
+/// devices' on_disconnect steps still run (e.g. the OWON load returns to local mode).
+fn exit_on_signals(handle: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+            Ok(rt) => rt,
+            Err(_) => return,
+        };
+        rt.block_on(async {
+            #[cfg(unix)]
+            {
+                let mut term = match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+                    Ok(s) => s,
+                    Err(_) => return,
+                };
+                tokio::select! {
+                    _ = term.recv() => {}
+                    _ = tokio::signal::ctrl_c() => {}
+                }
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = tokio::signal::ctrl_c().await;
+            }
+        });
+        handle.exit(0);
+    });
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .setup(|app| {
@@ -55,6 +84,7 @@ fn main() {
             let url = format!("{}/ui/", server.url());
             eprintln!("BenchMesh API/UI at {url}");
             app.manage(Server(Mutex::new(Some(server))));
+            exit_on_signals(app.handle().clone());
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.parse()?))
                 .title("BenchMesh")
                 .inner_size(1600.0, 1000.0)
@@ -68,7 +98,9 @@ fn main() {
     app.run(|handle, event| {
         if let RunEvent::Exit = event {
             if let Some(server) = handle.state::<Server>().0.lock().unwrap().take() {
+                eprintln!("stopping devices…");
                 server.stop();
+                eprintln!("stopped");
             }
         }
     });

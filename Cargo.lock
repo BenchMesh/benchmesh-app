@@ -178,6 +178,7 @@ dependencies = [
  "bm-server",
  "tauri",
  "tauri-build",
+ "tokio",
 ]
 
 [[package]]

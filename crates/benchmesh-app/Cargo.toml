@@ -16,3 +16,4 @@ tauri-build = { version = "2.7", features = [] }
 [dependencies]
 bm-server = { path = "../bm-server" }
 tauri = { version = "2.12", features = [] }
+tokio.workspace = true
