@@ -1,0 +1,169 @@
+{
+  "*IDN?\\r": {
+    "count": 4596,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "\\nOWON,XDM1241,24512010,V4.3.0,3\\r",
+        4595
+      ],
+      [
+        "OWON,XDM1241,24512010,V4.3.0,3\\r",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 31,
+      "median": 32.0,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 0.16,
+      "median": 0.22,
+      "max": 18.34
+    },
+    "exchange_ms": {
+      "min": 9.08,
+      "median": 10.89,
+      "max": 107.15
+    },
+    "gap_before_ms": {
+      "min": 0.17,
+      "median": 0.21,
+      "max": 18.32
+    },
+    "end": {
+      "complete": 4596
+    },
+    "ops": {
+      "query_identify/query_identify": 4,
+      "poll_status/query_identify": 4592
+    }
+  },
+  "FUNCtion?\\r": {
+    "count": 4595,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n\"VOLT\"\\r",
+        4595
+      ]
+    ],
+    "rx_len": {
+      "min": 8,
+      "median": 8,
+      "max": 8
+    },
+    "first_byte_latency_ms": {
+      "min": 0.17,
+      "median": 0.22,
+      "max": 21.81
+    },
+    "exchange_ms": {
+      "min": 4.2,
+      "median": 6.12,
+      "max": 56.98
+    },
+    "gap_before_ms": {
+      "min": 0.16,
+      "median": 0.19,
+      "max": 23.86
+    },
+    "end": {
+      "complete": 4595
+    },
+    "ops": {
+      "poll_status/_query_function": 4592,
+      "query_function/query_function": 3
+    }
+  },
+  "MEAS1?\\r": {
+    "count": 4595,
+    "reply_variants": 296,
+    "top_replies": [
+      [
+        "\\n-7.941000E-05\\r",
+        67
+      ],
+      [
+        "\\n-8.397379E-05\\r",
+        56
+      ],
+      [
+        "\\n-7.758448E-05\\r",
+        53
+      ],
+      [
+        "\\n-7.575896E-05\\r",
+        48
+      ],
+      [
+        "\\n-6.526224E-05\\r",
+        46
+      ]
+    ],
+    "rx_len": {
+      "min": 15,
+      "median": 15,
+      "max": 15
+    },
+    "first_byte_latency_ms": {
+      "min": 0.28,
+      "median": 0.37,
+      "max": 9.13
+    },
+    "exchange_ms": {
+      "min": 6.88,
+      "median": 8.27,
+      "max": 101.45
+    },
+    "gap_before_ms": {
+      "min": 6.8,
+      "median": 76.14,
+      "max": 228.52
+    },
+    "end": {
+      "complete": 4595
+    },
+    "ops": {
+      "poll_status/_query_measurement": 4592,
+      "query_measurement/query_measurement": 3
+    }
+  },
+  "RATE?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\nS\\r",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 3,
+      "median": 3,
+      "max": 3
+    },
+    "first_byte_latency_ms": {
+      "min": 0.23,
+      "median": 0.23,
+      "max": 0.3
+    },
+    "exchange_ms": {
+      "min": 3.48,
+      "median": 4.22,
+      "max": 5.41
+    },
+    "gap_before_ms": {
+      "min": 0.63,
+      "median": 0.67,
+      "max": 7.88
+    },
+    "end": {
+      "complete": 3
+    },
+    "ops": {
+      "query_rate/query_rate": 3
+    }
+  }
+}

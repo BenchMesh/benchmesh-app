@@ -103,10 +103,11 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 - [x] Assessment of current codebase (backend, frontend, Electron, Node-RED)
 - [x] Plan saved (this file)
 - [x] Phase 1: capture tooling built (`scripts/wire_capture/`, see its README) and validated: `scripts/wire_capture/selftest.sh` → SELFTEST PASS
-- [ ] Phase 1: capture **Tenma 72-2540** (`/dev/ttyACM0`) — needs device connected
-- [ ] Phase 1: capture **OWON DGE2070** (`/dev/usbtmc0`) — needs device connected
-- [ ] Phase 1: capture XDM / SPM / OEL / Rigol — **ask user which are physically available**
-- [ ] Phase 1: measure Tenma minimum inter-command gap & idle framing (bm-probe or capture script)
+- [x] Phase 1: bench capture, read-only (session `captures/20261016-201609`, config `captures/bench-config.yaml`): Tenma 72-2540, SPM3103, XDM1241, OEL1515, DGE2070. Rigol DHO800 is **not on the bench**.
+- [x] Phase 1: Tenma query timing measured (fixed-length framing, no inter-query gap needed)
+- [ ] Phase 1: OEL — confirm it needs remote mode (`SYST:REM`) before measurement queries answer → **needs user OK (state-changing)**, then re-capture OEL
+- [ ] Phase 1: setter capture with user-approved safe values (`exercise.py --setters`) — also measure Tenma setter min-gap
+- [ ] Phase 1: DGE screenshot binary-block capture (call `query_screenshot` directly, not via the GET API)
 - [x] Phase 2: as-is class contract extracted → `ai_context/migration/CLASS_CONTRACT.md`
 - [ ] Phase 2: class schemas written (`devices/classes/`) — decide fixes for ⚠️ items in CLASS_CONTRACT.md
 - [ ] Phase 2: DSL JSON Schema v0
@@ -121,19 +122,20 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 
 ## Next action (when resuming)
 
-Connect the instruments, stop the normal service, then from repo root:
-```bash
-python3 scripts/wire_capture/run_traced_service.py          # terminal A
-python3 scripts/wire_capture/exercise.py --passive 30 --rounds 3   # terminal B
-# Ctrl-C terminal A, then:
-python3 scripts/wire_capture/summarize.py
-```
-Review `captures/<session>/*.transcript.txt`, commit the session, tick the capture boxes.
+Read-only capture is done. Remaining Phase 1 items need user decisions (open questions 3–4).
+Without them, Phase 2 can start: write the DSL JSON Schema v0 and the device definitions
+against `captures/20261016-201609` (regenerate transcripts with
+`python3 scripts/wire_capture/summarize.py captures/20261016-201609`).
+To re-run a capture: stop the normal service, then
+`python3 scripts/wire_capture/run_traced_service.py --config captures/bench-config.yaml` (terminal A),
+`python3 scripts/wire_capture/exercise.py --passive 30 --rounds 3` (terminal B), Ctrl-C A, `summarize.py`, gzip the `.jsonl`.
 
 ## Open questions
 
-1. Which instruments besides Tenma and DGE are physically on the bench (XDM, SPM, OEL, Rigol)?
-2. Which setter values are safe to exercise per device during capture (e.g. PSU output into what load)?
+1. ~~Which instruments are on the bench?~~ → Tenma, SPM3103, XDM1241, OEL1515, DGE2070 (no Rigol). User's `~/.benchmesh/config.yaml` lists only Tenma + DGE and points DGE at `/dev/usbtmc0` (actual: `/dev/usbtmc2`).
+2. Which setter values are safe to exercise per device (e.g. PSU output into what load)?
+3. OK to send `SYST:REM` / `SYST:LOC` to the OEL to confirm the remote-mode hypothesis?
+4. Keep the Rigol DHO800 definition without hardware (port from code only), or drop it until a scope is available?
 
 ## Bugs found in Python (do not replicate in Rust; reference only)
 
@@ -156,3 +158,14 @@ Review `captures/<session>/*.transcript.txt`, commit the session, tick the captu
   - Inverted cache bug confirmed at runtime: API `GET …/output_voltage` crashes with `could not convert string to float: 'None'`.
   - The Python transport aborts open when DTR/RTS ioctls fail (pty). Real adapters are fine, but Rust should treat modem-line control as best-effort and configurable per definition.
   - Hardware not connected at this time (`lsusb` showed no instruments) → real captures pending.
+- **2026-10-16** — Read-only bench capture of 5 instruments (session `captures/20261016-201609`, raw logs gzipped). Per-device ground truth:
+
+  | Device | Reply framing (actual) | Python behaviour | Real exchange | Python exchange |
+  |---|---|---|---|---|
+  | Tenma 72-2540 (9600, no EOL) | fixed length: VOUT/IOUT/VSET 5 B, **ISET 6 B with trailing space** (`'0.988 '`), STATUS 1 B, IDN 18 B | reads until 1 s timeout | 30–45 ms | ≈1005 ms |
+  | SPM3103 (115200) | ends `\n` | waits for `\r` → always 1 s timeout | 4–13 ms | ≈1015–1025 ms |
+  | XDM1241 (115200) | ends `\r\n` | ends on `\r`; the `\n` remains and is skipped as leading noise on the next read | 4–11 ms | same (works) |
+  | OEL1515 (115200, FV V1.1.0) | IDN ends `\n`; **all measurement queries return a bare `\n`**, `MEAS:ALL?` → `ERR`, `SYST:REM?` → `0` | poll returns empty → link dropped → reconnect loop every 3–6 s; **OEL unusable in Python app** | — | — |
+  | DGE2070 (USBTMC) | one message per read, ends `\n` | works | 13–56 ms | same |
+
+  Other facts: Tenma STATUS idle = `0x10` (beep on, output off); 1 STATUS no-reply in 97. Tenma inter-query gap 0 ms → 0/30 failures (queries wait for the full fixed-length reply first). Tenma poll still sends 5 queries/cycle on real hardware (inverted cache). SPM `CONFigure?` → `VOLT:DC +0.0000E-308` (sentinel value — needs a definition rule). SPM `MEAS:ALL:INFO?` → 7 fields `V,I,P,OVP,OCP,OTP,mode`. XDM polled every 100 ms incl. `*IDN?` each poll (4 596 polls). Projected Rust gains from correct framing: Tenma poll ≈5 s → ≈0.1 s; SPM poll ≈2 s → ≈20 ms.

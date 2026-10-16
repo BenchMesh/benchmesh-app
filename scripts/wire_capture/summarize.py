@@ -13,11 +13,13 @@ devices this includes the read timeout). End reasons:
   timeout   — the last read returned fewer bytes than requested (reply framed by timeout)
   complete  — the last read was satisfied (terminator / requested size reached)
   no_reply  — no bytes received before the next TX
+  message   — USBTMC: the read returned one complete device message
 
 Usage:
     python3 scripts/wire_capture/summarize.py [SESSION_DIR]
 """
 
+import gzip
 import json
 import os
 import statistics
@@ -28,7 +30,8 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def load(path):
-    with open(path) as f:
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "rt") as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
@@ -82,7 +85,8 @@ def command_key(tx: bytes) -> str:
 
 def summarize_device(path):
     events = load(path)
-    base = path[:-len(".jsonl")]
+    base = path[:-len(".jsonl.gz")] if path.endswith(".gz") else path[:-len(".jsonl")]
+    message_framed = any(e["ev"] == "open" and e.get("transport") == "usbtmc" for e in events)
     stats = defaultdict(lambda: {"count": 0, "replies": Counter(), "rx_len": [], "latency_ms": [],
                                  "total_ms": [], "end": Counter(), "ops": Counter(), "gap_before_ms": []})
     lines = []
@@ -91,6 +95,8 @@ def summarize_device(path):
     for o in opens:
         lines.append(f"{o['mono']:10.3f}  {o['ev'].upper():5} {json.dumps({k: v for k, v in o.items() if k not in ('t', 'mono', 'ev', 'op', 'fn', 'thread')})}")
     for x in exchanges(events):
+        if message_framed and x["end"] in ("timeout", "complete"):
+            x["end"] = "message"  # USBTMC: one read == one device message, short reads are normal
         k = command_key(x["tx"])
         s = stats[k]
         s["count"] += 1
@@ -129,9 +135,9 @@ def summarize_device(path):
 def main():
     session = sys.argv[1] if len(sys.argv) > 1 else open(os.path.join(REPO, "captures", "LATEST")).read().strip()
     for name in sorted(os.listdir(session)):
-        if not name.endswith(".jsonl") or name == "api.jsonl":
+        if not name.endswith((".jsonl", ".jsonl.gz")) or name.startswith("api.jsonl"):
             continue
-        dev = name[:-len(".jsonl")]
+        dev = name.split(".jsonl")[0]
         out = summarize_device(os.path.join(session, name))
         print(f"\n=== {dev}")
         print(f"{'command':28} {'n':>5} {'rxB':>9} {'latency ms':>12} {'exchange ms':>12}  end / sample reply")

@@ -1,0 +1,74 @@
+{
+  "*IDN?\\r": {
+    "count": 75,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "OWON,OEL1515,25130087,FV:V1.1.0\\n",
+        75
+      ]
+    ],
+    "rx_len": {
+      "min": 32,
+      "median": 32,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 1.41,
+      "median": 10.04,
+      "max": 38.95
+    },
+    "exchange_ms": {
+      "min": 1018.38,
+      "median": 1028.36,
+      "max": 1091.08
+    },
+    "gap_before_ms": {
+      "min": 1792.36,
+      "median": 4548.83,
+      "max": 4569.53
+    },
+    "end": {
+      "timeout": 75
+    },
+    "ops": {
+      "query_identify/query_identify": 75
+    }
+  },
+  "MEAS:ALL:INFO?\\r": {
+    "count": 75,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        75
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 12.87,
+      "median": 20.96,
+      "max": 28.18
+    },
+    "exchange_ms": {
+      "min": 1017.5,
+      "median": 1026.35,
+      "max": 1039.36
+    },
+    "gap_before_ms": {
+      "min": 4.59,
+      "median": 5.97,
+      "max": 32.76
+    },
+    "end": {
+      "timeout": 75
+    },
+    "ops": {
+      "poll_status/query_status": 75
+    }
+  }
+}

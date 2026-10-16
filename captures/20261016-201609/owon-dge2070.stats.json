@@ -1,0 +1,256 @@
+{
+  "*IDN?\\r": {
+    "count": 7,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "OWON,DGE2070,25130086,SCPI:99.0 FV:V1.0.4.7.0\\n",
+        7
+      ]
+    ],
+    "rx_len": {
+      "min": 46,
+      "median": 46,
+      "max": 46
+    },
+    "first_byte_latency_ms": {
+      "min": 6.61,
+      "median": 13.22,
+      "max": 113.31
+    },
+    "exchange_ms": {
+      "min": 8.78,
+      "median": 13.42,
+      "max": 113.48
+    },
+    "gap_before_ms": {
+      "min": 14.54,
+      "median": 17.98,
+      "max": 436.55
+    },
+    "end": {
+      "message": 7
+    },
+    "ops": {
+      "query_identify/query_identify": 7
+    }
+  },
+  "OUTPut1:STATe?\\r": {
+    "count": 246,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "0\\n",
+        246
+      ]
+    ],
+    "rx_len": {
+      "min": 2,
+      "median": 2.0,
+      "max": 2
+    },
+    "first_byte_latency_ms": {
+      "min": 2.54,
+      "median": 51.27,
+      "max": 112.24
+    },
+    "exchange_ms": {
+      "min": 2.72,
+      "median": 52.22,
+      "max": 112.35
+    },
+    "gap_before_ms": {
+      "min": 2.66,
+      "median": 1929.73,
+      "max": 2004.61
+    },
+    "end": {
+      "message": 246
+    },
+    "ops": {
+      "poll_status/query_output": 243,
+      "query_output/query_output": 3
+    }
+  },
+  "OUTPut2:STATe?\\r": {
+    "count": 246,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "0\\n",
+        246
+      ]
+    ],
+    "rx_len": {
+      "min": 2,
+      "median": 2.0,
+      "max": 2
+    },
+    "first_byte_latency_ms": {
+      "min": 7.61,
+      "median": 23.05,
+      "max": 85.17
+    },
+    "exchange_ms": {
+      "min": 10.17,
+      "median": 23.25,
+      "max": 90.17
+    },
+    "gap_before_ms": {
+      "min": 0.29,
+      "median": 0.42,
+      "max": 14.21
+    },
+    "end": {
+      "message": 246
+    },
+    "ops": {
+      "poll_status/query_output": 243,
+      "query_output/query_output": 3
+    }
+  },
+  "SOURce1:FUNCtion:RAMP:SYMMetry?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "50.0\\n",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 5,
+      "median": 5,
+      "max": 5
+    },
+    "first_byte_latency_ms": {
+      "min": 10.62,
+      "median": 16.2,
+      "max": 16.42
+    },
+    "exchange_ms": {
+      "min": 10.76,
+      "median": 16.39,
+      "max": 16.56
+    },
+    "gap_before_ms": {
+      "min": 7.73,
+      "median": 7.98,
+      "max": 13.27
+    },
+    "end": {
+      "message": 3
+    },
+    "ops": {
+      "query_symmetry/query_symmetry": 3
+    }
+  },
+  "SOURce1:FUNCtion:SHAPe?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "SIN\\n",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 4,
+      "median": 4,
+      "max": 4
+    },
+    "first_byte_latency_ms": {
+      "min": 46.9,
+      "median": 55.77,
+      "max": 114.09
+    },
+    "exchange_ms": {
+      "min": 47.71,
+      "median": 56.6,
+      "max": 114.5
+    },
+    "gap_before_ms": {
+      "min": 10.75,
+      "median": 10.79,
+      "max": 19.12
+    },
+    "end": {
+      "message": 3
+    },
+    "ops": {
+      "query_shape/query_shape": 3
+    }
+  },
+  "SOURce2:FUNCtion:RAMP:SYMMetry?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "50.0\\n",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 5,
+      "median": 5,
+      "max": 5
+    },
+    "first_byte_latency_ms": {
+      "min": 13.54,
+      "median": 16.32,
+      "max": 16.51
+    },
+    "exchange_ms": {
+      "min": 13.71,
+      "median": 16.57,
+      "max": 16.87
+    },
+    "gap_before_ms": {
+      "min": 7.78,
+      "median": 7.81,
+      "max": 10.62
+    },
+    "end": {
+      "message": 3
+    },
+    "ops": {
+      "query_symmetry/query_symmetry": 3
+    }
+  },
+  "SOURce2:FUNCtion:SHAPe?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "SIN\\n",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 4,
+      "median": 4,
+      "max": 4
+    },
+    "first_byte_latency_ms": {
+      "min": 44.11,
+      "median": 46.02,
+      "max": 46.77
+    },
+    "exchange_ms": {
+      "min": 44.6,
+      "median": 46.27,
+      "max": 47.06
+    },
+    "gap_before_ms": {
+      "min": 8.56,
+      "median": 9.2,
+      "max": 10.82
+    },
+    "end": {
+      "message": 3
+    },
+    "ops": {
+      "query_shape/query_shape": 3
+    }
+  }
+}

@@ -166,3 +166,6 @@ mcp_services/**/.pytest_cache/
 # wire capture pointer (sessions themselves are committed as golden transcripts)
 captures/LATEST
 captures/*/_datadir/
+captures/*/*.transcript.txt
+captures/*/*.jsonl
+captures/service.log
