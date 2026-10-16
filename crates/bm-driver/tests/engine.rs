@@ -295,7 +295,19 @@ fn dge_screenshot_is_one_ieee_block() {
         "HCOPy:SDUMp:DATA?" => Some(reply.clone()),
         _ => None,
     });
-    let mut e = Engine::connect(def("owon_dge"), t).unwrap();
+    // The definition keeps `screenshot` disabled (the Linux usbtmc driver cannot read the
+    // DGE's oversized message); the engine's block handling is tested with it enabled.
+    let mut d = (*def("owon_dge")).clone();
+    d.classes.get_mut("AWG").unwrap().operations.insert(
+        "screenshot".into(),
+        bm_devicedef::Operation {
+            get: Some(bm_devicedef::Action::Command("screenshot".into())),
+            set: None,
+            repr: bm_devicedef::Repr::Bytes,
+            description: None,
+        },
+    );
+    let mut e = Engine::connect(Arc::new(d), t).unwrap();
     match e.get("AWG", "screenshot", 1).unwrap() {
         Output::Bytes(b) => assert_eq!(b, bmp),
         other => panic!("expected bytes, got {other:?}"),

@@ -153,3 +153,8 @@ Proposal (registry `AWG.status_ch{N}`, SI dicts as in CLASS_CONTRACT §0):
 | Q13 | USB VID:PID of DGE2070 from sysfs (for `bm-probe discover`) | RO (sysfs only) |
 | Q14 | IDN + channel count of DGE3000 models (no hardware / docs) | RO (needs device) |
 | Q15 | Latency: confirm ~110 ms first-query jitter vs ~20 ms back-to-back with a 14-query burst | RO |
+
+## Bench verification (Rust bm-probe, 2026-10-16, after replug)
+- All text queries and both channels verified live: poll ≈100–120 ms (fast group), slow group ≈480 ms first time; GETs 20–65 ms. Unverified reply formats (FREQ, VOLT, OFFS, PHAS) parse fine (e.g. FREQ 1 kHz, AMPL 1 / 7 Vpp).
+- **Screenshot is not readable through the Linux `usbtmc` driver.** A single 1 MiB `read()` returns only 52 bytes (first 64-byte packet minus the 12-byte header). Repeated reads (Rust engine) collected 318 292 B, then the kernel logged `Device sent too small first packet: 10 < 12` — the DGE streams the rest of the message as raw bulk packets without valid USBTMC headers, so the kernel misparses pixel data as headers (the collected data is corrupt). A raw Python read probe left the device returning `EOVERFLOW` (kernel `wrong MsgID`, `usb_bulk_msg returned -75`); `ABORT_BULK_IN` fails with -75, `CLEAR`/`CLEAR_*_HALT` succeed but do not recover → physical replug required.
+- Plan: userspace USBTMC transport (`nusb`): own header handling, keep reading bulk-in until the IEEE block length is satisfied, drain to a short packet on abort. Needs a udev rule granting the user access to the device node (and kernel-driver detach). Screenshot operation disabled in the definition until then.

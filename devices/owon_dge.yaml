@@ -84,7 +84,12 @@ commands:
     reply: block
     timeout_ms: 10000
     max_bytes: 1048576
-    description: "IEEE 488.2 block with a 480x272 24-bit BMP (391734 B). Must be read as ONE message: split reads strand data on the device and desync USBTMC"
+    description: >-
+      IEEE 488.2 block with a 480x272 24-bit BMP (391734 B). NOT exposed as an operation:
+      the DGE sends it as raw bulk packets without valid USBTMC headers after the first
+      52 bytes, which the Linux usbtmc driver cannot read (kernel: "too small first packet",
+      "wrong MsgID", then EOVERFLOW until replug). Needs a userspace USBTMC transport that
+      reads raw bulk-in until the IEEE length is complete (bench 2026-10-16).
     source: PM p12
 classes:
   AWG:
@@ -112,4 +117,4 @@ classes:
       offset: {get: offs_q, set: offs_set, as: si}
       phase: {set: phase_set}
       symmetry: {get: symm_q, set: symm_set}
-      screenshot: {get: screenshot, as: bytes}
+      # screenshot: {get: screenshot, as: bytes}  — disabled until the userspace USBTMC transport exists
