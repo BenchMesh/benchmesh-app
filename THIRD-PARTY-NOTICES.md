@@ -50,8 +50,10 @@ BenchMesh includes or depends upon third-party software components that are dist
 
 ## Rust Dependencies
 
-Direct dependencies of the Rust crates (`crates/`). All transitive dependencies are under
-permissive licenses (MIT, Apache-2.0, BSD-3-Clause, Zlib, Unicode-3.0, BSL-1.0, 0BSD, Unlicense).
+Direct dependencies of the Rust crates (`crates/`). Transitive dependencies are under permissive
+licenses (MIT, Apache-2.0, BSD-3-Clause, Zlib, Unicode-3.0, BSL-1.0, 0BSD, Unlicense); the only
+exceptions are `serialport` (MPL-2.0, listed below) and `unescaper` (MIT OR GPL-3.0-only, used
+under MIT; pulled in by `serialport`).
 
 ### serde, serde_json
 - **License**: MIT OR Apache-2.0
@@ -72,6 +74,16 @@ permissive licenses (MIT, Apache-2.0, BSD-3-Clause, Zlib, Unicode-3.0, BSL-1.0, 
 ### cel (cel-rust)
 - **License**: MIT
 - **URL**: https://github.com/cel-rust/cel-rust
+
+### serialport (serialport-rs)
+- **License**: MPL-2.0 (file-level copyleft: the crate's own source files stay under MPL-2.0;
+  using it from MIT code is permitted; modifications to its files must be shared under MPL-2.0)
+- **URL**: https://github.com/serialport/serialport-rs
+- Used without the `libudev` feature.
+
+### libc
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/rust-lang/libc
 
 ### flate2 (test-only)
 - **License**: MIT OR Apache-2.0

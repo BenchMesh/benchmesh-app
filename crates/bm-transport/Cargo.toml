@@ -1,0 +1,15 @@
+[package]
+name = "bm-transport"
+description = "BenchMesh physical transports (serial, Linux USBTMC) implementing bm_driver::engine::Transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-devicedef = { path = "../bm-devicedef" }
+bm-driver = { path = "../bm-driver" }
+serialport.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true

@@ -41,7 +41,7 @@ commands:
     parse: [trim, number]
     description: Main display value in the selected unit; device refreshes ~1/s at rate S
     source: PM p.25-26
-  rate_q: {send: "RATE?", parse: [trim], description: "Device reports S for slow (manual: L)", source: PM p.24-25}
+  rate_q: {send: "RATE?", parse: [trim], description: "F|M|S (manual says L for slow; device uses S)", source: PM p.24-25}
   mode_set:
     send: "{mode}"
     params:
@@ -88,7 +88,8 @@ commands:
     source: PM p.12
   rate_set:
     send: "RATE {rate}"
-    params: {rate: {type: enum, values: {F: F, M: M, L: L, S: L}}}
+    params: {rate: {type: enum, values: {F: F, M: M, S: S, L: S}}}
+    description: "Device uses S for slow; the manual's L is silently ignored (bench 2026-10-16). L accepted as alias"
     reply: none
     safety: configure
     requires:

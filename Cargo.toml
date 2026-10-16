@@ -16,3 +16,5 @@ schemars = "1"
 regex = "1"
 cel = { version = "0.15", default-features = false }
 flate2 = "1"
+serialport = { version = "4.10", default-features = false }
+libc = "0.2"

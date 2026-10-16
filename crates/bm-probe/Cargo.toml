@@ -1,0 +1,14 @@
+[package]
+name = "bm-probe"
+description = "BenchMesh bench tool: verify device definitions against real instruments"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-devicedef = { path = "../bm-devicedef" }
+bm-driver = { path = "../bm-driver" }
+bm-transport = { path = "../bm-transport" }
+serde_json.workspace = true
+serde_yaml_ng.workspace = true

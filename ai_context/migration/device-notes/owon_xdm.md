@@ -198,3 +198,7 @@ Candidates to probe (read-only, in order): `RANGE?`, `CONF?`, `VOLT:DC:RANG?`, `
 | 11 | `FUNC "VOLT"` as a mode setter | `FUNC "CURR"` → `FUNC?` | state-changing |
 
 After probing, restore the bench to `CONF:VOLT:DC AUTO`, rate `S`, `TEMP:RTD:UNIT C`.
+
+## Bench verification (Rust bm-probe, 2026-10-16)
+- `RATE F` / `RATE M` / `RATE S` all work in VOLT and VOLT_AC; **`RATE L` (manual token) is silently ignored** → the device's slow token is `S`. The Python failure was only because the meter was in TEMP mode.
+- A mode change (`CONF:...`) does **not** reset the rate (stayed F after `CONF:VOLT:DC AUTO`).

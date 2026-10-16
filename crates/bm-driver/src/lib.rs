@@ -1,14 +1,18 @@
 //! BenchMesh generic instrument driver — the interpreter of `devices/*.yaml`.
 //!
-//! This crate is I/O-free: framing, parsing, expressions, wire rendering and class status
-//! are pure functions, so they are tested against the recorded wire captures. The engine
-//! that owns a transport and schedules polls builds on top of these pieces.
+//! Framing, parsing, expressions, wire rendering and class status are pure functions,
+//! tested against the recorded wire captures. [`engine::Engine`] executes a definition
+//! over a [`engine::Transport`]; [`actor::DeviceHandle`] runs one engine per thread.
+//! Real transports (serial, USBTMC) live in `bm-transport`.
 
+pub mod actor;
+pub mod engine;
 pub mod expr;
 pub mod framing;
 pub mod parse;
 pub mod pyfmt;
 pub mod si;
+pub mod sim;
 pub mod status;
 pub mod wire;
 
@@ -28,6 +32,14 @@ pub enum Error {
     BadArgument(String),
     /// The definition itself is inconsistent (should have been caught by validation).
     Definition(String),
+    /// A `requires` precondition is false (maps to HTTP 409 with the message).
+    Refused(String),
+    /// Unknown class / operation (maps to HTTP 404).
+    NotFound(String),
+    /// Identify reply matches no model of the definition.
+    UnknownModel(String),
+    /// Transport failure: the link is lost.
+    Io(String),
 }
 
 impl fmt::Display for Error {
@@ -39,6 +51,10 @@ impl fmt::Display for Error {
             Error::Expr(m) => write!(f, "expression: {m}"),
             Error::BadArgument(m) => write!(f, "bad argument: {m}"),
             Error::Definition(m) => write!(f, "definition: {m}"),
+            Error::Refused(m) => write!(f, "refused: {m}"),
+            Error::NotFound(m) => write!(f, "not found: {m}"),
+            Error::UnknownModel(idn) => write!(f, "unknown model (identify reply {idn:?})"),
+            Error::Io(m) => write!(f, "i/o: {m}"),
         }
     }
 }

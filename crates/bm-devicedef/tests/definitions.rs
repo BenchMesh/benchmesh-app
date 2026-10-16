@@ -134,7 +134,6 @@ const NOT_REPRODUCED: &[(&str, &str, &str)] = &[
     ("owon_spm", "RESistance:RANGe 2000.0\r", "Python API coerced `2E3` to float; definition sends the manual token 2E3"),
     ("owon_xdm", "SYSTem:REMote\r", "remote/local is not part of the DMM class; XDM queries work in local"),
     ("owon_xdm", "SYSTem:LOCal\r", "remote/local is not part of the DMM class; XDM queries work in local"),
-    ("owon_xdm", "RATE S\r", "manual token is L (device reports S); definition maps S to L"),
 ];
 
 /// TX events of a gzipped capture log (cheap substring filter before JSON parsing).
