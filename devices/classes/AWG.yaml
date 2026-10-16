@@ -1,0 +1,22 @@
+schema: benchmesh.class/v1
+class: AWG
+description: >
+  Function / arbitrary waveform generator, one status block per channel.
+status:
+  OUTPUT: {type: enum, values: [ON, OFF], required: true}
+  SHAPE:  {type: string, description: "Waveform (SIN, SQU, PUL, RAMP, PRN, ...)"}
+  FREQ:   {type: si, description: "Frequency (Hz)"}
+  AMPL:   {type: si, description: "Amplitude (Vpp)"}
+  OFFS:   {type: si, description: "DC offset (V)"}
+  PHASE:  {type: number, description: "Phase (degrees)"}
+  LOAD:   {type: string, description: "Load impedance in ohm, or HIGHZ"}
+  SYMM:   {type: number, description: "Ramp symmetry (%)"}
+operations:
+  output:     {get: true, set: true, value: enum, values: [ON, OFF], required: [get, set]}
+  shape:      {get: true, set: true, value: string}
+  frequency:  {get: true, set: true, value: si}
+  amplitude:  {get: true, set: true, value: si}
+  offset:     {get: true, set: true, value: si}
+  phase:      {get: true, set: true, value: number}
+  symmetry:   {get: true, set: true, value: number}
+  screenshot: {get: true, value: bytes}

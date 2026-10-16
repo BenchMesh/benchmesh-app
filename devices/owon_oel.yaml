@@ -1,0 +1,151 @@
+# Generated once from the Python manifest + hand-authored protocol description;
+# this file is now the source of truth. See ai_context/migration/device-notes/owon_oel.md.
+schema: benchmesh.device/v1
+id: owon_oel
+vendor: OWON
+family: OEL15/30 series DC electronic load
+version: 1.0.0
+sources:
+  - {doc: "OEL15_30 Series SCPI Programming Manual", pages: "11-42"}
+  - {doc: "OEL15&30 Series DC Electronic Load User Manual", pages: "14-37"}
+  - {capture: captures/20261016-201609, note: "local mode: every query empty"}
+  - {capture: captures/20261016-203514, note: "remote mode + setters"}
+models:
+  - {"name": "OEL1515", "match": "^OWON,OEL1515,", "verified": true}
+  - {"name": "OEL1520", "match": "^OWON,OEL1520,", "verified": false, "features": {"ELL": {"absolute_limits": {"current": {"unit": "A", "max": 20.0}, "power": {"unit": "W", "max": 300.0}}, "modes": {"CURR": {"setpoint": {"max": 20.0}}, "POW": {"setpoint": {"max": 300.0}}}}}}
+  - {"name": "OEL1530", "match": "^OWON,OEL1530,", "verified": false, "features": {"ELL": {"absolute_limits": {"current": {"unit": "A", "max": 30.0}, "power": {"unit": "W", "max": 300.0}}, "modes": {"CURR": {"setpoint": {"max": 30.0}}, "POW": {"setpoint": {"max": 300.0}}}}}}
+  - {"name": "OEL3015", "match": "^OWON,OEL3015,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 300.0}}, "modes": {"VOLT": {"setpoint": {"max": 300.0}}}}}}
+  - {"name": "OEL3020", "match": "^OWON,OEL3020,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 300.0}, "current": {"unit": "A", "max": 20.0}}, "modes": {"VOLT": {"setpoint": {"max": 300.0}}, "CURR": {"setpoint": {"max": 20.0}}}}}}
+  - {"name": "OEL3030", "match": "^OWON,OEL3030,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 300.0}, "current": {"unit": "A", "max": 30.0}, "power": {"unit": "W", "max": 300.0}}, "modes": {"VOLT": {"setpoint": {"max": 300.0}}, "CURR": {"setpoint": {"max": 30.0}}, "POW": {"setpoint": {"max": 300.0}}}}}}
+  - {"name": "OEL8511", "match": "^OWON,OEL8511,", "verified": false, "features": {"ELL": {"absolute_limits": {"current": {"unit": "A", "max": 20.0}, "power": {"unit": "W", "max": 200.0}}, "modes": {"CURR": {"setpoint": {"max": 20.0}}, "POW": {"setpoint": {"max": 200.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8511B", "match": "^OWON,OEL8511B,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 300.0}, "current": {"unit": "A", "max": 20.0}, "power": {"unit": "W", "max": 200.0}}, "modes": {"VOLT": {"setpoint": {"max": 300.0}}, "CURR": {"setpoint": {"max": 20.0}}, "POW": {"setpoint": {"max": 200.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8511C", "match": "^OWON,OEL8511C,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 600.0}, "current": {"unit": "A", "max": 20.0}, "power": {"unit": "W", "max": 200.0}}, "modes": {"VOLT": {"setpoint": {"max": 600.0}}, "CURR": {"setpoint": {"max": 20.0}}, "POW": {"setpoint": {"max": 200.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8512", "match": "^OWON,OEL8512,", "verified": false, "features": {"ELL": {"absolute_limits": {"current": {"unit": "A", "max": 40.0}, "power": {"unit": "W", "max": 400.0}}, "modes": {"CURR": {"setpoint": {"max": 40.0}}, "POW": {"setpoint": {"max": 400.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8512B", "match": "^OWON,OEL8512B,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 300.0}, "current": {"unit": "A", "max": 40.0}, "power": {"unit": "W", "max": 400.0}}, "modes": {"VOLT": {"setpoint": {"max": 300.0}}, "CURR": {"setpoint": {"max": 40.0}}, "POW": {"setpoint": {"max": 400.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8512C", "match": "^OWON,OEL8512C,", "verified": false, "features": {"ELL": {"absolute_limits": {"voltage": {"unit": "V", "max": 600.0}, "current": {"unit": "A", "max": 40.0}, "power": {"unit": "W", "max": 400.0}}, "modes": {"VOLT": {"setpoint": {"max": 600.0}}, "CURR": {"setpoint": {"max": 40.0}}, "POW": {"setpoint": {"max": 400.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+  - {"name": "OEL8513", "match": "^OWON,OEL8513,", "verified": false, "features": {"ELL": {"absolute_limits": {"current": {"unit": "A", "max": 40.0}, "power": {"unit": "W", "max": 500.0}}, "modes": {"CURR": {"setpoint": {"max": 40.0}}, "POW": {"setpoint": {"max": 500.0}}}}}, "note": "OEL85 series uses a different programming manual; unverified with this definition"}
+identify: idn
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+framing:
+  tx: {terminator: "\r"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 300, drain_idle_ms: 20}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+session:
+  # The load only answers measurement/setting queries in remote mode (captures);
+  # return the panel to the user on disconnect.
+  on_connect: [{cmd: remote_set, args: {on: "ON"}}]
+  on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: PM p.11}
+  rem_q:
+    send: "SYSTem:REMote?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+    description: Undocumented, answers in local mode too
+  info:
+    send: "MEAS:ALL:INFO?"
+    on_empty: "null"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p, ovp, ocp, opp]}}]
+    description: "Empty in local mode; field 6 is OPP per manual (Python called it OTP)"
+    source: PM p.39
+  inp_q: {send: "INP?", on_empty: "null", parse: [trim], description: "ON|OFF (manual says 0|1)", source: PM p.17-18}
+  func_q:
+    send: "FUNC?"
+    on_empty: "null"
+    parse: [trim, lower, {map: {current: CURR, voltage: VOLT, resistance: RES, power: POW, dynamic: DYN}}]
+    source: PM p.17
+  short_q: {send: "INP:SHOR?", on_empty: "null", parse: [trim], source: PM p.18}
+  curr_q: {send: "CURR?", on_empty: "null", parse: [trim, number], source: PM p.25}
+  volt_q: {send: "VOLT?", on_empty: "null", parse: [trim, number], source: PM p.22}
+  res_q: {send: "RES?", on_empty: "null", parse: [trim, number], source: PM p.26-27}
+  pow_q: {send: "POW?", on_empty: "null", parse: [trim, number], source: PM p.29}
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYSTem:REMote", "OFF": "SYSTem:LOCal"}}}
+    reply: none
+    safety: configure
+    source: PM p.13
+  mode_set:
+    send: "FUNC {mode}"
+    params: {mode: {type: enum, values: {CURR: CURR, VOLT: VOLT, RES: RES, POW: POW, DYN: DYN}}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON"', message: "Load is in local mode; POST remote/ON first"}
+    source: PM p.17
+  curr_set:
+    send: "CURR {a}"
+    params: {a: {type: number, min: 0, max: 40, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON" && func_q == "CURR"', message: "CC setpoint requires remote mode and MODE=CURR (the load silently ignores it otherwise)"}
+    source: PM p.25
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0, max: 600, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON" && func_q == "VOLT"', message: "CV setpoint requires remote mode and MODE=VOLT (the load silently ignores it otherwise)"}
+    source: PM p.22
+  res_set:
+    send: "RES {r}"
+    params: {r: {type: number, min: 0.05, max: 10000, format: "%.2f", unit: ohm}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON" && func_q == "RES"', message: "CR setpoint requires remote mode and MODE=RES (the load silently ignores it otherwise)"}
+    source: PM p.26-27
+  pow_set:
+    send: "POW {p}"
+    params: {p: {type: number, min: 0, max: 500, format: "%.3f", unit: W}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON" && func_q == "POW"', message: "CP setpoint requires remote mode and MODE=POW (the load silently ignores it otherwise)"}
+    source: PM p.29
+  input_set:
+    send: "INP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    requires: {expr: 'rem_q == "ON"', message: "Load is in local mode; POST remote/ON first"}
+    source: PM p.17-18
+  short_set:
+    send: "INP:SHOR {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    requires: {expr: 'rem_q == "ON"', message: "Load is in local mode; POST remote/ON first"}
+    source: PM p.18
+  sense_set:
+    send: "SYST:SENS {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    requires: {expr: 'rem_q == "ON"', message: "Load is in local mode; POST remote/ON first"}
+    source: PM p.13-14
+classes:
+  ELL:
+    channels: 1
+    ui_component: OwonOELELL
+    features: {"lock": true, "compulsory_lock": true, "parallel": false, "dynamic_list": true, "remote_sense": false, "slew_presets": ["SLOW", "NORM", "FAST"], "absolute_limits": {"voltage": {"unit": "V", "max": 150.0}, "current": {"unit": "A", "max": 15.0}, "power": {"unit": "W", "max": 150.0}}, "modes": {"CURR": {"ui_name": "Constant Current", "setpoint": {"unit": "A", "symbol": "I", "min": 0.0, "max": 15.0, "step": 0.001, "ui_step": 0.01}}, "VOLT": {"ui_name": "Constant Voltage", "setpoint": {"unit": "V", "symbol": "U", "min": 0.0, "max": 150.0, "step": 0.01, "ui_step": 0.1}}, "RES": {"ui_name": "Constant Resistance", "setpoint": {"unit": "Ω", "symbol": "R", "min": 0.05, "max": 1000, "step": 0.01, "ui_step": 0.1}}, "POW": {"ui_name": "Constant Power", "setpoint": {"unit": "W", "symbol": "P", "min": 0.5, "max": 200, "step": 0.1, "ui_step": 1.0}}, "DYN": {"ui_name": "Dynamic"}}}
+    poll:
+      - every_ms: 500
+        read: [rem_q, info, inp_q, func_q]
+    status:
+      VIN: {expr: "info == null ? null : num(info.v)", as: si}
+      IIN: {expr: "info == null ? null : num(info.i)", as: si}
+      PIN: {expr: "info == null ? null : num(info.p)", as: si}
+      INPUT: inp_q
+      MODE: func_q
+      REMOTE: rem_q
+      OVP: 'info != null && info.ovp == "ON"'
+      OCP: 'info != null && info.ocp == "ON"'
+      OPP: 'info != null && info.opp == "ON"'
+    operations:
+      mode: {set: mode_set}
+      input: {get: inp_q, set: input_set}
+      remote: {get: rem_q, set: remote_set}
+      curr: {get: curr_q, set: curr_set}
+      volt: {get: volt_q, set: volt_set}
+      res: {get: res_q, set: res_set}
+      pow: {get: pow_q, set: pow_set}
+      short: {get: short_q, set: short_set}
+      remote_compensation: {set: sense_set}

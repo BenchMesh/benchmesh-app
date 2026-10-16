@@ -1,0 +1,14 @@
+schema: benchmesh.class/v1
+class: OSC
+description: >
+  Oscilloscope, one status block per analog channel.
+status:
+  DISPLAY:  {type: enum, values: [ON, OFF], description: "Channel displayed"}
+  SCALE:    {type: si, required: true, description: "Vertical scale (V/div)"}
+  OFFSET:   {type: si, required: true, description: "Vertical offset (V)"}
+  COUPLING: {type: string, required: true, description: "AC, DC or GND"}
+  TIMEBASE: {type: si, required: true, description: "Horizontal scale (s/div)"}
+operations:
+  output:        {get: true, set: true, value: enum, values: [ON, OFF], description: "Channel display"}
+  channel_scale: {get: true, set: true, value: si}
+  screenshot:    {get: true, value: bytes}

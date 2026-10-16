@@ -1,0 +1,31 @@
+schema: benchmesh.class/v1
+class: PSU
+description: >
+  Programmable DC power supply. Status per channel in the registry under
+  PSU.status_ch<N>. Numeric readings are SI value dicts; setpoint GETs too
+  (the UI reads `.val`).
+status:
+  VOUT:   {type: si, required: true, description: "Measured output voltage (V)"}
+  IOUT:   {type: si, required: true, description: "Measured output current (A)"}
+  POUT:   {type: si, required: true, description: "Output power (W), measured or V*I"}
+  OUTPUT: {type: enum, values: [ON, OFF], required: true}
+  REMOTE: {type: enum, values: [ON, OFF], required: true, description: "Front panel locked by remote control"}
+  CV:     {type: bool, description: "Constant-voltage regulation (output on)"}
+  CC:     {type: bool, description: "Constant-current regulation (output on)"}
+  SBY:    {type: bool, description: "Standby (output off)"}
+  FAIL:   {type: bool, description: "Protection tripped / failure"}
+  OVP:    {type: bool, description: "Over-voltage protection tripped"}
+  OCP:    {type: bool, description: "Over-current protection tripped"}
+  OTP:    {type: bool, description: "Over-temperature protection tripped"}
+operations:
+  voltage:        {get: true, set: true, value: si, required: [get, set], description: "Voltage setpoint (V)"}
+  current:        {get: true, set: true, value: si, required: [get, set], description: "Current setpoint (A)"}
+  output:         {get: true, set: true, value: enum, values: [ON, OFF], required: [set]}
+  remote:         {set: true, value: enum, values: [ON, OFF], description: "Only where the instrument supports it"}
+  voltage_limit:  {get: true, set: true, value: si, description: "OVP level (V)"}
+  current_limit:  {get: true, set: true, value: si, description: "OCP level (A)"}
+  ovp:            {set: true, value: enum, values: [ON, OFF], description: "Enable over-voltage protection"}
+  ocp:            {set: true, value: enum, values: [ON, OFF], description: "Enable over-current protection"}
+  output_voltage: {get: true, value: si}
+  output_current: {get: true, value: si}
+  output_power:   {get: true, value: si}

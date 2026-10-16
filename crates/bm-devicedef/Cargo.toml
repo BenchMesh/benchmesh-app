@@ -1,0 +1,18 @@
+[package]
+name = "bm-devicedef"
+description = "BenchMesh device-definition DSL: model types, loader, validator, JSON Schema"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+schemars.workspace = true
+regex.workspace = true
+cel.workspace = true
+
+[dev-dependencies]
+flate2.workspace = true

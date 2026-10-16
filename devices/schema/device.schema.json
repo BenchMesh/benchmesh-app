@@ -1,0 +1,1203 @@
+{
+  "$defs": {
+    "Action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "type": "array"
+        }
+      ]
+    },
+    "ClassBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "default": 1,
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "features": {
+          "default": null,
+          "description": "UI feature dictionary served by `GET /instruments/{class}/{id}`."
+        },
+        "operations": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Operation"
+          },
+          "default": {},
+          "description": "API operation (partial name) -> get/set actions.",
+          "type": "object"
+        },
+        "poll": {
+          "description": "Poll groups (e.g. a fast and a slow tier). Results of all groups are CEL variables\nnamed after their commands; a slower group's values persist between its refreshes.",
+          "items": {
+            "$ref": "#/$defs/PollGroup"
+          },
+          "type": "array"
+        },
+        "status": {
+          "additionalProperties": {
+            "$ref": "#/$defs/StatusField"
+          },
+          "description": "Class status key -> value. Shorthand string = CEL expression with `as: raw`.",
+          "type": "object"
+        },
+        "ui_component": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ui_component",
+        "poll",
+        "status"
+      ],
+      "type": "object"
+    },
+    "Command": {
+      "additionalProperties": false,
+      "description": "One wire command. `send` is a template: `{ch}` channel, `{<param>}` a parameter,\n`{state.<var>}` a state variable.",
+      "properties": {
+        "before": {
+          "default": [],
+          "description": "Steps that must run first (e.g. switch mode before a mode-gated setpoint).",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "type": "array"
+        },
+        "cache_ms": {
+          "default": null,
+          "description": "Result cache lifetime.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effects": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "State updates after success: state var -> template; placeholders receive the\ncaller's (API) values, not the mapped wire text.",
+          "type": "object"
+        },
+        "gap_after_ms": {
+          "default": null,
+          "description": "Gap after this command before the next one (overrides framing timing).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "invalidates": {
+          "default": [],
+          "description": "Cached commands invalidated when this command runs.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "max_bytes": {
+          "default": null,
+          "description": "Maximum reply size (block replies).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "on_empty": {
+          "$ref": "#/$defs/OnEmpty",
+          "default": "error",
+          "description": "What an empty reply means: an error (default) or \"no value\" (e.g. local mode)."
+        },
+        "params": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Param"
+          },
+          "default": {},
+          "type": "object"
+        },
+        "parse": {
+          "default": [],
+          "description": "Reply parse pipeline, applied in order.",
+          "items": {
+            "$ref": "#/$defs/ParseStep"
+          },
+          "type": "array"
+        },
+        "reply": {
+          "$ref": "#/$defs/Reply",
+          "default": "line"
+        },
+        "requires": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Requirement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Refuse to run unless this CEL condition holds (evaluated over cached query results\nand state). Used instead of implicit side effects, e.g. mode-gated setpoints."
+        },
+        "safety": {
+          "$ref": "#/$defs/Safety",
+          "default": "query"
+        },
+        "send": {
+          "type": "string"
+        },
+        "settle_ms": {
+          "default": null,
+          "description": "After this command, polled readings are reported as null for this long\n(instrument needs time to produce valid readings, e.g. after a mode change).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "source": {
+          "default": null,
+          "description": "Manual reference, e.g. `programming manual p.12`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout_ms": {
+          "default": null,
+          "description": "Reply timeout override.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "send"
+      ],
+      "type": "object"
+    },
+    "Flow": {
+      "enum": [
+        "none",
+        "rts_cts",
+        "xon_xoff"
+      ],
+      "type": "string"
+    },
+    "Framing": {
+      "additionalProperties": false,
+      "properties": {
+        "rx": {
+          "$ref": "#/$defs/RxFraming"
+        },
+        "timing": {
+          "$ref": "#/$defs/Timing",
+          "default": {
+            "gap_after_write_ms": 0,
+            "min_gap_ms": 0
+          }
+        },
+        "tx": {
+          "$ref": "#/$defs/TxFraming"
+        }
+      },
+      "required": [
+        "tx",
+        "rx"
+      ],
+      "type": "object"
+    },
+    "LineState": {
+      "enum": [
+        "untouched",
+        "low",
+        "high"
+      ],
+      "type": "string"
+    },
+    "Link": {
+      "description": "Physical link. Exactly one variant, e.g. `link: {serial: {baud: 9600}}`.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "serial": {
+              "$ref": "#/$defs/SerialLink"
+            }
+          },
+          "required": [
+            "serial"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "usbtmc": {
+              "$ref": "#/$defs/UsbtmcLink"
+            }
+          },
+          "required": [
+            "usbtmc"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "tcp": {
+              "$ref": "#/$defs/TcpLink"
+            }
+          },
+          "required": [
+            "tcp"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Model": {
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "additionalProperties": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "default": {},
+          "description": "Per-class channel count overrides.",
+          "type": "object"
+        },
+        "features": {
+          "additionalProperties": true,
+          "default": {},
+          "description": "Per-class feature overrides merged over the class binding `features`.",
+          "type": "object"
+        },
+        "match": {
+          "description": "Regular expression matched against the identify reply.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified": {
+          "default": false,
+          "description": "Verified against real hardware (captures or bench test).",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "match"
+      ],
+      "type": "object"
+    },
+    "ModemControl": {
+      "enum": [
+        "best_effort",
+        "required"
+      ],
+      "type": "string"
+    },
+    "OnEmpty": {
+      "enum": [
+        "error",
+        "null"
+      ],
+      "type": "string"
+    },
+    "Operation": {
+      "additionalProperties": false,
+      "properties": {
+        "as": {
+          "$ref": "#/$defs/Repr",
+          "default": "raw",
+          "description": "Representation of the GET result."
+        },
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "get": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Action"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Command (or steps) answering `GET .../{op}`."
+        },
+        "set": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Action"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Command (or steps) performing `POST .../{op}/{value}`; the value binds to the\ncommand's single parameter, or to `{value}` in step args."
+        }
+      },
+      "type": "object"
+    },
+    "Param": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "default": null,
+          "description": "printf-style wire format for numbers: `%.2f`, `%.3f`, `%d`, `%g`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "default": null,
+          "description": "Computed param: CEL expression evaluated at send time over cached query results,\n`state` and `ch` (callers never supply it). With `type: enum`, the result is\nmapped through `values`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "pattern": {
+          "default": null,
+          "description": "For `type: string`: regex the value must match.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/ValueKind"
+        },
+        "unit": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "For `type: enum`: API value -> wire text.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "ParseStep": {
+      "description": "One reply transformation. Unit steps are plain strings (`- trim`); others are maps\n(`- {split: {sep: \",\", index: 2}}`).",
+      "oneOf": [
+        {
+          "enum": [
+            "lower",
+            "upper"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "trim",
+          "description": "Strip ASCII whitespace at both ends.",
+          "type": "string"
+        },
+        {
+          "const": "unquote",
+          "description": "Remove one pair of surrounding double quotes.",
+          "type": "string"
+        },
+        {
+          "const": "number",
+          "description": "Parse as a floating point number.",
+          "type": "string"
+        },
+        {
+          "const": "byte",
+          "description": "Take the first byte as an unsigned integer (binary replies).",
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Split and keep one field.",
+          "properties": {
+            "split": {
+              "additionalProperties": false,
+              "properties": {
+                "index": {
+                  "format": "uint",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "sep": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sep",
+                "index"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "split"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Split into named fields (result becomes a map).",
+          "properties": {
+            "fields": {
+              "additionalProperties": false,
+              "properties": {
+                "names": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "sep": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sep",
+                "names"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "fields"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Regex capture group (1-based; 0 = whole match).",
+          "properties": {
+            "regex": {
+              "additionalProperties": false,
+              "properties": {
+                "group": {
+                  "format": "uint",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pattern",
+                "group"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "regex"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "replace": {
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "replace"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Exact-match mapping; unmapped values are an error unless `_` is present.",
+          "properties": {
+            "map": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "map"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Bit fields from an integer: name -> `N` (one bit, bool) or `A..B` (inclusive, integer).",
+          "properties": {
+            "bits": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "bits"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Raw replies that mean \"no value\" (result becomes null).",
+          "properties": {
+            "null_if": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "null_if"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "PollGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "every_ms": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "read": {
+          "description": "Query commands run each cycle of this group (per channel when `{ch}` is used).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "every_ms",
+        "read"
+      ],
+      "type": "object"
+    },
+    "Reply": {
+      "description": "Reply framing for one command. Unit variants are plain strings, e.g. `reply: none`;\nfixed length is `reply: {bytes: 5}`.",
+      "oneOf": [
+        {
+          "const": "line",
+          "description": "One reply framed by the definition's rx framing.",
+          "type": "string"
+        },
+        {
+          "const": "none",
+          "description": "No reply: never read after this command.",
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Exactly N bytes; completes as soon as N bytes arrived (no terminator wait).",
+          "properties": {
+            "bytes": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bytes"
+          ],
+          "type": "object"
+        },
+        {
+          "const": "block",
+          "description": "IEEE 488.2 definite-length binary block (`#<n><len><data>`).",
+          "type": "string"
+        }
+      ]
+    },
+    "Repr": {
+      "description": "Wire representation of a value in API/registry payloads.",
+      "oneOf": [
+        {
+          "const": "raw",
+          "description": "Value as computed (string/number/bool).",
+          "type": "string"
+        },
+        {
+          "const": "si",
+          "description": "BenchMesh SI value dict.",
+          "type": "string"
+        },
+        {
+          "const": "bytes",
+          "description": "Binary payload served as a file.",
+          "type": "string"
+        }
+      ]
+    },
+    "Requirement": {
+      "additionalProperties": false,
+      "properties": {
+        "expr": {
+          "description": "CEL condition over cached query results (by command name), `state` and `ch`.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Error returned to the caller when the condition is false.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expr",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RxFraming": {
+      "additionalProperties": false,
+      "properties": {
+        "drain_idle_ms": {
+          "default": null,
+          "description": "After a timeout or malformed reply, discard input until the line is idle this long\n(prevents replies from shifting onto the next command).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "idle_ms": {
+          "default": null,
+          "description": "Required for `mode: idle`.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "mode": {
+          "$ref": "#/$defs/RxMode"
+        },
+        "skip_leading": {
+          "default": "",
+          "description": "Characters discarded before a reply starts (e.g. a stray `\\n` of a `\\r\\n` reply).",
+          "type": "string"
+        },
+        "strip_trailing": {
+          "default": "",
+          "description": "Characters stripped from the end of every reply.",
+          "type": "string"
+        },
+        "terminator": {
+          "default": null,
+          "description": "Required for `mode: terminator`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout_ms": {
+          "description": "Maximum time to wait for a complete reply.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "timeout_ms"
+      ],
+      "type": "object"
+    },
+    "RxMode": {
+      "description": "How a reply is delimited.",
+      "oneOf": [
+        {
+          "const": "terminator",
+          "description": "Reply ends with `terminator`.",
+          "type": "string"
+        },
+        {
+          "const": "fixed",
+          "description": "Reply length is fixed per command (`reply: {bytes: N}`); no terminator.",
+          "type": "string"
+        },
+        {
+          "const": "idle",
+          "description": "Reply ends after `idle_ms` of silence.",
+          "type": "string"
+        },
+        {
+          "const": "message",
+          "description": "Transport delivers whole messages (USBTMC).",
+          "type": "string"
+        }
+      ]
+    },
+    "Safety": {
+      "oneOf": [
+        {
+          "const": "query",
+          "description": "Reads only.",
+          "type": "string"
+        },
+        {
+          "const": "configure",
+          "description": "Changes configuration but cannot energise anything.",
+          "type": "string"
+        },
+        {
+          "const": "energize",
+          "description": "Can energise an output/input (PSU output on, load input on, AWG output on).",
+          "type": "string"
+        }
+      ]
+    },
+    "SerialLink": {
+      "additionalProperties": false,
+      "properties": {
+        "baud": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dtr": {
+          "$ref": "#/$defs/LineState",
+          "default": "untouched"
+        },
+        "flow": {
+          "$ref": "#/$defs/Flow",
+          "default": "none"
+        },
+        "format": {
+          "default": "8N1",
+          "description": "Data bits, parity, stop bits, e.g. `8N1`.",
+          "type": "string"
+        },
+        "modem_control": {
+          "$ref": "#/$defs/ModemControl",
+          "default": "best_effort",
+          "description": "Whether failing to set DTR/RTS aborts the connection."
+        },
+        "rts": {
+          "$ref": "#/$defs/LineState",
+          "default": "untouched"
+        },
+        "settle_ms": {
+          "default": 0,
+          "description": "Wait after opening the port before the first command.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "baud"
+      ],
+      "type": "object"
+    },
+    "Session": {
+      "additionalProperties": false,
+      "properties": {
+        "on_connect": {
+          "default": [],
+          "description": "Steps run after identify succeeds (e.g. enter remote mode).",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "type": "array"
+        },
+        "on_disconnect": {
+          "default": [],
+          "description": "Steps run before closing the link (e.g. return to local mode).",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "capture": {
+          "default": null,
+          "description": "Capture session directory used as ground truth.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "doc": {
+          "default": null,
+          "description": "Document title or file name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "note": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pages": {
+          "default": null,
+          "description": "Page reference, e.g. `12-14`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "StateVar": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "initial": {
+          "default": null
+        },
+        "type": {
+          "$ref": "#/$defs/ValueKind"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "StatusField": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "properties": {
+            "as": {
+              "$ref": "#/$defs/Repr",
+              "default": "raw"
+            },
+            "expr": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "expr"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Step": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cmd"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "A command invocation: `cmd_name` or `{cmd: name, args: {param: value}}`."
+    },
+    "TcpLink": {
+      "additionalProperties": false,
+      "properties": {
+        "port": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "port"
+      ],
+      "type": "object"
+    },
+    "Timing": {
+      "additionalProperties": false,
+      "properties": {
+        "gap_after_write_ms": {
+          "default": 0,
+          "description": "Gap after a command that produces no reply (setters), before the next command.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "min_gap_ms": {
+          "default": 0,
+          "description": "Minimum gap between the end of one exchange and the next command.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "TxFraming": {
+      "additionalProperties": false,
+      "properties": {
+        "terminator": {
+          "description": "Appended to every command (may be empty). Escapes: `\\r`, `\\n`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "terminator"
+      ],
+      "type": "object"
+    },
+    "UsbtmcLink": {
+      "additionalProperties": false,
+      "properties": {
+        "pid": {
+          "default": null,
+          "description": "USB product id (hex), used for discovery.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vid": {
+          "default": null,
+          "description": "USB vendor id (hex), used for discovery.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "ValueKind": {
+      "oneOf": [
+        {
+          "enum": [
+            "number",
+            "integer",
+            "bool",
+            "string",
+            "enum"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "si",
+          "description": "BenchMesh SI value dict `{si:{number,symbol?,prefix?}, sci, val}` (classes only).",
+          "type": "string"
+        },
+        {
+          "const": "bytes",
+          "description": "Binary payload (e.g. a screenshot), served as a file (classes only).",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One device family (e.g. all TENMA 72-series PSUs sharing a protocol).",
+  "properties": {
+    "classes": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ClassBinding"
+      },
+      "description": "Mapping of this device onto instrument classes (PSU, DMM, ...).",
+      "type": "object"
+    },
+    "commands": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Command"
+      },
+      "type": "object"
+    },
+    "enabled": {
+      "default": true,
+      "description": "Hide work-in-progress definitions from the configuration UI.",
+      "type": "boolean"
+    },
+    "family": {
+      "type": "string"
+    },
+    "framing": {
+      "$ref": "#/$defs/Framing"
+    },
+    "id": {
+      "description": "Unique definition id, also the config `driver` key (e.g. `tenma_72`).",
+      "type": "string"
+    },
+    "identify": {
+      "description": "Command used to identify the device on connect (its reply is matched against `models`).",
+      "type": "string"
+    },
+    "link": {
+      "$ref": "#/$defs/Link"
+    },
+    "models": {
+      "description": "Supported models, matched against the identify reply.",
+      "items": {
+        "$ref": "#/$defs/Model"
+      },
+      "type": "array"
+    },
+    "schema": {
+      "description": "Must be `benchmesh.device/v1`.",
+      "type": "string"
+    },
+    "session": {
+      "$ref": "#/$defs/Session",
+      "default": {
+        "on_connect": [],
+        "on_disconnect": []
+      }
+    },
+    "sources": {
+      "default": [],
+      "description": "Provenance: manuals (with pages) and captures this definition was derived from.",
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "type": "array"
+    },
+    "state": {
+      "additionalProperties": {
+        "$ref": "#/$defs/StateVar"
+      },
+      "default": {},
+      "description": "Client-side state for values the device cannot report (shadow state).",
+      "type": "object"
+    },
+    "vendor": {
+      "type": "string"
+    },
+    "version": {
+      "description": "Definition version (semver).",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "vendor",
+    "family",
+    "version",
+    "models",
+    "identify",
+    "link",
+    "framing",
+    "commands",
+    "classes"
+  ],
+  "title": "DeviceDef",
+  "type": "object"
+}

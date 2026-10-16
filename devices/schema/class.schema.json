@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "Direction": {
+      "enum": [
+        "get",
+        "set"
+      ],
+      "type": "string"
+    },
+    "OpSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "get": {
+          "default": false,
+          "type": "boolean"
+        },
+        "required": {
+          "default": [],
+          "description": "Directions every device binding must provide, e.g. `[get, set]` or `[set]`.",
+          "items": {
+            "$ref": "#/$defs/Direction"
+          },
+          "type": "array"
+        },
+        "set": {
+          "default": false,
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/ValueKind",
+          "description": "Value type of the POST parameter / GET result."
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "type": "object"
+    },
+    "StatusSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "required": {
+          "default": false,
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/$defs/ValueKind"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "ValueKind": {
+      "oneOf": [
+        {
+          "enum": [
+            "number",
+            "integer",
+            "bool",
+            "string",
+            "enum"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "si",
+          "description": "BenchMesh SI value dict `{si:{number,symbol?,prefix?}, sci, val}` (classes only).",
+          "type": "string"
+        },
+        {
+          "const": "bytes",
+          "description": "Binary payload (e.g. a screenshot), served as a file (classes only).",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Contract of an instrument class (what the UI/API rely on).",
+  "properties": {
+    "class": {
+      "description": "3-letter class code.",
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "operations": {
+      "additionalProperties": {
+        "$ref": "#/$defs/OpSpec"
+      },
+      "default": {},
+      "type": "object"
+    },
+    "schema": {
+      "description": "Must be `benchmesh.class/v1`.",
+      "type": "string"
+    },
+    "status": {
+      "additionalProperties": {
+        "$ref": "#/$defs/StatusSpec"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "class",
+    "description",
+    "status"
+  ],
+  "title": "ClassDef",
+  "type": "object"
+}

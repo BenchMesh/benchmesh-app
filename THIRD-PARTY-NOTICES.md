@@ -48,6 +48,37 @@ BenchMesh includes or depends upon third-party software components that are dist
 
 ---
 
+## Rust Dependencies
+
+Direct dependencies of the Rust crates (`crates/`). All transitive dependencies are under
+permissive licenses (MIT, Apache-2.0, BSD-3-Clause, Zlib, Unicode-3.0, BSL-1.0, 0BSD, Unlicense).
+
+### serde, serde_json
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/serde-rs/serde, https://github.com/serde-rs/json
+
+### serde_yaml_ng
+- **License**: MIT
+- **URL**: https://github.com/acatton/serde-yaml-ng
+
+### schemars
+- **License**: MIT
+- **URL**: https://github.com/GREsau/schemars
+
+### regex
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/rust-lang/regex
+
+### cel (cel-rust)
+- **License**: MIT
+- **URL**: https://github.com/cel-rust/cel-rust
+
+### flate2 (test-only)
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/rust-lang/flate2-rs
+
+---
+
 ## Node.js Dependencies
 
 ### Node-RED

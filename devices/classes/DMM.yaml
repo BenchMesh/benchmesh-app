@@ -1,0 +1,18 @@
+schema: benchmesh.class/v1
+class: DMM
+description: >
+  Digital multimeter. MODE values are the keys of the definition's
+  `features.modes`; RANGE values come from `features.RANGe[MODE]`.
+status:
+  MEAS:     {type: si, required: true, description: "Main reading in the base unit of MODE; null while settling or on overload"}
+  MODE:     {type: string, required: true, description: "Active function (a features.modes key)"}
+  RANGE:    {type: string, description: "Active range value or AUTO; null when unknown"}
+  OVERLOAD: {type: bool, description: "Reading exceeds the range (display OL)"}
+operations:
+  mode:        {set: true, value: string, required: [set], description: "Select function (features.modes key)"}
+  range:       {set: true, value: string, description: "Range value from features.RANGe[MODE] or AUTO"}
+  measurement: {get: true, value: si}
+  function:    {get: true, value: string}
+  temp_sensor: {set: true, value: string, description: "Temperature sensor (features.RANGe.TEMP.Sensor)"}
+  temp_scale:  {set: true, value: string, description: "Temperature unit symbol C/F/K"}
+  rate:        {get: true, set: true, value: string, description: "Measurement rate F/M/S(L)"}

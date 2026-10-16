@@ -1,0 +1,164 @@
+# Generated once from the Python manifest + hand-authored protocol description;
+# this file is now the source of truth. See ai_context/migration/device-notes/owon_spm.md.
+schema: benchmesh.device/v1
+id: owon_spm
+vendor: OWON
+family: SPM series power supply + multimeter (one serial port)
+version: 1.0.0
+sources:
+  - {doc: "SPM Series programming manual", pages: "3-19"}
+  - {doc: "SPM Series User Manual", pages: "9-26"}
+  - {capture: captures/20261016-201609, note: "read-only"}
+  - {capture: captures/20261016-203514, note: "setters"}
+models:
+  - {"name": "SPM3103", "match": "^OWON,SPM3103,", "verified": true}
+identify: idn
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+framing:
+  tx: {terminator: "\r"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 300, drain_idle_ms: 20}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable (no SYST:REM?); tracks our own remote/local commands"}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: PM p6}
+  info:
+    send: "MEAS:ALL:INFO?"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p, ovp, ocp, otp, mode]}}]
+    description: "V,I,P measured; OVP/OCP/OTP fault ON|OFF; mode 0 standby, 1 CV, 2 CC, 3 failure"
+    source: PM p9
+  conf:
+    send: "CONFigure?"
+    parse: [trim, {fields: {sep: " ", names: [func, value]}}]
+    description: "e.g. 'VOLT:DC +1.0000E-04', 'RES OL' (overload); '+0.0000E-308' is a plain zero"
+    source: PM p13
+  meas_value:
+    send: "CONFigure?"
+    parse: [trim, {split: {sep: " ", index: 1}}, {null_if: ["OL"]}, number]
+    source: PM p13
+  meas_func:
+    send: "CONFigure?"
+    parse: [trim, {split: {sep: " ", index: 0}}]
+    source: PM p13
+  meas_v: {send: "MEAS:VOLT?", parse: [trim, number], source: PM p7}
+  meas_i: {send: "MEAS:CURR?", parse: [trim, number], source: PM p7-8}
+  meas_p: {send: "MEAS:POW?", parse: [trim, number], source: PM p8}
+  volt_q: {send: "VOLT?", parse: [trim, number], source: PM p11}
+  curr_q: {send: "CURR?", parse: [trim, number], source: PM p10}
+  vlim_q: {send: "VOLT:LIM?", parse: [trim, number], source: PM p11}
+  clim_q: {send: "CURR:LIM?", parse: [trim, number], source: PM p10-11}
+  outp_q: {send: "OUTP?", parse: [trim], description: "ON|OFF (manual says 1|0)", source: PM p10}
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0, max: 31, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    source: PM p11
+  curr_set:
+    send: "CURR {a}"
+    params: {a: {type: number, min: 0, max: 10.1, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    source: PM p10
+  vlim_set:
+    send: "VOLT:LIM {v}"
+    params: {v: {type: number, min: 0.1, max: 32, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    source: PM p11
+  clim_set:
+    send: "CURR:LIM {a}"
+    params: {a: {type: number, min: 0.1, max: 10.2, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    source: PM p10
+  outp_set:
+    send: "OUTP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: PM p9-10
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYST:REM", "OFF": "SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+    source: PM p12
+  func_set:
+    send: "FUNCtion:{fn}"
+    params:
+      fn:
+        type: enum
+        values: {VOLT_DC: "VOLTage:DC", VOLT_AC: "VOLTage:AC", CURR_DC: "CURR:DC", CURR_AC: "CURR:AC",
+                 RES: "RESistance", CAP: "CAPacitance", DIOD: "DIODe", CONT: "CONTinuity"}
+    reply: none
+    safety: configure
+    settle_ms: 1000
+    source: PM p13-15
+  range_set:
+    send: "{fn}:RANGe{range}"
+    params:
+      fn:
+        type: enum
+        from: meas_func
+        values: {"VOLT:DC": "VOLTage:DC", "VOLT:AC": "VOLTage:AC", "CURR:DC": "CURRent:DC",
+                 "CURR:AC": "CURRent:AC", "RES": "RESistance"}
+      range:
+        type: enum
+        values: {"AUTO": ":AUTO ON", "MIN": " MIN", "MAX": " MAX", "200E-3": " 200E-3", "2": " 2",
+                 "10": " 10", "20": " 20", "200": " 200", "750": " 750", "1000": " 1000",
+                 "2E3": " 2E3", "20E3": " 20E3", "200E3": " 200E3", "2E6": " 2E6"}
+    reply: none
+    safety: configure
+    settle_ms: 1000
+    description: "AUTO uses :RANGe:AUTO ON (the Python driver sent the invalid 'RANGe AUTO'); CAP has no manual range"
+    source: PM p16-18
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericOWONPSU
+    features: {"lock": false, "compulsory_lock": false, "memory_banks": 4, "memory_storage": ["V", "A", "OVP", "OCP"], "absolute_limits": {"voltage": {"display": "V", "max": 30.0}, "current": {"display": "A", "max": 10.0}, "power": {"display": "W", "max": 300.0}}, "modes": {"CC": {"setpoint": {"type": "number", "display": "A", "min": 0.01, "max": 10.1, "step": 0.001, "ui_step": 0.001}, "protection": {"OCP": {"type": "number", "display": "A", "min": 0.1, "max": 10.2, "step": 0.001}}}, "CV": {"setpoint": {"type": "number", "display": "V", "min": 0.01, "max": 31.0, "step": 0.01, "ui_step": 0.01}, "protection": {"OVP": {"type": "number", "display": "V", "min": 0.1, "max": 32, "step": 0.01}}}}}
+    poll:
+      - every_ms: 500
+        read: [info]
+    status:
+      VOUT: {expr: "num(info.v)", as: si}
+      IOUT: {expr: "num(info.i)", as: si}
+      POUT: {expr: "num(info.p)", as: si}
+      OUTPUT: 'info.mode == "1" || info.mode == "2" ? "ON" : "OFF"'
+      REMOTE: state.remote
+      CV: 'info.mode == "1"'
+      CC: 'info.mode == "2"'
+      SBY: 'info.mode == "0"'
+      FAIL: 'info.mode == "3" || info.ovp == "ON" || info.ocp == "ON" || info.otp == "ON"'
+      OVP: 'info.ovp == "ON"'
+      OCP: 'info.ocp == "ON"'
+      OTP: 'info.otp == "ON"'
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      voltage_limit: {get: vlim_q, set: vlim_set, as: si}
+      current_limit: {get: clim_q, set: clim_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: remote_set}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}
+  DMM:
+    channels: 1
+    ui_component: GenericDMM
+    features: {"modes": {"VOLT_DC": {"unit": "V", "symbol": "U", "note": "DC", "techname": "VOLT:DC", "ui_name": "Voltage DC", "ui_component": "GenericRange"}, "VOLT_AC": {"unit": "V", "symbol": "U", "note": "AC", "techname": "VOLT:AC", "ui_name": "Voltage AC", "ui_component": "GenericRange"}, "CURR_DC": {"unit": "A", "symbol": "I", "note": "DC", "techname": "CURR:DC", "ui_name": "Current DC", "ui_component": "GenericRange"}, "CURR_AC": {"unit": "A", "symbol": "I", "note": "AC", "techname": "CURR:AC", "ui_name": "Current AC", "ui_component": "GenericRange"}, "RES": {"unit": "Ω", "symbol": "R", "techname": "RES", "ui_name": "Resistance", "ui_component": "GenericRange"}, "CAP": {"unit": "F", "symbol": "C", "techname": "CAP", "ui_name": "Capacitance", "ui_component": "GenericRange"}, "DIOD": {"unit": "V", "symbol": "D", "techname": "DIOD", "ui_name": "Diode"}, "CONT": {"unit": "Ω", "symbol": "R", "note": "buzzer", "techname": "CONT", "ui_name": "Continuity"}}, "hold": true, "delta": true, "RANGe": {"CAP": [{"value": "AUTO", "display": "AUTO"}, {"value": "2E-9", "display": "2nF"}, {"value": "20E-9", "display": "20nF"}, {"value": "200E-9", "display": "200nF"}, {"value": "2E-6", "display": "2µF"}, {"value": "20E-6", "display": "20µF"}, {"value": "200E-6", "display": "200µF"}, {"value": "10E-3", "display": "10mF"}], "RES": [{"value": "AUTO", "display": "AUTO"}, {"value": "MIN", "display": "MINimum"}, {"value": "MAX", "display": "MAXimum"}, {"value": "200", "display": "200Ω"}, {"value": "2E3", "display": "2KΩ"}, {"value": "20E3", "display": "20KΩ"}, {"value": "200E3", "display": "200KΩ"}, {"value": "2E6", "display": "2MΩ"}, {"value": "20E6", "display": "20MΩ"}, {"value": "100E6", "display": "100MΩ"}], "CURR_AC": [{"value": "AUTO", "display": "AUTO"}, {"value": "MIN", "display": "MINimum"}, {"value": "MAX", "display": "MAXimum"}, {"value": "200E-3", "display": "200mA"}, {"value": "10", "display": "10A"}], "CURR_DC": [{"value": "AUTO", "display": "AUTO"}, {"value": "MIN", "display": "MINimum"}, {"value": "MAX", "display": "MAXimum"}, {"value": "200E-3", "display": "200mA"}, {"value": "10", "display": "10A"}], "VOLT_AC": [{"value": "AUTO", "display": "AUTO"}, {"value": "MIN", "display": "MINimum"}, {"value": "MAX", "display": "MAXimum"}, {"value": "200E-3", "display": "200mV"}, {"value": "2", "display": "2V"}, {"value": "20", "display": "20V"}, {"value": "200", "display": "200V"}, {"value": "750", "display": "750V"}], "VOLT_DC": [{"value": "AUTO", "display": "AUTO"}, {"value": "MIN", "display": "MINimum"}, {"value": "MAX", "display": "MAXimum"}, {"value": "200E-3", "display": "200mV"}, {"value": "2", "display": "2V"}, {"value": "20", "display": "20V"}, {"value": "200", "display": "200V"}, {"value": "1000", "display": "1000V"}]}}
+    poll:
+      - every_ms: 500
+        read: [conf]
+    status:
+      MEAS: {expr: "num(conf.value)", as: si}
+      MODE: '{"VOLT:DC": "VOLT_DC", "VOLT:AC": "VOLT_AC", "CURR:DC": "CURR_DC", "CURR:AC": "CURR_AC", "RES": "RES", "CAP": "CAP", "DIOD": "DIOD", "CONT": "CONT"}[conf.func]'
+      OVERLOAD: 'conf.value == "OL"'
+    operations:
+      mode: {set: func_set}
+      range: {set: range_set}
+      measurement: {get: meas_value, as: si}
+      function: {get: meas_func}

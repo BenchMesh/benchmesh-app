@@ -49,3 +49,26 @@ jobs:
         working-directory: benchmesh-serial-service/frontend
         run: |
           npx vitest run --reporter=dot
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Rust tests (incl. device definitions vs. wire captures)
+        run: cargo test --workspace
+
+      - name: Validate device definitions
+        run: cargo run -q -p bm-devicedef -- validate devices

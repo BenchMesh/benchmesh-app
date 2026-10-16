@@ -169,3 +169,6 @@ captures/*/_datadir/
 captures/*/*.transcript.txt
 captures/*/*.jsonl
 captures/service.log
+
+# Rust build output
+/target
