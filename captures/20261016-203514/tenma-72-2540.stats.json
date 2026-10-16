@@ -1,0 +1,365 @@
+{
+  "*IDN?": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "TENMA 72-2540 V2.1",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 18,
+      "median": 18,
+      "max": 18
+    },
+    "first_byte_latency_ms": {
+      "min": 1002.87,
+      "median": 1002.87,
+      "max": 1002.87
+    },
+    "exchange_ms": {
+      "min": 1003.05,
+      "median": 1003.05,
+      "max": 1003.05
+    },
+    "gap_before_ms": null,
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "query_identify/query_identify": 1
+    }
+  },
+  "IOUT1?": {
+    "count": 164,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "0.000",
+        164
+      ]
+    ],
+    "rx_len": {
+      "min": 5,
+      "median": 5.0,
+      "max": 5
+    },
+    "first_byte_latency_ms": {
+      "min": 1000.58,
+      "median": 1005.2,
+      "max": 1020.61
+    },
+    "exchange_ms": {
+      "min": 1000.83,
+      "median": 1005.58,
+      "max": 1023.62
+    },
+    "gap_before_ms": {
+      "min": 0.28,
+      "median": 0.45,
+      "max": 7.72
+    },
+    "end": {
+      "timeout": 164
+    },
+    "ops": {
+      "poll_status/_query_output_current": 82,
+      "poll_status/query_output_current": 82
+    }
+  },
+  "ISET1:<arg>": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.73,
+      "median": 1005.82,
+      "max": 1005.92
+    },
+    "gap_before_ms": {
+      "min": 0.72,
+      "median": 0.87,
+      "max": 1.02
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_current/set_current": 2
+    }
+  },
+  "ISET1?": {
+    "count": 2,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "0.500 ",
+        1
+      ],
+      [
+        "0.988 ",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 6,
+      "median": 6.0,
+      "max": 6
+    },
+    "first_byte_latency_ms": {
+      "min": 1004.74,
+      "median": 1004.8,
+      "max": 1004.85
+    },
+    "exchange_ms": {
+      "min": 1005.11,
+      "median": 1005.19,
+      "max": 1005.27
+    },
+    "gap_before_ms": {
+      "min": 0.91,
+      "median": 1.27,
+      "max": 1.63
+    },
+    "end": {
+      "timeout": 2
+    },
+    "ops": {
+      "query_current/query_current": 2
+    }
+  },
+  "OUT0": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1007.81,
+      "median": 1007.81,
+      "max": 1007.81
+    },
+    "gap_before_ms": {
+      "min": 1.02,
+      "median": 1.02,
+      "max": 1.02
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "OUT1": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.99,
+      "median": 1005.99,
+      "max": 1005.99
+    },
+    "gap_before_ms": {
+      "min": 0.74,
+      "median": 0.74,
+      "max": 0.74
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "STATUS?": {
+    "count": 86,
+    "reply_variants": 3,
+    "top_replies": [
+      [
+        "\\x11",
+        66
+      ],
+      [
+        "\\x10",
+        16
+      ],
+      [
+        "Q",
+        4
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1.0,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 1001.87,
+      "median": 1005.19,
+      "max": 1018.82
+    },
+    "exchange_ms": {
+      "min": 1002.27,
+      "median": 1005.64,
+      "max": 2010.36
+    },
+    "gap_before_ms": {
+      "min": 0.44,
+      "median": 0.59,
+      "max": 1.41
+    },
+    "end": {
+      "timeout": 86
+    },
+    "ops": {
+      "poll_status/query_status": 82,
+      "query_status/query_status": 4
+    }
+  },
+  "VOUT1?": {
+    "count": 164,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "00.00",
+        158
+      ],
+      [
+        "05.00",
+        6
+      ]
+    ],
+    "rx_len": {
+      "min": 5,
+      "median": 5.0,
+      "max": 5
+    },
+    "first_byte_latency_ms": {
+      "min": 1001.4,
+      "median": 1005.25,
+      "max": 1020.04
+    },
+    "exchange_ms": {
+      "min": 1001.7,
+      "median": 1005.64,
+      "max": 1020.41
+    },
+    "gap_before_ms": {
+      "min": 0.26,
+      "median": 3.09,
+      "max": 89.77
+    },
+    "end": {
+      "timeout": 164
+    },
+    "ops": {
+      "poll_status/_query_output_voltage": 82,
+      "poll_status/query_output_voltage": 82
+    }
+  },
+  "VSET1:<arg>": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1004.97,
+      "median": 1005.29,
+      "max": 1005.99
+    },
+    "gap_before_ms": {
+      "min": 0.87,
+      "median": 0.91,
+      "max": 1.71
+    },
+    "end": {
+      "no_reply": 3
+    },
+    "ops": {
+      "set_voltage/set_voltage": 3
+    }
+  },
+  "VSET1?": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "05.00",
+        2
+      ],
+      [
+        "04.94",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 5,
+      "median": 5,
+      "max": 5
+    },
+    "first_byte_latency_ms": {
+      "min": 1004.5,
+      "median": 1004.8,
+      "max": 1005.27
+    },
+    "exchange_ms": {
+      "min": 1004.79,
+      "median": 1005.19,
+      "max": 1005.75
+    },
+    "gap_before_ms": {
+      "min": 0.75,
+      "median": 0.9,
+      "max": 0.99
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_voltage/query_voltage": 3
+    }
+  }
+}

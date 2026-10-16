@@ -105,9 +105,10 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 - [x] Phase 1: capture tooling built (`scripts/wire_capture/`, see its README) and validated: `scripts/wire_capture/selftest.sh` → SELFTEST PASS
 - [x] Phase 1: bench capture, read-only (session `captures/20261016-201609`, config `captures/bench-config.yaml`): Tenma 72-2540, SPM3103, XDM1241, OEL1515, DGE2070. Rigol DHO800 is **not on the bench**.
 - [x] Phase 1: Tenma query timing measured (fixed-length framing, no inter-query gap needed)
-- [ ] Phase 1: OEL — confirm it needs remote mode (`SYST:REM`) before measurement queries answer → **needs user OK (state-changing)**, then re-capture OEL
-- [ ] Phase 1: setter capture with user-approved safe values (`exercise.py --setters`) — also measure Tenma setter min-gap
-- [ ] Phase 1: DGE screenshot binary-block capture (call `query_screenshot` directly, not via the GET API)
+- [x] Phase 1: OEL remote-mode hypothesis confirmed (measurement queries answer only after `SYST:REM`); OEL polled + exercised in session `captures/20261016-203514`
+- [x] Phase 1: setter capture, all 5 devices (`captures/setters-bench.yaml` → session `captures/20261016-203514`); bench restored to pre-capture state (verified by read-back)
+- [x] Phase 1: Tenma setter timing/format probed
+- [~] Phase 1: DGE screenshot — failure mode captured (`captures/20261016-204256-owon-dge2070-query_screenshot`); **DGE is wedged (USBTMC bTag desync) and needs a physical replug**, then verify the single-large-read fix
 - [x] Phase 2: as-is class contract extracted → `ai_context/migration/CLASS_CONTRACT.md`
 - [ ] Phase 2: class schemas written (`devices/classes/`) — decide fixes for ⚠️ items in CLASS_CONTRACT.md
 - [ ] Phase 2: DSL JSON Schema v0
@@ -133,8 +134,8 @@ To re-run a capture: stop the normal service, then
 ## Open questions
 
 1. ~~Which instruments are on the bench?~~ → Tenma, SPM3103, XDM1241, OEL1515, DGE2070 (no Rigol). User's `~/.benchmesh/config.yaml` lists only Tenma + DGE and points DGE at `/dev/usbtmc0` (actual: `/dev/usbtmc2`).
-2. Which setter values are safe to exercise per device (e.g. PSU output into what load)?
-3. OK to send `SYST:REM` / `SYST:LOC` to the OEL to confirm the remote-mode hypothesis?
+2. ~~Safe setter values?~~ → user: nothing is connected to any instrument, all setters safe.
+3. ~~OK to send `SYST:REM` to the OEL?~~ → yes, done.
 4. Keep the Rigol DHO800 definition without hardware (port from code only), or drop it until a scope is available?
 
 ## Bugs found in Python (do not replicate in Rust; reference only)
@@ -169,3 +170,12 @@ To re-run a capture: stop the normal service, then
   | DGE2070 (USBTMC) | one message per read, ends `\n` | works | 13–56 ms | same |
 
   Other facts: Tenma STATUS idle = `0x10` (beep on, output off); 1 STATUS no-reply in 97. Tenma inter-query gap 0 ms → 0/30 failures (queries wait for the full fixed-length reply first). Tenma poll still sends 5 queries/cycle on real hardware (inverted cache). SPM `CONFigure?` → `VOLT:DC +0.0000E-308` (sentinel value — needs a definition rule). SPM `MEAS:ALL:INFO?` → 7 fields `V,I,P,OVP,OCP,OTP,mode`. XDM polled every 100 ms incl. `*IDN?` each poll (4 596 polls). Projected Rust gains from correct framing: Tenma poll ≈5 s → ≈0.1 s; SPM poll ≈2 s → ≈20 ms.
+- **2026-10-16** — OEL + setter captures (session `captures/20261016-203514`):
+  - **OEL needs remote mode:** in local mode every measurement/setting query returns a bare `\n`; after `SYST:REM` all answer in ~10–50 ms. `MEAS:ALL:INFO?` = 6 fields `V,I,P,OVP,OCP,OTP` (SPM has 7). `INP?` → `ON`/`OFF`. `FUNC?` → lowercase `current|voltage|resistance|power`.
+  - **OEL setpoints are mode-gated:** `VOLT`/`RES`/`POW` are silently ignored unless `FUNC` is in that mode → the definition must switch mode first (or reject).
+  - **No device replies to any setter** (Tenma, SPM, XDM, OEL, DGE). Python reads after every setter → +1 s each; on the XDM that read once consumed the next `*IDN?` reply (reply stream shifted by one). Rust: `reply: none` for setters.
+  - **Tenma setters:** need ≥50 ms before the next command (20 ms → setter lost 10/10). Accept `5`, `5.0`, `05.10`; `12.345` and `1.5e1` are ignored → format setpoints `%.2f` (voltage) / `%.3f` (current). `OCP`/`OVP` never sent (Python `is` bug, confirmed on wire).
+  - **XDM:** `RATE F`/`RATE M` have no effect (read-back stays `S`) → check command syntax in the XDM programming manual. TEMP measurement works (≈20 °C).
+  - **SPM:** RES/CONT on open circuit → `measurement` None (overload reply needs a rule); `+0.0000E-308` sentinel seen again after range changes.
+  - **DGE screenshot:** device sends a valid IEEE block `#6391734` + BMP (391 734 B). Python reads a 12-byte header then 64 KiB chunks → Linux usbtmc ends the transfer after the short read; rest of the image is stranded on the device; subsequent reads desync (`wrong bTag`, then `EOVERFLOW`/-75 on every read, even `*IDN?`). Device clear ioctl does not recover; USB reset needs root → **physical replug required**. Rust: read a USBTMC message with one large read (or proper USBTMC framing via nusb); never split reads of a message.
+  - Reference PDFs (programming + user manuals for every driver) live outside the repo in `/home/marek/project/BenchMeshDOC/<driver>/doc/` — the test corpus for the future PDF → definition pipeline.

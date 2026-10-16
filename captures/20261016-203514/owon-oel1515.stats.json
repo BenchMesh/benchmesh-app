@@ -1,0 +1,917 @@
+{
+  "*IDN?\\r": {
+    "count": 6,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "OWON,OEL1515,25130087,FV:V1.1.0\\n",
+        6
+      ]
+    ],
+    "rx_len": {
+      "min": 32,
+      "median": 32.0,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 1.47,
+      "median": 7.49,
+      "max": 16.53
+    },
+    "exchange_ms": {
+      "min": 1018.09,
+      "median": 1028.25,
+      "max": 1036.15
+    },
+    "gap_before_ms": {
+      "min": 1.0,
+      "median": 2213.02,
+      "max": 4561.76
+    },
+    "end": {
+      "timeout": 6
+    },
+    "ops": {
+      "query_identify/query_identify": 6
+    }
+  },
+  "CURR <arg>": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.07,
+      "median": 1006.43,
+      "max": 1007.79
+    },
+    "gap_before_ms": {
+      "min": 0.94,
+      "median": 1.07,
+      "max": 1.2
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_curr/set_curr": 2
+    }
+  },
+  "CURR?\\r": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "1.000\\n",
+        2
+      ],
+      [
+        "0.500\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 6,
+      "median": 6,
+      "max": 6
+    },
+    "first_byte_latency_ms": {
+      "min": 10.48,
+      "median": 11.18,
+      "max": 20.19
+    },
+    "exchange_ms": {
+      "min": 1017.39,
+      "median": 1018.42,
+      "max": 1029.06
+    },
+    "gap_before_ms": {
+      "min": 0.8,
+      "median": 0.88,
+      "max": 1.73
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_curr/query_curr": 3
+    }
+  },
+  "FUNC CURR\\r": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1004.8,
+      "median": 1004.88,
+      "max": 1004.96
+    },
+    "gap_before_ms": {
+      "min": 0.83,
+      "median": 0.89,
+      "max": 0.95
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_mode/set_mode": 2
+    }
+  },
+  "FUNC POW\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1002.13,
+      "median": 1002.13,
+      "max": 1002.13
+    },
+    "gap_before_ms": {
+      "min": 0.73,
+      "median": 0.73,
+      "max": 0.73
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_mode/set_mode": 1
+    }
+  },
+  "FUNC RES\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.7,
+      "median": 1005.7,
+      "max": 1005.7
+    },
+    "gap_before_ms": {
+      "min": 1.09,
+      "median": 1.09,
+      "max": 1.09
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_mode/set_mode": 1
+    }
+  },
+  "FUNC VOLT\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1007.35,
+      "median": 1007.35,
+      "max": 1007.35
+    },
+    "gap_before_ms": {
+      "min": 1.66,
+      "median": 1.66,
+      "max": 1.66
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_mode/set_mode": 1
+    }
+  },
+  "FUNC?\\r": {
+    "count": 12,
+    "reply_variants": 4,
+    "top_replies": [
+      [
+        "current\\n",
+        6
+      ],
+      [
+        "voltage\\n",
+        2
+      ],
+      [
+        "resistance\\n",
+        2
+      ],
+      [
+        "power\\n",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 6,
+      "median": 8.0,
+      "max": 11
+    },
+    "first_byte_latency_ms": {
+      "min": 11.17,
+      "median": 15.92,
+      "max": 19.7
+    },
+    "exchange_ms": {
+      "min": 1018.05,
+      "median": 1027.54,
+      "max": 1039.6
+    },
+    "gap_before_ms": {
+      "min": 0.45,
+      "median": 0.74,
+      "max": 1.21
+    },
+    "end": {
+      "timeout": 12
+    },
+    "ops": {
+      "poll_status/query_mode": 6,
+      "query_mode/query_mode": 6
+    }
+  },
+  "INP OFF\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1008.74,
+      "median": 1008.74,
+      "max": 1008.74
+    },
+    "gap_before_ms": {
+      "min": 0.9,
+      "median": 0.9,
+      "max": 0.9
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_input/set_input": 1
+    }
+  },
+  "INP ON\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1004.83,
+      "median": 1004.83,
+      "max": 1004.83
+    },
+    "gap_before_ms": {
+      "min": 1.12,
+      "median": 1.12,
+      "max": 1.12
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_input/set_input": 1
+    }
+  },
+  "INP:SHOR OFF\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1006.38,
+      "median": 1006.38,
+      "max": 1006.38
+    },
+    "gap_before_ms": {
+      "min": 0.95,
+      "median": 0.95,
+      "max": 0.95
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_short/set_short": 1
+    }
+  },
+  "INP:SHOR ON\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.93,
+      "median": 1005.93,
+      "max": 1005.93
+    },
+    "gap_before_ms": {
+      "min": 0.85,
+      "median": 0.85,
+      "max": 0.85
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_short/set_short": 1
+    }
+  },
+  "INP:SHOR?\\r": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "OFF\\n",
+        2
+      ],
+      [
+        "ON\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 3,
+      "median": 4,
+      "max": 4
+    },
+    "first_byte_latency_ms": {
+      "min": 2.79,
+      "median": 8.47,
+      "max": 11.09
+    },
+    "exchange_ms": {
+      "min": 1008.29,
+      "median": 1018.96,
+      "max": 1019.18
+    },
+    "gap_before_ms": {
+      "min": 0.77,
+      "median": 0.97,
+      "max": 1.01
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_short/query_short": 3
+    }
+  },
+  "INP?\\r": {
+    "count": 6,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "OFF\\n",
+        4
+      ],
+      [
+        "ON\\n",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 3,
+      "median": 4.0,
+      "max": 4
+    },
+    "first_byte_latency_ms": {
+      "min": 5.5,
+      "median": 10.78,
+      "max": 17.17
+    },
+    "exchange_ms": {
+      "min": 1011.47,
+      "median": 1016.6,
+      "max": 1023.89
+    },
+    "gap_before_ms": {
+      "min": 0.49,
+      "median": 0.79,
+      "max": 1.29
+    },
+    "end": {
+      "timeout": 6
+    },
+    "ops": {
+      "poll_status/query_input": 3,
+      "query_input/query_input": 3
+    }
+  },
+  "MEAS:ALL:INFO?\\r": {
+    "count": 335,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "0.000,0.000,0.000,OFF,OFF,OFF\\n",
+        330
+      ],
+      [
+        "\\n",
+        5
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 30,
+      "max": 30
+    },
+    "first_byte_latency_ms": {
+      "min": 11.49,
+      "median": 21.04,
+      "max": 42.12
+    },
+    "exchange_ms": {
+      "min": 1021.76,
+      "median": 1037.23,
+      "max": 1123.57
+    },
+    "gap_before_ms": {
+      "min": 0.79,
+      "median": 9.27,
+      "max": 93.47
+    },
+    "end": {
+      "timeout": 335
+    },
+    "ops": {
+      "poll_status/query_status": 329,
+      "query_status/query_status": 6
+    }
+  },
+  "POW <arg>": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.08,
+      "median": 1005.15,
+      "max": 1005.23
+    },
+    "gap_before_ms": {
+      "min": 0.88,
+      "median": 1.08,
+      "max": 1.28
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_pow/set_pow": 2
+    }
+  },
+  "POW?\\r": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "1.000\\n",
+        2
+      ],
+      [
+        "2.000\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 6,
+      "median": 6,
+      "max": 6
+    },
+    "first_byte_latency_ms": {
+      "min": 12.1,
+      "median": 12.5,
+      "max": 13.5
+    },
+    "exchange_ms": {
+      "min": 1018.78,
+      "median": 1020.4,
+      "max": 1024.41
+    },
+    "gap_before_ms": {
+      "min": 0.97,
+      "median": 1.04,
+      "max": 1.25
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_pow/query_pow": 3
+    }
+  },
+  "RES <arg>": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.02,
+      "median": 1005.59,
+      "max": 1006.15
+    },
+    "gap_before_ms": {
+      "min": 0.83,
+      "median": 0.95,
+      "max": 1.08
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_res/set_res": 2
+    }
+  },
+  "RES?\\r": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "100.00\\n",
+        2
+      ],
+      [
+        "200.00\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 7,
+      "median": 7,
+      "max": 7
+    },
+    "first_byte_latency_ms": {
+      "min": 8.29,
+      "median": 11.64,
+      "max": 19.84
+    },
+    "exchange_ms": {
+      "min": 1019.15,
+      "median": 1024.03,
+      "max": 1026.63
+    },
+    "gap_before_ms": {
+      "min": 0.92,
+      "median": 1.11,
+      "max": 1.93
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_res/query_res": 3
+    }
+  },
+  "SYST:SENS OFF\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1004.86,
+      "median": 1004.86,
+      "max": 1004.86
+    },
+    "gap_before_ms": {
+      "min": 1.08,
+      "median": 1.08,
+      "max": 1.08
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_remote_compensation/set_remote_compensation": 1
+    }
+  },
+  "SYST:SENS ON\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.1,
+      "median": 1005.1,
+      "max": 1005.1
+    },
+    "gap_before_ms": {
+      "min": 0.9,
+      "median": 0.9,
+      "max": 0.9
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_remote_compensation/set_remote_compensation": 1
+    }
+  },
+  "SYSTem:LOCal\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.43,
+      "median": 1005.43,
+      "max": 1005.43
+    },
+    "gap_before_ms": {
+      "min": 0.91,
+      "median": 0.91,
+      "max": 0.91
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_remote/set_remote": 1
+    }
+  },
+  "SYSTem:REMote?\\r": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "1\\n",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 2,
+      "median": 2.0,
+      "max": 2
+    },
+    "first_byte_latency_ms": {
+      "min": 10.72,
+      "median": 13.01,
+      "max": 15.3
+    },
+    "exchange_ms": {
+      "min": 1016.35,
+      "median": 1019.31,
+      "max": 1022.27
+    },
+    "gap_before_ms": {
+      "min": 0.83,
+      "median": 0.9,
+      "max": 0.98
+    },
+    "end": {
+      "timeout": 2
+    },
+    "ops": {
+      "query_remote/query_remote": 2
+    }
+  },
+  "SYSTem:REMote\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.56,
+      "median": 1005.56,
+      "max": 1005.56
+    },
+    "gap_before_ms": {
+      "min": 1.05,
+      "median": 1.05,
+      "max": 1.05
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_remote/set_remote": 1
+    }
+  },
+  "VOLT <arg>": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0.0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": {
+      "min": 1005.62,
+      "median": 1005.91,
+      "max": 1006.2
+    },
+    "gap_before_ms": {
+      "min": 1.32,
+      "median": 1.54,
+      "max": 1.76
+    },
+    "end": {
+      "no_reply": 2
+    },
+    "ops": {
+      "set_volt/set_volt": 2
+    }
+  },
+  "VOLT?\\r": {
+    "count": 3,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "10.000\\n",
+        2
+      ],
+      [
+        "55.000\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 7,
+      "median": 7,
+      "max": 7
+    },
+    "first_byte_latency_ms": {
+      "min": 5.29,
+      "median": 9.24,
+      "max": 12.09
+    },
+    "exchange_ms": {
+      "min": 1024.79,
+      "median": 1026.65,
+      "max": 1030.42
+    },
+    "gap_before_ms": {
+      "min": 1.16,
+      "median": 1.62,
+      "max": 4.13
+    },
+    "end": {
+      "timeout": 3
+    },
+    "ops": {
+      "query_volt/query_volt": 3
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "HCOPy:SDUMp:DATA?\\r": {
+    "count": 3,
+    "reply_variants": 3,
+    "top_replies": [
+      [
+        "#6391734BM6\\xfa\\x05\\x00\\x00\\x00\\x00\\x006\\x00\\x00\\x00(\\x00\\x00\\x00\\xe0\\x01\\x00\\x00\\x10\\x01\\x00\\x00\\x01\\x00\\x18\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00",
+        1
+      ],
+      [
+        " \\x18( \\x18( \\x18( \\x18(",
+        1
+      ],
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 12,
+      "max": 64
+    },
+    "first_byte_latency_ms": {
+      "min": 2004.06,
+      "median": 2019.91,
+      "max": 2035.77
+    },
+    "exchange_ms": {
+      "min": 2002.97,
+      "median": 2004.24,
+      "max": 16163.4
+    },
+    "gap_before_ms": {
+      "min": 2.38,
+      "median": 1503.68,
+      "max": 3004.98
+    },
+    "end": {
+      "message": 2,
+      "no_reply": 1
+    },
+    "ops": {
+      "query_screenshot/query_screenshot": 3
+    }
+  }
+}

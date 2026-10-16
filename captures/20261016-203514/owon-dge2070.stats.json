@@ -1,0 +1,228 @@
+{
+  "*IDN?\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "OWON,DGE2070,25130086,SCPI:99.0 FV:V1.0.4.7.0\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 46,
+      "median": 46,
+      "max": 46
+    },
+    "first_byte_latency_ms": {
+      "min": 70.93,
+      "median": 70.93,
+      "max": 70.93
+    },
+    "exchange_ms": {
+      "min": 71.28,
+      "median": 71.28,
+      "max": 71.28
+    },
+    "gap_before_ms": null,
+    "end": {
+      "message": 1
+    },
+    "ops": {
+      "query_identify/query_identify": 1
+    }
+  },
+  "OUTPut1:STATe OFF\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": null,
+    "gap_before_ms": {
+      "min": 1010.98,
+      "median": 1010.98,
+      "max": 1010.98
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "OUTPut1:STATe ON\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": null,
+    "gap_before_ms": {
+      "min": 760.2,
+      "median": 760.2,
+      "max": 760.2
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "OUTPut1:STATe?\\r": {
+    "count": 218,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "0\\n",
+        217
+      ],
+      [
+        "1\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 2,
+      "median": 2.0,
+      "max": 2
+    },
+    "first_byte_latency_ms": {
+      "min": 3.22,
+      "median": 56.31,
+      "max": 112.36
+    },
+    "exchange_ms": {
+      "min": 3.43,
+      "median": 56.91,
+      "max": 112.46
+    },
+    "gap_before_ms": {
+      "min": 2.5,
+      "median": 1920.24,
+      "max": 1983.74
+    },
+    "end": {
+      "message": 218
+    },
+    "ops": {
+      "poll_status/query_output": 216,
+      "query_output/query_output": 2
+    }
+  },
+  "OUTPut2:STATe OFF\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": null,
+    "gap_before_ms": {
+      "min": 14.68,
+      "median": 14.68,
+      "max": 14.68
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "OUTPut2:STATe ON\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "first_byte_latency_ms": null,
+    "exchange_ms": null,
+    "gap_before_ms": {
+      "min": 961.86,
+      "median": 961.86,
+      "max": 961.86
+    },
+    "end": {
+      "no_reply": 1
+    },
+    "ops": {
+      "set_output/set_output": 1
+    }
+  },
+  "OUTPut2:STATe?\\r": {
+    "count": 218,
+    "reply_variants": 2,
+    "top_replies": [
+      [
+        "0\\n",
+        216
+      ],
+      [
+        "1\\n",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 2,
+      "median": 2.0,
+      "max": 2
+    },
+    "first_byte_latency_ms": {
+      "min": 12.86,
+      "median": 23.16,
+      "max": 133.54
+    },
+    "exchange_ms": {
+      "min": 15.79,
+      "median": 23.35,
+      "max": 133.76
+    },
+    "gap_before_ms": {
+      "min": 0.28,
+      "median": 0.4,
+      "max": 13.27
+    },
+    "end": {
+      "message": 218
+    },
+    "ops": {
+      "poll_status/query_output": 216,
+      "query_output/query_output": 2
+    }
+  }
+}

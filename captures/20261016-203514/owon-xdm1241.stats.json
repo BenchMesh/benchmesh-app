@@ -1,0 +1,731 @@
+{
+  "*IDN?\\r": {
+    "count": 4065,
+    "reply_variants": 3,
+    "top_replies": [
+      [
+        "\\nOWON,XDM1241,24512010,V4.3.0,3\\r",
+        4045
+      ],
+      [
+        "\\n\"TEMP\"\\r",
+        19
+      ],
+      [
+        "OWON,XDM1241,24512010,V4.3.0,3\\r",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 8,
+      "median": 32,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 0.15,
+      "median": 0.21,
+      "max": 16.54
+    },
+    "exchange_ms": {
+      "min": 1.79,
+      "median": 10.85,
+      "max": 136.68
+    },
+    "gap_before_ms": {
+      "min": 0.14,
+      "median": 0.21,
+      "max": 25.75
+    },
+    "end": {
+      "complete": 4065
+    },
+    "ops": {
+      "query_identify/query_identify": 1,
+      "poll_status/query_identify": 4064
+    }
+  },
+  "CONF:CAP AUTO\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.33,
+      "median": 0.33,
+      "max": 0.33
+    },
+    "exchange_ms": {
+      "min": 1003.83,
+      "median": 1003.83,
+      "max": 1003.83
+    },
+    "gap_before_ms": {
+      "min": 36.29,
+      "median": 36.29,
+      "max": 36.29
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_capacitance_range": 1
+    }
+  },
+  "CONF:CURR:DC AUTO\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.21,
+      "median": 0.21,
+      "max": 0.21
+    },
+    "exchange_ms": {
+      "min": 1013.76,
+      "median": 1013.76,
+      "max": 1013.76
+    },
+    "gap_before_ms": {
+      "min": 0.59,
+      "median": 0.59,
+      "max": 0.59
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_current_dc_range": 1
+    }
+  },
+  "CONF:FREQ\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.35,
+      "median": 0.35,
+      "max": 0.35
+    },
+    "exchange_ms": {
+      "min": 1006.4,
+      "median": 1006.4,
+      "max": 1006.4
+    },
+    "gap_before_ms": {
+      "min": 51.27,
+      "median": 51.27,
+      "max": 51.27
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_frequency": 1
+    }
+  },
+  "CONF:RES <arg>": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.92,
+      "median": 0.92,
+      "max": 0.92
+    },
+    "exchange_ms": {
+      "min": 1006.42,
+      "median": 1006.42,
+      "max": 1006.42
+    },
+    "gap_before_ms": {
+      "min": 0.9,
+      "median": 0.9,
+      "max": 0.9
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_resistance_range/set_resistance_range": 1
+    }
+  },
+  "CONF:RES AUTO\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.5,
+      "median": 0.5,
+      "max": 0.5
+    },
+    "exchange_ms": {
+      "min": 1006.02,
+      "median": 1006.02,
+      "max": 1006.02
+    },
+    "gap_before_ms": {
+      "min": 13.06,
+      "median": 13.06,
+      "max": 13.06
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_resistance_range": 1
+    }
+  },
+  "CONF:TEMPerature:RTD <arg>": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.31,
+      "median": 0.31,
+      "max": 0.31
+    },
+    "exchange_ms": {
+      "min": 1005.46,
+      "median": 1005.46,
+      "max": 1005.46
+    },
+    "gap_before_ms": {
+      "min": 10.79,
+      "median": 10.79,
+      "max": 10.79
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_temperature": 1
+    }
+  },
+  "CONF:VOLT:AC AUTO\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.4,
+      "median": 0.4,
+      "max": 0.4
+    },
+    "exchange_ms": {
+      "min": 1006.44,
+      "median": 1006.44,
+      "max": 1006.44
+    },
+    "gap_before_ms": {
+      "min": 11.33,
+      "median": 11.33,
+      "max": 11.33
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_mode/set_voltage_ac_range": 1
+    }
+  },
+  "CONF:VOLT:DC AUTO\\r": {
+    "count": 2,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        2
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1.0,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.23,
+      "median": 0.28,
+      "max": 0.32
+    },
+    "exchange_ms": {
+      "min": 1005.74,
+      "median": 1005.87,
+      "max": 1006.01
+    },
+    "gap_before_ms": {
+      "min": 0.71,
+      "median": 9.03,
+      "max": 17.35
+    },
+    "end": {
+      "timeout": 2
+    },
+    "ops": {
+      "set_mode/set_voltage_dc_range": 1,
+      "set_voltage_dc_range/set_voltage_dc_range": 1
+    }
+  },
+  "FUNCtion?\\r": {
+    "count": 4077,
+    "reply_variants": 9,
+    "top_replies": [
+      [
+        "\\n\"VOLT\"\\r",
+        3832
+      ],
+      [
+        "\\n\"TEMP\"\\r",
+        104
+      ],
+      [
+        "\\n\"RES\"\\r",
+        40
+      ],
+      [
+        "\\n\"VOLT AC\"\\r",
+        21
+      ],
+      [
+        "\\n\"CURR\"\\r",
+        21
+      ]
+    ],
+    "rx_len": {
+      "min": 7,
+      "median": 8,
+      "max": 14
+    },
+    "first_byte_latency_ms": {
+      "min": 0.16,
+      "median": 0.21,
+      "max": 817.51
+    },
+    "exchange_ms": {
+      "min": 2.49,
+      "median": 6.09,
+      "max": 820.72
+    },
+    "gap_before_ms": {
+      "min": 0.13,
+      "median": 0.19,
+      "max": 39.3
+    },
+    "end": {
+      "complete": 4077
+    },
+    "ops": {
+      "poll_status/_query_function": 4064,
+      "query_function/query_function": 13
+    }
+  },
+  "MEAS1?\\r": {
+    "count": 4075,
+    "reply_variants": 308,
+    "top_replies": [
+      [
+        "\\n-8.579931E-05\\r",
+        77
+      ],
+      [
+        "\\n0.000000E+00\\r",
+        56
+      ],
+      [
+        "\\n-1.004034E-04\\r",
+        54
+      ],
+      [
+        "\\n-9.857793E-05\\r",
+        46
+      ],
+      [
+        "\\n-9.127586E-05\\r",
+        45
+      ]
+    ],
+    "rx_len": {
+      "min": 0,
+      "median": 15,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 0.2,
+      "median": 0.36,
+      "max": 50.3
+    },
+    "exchange_ms": {
+      "min": 3.66,
+      "median": 8.24,
+      "max": 1005.47
+    },
+    "gap_before_ms": {
+      "min": 0.58,
+      "median": 75.73,
+      "max": 137.32
+    },
+    "end": {
+      "complete": 4074,
+      "no_reply": 1
+    },
+    "ops": {
+      "poll_status/_query_measurement": 4064,
+      "query_measurement/query_measurement": 11
+    }
+  },
+  "RATE F\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.35,
+      "median": 0.35,
+      "max": 0.35
+    },
+    "exchange_ms": {
+      "min": 1006.2,
+      "median": 1006.2,
+      "max": 1006.2
+    },
+    "gap_before_ms": {
+      "min": 15.69,
+      "median": 15.69,
+      "max": 15.69
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_rate/set_rate": 1
+    }
+  },
+  "RATE M\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.33,
+      "median": 0.33,
+      "max": 0.33
+    },
+    "exchange_ms": {
+      "min": 1004.47,
+      "median": 1004.47,
+      "max": 1004.47
+    },
+    "gap_before_ms": {
+      "min": 66.63,
+      "median": 66.63,
+      "max": 66.63
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_rate/set_rate": 1
+    }
+  },
+  "RATE S\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.82,
+      "median": 0.82,
+      "max": 0.82
+    },
+    "exchange_ms": {
+      "min": 1006.95,
+      "median": 1006.95,
+      "max": 1006.95
+    },
+    "gap_before_ms": {
+      "min": 10.57,
+      "median": 10.57,
+      "max": 10.57
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_rate/set_rate": 1
+    }
+  },
+  "RATE?\\r": {
+    "count": 3,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\nS\\r",
+        3
+      ]
+    ],
+    "rx_len": {
+      "min": 3,
+      "median": 3,
+      "max": 3
+    },
+    "first_byte_latency_ms": {
+      "min": 0.22,
+      "median": 0.25,
+      "max": 0.79
+    },
+    "exchange_ms": {
+      "min": 4.46,
+      "median": 4.47,
+      "max": 5.71
+    },
+    "gap_before_ms": {
+      "min": 0.64,
+      "median": 0.7,
+      "max": 0.94
+    },
+    "end": {
+      "complete": 3
+    },
+    "ops": {
+      "query_rate/query_rate": 3
+    }
+  },
+  "SYSTem:LOCal\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.25,
+      "median": 0.25,
+      "max": 0.25
+    },
+    "exchange_ms": {
+      "min": 1005.28,
+      "median": 1005.28,
+      "max": 1005.28
+    },
+    "gap_before_ms": {
+      "min": 0.82,
+      "median": 0.82,
+      "max": 0.82
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_remote/set_remote": 1
+    }
+  },
+  "SYSTem:REMote\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.72,
+      "median": 0.72,
+      "max": 0.72
+    },
+    "exchange_ms": {
+      "min": 1006.47,
+      "median": 1006.47,
+      "max": 1006.47
+    },
+    "gap_before_ms": {
+      "min": 34.48,
+      "median": 34.48,
+      "max": 34.48
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_remote/set_remote": 1
+    }
+  },
+  "TEMPerature:RTD:UNIT C\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\n",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 1,
+      "median": 1,
+      "max": 1
+    },
+    "first_byte_latency_ms": {
+      "min": 0.27,
+      "median": 0.27,
+      "max": 0.27
+    },
+    "exchange_ms": {
+      "min": 1005.29,
+      "median": 1005.29,
+      "max": 1005.29
+    },
+    "gap_before_ms": {
+      "min": 0.67,
+      "median": 0.67,
+      "max": 0.67
+    },
+    "end": {
+      "timeout": 1
+    },
+    "ops": {
+      "set_temp_scale/set_temp_scale": 1
+    }
+  },
+  "TEMPerature:RTD:UNIT F\\r": {
+    "count": 1,
+    "reply_variants": 1,
+    "top_replies": [
+      [
+        "\\nOWON,XDM1241,24512010,V4.3.0,3\\r",
+        1
+      ]
+    ],
+    "rx_len": {
+      "min": 32,
+      "median": 32,
+      "max": 32
+    },
+    "first_byte_latency_ms": {
+      "min": 0.44,
+      "median": 0.44,
+      "max": 0.44
+    },
+    "exchange_ms": {
+      "min": 6.82,
+      "median": 6.82,
+      "max": 6.82
+    },
+    "gap_before_ms": {
+      "min": 20.94,
+      "median": 20.94,
+      "max": 20.94
+    },
+    "end": {
+      "complete": 1
+    },
+    "ops": {
+      "set_temp_scale/set_temp_scale": 1
+    }
+  }
+}

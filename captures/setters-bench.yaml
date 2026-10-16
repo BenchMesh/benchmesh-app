@@ -1,0 +1,83 @@
+# Setter scenario for the 2026-10-16 bench (all instruments disconnected from any load/source,
+# confirmed safe by the user). Every block ends by restoring the state observed in the
+# read-only capture (captures/20261016-201609).
+# Prerequisite: OEL already in remote mode (SYST:REM sent directly) so the Python service can poll it.
+
+# --- Tenma 72-2540 (restore: VSET 4.94, ISET 0.988, output OFF) ---
+- {device: tenma-72-2540, class: PSU, method: voltage, value: "5.00", then_query: [voltage]}
+- {device: tenma-72-2540, class: PSU, method: voltage, value: "12.345", then_query: [voltage]}
+- {device: tenma-72-2540, class: PSU, method: current, value: "0.500", then_query: [current]}
+- {device: tenma-72-2540, class: PSU, method: output, value: "ON", then_query: [status, output_voltage], pause: 1.5}
+- {device: tenma-72-2540, class: PSU, method: output, value: "OFF", then_query: [status], pause: 1.0}
+- {device: tenma-72-2540, class: PSU, method: ocp, value: "ON", then_query: [status]}
+- {device: tenma-72-2540, class: PSU, method: ocp, value: "OFF", then_query: [status]}
+- {device: tenma-72-2540, class: PSU, method: voltage, value: "4.94", then_query: [voltage]}
+- {device: tenma-72-2540, class: PSU, method: current, value: "0.988", then_query: [current]}
+
+# --- OWON SPM3103 PSU (restore: VOLT 9, CURR 6.55, VOLT:LIM 32, CURR:LIM 10.2, OUTP OFF) ---
+- {device: owon-spm3103, class: PSU, method: voltage, value: "5.000", then_query: [voltage]}
+- {device: owon-spm3103, class: PSU, method: current, value: "1.000", then_query: [current]}
+- {device: owon-spm3103, class: PSU, method: voltage_limit, value: "20.000", then_query: [voltage_limit]}
+- {device: owon-spm3103, class: PSU, method: current_limit, value: "5.000", then_query: [current_limit]}
+- {device: owon-spm3103, class: PSU, method: output, value: "ON", then_query: [output, status], pause: 1.5}
+- {device: owon-spm3103, class: PSU, method: output, value: "OFF", then_query: [output, status], pause: 1.0}
+- {device: owon-spm3103, class: PSU, method: voltage, value: "9.000", then_query: [voltage]}
+- {device: owon-spm3103, class: PSU, method: current, value: "6.550", then_query: [current]}
+- {device: owon-spm3103, class: PSU, method: voltage_limit, value: "32.000", then_query: [voltage_limit]}
+- {device: owon-spm3103, class: PSU, method: current_limit, value: "10.200", then_query: [current_limit]}
+
+# --- OWON SPM3103 DMM (restore: VOLT_DC) ---
+- {device: owon-spm3103, class: DMM, method: mode, value: "VOLT_AC", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: mode, value: "RES", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: resistance_range, value: "2E3", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: mode, value: "CONT", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: mode, value: "VOLT_DC", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: voltage_dc_range, value: "20", then_query: [function, measurement], pause: 1.0}
+- {device: owon-spm3103, class: DMM, method: voltage_dc_range, value: "AUTO", then_query: [function, measurement], pause: 1.0}
+
+# --- OWON XDM1241 (restore: VOLT, AUTO, rate S) ---
+- {device: owon-xdm1241, class: DMM, method: mode, value: "VOLT_AC", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "CURR", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "RES", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: resistance_range, value: "5E3", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "CAP", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "FREQ", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "TEMP", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: temp_scale, value: "F", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: temp_scale, value: "C", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: rate, value: "F", then_query: [rate]}
+- {device: owon-xdm1241, class: DMM, method: rate, value: "M", then_query: [rate]}
+- {device: owon-xdm1241, class: DMM, method: rate, value: "S", then_query: [rate]}
+- {device: owon-xdm1241, class: DMM, method: remote, value: "ON", then_query: [function]}
+- {device: owon-xdm1241, class: DMM, method: remote, value: "OFF", then_query: [function]}
+- {device: owon-xdm1241, class: DMM, method: mode, value: "VOLT", then_query: [function, measurement], pause: 1.0}
+- {device: owon-xdm1241, class: DMM, method: voltage_dc_range, value: "AUTO", then_query: [function, measurement], pause: 1.0}
+
+# --- OWON OEL1515 (restore: FUNC CURR, CURR 1, VOLT 55, RES 200, POW 2, INP OFF, SENS OFF, local) ---
+- {device: owon-oel1515, class: ELL, method: remote, value: "ON", then_query: [remote]}
+- {device: owon-oel1515, class: ELL, method: mode, value: "VOLT", then_query: [mode, status]}
+- {device: owon-oel1515, class: ELL, method: volt, value: "10.000", then_query: [volt]}
+- {device: owon-oel1515, class: ELL, method: mode, value: "RES", then_query: [mode]}
+- {device: owon-oel1515, class: ELL, method: res, value: "100.00", then_query: [res]}
+- {device: owon-oel1515, class: ELL, method: mode, value: "POW", then_query: [mode]}
+- {device: owon-oel1515, class: ELL, method: pow, value: "1.000", then_query: [pow]}
+- {device: owon-oel1515, class: ELL, method: mode, value: "CURR", then_query: [mode]}
+- {device: owon-oel1515, class: ELL, method: curr, value: "0.500", then_query: [curr]}
+- {device: owon-oel1515, class: ELL, method: input, value: "ON", then_query: [input, status], pause: 1.5}
+- {device: owon-oel1515, class: ELL, method: input, value: "OFF", then_query: [input, status], pause: 1.0}
+- {device: owon-oel1515, class: ELL, method: short, value: "ON", then_query: [short]}
+- {device: owon-oel1515, class: ELL, method: short, value: "OFF", then_query: [short]}
+- {device: owon-oel1515, class: ELL, method: remote_compensation, value: "ON", then_query: [status]}
+- {device: owon-oel1515, class: ELL, method: remote_compensation, value: "OFF", then_query: [status]}
+- {device: owon-oel1515, class: ELL, method: curr, value: "1.000", then_query: [curr]}
+- {device: owon-oel1515, class: ELL, method: volt, value: "55.000", then_query: [volt]}
+- {device: owon-oel1515, class: ELL, method: res, value: "200.00", then_query: [res]}
+- {device: owon-oel1515, class: ELL, method: pow, value: "2.000", then_query: [pow]}
+- {device: owon-oel1515, class: ELL, method: mode, value: "CURR", then_query: [mode]}
+- {device: owon-oel1515, class: ELL, method: remote, value: "OFF", then_query: [remote]}
+
+# --- OWON DGE2070 (restore: both outputs OFF) ---
+- {device: owon-dge2070, class: AWG, channel: 1, method: output, value: "ON", then_query: [output], pause: 1.0}
+- {device: owon-dge2070, class: AWG, channel: 1, method: output, value: "OFF", then_query: [output], pause: 1.0}
+- {device: owon-dge2070, class: AWG, channel: 2, method: output, value: "ON", then_query: [output], pause: 1.0}
+- {device: owon-dge2070, class: AWG, channel: 2, method: output, value: "OFF", then_query: [output], pause: 1.0}

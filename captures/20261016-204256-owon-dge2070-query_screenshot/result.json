@@ -1,0 +1,23 @@
+{
+  "device": {
+    "id": "owon-dge2070",
+    "name": "OWON DGE",
+    "driver": "owon_dge",
+    "model": "DGE2070",
+    "transport": "usbtmc",
+    "device": "/dev/usbtmc2"
+  },
+  "method": "query_screenshot",
+  "args": [],
+  "kwargs": {
+    "save_path": "/tmp/claude-1000/-home-marek-project-BenchMesh/d3605893-b964-47d9-9b89-a2ba1486421c/scratchpad/dge.bmp"
+  },
+  "started": 1792179776.5204558,
+  "duration_s": 23.181,
+  "ok": false,
+  "error": "ValueError('Screenshot incomplete: 56 bytes (0.0% complete). Required: 75%. Try increasing max_attempts or lowering min_completion.')",
+  "result": {
+    "type": "NoneType",
+    "value": null
+  }
+}
