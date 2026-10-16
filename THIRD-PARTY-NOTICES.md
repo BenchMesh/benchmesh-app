@@ -85,6 +85,14 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT OR Apache-2.0
 - **URL**: https://github.com/rust-lang/libc
 
+### rusqlite (bm-store) with bundled SQLite
+- **License**: rusqlite MIT; SQLite is in the public domain
+- **URL**: https://github.com/rusqlite/rusqlite, https://sqlite.org/copyright.html
+
+### chrono
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/chronotope/chrono
+
 ### axum, tokio, tower-http (bm-server)
 - **License**: MIT
 - **URL**: https://github.com/tokio-rs/axum, https://github.com/tokio-rs/tokio, https://github.com/tower-rs/tower-http

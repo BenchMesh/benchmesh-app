@@ -1,0 +1,12 @@
+[package]
+name = "bm-store"
+description = "BenchMesh recordings database (SQLite, schema-compatible with the former Python service)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rusqlite.workspace = true
+chrono.workspace = true
+serde_json.workspace = true

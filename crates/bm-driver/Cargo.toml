@@ -11,7 +11,7 @@ bm-devicedef = { path = "../bm-devicedef" }
 serde_json.workspace = true
 regex.workspace = true
 cel.workspace = true
+flate2.workspace = true
 
 [dev-dependencies]
-flate2.workspace = true
 serde.workspace = true

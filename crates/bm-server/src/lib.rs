@@ -15,7 +15,10 @@
 //! device timeout 504, malformed device reply 502.
 
 pub mod config;
+pub mod ai;
 pub mod devices;
+pub mod openapi;
+pub mod recordings;
 pub mod run;
 
 use std::collections::hash_map::DefaultHasher;
@@ -43,14 +46,17 @@ use crate::devices::{merge, Devices};
 
 pub struct AppState {
     pub devices: Arc<Devices>,
+    pub recordings: Arc<recordings::Recordings>,
     pub config: ConfigFile,
     pub ui_dir: Option<PathBuf>,
     pub ws_interval: Duration,
+    /// `/ws/metrics` push interval (the UI says "Updates every 30s").
+    pub metrics_interval: Duration,
     /// Serialises config changes (file + running devices).
     pub config_lock: tokio::sync::Mutex<()>,
 }
 
-type S = Arc<AppState>;
+pub(crate) type S = Arc<AppState>;
 
 pub fn router(state: S) -> Router {
     let mut r = Router::new()
@@ -70,7 +76,17 @@ pub fn router(state: S) -> Router {
         .route("/devices/{id}", put(update_device).delete(delete_device))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
-        .route("/ws/registry", get(ws_registry));
+        .route("/ws/registry", get(ws_registry))
+        .route("/metrics", get(metrics_summary))
+        .route("/metrics/{id}", get(metrics_device))
+        .route("/ws/metrics", get(ws_metrics))
+        .route("/ai/context", get(ai::context))
+        .route("/ai/system-prompt", get(ai::context))
+        .route("/openapi.json", get(openapi::json))
+        .route("/openapi.yaml", get(openapi::yaml))
+        .route("/docs", get(api_docs))
+        .route("/redoc", get(api_docs))
+        .merge(recordings::routes());
     if let Some(ui) = &state.ui_dir {
         // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
         // stale index.html after an upgrade.
@@ -510,5 +526,51 @@ async fn registry_stream(s: S, mut socket: WebSocket) {
         if socket.send(Message::Text(snapshot.into())).await.is_err() {
             return;
         }
+    }
+}
+
+// ---- metrics --------------------------------------------------------------------------
+
+fn metrics_map(s: &AppState) -> Map<String, Value> {
+    s.devices.registry.lock().unwrap().devices.iter().filter_map(|(id, d)| d.metrics.clone().map(|m| (id.clone(), m))).collect()
+}
+
+fn unix_now() -> f64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
+}
+
+async fn metrics_summary(State(s): State<S>) -> Json<Value> {
+    Json(json!({"summary": metrics_map(&s), "timestamp": unix_now()}))
+}
+
+async fn metrics_device(State(s): State<S>, Path(id): Path<String>) -> Response {
+    match metrics_map(&s).remove(&id) {
+        Some(mut m) => {
+            m["timestamp"] = json!(unix_now());
+            Json(m).into_response()
+        }
+        None => detail(StatusCode::NOT_FOUND, format!("No metrics available for device {id}")),
+    }
+}
+
+async fn ws_metrics(State(s): State<S>, ws: WebSocketUpgrade) -> Response {
+    ws.on_upgrade(move |mut socket| async move {
+        let mut tick = tokio::time::interval(s.metrics_interval);
+        loop {
+            tick.tick().await;
+            let snapshot = Value::Object(metrics_map(&s)).to_string();
+            if socket.send(Message::Text(snapshot.into())).await.is_err() {
+                return;
+            }
+        }
+    })
+}
+
+/// API reference lives in the UI (Swagger UI bundled with the frontend: works offline).
+async fn api_docs(State(s): State<S>) -> Response {
+    if s.ui_dir.is_some() {
+        Redirect::temporary("/ui/docs").into_response()
+    } else {
+        Redirect::temporary("/openapi.json").into_response()
     }
 }

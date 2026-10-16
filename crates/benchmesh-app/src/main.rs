@@ -6,6 +6,7 @@
 //! - User data: `$BENCHMESH_DATA_DIR` or `~/.benchmesh` (config.yaml lives there).
 //! - Listens on 127.0.0.1:57666, or a free port if that is taken. The API has no
 //!   authentication, so LAN access is opt-in: `BENCHMESH_LISTEN=0.0.0.0`.
+//! - `BENCHMESH_SIMULATE=captures/<session>` replays recorded instrument traffic (no hardware).
 //! - Closing the app stops every device (definitions' on_disconnect steps run, e.g. the
 //!   OWON load is returned to local mode).
 
@@ -43,6 +44,9 @@ fn main() {
                 devices_dir: env_path("BENCHMESH_DEVICES").unwrap_or_else(|| resources.join("devices")),
                 ui_dir: Some(env_path("BENCHMESH_UI").unwrap_or_else(|| resources.join("ui"))),
                 listen: vec![format!("{host}:57666"), format!("{host}:0")],
+                // a simulation never writes into the user's real recordings
+                recordings_db: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.join("recordings.db")),
+                simulate: env_path("BENCHMESH_SIMULATE"),
                 ws_interval: Duration::from_millis(200),
             })?;
             for w in &server.warnings {

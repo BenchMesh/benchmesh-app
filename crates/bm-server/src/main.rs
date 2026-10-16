@@ -6,6 +6,8 @@
 //! Defaults: `$BENCHMESH_CONFIG` or `~/.benchmesh/config.yaml`; `$BENCHMESH_DEVICES` or
 //! `./devices`; UI `benchmesh-serial-service/frontend/dist` if present; `0.0.0.0:$API_PORT`
 //! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
+//! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
+//! traffic instead of opening ports — UI work and demos without hardware.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -36,12 +38,22 @@ fn main() {
         .map(|s| Duration::from_millis((s * 1000.0) as u64))
         .unwrap_or(Duration::from_millis(200));
 
+    let simulate = arg(&args, "--simulate").or_else(|| std::env::var("BENCHMESH_SIMULATE").ok()).map(PathBuf::from);
+    let data_dir = std::env::var("BENCHMESH_DATA_DIR").ok().map(PathBuf::from);
+    // A simulation must not write into the user's real recordings unless a data dir is given.
+    let recordings_db = match (&simulate, data_dir) {
+        (Some(_), None) => None,
+        (_, Some(d)) => Some(d.join("recordings.db")),
+        (None, None) => Some(PathBuf::from(&home).join(".benchmesh/recordings.db")),
+    };
     let server = match start(ServerOptions {
         config: config.clone(),
         devices_dir,
         ui_dir,
         listen: vec![format!("{host}:{port}")],
+        recordings_db,
         ws_interval,
+        simulate: simulate.clone(),
     }) {
         Ok(s) => s,
         Err(e) => {
@@ -53,6 +65,9 @@ fn main() {
         eprintln!("warning: {w}");
     }
     eprintln!("BenchMesh server on {} (listening {}) — config {}", server.url(), server.addr, config.display());
+    if let Some(s) = &simulate {
+        eprintln!("SIMULATION: instruments replayed from {} (no hardware is used; recordings in memory)", s.display());
+    }
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("signal runtime");
     let _ = rt.block_on(tokio::signal::ctrl_c());
     eprintln!("stopping devices…");

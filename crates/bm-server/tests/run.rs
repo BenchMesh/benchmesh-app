@@ -33,6 +33,8 @@ fn starts_falls_back_to_a_free_port_and_stops() {
         ui_dir: None,
         listen: vec![taken.clone(), "127.0.0.1:0".into()],
         ws_interval: Duration::from_millis(200),
+        recordings_db: None,
+        simulate: None,
     })
     .unwrap();
     assert_ne!(server.addr.to_string(), taken, "fell back to the next address");
@@ -54,6 +56,8 @@ fn bad_definitions_dir_is_reported() {
         ui_dir: None,
         listen: vec!["127.0.0.1:0".into()],
         ws_interval: Duration::from_millis(200),
+        recordings_db: None,
+        simulate: None,
     })
     .err()
     .unwrap();

@@ -26,6 +26,23 @@ pub fn hardware_connectors() -> ConnectorFactory {
     })
 }
 
+/// Simulated instruments replaying a capture session (`captures/<session>/<device-id>.jsonl.gz`):
+/// UI development and demos without hardware. Setters are accepted but change nothing.
+pub fn simulated_connectors(session: std::path::PathBuf) -> ConnectorFactory {
+    Arc::new(move |entry: &DeviceEntry, def: &DeviceDef| {
+        let id = str_field(entry, "id").unwrap_or_default().to_string();
+        let path = session.join(format!("{id}.jsonl.gz"));
+        let def = def.clone();
+        Box::new(move || {
+            let responder = bm_driver::replay::responder_from_capture(&def, &path)
+                .map_err(|e| std::io::Error::new(e.kind(), format!("simulation for {id}: {}: {e}", path.display())))?;
+            let mut t = bm_driver::sim::SimTransport::new(responder);
+            t.latency = std::time::Duration::from_millis(5);
+            Ok(Box::new(t) as Box<dyn bm_driver::engine::Transport>)
+        })
+    })
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct DeviceState {
     pub idn: Option<String>,
@@ -35,6 +52,8 @@ pub struct DeviceState {
     pub last_error: Option<String>,
     /// class -> channel -> status
     pub status: BTreeMap<String, BTreeMap<u8, BTreeMap<String, Value>>>,
+    /// Latest metrics snapshot from the device thread.
+    pub metrics: Option<Value>,
 }
 
 #[derive(Default)]
@@ -77,6 +96,10 @@ impl Registry {
             }
             Event::Status(u) => {
                 d.status.entry(u.class).or_default().insert(u.ch, u.status);
+            }
+            Event::Metrics(m) => {
+                d.metrics = Some(m);
+                return; // not a registry change (no version bump)
             }
             Event::Disconnected { reason } => {
                 d.connected = false;

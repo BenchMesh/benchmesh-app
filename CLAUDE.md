@@ -36,7 +36,8 @@ one generic Rust driver — no per-device code.
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
 | `bm-transport` | serial (`serialport`), Linux USBTMC, port discovery |
-| `bm-server` | axum API (wire-compatible with the Python API) + `/ws/registry` + UI; `benchmesh-server` binary |
+| `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings, metrics, OpenAPI, UI; `benchmesh-server` binary |
+| `bm-store` | recordings database (SQLite, schema-compatible with existing `~/.benchmesh/recordings.db`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
 
@@ -45,6 +46,7 @@ cargo test                                   # all default crates (incl. capture
 cargo clippy --all-targets -- -D warnings
 cargo run -q -p bm-devicedef -- validate devices
 cargo run -p bm-server -- --config captures/bench-config.yaml        # API + UI on :57666
+cargo run -p bm-server -- --config captures/bench-config.yaml --simulate captures/20261016-203514  # no hardware
 ./target/debug/bm-probe --config captures/bench-config.yaml verify    # bench check (read-only)
 cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
 ```

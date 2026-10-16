@@ -1,14 +1,12 @@
 //! Engine + actor behaviour against simulated devices (replayed captures and small
 //! stateful simulators). No hardware needed.
 
-use std::collections::BTreeMap;
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use bm_devicedef::{load_catalog, DeviceDef, RxMode};
+use bm_devicedef::{load_catalog, DeviceDef};
 use bm_driver::actor::{ActorConfig, DeviceHandle, Event};
 use bm_driver::engine::{Engine, Output, Transport};
 use bm_driver::sim::{SimTransport, WireLog};
@@ -34,47 +32,10 @@ fn text(b: &[u8]) -> String {
     b.iter().map(|&c| c as char).collect()
 }
 
-/// Responder answering every command with the last reply it got in the setter capture
-/// session (device answers reconstructed as sent: Python split XDM `\r\n` replies).
+/// Responder replaying the setter capture session of a bench device.
 fn replay_responder(def: &DeviceDef, device_id: &str) -> impl FnMut(&[u8]) -> Option<Vec<u8>> + Send + 'static {
     let path = repo().join(format!("captures/20261016-203514/{device_id}.jsonl.gz"));
-    let rd = BufReader::new(flate2::read::GzDecoder::new(std::fs::File::open(path).unwrap()));
-    let mut table: BTreeMap<String, Vec<u8>> = BTreeMap::new();
-    let mut cur: Option<(String, Vec<u8>)> = None;
-    let unhex = |h: &str| -> Vec<u8> { (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap()).collect() };
-    let rx = def.framing.rx.clone();
-    let finish = |c: Option<(String, Vec<u8>)>, table: &mut BTreeMap<String, Vec<u8>>| {
-        if let Some((tx, mut r)) = c {
-            while r.first().is_some_and(|b| rx.skip_leading.as_bytes().contains(b)) {
-                r.remove(0);
-            }
-            if let (RxMode::Terminator, Some(t)) = (rx.mode, rx.terminator.as_deref()) {
-                if !r.is_empty() && !text(&r).contains(t) {
-                    r.extend(t.as_bytes());
-                }
-            }
-            if !r.is_empty() {
-                table.insert(tx, r);
-            }
-        }
-    };
-    for line in rd.lines() {
-        let e: Value = serde_json::from_str(&line.unwrap()).unwrap();
-        match e["ev"].as_str().unwrap() {
-            "tx" => {
-                finish(cur.take(), &mut table);
-                cur = Some((text(&unhex(e["hex"].as_str().unwrap())), Vec::new()));
-            }
-            "rx" => {
-                if let Some((_, r)) = cur.as_mut() {
-                    r.extend(unhex(e["hex"].as_str().unwrap()));
-                }
-            }
-            _ => {}
-        }
-    }
-    finish(cur, &mut table);
-    move |w: &[u8]| table.get(&text(w)).cloned()
+    bm_driver::replay::responder_from_capture(def, &path).unwrap()
 }
 
 // ---------------------------------------------------------------------------------------
@@ -99,9 +60,7 @@ fn every_bench_device_connects_and_polls_from_its_capture() {
     ];
     for (id, dev, expect) in cases {
         let d = def(id);
-        let mut responder = replay_responder(&d, dev);
-        // Queries the Python service never sent (new in the definitions) get a plausible value.
-        let (t, log) = sim(move |w| responder(w).or_else(|| text(w).trim_end().ends_with('?').then(|| b"1.0\n".to_vec())));
+        let (t, log) = sim(replay_responder(&d, dev));
         let mut e = Engine::connect(d.clone(), t).unwrap_or_else(|err| panic!("{id}: connect failed: {err}"));
         let updates = e.poll_due().unwrap();
         for (class, ch, key, want) in *expect {
@@ -374,5 +333,30 @@ fn actor_reconnects_after_the_link_goes_silent() {
     }
     assert!(saw_disconnect && reconnected, "disconnect={saw_disconnect} reconnected={reconnected}");
     assert!(*opens.lock().unwrap() >= 2);
+    h.stop();
+}
+
+#[test]
+fn actor_publishes_metrics() {
+    let connector = Box::new(|| Ok(Box::new(SimTransport::new(Box::new(tenma(Arc::new(Mutex::new((5.0, 0.5, false))))))) as Box<dyn Transport>));
+    let (etx, erx) = channel();
+    let cfg = ActorConfig { metrics_every: Duration::from_millis(300), ..Default::default() };
+    let h = DeviceHandle::spawn("tenma-1", def("tenma_72"), connector, Box::new(move |e| etx.send(e).unwrap()), cfg);
+    h.get("PSU", "voltage", 1).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let mut m = None;
+    while Instant::now() < deadline && m.is_none() {
+        if let Ok(Event::Metrics(v)) = erx.recv_timeout(Duration::from_secs(1)) {
+            m = Some(v);
+        }
+    }
+    let m = m.expect("metrics event");
+    assert_eq!(m["device_id"], "tenma-1");
+    assert_eq!(m["transport_type"], "serial");
+    assert_eq!(m["api_request_count"], 1);
+    assert!(m["total_operations"].as_u64().unwrap() >= 4, "identify + poll + get: {m}");
+    assert!(m["api_latency_p95_ms"].is_number());
+    assert!(m["avg_queue_depth"].as_f64().unwrap() < 1.0, "{m}");
+    assert_eq!(m["quality_tier"], "excellent");
     h.stop();
 }

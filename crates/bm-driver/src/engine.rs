@@ -76,6 +76,17 @@ pub struct Engine {
     settle_until: Option<Instant>,
     /// Consecutive polls in which every command timed out.
     pub silent_polls: u32,
+    /// Exchange counters since connect (for metrics).
+    pub stats: ExchangeStats,
+}
+
+/// Wire-level counters (monotonic since connect).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ExchangeStats {
+    pub exchanges: u64,
+    pub failures: u64,
+    /// Time the link was busy with exchanges (write → reply, incl. gaps).
+    pub busy: Duration,
 }
 
 impl Engine {
@@ -106,6 +117,7 @@ impl Engine {
             next_write: now,
             settle_until: None,
             silent_polls: 0,
+            stats: ExchangeStats::default(),
         };
         let idn = e.run(&def.identify, 1, &BTreeMap::new())?.value();
         e.idn = idn.as_str().unwrap_or_default().to_string();
@@ -333,8 +345,20 @@ impl Engine {
         expr.eval(Vars { results: &results, state: &self.state, ch })
     }
 
-    /// One exchange: respect gaps, write, frame the reply (or none).
+    /// One exchange, counted for metrics.
     fn exchange(&mut self, cmd: &Command, wire: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+        let started = Instant::now();
+        let r = self.exchange_inner(cmd, wire);
+        self.stats.exchanges += 1;
+        self.stats.busy += started.elapsed();
+        if r.is_err() {
+            self.stats.failures += 1;
+        }
+        r
+    }
+
+    /// Respect gaps, write, frame the reply (or none).
+    fn exchange_inner(&mut self, cmd: &Command, wire: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         let now = Instant::now();
         if now < self.next_write {
             sleep(self.next_write - now);
