@@ -162,3 +162,7 @@ mcp_services/**/.pytest_cache/
 /POC
 # Serena agent memories (local tooling state)
 .serena/
+
+# wire capture pointer (sessions themselves are committed as golden transcripts)
+captures/LATEST
+captures/*/_datadir/
