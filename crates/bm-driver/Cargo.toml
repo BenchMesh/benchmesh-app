@@ -1,0 +1,17 @@
+[package]
+name = "bm-driver"
+description = "BenchMesh generic instrument driver: interprets device definitions (framing, parsing, CEL status, wire rendering)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-devicedef = { path = "../bm-devicedef" }
+serde_json.workspace = true
+regex.workspace = true
+cel.workspace = true
+
+[dev-dependencies]
+flate2.workspace = true
+serde.workspace = true

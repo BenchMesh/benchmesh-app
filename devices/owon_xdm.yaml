@@ -24,7 +24,7 @@ framing:
   rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", strip_trailing: "\r", timeout_ms: 300, drain_idle_ms: 20}
   timing: {min_gap_ms: 0, gap_after_write_ms: 50}
 state:
-  range: {type: string, initial: "AUTO", description: "No documented range query; tracks our own range commands, AUTO after a mode change"}
+  range: {type: string, description: "No documented range query: null (unknown) until we set it; AUTO after our mode change"}
 commands:
   idn: {send: "*IDN?", parse: [trim], source: PM p.9}
   func:

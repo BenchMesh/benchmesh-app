@@ -114,10 +114,13 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 - [x] Phase 2: class schemas `devices/classes/{PSU,DMM,ELL,AWG,OSC}.yaml` (contract fixes applied, see Log)
 - [x] Phase 2: DSL v1 — Rust types + validator + CLI (`crates/bm-devicedef`), JSON Schemas `devices/schema/`, spec `ai_context/migration/DEVICE_DSL.md`
 - [x] Phase 2: device definitions `devices/{tenma_72,owon_spm,owon_xdm,owon_oel,owon_dge}.yaml` — valid, and cover all captured wire traffic (`cargo test -p bm-devicedef`)
-- [ ] Phase 2: rigol_dho800 definition — **waiting for user decision** (no scope on bench)
+- [~] Phase 2: rigol_dho800 definition — **skipped by user decision** (no scope on bench); revisit when one is available
 - [x] Phase 3: cargo workspace scaffold (root `Cargo.toml`, `crates/*`), CI job `rust` in `.github/workflows/ci.yaml
-- [ ] Phase 3: transports + framing engine
-- [ ] Phase 3: interpreter + replay tests green against captures
+- [x] Phase 3: `bm-driver` pure core — incremental framer (terminator/fixed/idle/message/IEEE block), parse pipeline, CEL eval + `num()`, exact port of Python SI dicts, wire rendering with validation (20 unit tests)
+- [x] Phase 3: replay tests green against captures (`crates/bm-driver/tests/replay.rs`): 29 995 replies parse; 142 Python GET results and 78 distinct registry values reproduced
+- [ ] Phase 3: engine — per-device actor owning a transport: identify, session steps, poll groups, cache/invalidate, settle, requires, effects, gaps, drain-on-timeout
+- [ ] Phase 3: transports — serial (`serialport`), usbtmc (kernel fd, one large read per message), simulated transport replaying captures
+- [ ] Phase 3: `bm-probe` CLI (verify a definition live on the bench, read-only by default)
 - [ ] Phase 3: live verification on bench
 - [ ] Phase 4: axum API parity + contract tests
 - [ ] Phase 4: Tauri shell + packaging
@@ -125,13 +128,10 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 
 ## Next action (when resuming)
 
-Phase 2 is done except Rigol (decision pending). Next: **Phase 3 — the interpreter**.
-Suggested order (TDD against captures, no hardware needed):
-1. crate `bm-driver`: parse pipeline + CEL eval (`num()`), unit-tested on captured replies.
-2. Replay harness: feed `captures/*/<dev>.jsonl.gz` exchanges through the definitions; the
-   parsed status must equal the Python API results in `api.jsonl.gz` (minus known Python bugs).
-3. crate `bm-transport` + framing engine (serial/idle/fixed/terminator/usbtmc message) with a
-   simulated port; then `bm-probe verify` against the bench.
+Phase 3 core + replay are done. Next: **the engine** (per-device actor over a `Transport`
+trait) developed against a simulated transport built from the captures, then real serial /
+usbtmc transports and `bm-probe verify` on the bench (read-only first, then setters with the
+approved values). Engine semantics to implement are specified in `ai_context/migration/DEVICE_DSL.md`.
 Open hardware checks per device are listed at the end of each `device-notes/*.md` (read-only vs state-changing).
 **DGE needs a physical replug** before any further DGE work.
 To re-run a capture: stop the normal service, then
@@ -189,3 +189,4 @@ To re-run a capture: stop the normal service, then
 - **2026-10-16** — Phase 2 done (except Rigol). 5 parallel agents turned each programming-manual PDF + Python driver + captures into `device-notes/<driver>.md` (page-cited command tables, quirks, open hardware questions) — a manual dry run of the future PDF→definition pipeline. DSL v1 implemented in Rust (`bm-devicedef`: serde types are the source of truth, schemars JSON Schema, semantic validator incl. CEL compile + variable checks, type-aware wire regexes). Features added after the notes: `requires` (refuse with message; OEL mode-gated setpoints), `on_empty: null` (OEL local mode ≠ link loss), `settle_ms` / `gap_after_ms` (XDM), computed params `from:` (SPM/XDM ranges depend on active function), poll groups (DGE fast/slow), `timeout_ms`/`max_bytes` (DGE screenshot), `rx.drain_idle_ms`, model `verified`/`channels`. Tests: 8 green incl. negative validator cases and **capture coverage: every TX the Python service sent (≈30k commands, 3 sessions) is producible by the definitions**, with 6 deliberate deviations documented in `NOT_REPRODUCED`.
   Class-contract fixes vs Python/UI (UI follow-ups needed in Phase 4): DMM `range` op now exists (Python had only `set_*_range` → UI got 400); temperature ops are `temp_sensor`/`temp_scale` (UI must stop posting `set_temp_sensor`); PSU `remote` op optional (TENMA has no remote command; REMOTE status constant ON); ELL field 6 is `OPP` (manual) not `OTP`; ELL `REMOTE` comes from `SYST:REM?` instead of being hard-coded; AWG status extended (SHAPE, FREQ, AMPL, OFFS, PHASE, SYMM); XDM `hold` feature dropped (no SCPI command); SPM `RANGe AUTO` replaced by `:RANGe:AUTO ON`.
 - **2026-10-16** — Known issue (pre-existing, not caused by this branch): Python suite has **32 failing tests on `p0-stabilize` and identically on `rust-migration`** (17× `test_api_recording.py` `no such table: recording_series`, 9× `test_unified_scheduler.py`, 6 others). GitHub CI's Python job is therefore red on both branches. Rust job is green locally (clippy `-D warnings`, 8 tests, validate). Decide: fix, or mark xfail until the Python backend is deleted in Phase 5.
+- **2026-10-16** — User decisions: 32 pre-existing Python failures marked xfail (conftest hook `KNOWN_FAILURES`, delete in Phase 5) → Python suite 300 passed / 32 xfailed; Rigol skipped; class-contract API changes approved. Phase 3 started: `crates/bm-driver` (I/O-free interpreter core). Python SI formatting ported exactly (`pyfmt.rs`, `si.rs`; expected values generated by running the Python functions). Replay harness findings: (a) XDM `\r\n` replies were split across exchanges by Python's `\r` framing — replay treats rx as a continuous stream; (b) 39 XDM replies in the setter session are shifted one command late (Python desync) and are **rejected** by our parsers (desired); (c) Python returned raw text / garbage SI dicts where the contract now has numbers / SI dicts / null+OVERLOAD — compared semantically; (d) XDM RANGE state now starts null (unknown) like Python, not AUTO. SPM `function` GET now returns mode keys (VOLT_AC) like XDM.

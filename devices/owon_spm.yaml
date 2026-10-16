@@ -39,7 +39,12 @@ commands:
     source: PM p13
   meas_func:
     send: "CONFigure?"
-    parse: [trim, {split: {sep: " ", index: 0}}]
+    parse:
+      - trim
+      - split: {sep: " ", index: 0}
+      - map: {"VOLT:DC": VOLT_DC, "VOLT:AC": VOLT_AC, "CURR:DC": CURR_DC, "CURR:AC": CURR_AC,
+              "RES": RES, "CAP": CAP, "DIOD": DIOD, "CONT": CONT}
+    description: Active function as a features.modes key
     source: PM p13
   meas_v: {send: "MEAS:VOLT?", parse: [trim, number], source: PM p7}
   meas_i: {send: "MEAS:CURR?", parse: [trim, number], source: PM p7-8}
@@ -103,8 +108,8 @@ commands:
       fn:
         type: enum
         from: meas_func
-        values: {"VOLT:DC": "VOLTage:DC", "VOLT:AC": "VOLTage:AC", "CURR:DC": "CURRent:DC",
-                 "CURR:AC": "CURRent:AC", "RES": "RESistance"}
+        values: {VOLT_DC: "VOLTage:DC", VOLT_AC: "VOLTage:AC", CURR_DC: "CURRent:DC",
+                 CURR_AC: "CURRent:AC", RES: "RESistance"}
       range:
         type: enum
         values: {"AUTO": ":AUTO ON", "MIN": " MIN", "MAX": " MAX", "200E-3": " 200E-3", "2": " 2",

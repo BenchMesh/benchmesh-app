@@ -72,6 +72,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bm-driver"
+version = "0.1.0"
+dependencies = [
+ "bm-devicedef",
+ "cel",
+ "flate2",
+ "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "borsh"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
