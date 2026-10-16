@@ -108,7 +108,7 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 - [x] Phase 1: OEL remote-mode hypothesis confirmed (measurement queries answer only after `SYST:REM`); OEL polled + exercised in session `captures/20261016-203514`
 - [x] Phase 1: setter capture, all 5 devices (`captures/setters-bench.yaml` → session `captures/20261016-203514`); bench restored to pre-capture state (verified by read-back)
 - [x] Phase 1: Tenma setter timing/format probed
-- [~] Phase 1: DGE screenshot — failure mode captured (`captures/20261016-204256-owon-dge2070-query_screenshot`); **DGE is wedged (USBTMC bTag desync) and needs a physical replug**, then verify the single-large-read fix
+- [x] Phase 1: DGE screenshot failure mode captured (`captures/20261016-204256-owon-dge2070-query_screenshot`); root cause found in Phase 3 (see DGE screenshot item below)
 - [x] Phase 2: as-is class contract extracted → `ai_context/migration/CLASS_CONTRACT.md`
 - [x] Phase 2: per-device notes from PDF manuals + captures → `ai_context/migration/device-notes/*.md`
 - [x] Phase 2: class schemas `devices/classes/{PSU,DMM,ELL,AWG,OSC}.yaml` (contract fixes applied, see Log)
@@ -122,8 +122,8 @@ Remove `benchmesh-serial-service/src`, pytest suite, Python tooling, `mcp_servic
 - [x] Phase 3: transports (`crates/bm-transport`): serial (`serialport`, no libudev), Linux USBTMC (one read per message, ioctl timeouts); `bm-driver::sim` simulated transport
 - [x] Phase 3: `bm-probe` CLI (`verify` read-only, `get`, `set`, `screenshot`) — **4/5 bench devices verified live**; `scripts/bench_setters.sh` 26/26 live setter checks pass, bench restored
 - [x] Phase 3: DGE live verification after replug — all text queries/both channels OK (poll ≈100 ms)
-- [ ] DGE screenshot — **not possible via Linux kernel usbtmc** (device streams raw bulk packets without valid USBTMC headers; see device-notes/owon_dge.md). Needs a userspace USBTMC transport (`nusb`) + udev rule (user sudo). Operation disabled in the definition. **DGE is wedged again by a raw probe → needs another replug.**
-- [ ] Phase 3: live verification on bench
+- [ ] DGE screenshot — **not possible via Linux kernel usbtmc** (device streams raw bulk packets without valid USBTMC headers; see device-notes/owon_dge.md). Needs a userspace USBTMC transport (`nusb`) + udev rule (user sudo). Operation disabled in the definition. (DGE healthy again after re-enumeration.)
+- [x] Phase 3: live verification on bench — all 5 devices via `bm-probe verify`, setters 26/26
 - [x] Phase 4: `bm-server` (axum) core API parity — instruments (+ETag), features, methods, GET/POST ops, drivers, config + device CRUD (atomic YAML), serial/usbtmc discovery, `/ws/registry`, static UI + SPA routes; 6 API tests; **existing React UI runs unmodified against the Rust server on the real bench (all 5 devices)**
 - [ ] Phase 4: remaining endpoints — recordings (SQLite, same schema), `/metrics` + `/ws/metrics`, `/ai/context`, `/openapi.json` (utoipa)
 - [x] Phase 4: UI follow-ups — API on the page origin (`src/api/base.ts`, Vite dev proxy), DMM mode follows registry MODE, `temp_sensor`/`temp_scale`, AWG channel panel (status + output toggle), tooltip URLs, Node-RED nodes (shared helper, partial op names, SI → number, API error details); frontend tests repaired (vitest ran Playwright specs; missing RequestLogProvider; stale assertions) → 35/35; Node-RED tests 4/4 in CI; server sends `Cache-Control: no-cache` for the UI
