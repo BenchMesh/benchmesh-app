@@ -66,20 +66,17 @@ impl DeviceHandle {
         DeviceHandle { tx, join: Some(join), request_timeout }
     }
 
+    /// Cheap, cloneable request sender (e.g. for HTTP handlers).
+    pub fn client(&self) -> DeviceClient {
+        DeviceClient { tx: self.tx.clone(), request_timeout: self.request_timeout }
+    }
+
     pub fn get(&self, class: &str, op: &str, ch: u8) -> Result<Output, Error> {
-        let (reply, rx) = channel();
-        self.send(Request::Get { class: class.into(), op: op.into(), ch, reply })?;
-        rx.recv_timeout(self.request_timeout).map_err(|_| Error::Io("device did not answer in time".into()))?
+        self.client().get(class, op, ch)
     }
 
     pub fn set(&self, class: &str, op: &str, ch: u8, value: &str) -> Result<(), Error> {
-        let (reply, rx) = channel();
-        self.send(Request::Set { class: class.into(), op: op.into(), ch, value: value.into(), reply })?;
-        rx.recv_timeout(self.request_timeout).map_err(|_| Error::Io("device did not answer in time".into()))?
-    }
-
-    fn send(&self, r: Request) -> Result<(), Error> {
-        self.tx.send(r).map_err(|_| Error::Io("device thread stopped".into()))
+        self.client().set(class, op, ch, value)
     }
 
     /// Stop the thread (runs `on_disconnect`) and wait for it.
@@ -88,6 +85,31 @@ impl DeviceHandle {
         if let Some(j) = self.join.take() {
             let _ = j.join();
         }
+    }
+}
+
+/// Sends requests to a device thread; blocks until served (or the request timeout).
+#[derive(Clone)]
+pub struct DeviceClient {
+    tx: Sender<Request>,
+    request_timeout: Duration,
+}
+
+impl DeviceClient {
+    pub fn get(&self, class: &str, op: &str, ch: u8) -> Result<Output, Error> {
+        let (reply, rx) = channel();
+        self.send(Request::Get { class: class.into(), op: op.into(), ch, reply })?;
+        rx.recv_timeout(self.request_timeout).map_err(|_| Error::Timeout { partial: Vec::new() })?
+    }
+
+    pub fn set(&self, class: &str, op: &str, ch: u8, value: &str) -> Result<(), Error> {
+        let (reply, rx) = channel();
+        self.send(Request::Set { class: class.into(), op: op.into(), ch, value: value.into(), reply })?;
+        rx.recv_timeout(self.request_timeout).map_err(|_| Error::Timeout { partial: Vec::new() })?
+    }
+
+    fn send(&self, r: Request) -> Result<(), Error> {
+        self.tx.send(r).map_err(|_| Error::Io("device thread stopped".into()))
     }
 }
 

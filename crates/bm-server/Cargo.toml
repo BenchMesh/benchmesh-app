@@ -1,0 +1,26 @@
+[package]
+name = "bm-server"
+description = "BenchMesh HTTP/WebSocket API server (wire-compatible with the former Python service)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "benchmesh-server"
+path = "src/main.rs"
+
+[dependencies]
+bm-devicedef = { path = "../bm-devicedef" }
+bm-driver = { path = "../bm-driver" }
+bm-transport = { path = "../bm-transport" }
+axum.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+tokio-tungstenite = "0.30"
+futures-util = "0.3"

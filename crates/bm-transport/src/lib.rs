@@ -12,6 +12,7 @@ use std::time::Duration;
 use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink};
 use bm_driver::engine::Transport;
 
+pub mod discover;
 #[cfg(target_os = "linux")]
 mod usbtmc;
 #[cfg(target_os = "linux")]

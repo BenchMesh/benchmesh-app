@@ -1,5 +1,6 @@
 # Capture-only config for the 2026-10-16 bench (does not replace ~/.benchmesh/config.yaml).
-# Serial adapters by stable path where available; ttyUSB0 (CH340, no serial no.) by USB path.
+# Serial adapters by stable path. The SPM and XDM both use CH340 adapters WITHOUT a serial
+# number, so their shared by-id link is ambiguous: both are addressed by USB port (by-path).
 version: 1
 devices:
 - {id: tenma-72-2540, name: Tenma, driver: tenma_72, model: 72-2540, transport: serial,
@@ -7,7 +8,7 @@ devices:
 - {id: owon-spm3103, name: OWON SPM, driver: owon_spm, model: SPM3103, transport: serial,
    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.3.2.4:1.0-port0, baud: 115200, serial: 8N1}
 - {id: owon-xdm1241, name: OWON XDM, driver: owon_xdm, model: XDM1241, transport: serial,
-   port: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0, baud: 115200, serial: 8N1}
+   port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.3.2.2.4:1.0-port0, baud: 115200, serial: 8N1}
 - {id: owon-oel1515, name: OWON OEL, driver: owon_oel, model: OEL1515, transport: serial,
    port: /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AL036DJT-if00-port0, baud: 115200, serial: 8N1}
 - {id: owon-dge2070, name: OWON DGE, driver: owon_dge, model: DGE2070, transport: usbtmc, device: /dev/usbtmc2}

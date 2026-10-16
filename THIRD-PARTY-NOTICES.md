@@ -52,8 +52,8 @@ BenchMesh includes or depends upon third-party software components that are dist
 
 Direct dependencies of the Rust crates (`crates/`). Transitive dependencies are under permissive
 licenses (MIT, Apache-2.0, BSD-3-Clause, Zlib, Unicode-3.0, BSL-1.0, 0BSD, Unlicense); the only
-exceptions are `serialport` (MPL-2.0, listed below) and `unescaper` (MIT OR GPL-3.0-only, used
-under MIT; pulled in by `serialport`).
+exceptions are `serialport` (MPL-2.0, listed below), `unescaper` (MIT OR GPL-3.0-only, used
+under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1+, used under MIT).
 
 ### serde, serde_json
 - **License**: MIT OR Apache-2.0
@@ -84,6 +84,14 @@ under MIT; pulled in by `serialport`).
 ### libc
 - **License**: MIT OR Apache-2.0
 - **URL**: https://github.com/rust-lang/libc
+
+### axum, tokio, tower-http (bm-server)
+- **License**: MIT
+- **URL**: https://github.com/tokio-rs/axum, https://github.com/tokio-rs/tokio, https://github.com/tower-rs/tower-http
+
+### tower, tokio-tungstenite, futures-util (test-only)
+- **License**: MIT / MIT / MIT OR Apache-2.0
+- **URL**: https://github.com/tower-rs/tower, https://github.com/snapview/tokio-tungstenite, https://github.com/rust-lang/futures-rs
 
 ### flate2 (test-only)
 - **License**: MIT OR Apache-2.0
