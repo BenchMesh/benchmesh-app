@@ -1,4 +1,4 @@
-//! benchmesh-server — BenchMesh API + UI server.
+//! benchmesh-server — BenchMesh API + UI server (headless / lab server).
 //!
 //! ```text
 //! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--host ADDR] [--port N]
@@ -8,20 +8,15 @@
 //! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Duration;
 
-use bm_driver::actor::ActorConfig;
-use bm_server::config::ConfigFile;
-use bm_server::devices::{hardware_connectors, Devices};
-use bm_server::{router, AppState};
+use bm_server::run::{start, ServerOptions};
 
 fn arg(args: &[String], flag: &str) -> Option<String> {
     args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1).cloned())
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args: Vec<String> = std::env::args().collect();
     let home = std::env::var("HOME").unwrap_or_default();
     let config = arg(&args, "--config")
@@ -32,63 +27,34 @@ async fn main() {
         .or_else(|| std::env::var("BENCHMESH_DEVICES").ok())
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("devices"));
-    let ui_dir = arg(&args, "--ui")
-        .map(PathBuf::from)
-        .or_else(|| Some(PathBuf::from("benchmesh-serial-service/frontend/dist")))
-        .filter(|p| p.join("index.html").exists());
+    let ui_dir = arg(&args, "--ui").map(PathBuf::from).or_else(|| Some(PathBuf::from("benchmesh-serial-service/frontend/dist")));
     let host = arg(&args, "--host").unwrap_or_else(|| "0.0.0.0".into());
     let port = arg(&args, "--port").or_else(|| std::env::var("API_PORT").ok()).unwrap_or_else(|| "57666".into());
+    let ws_interval = std::env::var("BM_WS_INTERVAL")
+        .ok()
+        .and_then(|v| v.parse::<f64>().ok())
+        .map(|s| Duration::from_millis((s * 1000.0) as u64))
+        .unwrap_or(Duration::from_millis(200));
 
-    let catalog = match bm_devicedef::load_catalog(&devices_dir) {
-        Ok(c) => c,
+    let server = match start(ServerOptions {
+        config: config.clone(),
+        devices_dir,
+        ui_dir,
+        listen: vec![format!("{host}:{port}")],
+        ws_interval,
+    }) {
+        Ok(s) => s,
         Err(e) => {
-            eprintln!("cannot load device definitions from {}:\n{}", devices_dir.display(), e.join("\n"));
+            eprintln!("{e}");
             std::process::exit(1);
         }
     };
-    let cfg = ConfigFile { path: config.clone() };
-    let entries = cfg.load().unwrap_or_else(|e| {
-        eprintln!("{e}");
-        std::process::exit(1);
-    });
-    let devices = Arc::new(Devices::new(catalog, hardware_connectors(), ActorConfig::default()));
-    for e in entries {
-        let known = devices.driver_ids();
-        match bm_server::config::validate_entry(&e, &known) {
-            Ok(()) => {
-                if let Err(err) = devices.start(e) {
-                    eprintln!("device not started: {err}");
-                }
-            }
-            Err(err) => eprintln!("skipping invalid config entry {:?}: {err}", e.get("id")),
-        }
+    for w in &server.warnings {
+        eprintln!("warning: {w}");
     }
-    let state = Arc::new(AppState {
-        devices: devices.clone(),
-        config: cfg,
-        ui_dir: ui_dir.clone(),
-        ws_interval: Duration::from_millis(
-            std::env::var("BM_WS_INTERVAL").ok().and_then(|v| v.parse::<f64>().ok()).map(|s| (s * 1000.0) as u64).unwrap_or(200),
-        ),
-        config_lock: Default::default(),
-    });
-    let addr = format!("{host}:{port}");
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| {
-        eprintln!("cannot listen on {addr}: {e}");
-        std::process::exit(1);
-    });
-    eprintln!(
-        "BenchMesh server on http://{addr} — config {} — {} definitions — UI {}",
-        config.display(),
-        devices.catalog.devices.len(),
-        ui_dir.map(|u| u.display().to_string()).unwrap_or_else(|| "not found".into())
-    );
-    axum::serve(listener, router(state))
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-        })
-        .await
-        .expect("server error");
+    eprintln!("BenchMesh server on {} (listening {}) — config {}", server.url(), server.addr, config.display());
+    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("signal runtime");
+    let _ = rt.block_on(tokio::signal::ctrl_c());
     eprintln!("stopping devices…");
-    tokio::task::spawn_blocking(move || devices.stop_all()).await.ok();
+    server.stop();
 }

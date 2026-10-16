@@ -23,6 +23,35 @@ The system follows a layered architecture:
 
 Each device runs in its own worker thread with per-device RLock for thread safety. Devices reconnect automatically with ~2s backoff on failure. The registry maintains `IDN` (from *IDN? SCPI command on connect) and `status` (polled every ~2s) for each device.
 
+## Rust + Tauri Migration (in progress)
+
+The Python backend and Electron shell are being replaced by **Rust + Tauri** (branch
+`rust-migration`). Plan, decisions and progress log: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`
+(read it first when working on the migration). Instruments are described by **declarative
+device definitions** (`devices/*.yaml`, spec `ai_context/migration/DEVICE_DSL.md`) interpreted by
+one generic Rust driver — no per-device code.
+
+| Crate (`crates/`) | Role |
+|---|---|
+| `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
+| `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
+| `bm-transport` | serial (`serialport`), Linux USBTMC, port discovery |
+| `bm-server` | axum API (wire-compatible with the Python API) + `/ws/registry` + UI; `benchmesh-server` binary |
+| `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
+| `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
+
+```bash
+cargo test                                   # all default crates (incl. capture replay tests)
+cargo clippy --all-targets -- -D warnings
+cargo run -q -p bm-devicedef -- validate devices
+cargo run -p bm-server -- --config captures/bench-config.yaml        # API + UI on :57666
+./target/debug/bm-probe --config captures/bench-config.yaml verify    # bench check (read-only)
+cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
+```
+
+Bench/hardware notes and wire captures: `captures/`, `scripts/wire_capture/`,
+`scripts/bench_setters.sh`, `ai_context/migration/device-notes/`.
+
 ## Unified Polling & Priority Queue
 
 **Status**: Implemented (disabled by default for backward compatibility)

@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+# The desktop app needs WebKitGTK etc.; build it explicitly (`-p benchmesh-app` / `cargo tauri build`).
+default-members = ["crates/bm-devicedef", "crates/bm-driver", "crates/bm-transport", "crates/bm-probe", "crates/bm-server"]
 
 [workspace.package]
 version = "0.1.0"
