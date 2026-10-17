@@ -46,7 +46,7 @@ jobs:
           npm ci
           npx vitest run --reporter=dot
       - name: Node-RED node tests
-        run: node --test "node-red-contrib-benchmesh/test/*.test.js"
+        run: node --test node-red-contrib-benchmesh/test/*.test.js
 
   build:
     needs: test

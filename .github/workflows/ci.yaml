@@ -51,7 +51,7 @@ jobs:
           npx vitest run --reporter=dot
 
       - name: Run Node-RED node tests
-        run: node --test "node-red-contrib-benchmesh/test/*.test.js"
+        run: node --test node-red-contrib-benchmesh/test/*.test.js
 
   rust:
     runs-on: ubuntu-latest
