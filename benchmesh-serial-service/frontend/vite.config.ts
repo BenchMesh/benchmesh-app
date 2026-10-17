@@ -31,15 +31,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // The recordings chart (echarts, tree-shaken) is not listed: it stays in the lazily
+        // loaded chunk of `recording/RecordingChart.tsx`.
         manualChunks: {
-          // Separate large charting library (used in RecordingModal)
-          'vendor-charts': ['echarts', 'echarts-for-react'],
           // Separate documentation libraries (used in DocsViewer)
           'vendor-docs': ['react-markdown', 'remark-gfm', 'swagger-ui-react'],
           // Core React libraries
           'vendor-react': ['react', 'react-dom'],
-          // Axios for API calls
-          'vendor-axios': ['axios']
         }
       }
     },

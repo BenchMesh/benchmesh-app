@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use bm_devicedef::{Catalog, DeviceDef, Model};
 use bm_driver::actor::{ActorConfig, Connector, DeviceClient, DeviceHandle, Event};
@@ -52,6 +53,8 @@ pub struct DeviceState {
     pub last_error: Option<String>,
     /// class -> channel -> status
     pub status: BTreeMap<String, BTreeMap<u8, BTreeMap<String, Value>>>,
+    /// class -> channel -> when that status was last updated (recordings skip stale values).
+    pub status_at: BTreeMap<String, BTreeMap<u8, Instant>>,
     /// Latest metrics snapshot from the device thread.
     pub metrics: Option<Value>,
 }
@@ -84,6 +87,17 @@ impl Registry {
         Value::Object(out)
     }
 
+    /// A status value if the device is connected and that class/channel was updated within
+    /// `max_age` (else `None`: never a stale value).
+    pub fn fresh_value(&self, id: &str, class: &str, ch: u8, field: &str, max_age: Duration) -> Option<&Value> {
+        let d = self.devices.get(id).filter(|d| d.connected)?;
+        let at = d.status_at.get(class)?.get(&ch)?;
+        if at.elapsed() > max_age {
+            return None;
+        }
+        d.status.get(class)?.get(&ch)?.get(field)
+    }
+
     fn apply(&mut self, id: &str, ev: Event) {
         let d = self.devices.entry(id.to_string()).or_default();
         match ev {
@@ -95,6 +109,7 @@ impl Registry {
                 d.last_error = None;
             }
             Event::Status(u) => {
+                d.status_at.entry(u.class.clone()).or_default().insert(u.ch, Instant::now());
                 d.status.entry(u.class).or_default().insert(u.ch, u.status);
             }
             Event::Metrics(m) => {
@@ -105,6 +120,7 @@ impl Registry {
                 d.connected = false;
                 d.idn = None;
                 d.status.clear();
+                d.status_at.clear();
                 if reason != "stopped" {
                     d.consecutive_failures += 1;
                     d.last_error = Some(reason);
@@ -223,5 +239,34 @@ pub fn merge(base: &mut Value, over: &Value) {
             }
         }
         (b, o) => *b = o.clone(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bm_driver::engine::StatusUpdate;
+
+    fn status(v: f64) -> Event {
+        Event::Status(StatusUpdate { class: "PSU".into(), ch: 1, status: [("VOUT".to_string(), json!(v))].into_iter().collect() })
+    }
+
+    #[test]
+    fn fresh_value_requires_connection_and_a_recent_update() {
+        let mut r = Registry::default();
+        let age = Duration::from_millis(50);
+        r.apply("d", Event::Connected { idn: "X".into(), model: "M".into() });
+        assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), None, "no status yet");
+        r.apply("d", status(1.5));
+        assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), Some(&json!(1.5)));
+        assert_eq!(r.fresh_value("d", "PSU", 2, "VOUT", age), None);
+        assert_eq!(r.fresh_value("d", "PSU", 1, "IOUT", age), None);
+        assert_eq!(r.fresh_value("x", "PSU", 1, "VOUT", age), None);
+        std::thread::sleep(Duration::from_millis(80));
+        assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), None, "stale");
+        r.apply("d", status(2.0));
+        assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), Some(&json!(2.0)));
+        r.apply("d", Event::Disconnected { reason: "io".into() });
+        assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), None, "disconnected");
     }
 }

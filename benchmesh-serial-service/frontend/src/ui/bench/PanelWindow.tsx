@@ -6,6 +6,7 @@ import { getClassDescription } from '../instrumentClasses'
 import { closeWindow, isDesktop, resizeWindow, setWindowOnTop, startWindowDrag, startWindowResize } from '../desktop'
 import { InstrumentPanel } from './InstrumentPanel'
 import { clearDetached, useDetachedHeartbeat } from './detach'
+import { RecordingsProvider } from '../recording/RecordingsProvider'
 
 /** `instrumentId:CLASS` → its parts (ids may contain colons). */
 export function splitPanelKey(key: string): [string, string] {
@@ -53,6 +54,8 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
   }
 
   return (
+    // readings are recordable here too (the recorder dock lives in the main window only)
+    <RecordingsProvider>
     <div ref={root} className={`bench bench-window${folded ? ' bench-window--folded' : ''}`}>
       {instrument ? (
         <InstrumentPanel instrument={instrument} klass={klass} registry={registry} win={{
@@ -75,5 +78,6 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
           onPointerDown={(e) => { if (e.button === 0) startWindowResize() }} />
       )}
     </div>
+    </RecordingsProvider>
   )
 }

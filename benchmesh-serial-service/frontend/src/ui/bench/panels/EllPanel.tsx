@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import { Readout, Annunciators, DigitEditor, DigitEditorHandle, ArmSwitch, MicroSwitch, Selector, Knob, fixedText, siNumber, intDigitsFor } from '../../kit'
 import { EllProfile } from '../profiles'
 import { ChannelApi, useAction, useSetpoint } from '../api'
+import { Recordable } from '../../recording/signal'
 
 const parseNum = (v: unknown) => siNumber(v)
 
@@ -32,9 +33,9 @@ export function EllPanel({ status, profile, api, online }: {
     <div className="bench-ell">
       <div className="kit-glass">
         <div className="bench-ell__trio">
-          <Readout size="small" tag="V" text={fixedText(vin, intDigitsFor(vMax), 2)} unit="V" tone="volt" label="Input voltage" />
-          <Readout size="small" tag="I" text={fixedText(iin, intDigitsFor(iMax), 3)} unit="A" tone="amp" label="Input current" />
-          <Readout size="small" tag="P" text={fixedText(pin, intDigitsFor(pMax), 2)} unit="W" tone="watt" label="Input power" />
+          <Recordable field="VIN" unit="V"><Readout size="small" tag="V" text={fixedText(vin, intDigitsFor(vMax), 2)} unit="V" tone="volt" label="Input voltage" /></Recordable>
+          <Recordable field="IIN" unit="A"><Readout size="small" tag="I" text={fixedText(iin, intDigitsFor(iMax), 3)} unit="A" tone="amp" label="Input current" /></Recordable>
+          <Recordable field="PIN" unit="W"><Readout size="small" tag="P" text={fixedText(pin, intDigitsFor(pMax), 2)} unit="W" tone="watt" label="Input power" /></Recordable>
         </div>
         <Annunciators items={[
           { label: 'REM', on: remote },

@@ -2,6 +2,7 @@ import React from 'react'
 import { ArmSwitch, DigitEditor, Selector, WavePreview, WaveGlyph, siNumber } from '../../kit'
 import { AwgProfile } from '../profiles'
 import { ChannelApi, useAction } from '../api'
+import { Recordable } from '../../recording/signal'
 
 /** One generator channel: waveform, output, preview, frequency / amplitude / offset. */
 export function AwgChannel({ ch, status, profile, api, online }: {
@@ -33,12 +34,24 @@ export function AwgChannel({ ch, status, profile, api, online }: {
           maxAmplitude={profile.amplitude?.max ?? 20} maxOffset={profile.offset?.max ?? 10} />
       </div>
       <div className="kit-row">
-        {profile.frequency && <DigitEditor label="Frequency" value={freq} spec={profile.frequency} unit="Hz" group={3} disabled={!online}
-          onCommit={(v) => api.set('frequency', v)} />}
-        {profile.amplitude && <DigitEditor label="Amplitude" value={ampl} spec={profile.amplitude} unit={profile.amplitude.unit} disabled={!online}
-          onCommit={(v) => api.set('amplitude', v)} />}
-        {profile.offset && <DigitEditor label="Offset" value={offs} spec={profile.offset} unit={profile.offset.unit} disabled={!online}
-          onCommit={(v) => api.set('offset', v)} />}
+        {profile.frequency && (
+          <Recordable field="FREQ" unit="Hz" focusable={false}>
+            <DigitEditor label="Frequency" value={freq} spec={profile.frequency} unit="Hz" group={3} disabled={!online}
+              onCommit={(v) => api.set('frequency', v)} />
+          </Recordable>
+        )}
+        {profile.amplitude && (
+          <Recordable field="AMPL" unit={profile.amplitude.unit} focusable={false}>
+            <DigitEditor label="Amplitude" value={ampl} spec={profile.amplitude} unit={profile.amplitude.unit} disabled={!online}
+              onCommit={(v) => api.set('amplitude', v)} />
+          </Recordable>
+        )}
+        {profile.offset && (
+          <Recordable field="OFFS" unit={profile.offset.unit} focusable={false}>
+            <DigitEditor label="Offset" value={offs} spec={profile.offset} unit={profile.offset.unit} disabled={!online}
+              onCommit={(v) => api.set('offset', v)} />
+          </Recordable>
+        )}
       </div>
       {error && <span className="kit-error" role="alert">{error}</span>}
     </div>

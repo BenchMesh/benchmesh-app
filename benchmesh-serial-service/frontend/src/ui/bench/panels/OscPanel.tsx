@@ -2,6 +2,7 @@ import React from 'react'
 import { Annunciators, MicroSwitch, ScopeScreen, ScopeTrace, Selector, Stepper, siNumber, siText, step125 } from '../../kit'
 import { OscProfile } from '../profiles'
 import { ChannelApi, channelStatus, useAction, useChannelApi } from '../api'
+import { Recordable } from '../../recording/signal'
 import './osc.css'
 
 const SLOPE_LABEL: Record<string, string> = { POS: '↑', NEG: '↓', RFAL: '↕' }
@@ -128,7 +129,7 @@ export function OscPanel({ id, channels, registry, profile, online }: {
               <b>CH{ch}</b>
               <span>{siText(siNumber(st[ch].SCALE), 'V')}/div {st[ch].COUPLING ?? ''}</span>
               {profile.measurements.map((m) => (
-                <span key={m}><i>{MEAS_LABEL[m]?.[0] ?? m}</i>{siText(siNumber(st[ch][m]), MEAS_LABEL[m]?.[1] ?? '')}</span>
+                <Recordable key={m} inline field={m} unit={MEAS_LABEL[m]?.[1] ?? ''} channel={ch}><i>{MEAS_LABEL[m]?.[0] ?? m}</i>{siText(siNumber(st[ch][m]), MEAS_LABEL[m]?.[1] ?? '')}</Recordable>
               ))}
             </div>
           ))}

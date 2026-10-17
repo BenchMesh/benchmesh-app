@@ -81,6 +81,7 @@ struct Fixture {
 
 impl Drop for Fixture {
     fn drop(&mut self) {
+        self.state.recordings.shutdown();
         self.state.devices.stop_all();
         let _ = std::fs::remove_dir_all(&self.dir);
     }
@@ -300,117 +301,230 @@ where
 
 // ---- recordings ---------------------------------------------------------------------
 
-fn voltage_channel() -> Value {
-    json!([{"device_id": "t1", "class_name": "PSU", "channel": 1, "method_name": "voltage", "label": "Tenma V"}])
+async fn add_series(f: &Fixture, id: i64, body: Value) -> (StatusCode, Value, Option<String>) {
+    call(f, "POST", &format!("/recordings/{id}/series"), Some(body), None).await
+}
+
+async fn recording_of(f: &Fixture, id: i64) -> Value {
+    let (code, v, _) = call(f, "GET", &format!("/recordings/{id}"), None, None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    v
+}
+
+async fn series_data(f: &Fixture, id: i64, query: &str) -> Value {
+    let (code, v, _) = call(f, "GET", &format!("/recordings/{id}/data{query}"), None, None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    v
+}
+
+fn ts(series: &Value) -> Vec<i64> {
+    series["t"].as_array().unwrap().iter().map(|t| t.as_i64().unwrap()).collect()
+}
+
+/// Wait (bounded) until `cond` holds for the recording's data.
+async fn wait_data(f: &Fixture, id: i64, what: &str, cond: impl Fn(&Value) -> bool) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let d = series_data(f, id, "").await;
+        if cond(&d) {
+            return d;
+        }
+        assert!(Instant::now() < deadline, "timed out waiting for {what}: {d}");
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn recording_lifecycle_pause_resume_stop_export_delete() {
+async fn recordings_share_one_time_domain_and_lifecycle() {
     let f = fixture("rec");
-    let (code, v, _) = call(&f, "POST", "/recordings/start",
-        Some(json!({"name": "bench run", "interval_seconds": 0.1, "channels": voltage_channel()})), None).await;
-    assert_eq!(code, StatusCode::OK, "{v}");
-    assert_eq!(v["status"], "recording");
-    let id = v["series_id"].as_i64().unwrap();
-    tokio::time::sleep(Duration::from_millis(450)).await;
+    // Tenma output on → VOUT reads the 4.94 V setpoint
+    assert_eq!(call(&f, "POST", "/instruments/PSU/t1/1/output/ON", None, None).await.0, StatusCode::NO_CONTENT);
 
-    let (_, d, _) = call(&f, "GET", &format!("/recordings/{id}/data"), None, None).await;
-    let pts = d["data_points"].as_array().unwrap();
-    assert!(pts.len() >= 2, "{d}");
-    assert_eq!(pts[0]["measurements"]["t1_PSU_1_voltage"], 4.94, "SI dict stored as a number");
-    assert!(pts[0]["timestamp"].as_str().unwrap().ends_with('Z'), "UTC timestamps carry the zone");
-    assert!(pts[1]["elapsed_seconds"].as_f64().unwrap() > pts[0]["elapsed_seconds"].as_f64().unwrap());
+    let (code, r1, _) = call(&f, "POST", "/recordings", Some(json!({"name": " one ", "interval_s": 1})), None).await;
+    assert_eq!(code, StatusCode::CREATED, "{r1}");
+    assert_eq!((r1["name"].clone(), r1["state"].clone(), r1["series"].clone()), (json!("one"), json!("recording"), json!([])));
+    assert_eq!((r1["description"].clone(), r1["samples"].clone(), r1["last_t"].clone()), (json!(""), json!(0), Value::Null));
+    assert!(r1["started_at"].as_i64().unwrap() > 1_700_000_000_000, "ms since epoch: {r1}");
+    let id1 = r1["id"].as_i64().unwrap();
+    let (code, r2, _) = call(&f, "POST", "/recordings", Some(json!({"name": "two", "description": "d", "interval_s": 2})), None).await;
+    assert_eq!(code, StatusCode::CREATED);
+    let id2 = r2["id"].as_i64().unwrap();
 
-    let (_, p1, _) = call(&f, "POST", &format!("/recordings/{id}/pause"), None, None).await;
-    assert_eq!(p1["status"], "paused");
-    let (_, p2, _) = call(&f, "POST", &format!("/recordings/{id}/pause"), None, None).await;
-    assert_eq!(p1["paused_at"], p2["paused_at"], "second pause keeps the original pause time");
-    let (_, before, _) = call(&f, "GET", &format!("/recordings/{id}"), None, None).await;
-    tokio::time::sleep(Duration::from_millis(300)).await;
-    let (_, after, _) = call(&f, "GET", &format!("/recordings/{id}"), None, None).await;
-    assert_eq!(before["total_points"], after["total_points"], "no samples while paused");
-    assert_eq!(after["series"]["status"], "paused");
+    let (code, v, _) = call(&f, "POST", "/recordings", Some(json!({"name": "one", "interval_s": 1})), None).await;
+    assert_eq!(code, StatusCode::CONFLICT, "{v}");
+    for body in [json!({"name": "  ", "interval_s": 1}), json!({"name": "x".repeat(101), "interval_s": 1}),
+                 json!({"name": "x", "interval_s": 0}), json!({"name": "x", "interval_s": 3601}),
+                 json!({"name": "x", "interval_s": 1.5}), json!({"name": "x"}), json!({"interval_s": 1}), json!([1])] {
+        let (code, v, _) = call(&f, "POST", "/recordings", Some(body.clone()), None).await;
+        assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY, "{body} → {v}");
+        assert!(v["detail"].is_string());
+    }
 
-    let (_, r, _) = call(&f, "POST", &format!("/recordings/{id}/resume"), None, None).await;
-    assert_eq!(r["status"], "recording");
-    tokio::time::sleep(Duration::from_millis(250)).await;
-    let (_, s1, _) = call(&f, "POST", &format!("/recordings/{id}/stop"), None, None).await;
-    assert_eq!(s1["status"], "stopped");
-    assert!(s1["pause_duration_seconds"].as_f64().unwrap() >= 0.25, "{s1}");
-    let (_, s2, _) = call(&f, "POST", &format!("/recordings/{id}/stop"), None, None).await;
-    assert_eq!(s2["duration_seconds"], s1["duration_seconds"], "stopping twice keeps the end time");
-    assert_eq!(call(&f, "POST", &format!("/recordings/{id}/pause"), None, None).await.0, StatusCode::NOT_FOUND);
+    // series: valid (default label from the configured device name) and every invalid case
+    let vout = json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "VOUT", "unit": "V"});
+    let (code, s1, _) = add_series(&f, id1, vout.clone()).await;
+    assert_eq!(code, StatusCode::CREATED, "{s1}");
+    assert_eq!((s1["label"].clone(), s1["unit"].clone(), s1["removed_at"].clone()), (json!("Tenma · VOUT"), json!("V"), Value::Null));
+    assert_eq!((s1["device_id"].clone(), s1["class"].clone(), s1["channel"].clone(), s1["field"].clone()),
+               (json!("t1"), json!("PSU"), json!(1), json!("VOUT")));
+    assert_eq!(add_series(&f, id1, vout.clone()).await.0, StatusCode::CONFLICT, "signal already active");
+    let (code, s2, _) = add_series(&f, id2, vout.clone()).await;
+    assert_eq!(code, StatusCode::CREATED);
+    let (code, s3, _) = add_series(&f, id2, json!({"device_id": "l1", "class": "ELL", "channel": 1, "field": "VIN", "label": "Load V"})).await;
+    assert_eq!(code, StatusCode::CREATED);
+    assert_eq!((s3["label"].clone(), s3["unit"].clone()), (json!("Load V"), json!("")));
+    for (body, why) in [
+        (json!({"device_id": "zz", "class": "PSU", "channel": 1, "field": "VOUT"}), "unknown device"),
+        (json!({"device_id": "t1", "class": "ELL", "channel": 1, "field": "VIN"}), "class not on the device"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 2, "field": "VOUT"}), "channel out of range"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 0, "field": "VOUT"}), "channel 0"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "OUTPUT"}), "enum field"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "CV"}), "bool field"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "NOPE"}), "unknown field"),
+        (json!({"device_id": "t1", "class": "PSU", "channel": 1}), "missing field"),
+    ] {
+        let (code, v, _) = add_series(&f, id1, body).await;
+        assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY, "{why}: {v}");
+    }
+    assert_eq!(add_series(&f, 999, vout.clone()).await.0, StatusCode::NOT_FOUND);
+    let (sid1, sid2, sid3) = (s1["id"].as_i64().unwrap(), s2["id"].as_i64().unwrap(), s3["id"].as_i64().unwrap());
 
-    let (_, list, _) = call(&f, "GET", "/recordings", None, None).await;
-    assert_eq!(list["recordings"][0]["name"], "bench run");
-    assert_eq!(list["recordings"][0]["status"], "stopped");
+    // two samples in the 2 s recording ⇒ several ticks of the 1 s one
+    let d2 = wait_data(&f, id2, "two samples at interval 2", |d| d["series"][0]["t"].as_array().is_some_and(|t| t.len() >= 2)).await;
+    let d1 = series_data(&f, id1, "").await;
+    let t1 = ts(&d1["series"][0]);
+    let t2 = ts(&d2["series"][0]);
+    assert!(t1.len() >= 3, "{d1}");
+    assert!(t1.iter().chain(&t2).all(|t| t % 1000 == 0), "whole seconds: {t1:?} {t2:?}");
+    assert!(t2.iter().all(|t| (t / 1000) % 2 == 0), "interval 2 → even seconds: {t2:?}");
+    assert!(t2.iter().all(|t| t1.contains(t)), "common time domain: {t1:?} ⊇ {t2:?}");
+    assert!(t1.windows(2).all(|w| w[1] - w[0] == 1000), "one sample per second: {t1:?}");
+    assert!(d1["series"][0]["v"].as_array().unwrap().iter().all(|v| v == &json!(4.94)), "{d1}");
+    assert_eq!(d2["series"][1]["id"], sid3);
+    let t3 = ts(&d2["series"][1]);
+    assert!(!t3.is_empty() && t3.iter().all(|t| t2.contains(t)), "both series of a recording share the tick: {t2:?} {t3:?}");
+    let r = recording_of(&f, id1).await;
+    assert!(r["samples"].as_i64().unwrap() >= 3 && r["last_t"].as_i64().unwrap() % 1000 == 0, "{r}");
 
-    let resp = router(f.state.clone()).oneshot(Request::get(format!("/recordings/{id}/export")).body(Body::empty()).unwrap()).await.unwrap();
+    // remove a series: no more samples, data kept
+    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id1}/series/{sid1}"), None, None).await.0, StatusCode::NO_CONTENT);
+    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id1}/series/{sid2}"), None, None).await.0, StatusCode::NOT_FOUND, "series of another recording");
+    let removed_at = recording_of(&f, id1).await["series"][0]["removed_at"].as_i64().unwrap();
+    let n2 = t2.len();
+    wait_data(&f, id2, "another tick", |d| d["series"][0]["t"].as_array().is_some_and(|t| t.len() > n2)).await;
+    let after = ts(&series_data(&f, id1, "").await["series"][0]);
+    assert!(after.len() >= t1.len() && after.iter().all(|t| *t <= removed_at), "removed_at {removed_at}: {after:?}");
+
+    // pause / resume / stop (idempotent, stop is final)
+    let p1 = call(&f, "POST", &format!("/recordings/{id2}/pause"), None, None).await.1;
+    assert_eq!(p1["state"], "paused");
+    let p2 = call(&f, "POST", &format!("/recordings/{id2}/pause"), None, None).await.1;
+    assert_eq!(p1["paused_at"], p2["paused_at"]);
+    assert!(p1["paused_at"].is_i64());
+    let x = call(&f, "POST", &format!("/recordings/{id2}/resume"), None, None).await.1;
+    assert_eq!((x["state"].clone(), x["paused_at"].clone()), (json!("recording"), Value::Null));
+    let st1 = call(&f, "POST", &format!("/recordings/{id2}/stop"), None, None).await.1;
+    assert_eq!(st1["state"], "stopped");
+    assert!(st1["stopped_at"].is_i64());
+    let st2 = call(&f, "POST", &format!("/recordings/{id2}/stop"), None, None).await.1;
+    assert_eq!(st1["stopped_at"], st2["stopped_at"]);
+    assert_eq!(call(&f, "POST", &format!("/recordings/{id2}/resume"), None, None).await.1["state"], "stopped");
+    assert_eq!(add_series(&f, id2, json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "IOUT"})).await.0, StatusCode::CONFLICT);
+    assert_eq!(call(&f, "POST", "/recordings/999/pause", None, None).await.0, StatusCode::NOT_FOUND);
+
+    // data: range and max_points
+    let all = ts(&series_data(&f, id2, "").await["series"][0]);
+    let first = all[0];
+    let one = series_data(&f, id2, &format!("?from={first}&to={first}&max_points=10")).await;
+    assert_eq!((one["from"].clone(), one["to"].clone(), one["recording_id"].clone()), (json!(first), json!(first), json!(id2)));
+    assert_eq!(ts(&one["series"][0]), [first]);
+    assert_eq!(ts(&series_data(&f, id2, &format!("?from={}", first + 1)).await["series"][0]), all[1..].to_vec());
+    for q in ["?max_points=9", "?max_points=20001", "?from=x", "?from=5&to=4"] {
+        assert_eq!(call(&f, "GET", &format!("/recordings/{id2}/data{q}"), None, None).await.0, StatusCode::UNPROCESSABLE_ENTITY, "{q}");
+    }
+    assert_eq!(call(&f, "GET", "/recordings/999/data", None, None).await.0, StatusCode::NOT_FOUND);
+
+    // CSV
+    let resp = router(f.state.clone()).oneshot(Request::get(format!("/recordings/{id2}/export")).body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
     assert_eq!(resp.headers()[header::CONTENT_TYPE], "text/csv; charset=utf-8");
-    assert!(resp.headers()[header::CONTENT_DISPOSITION].to_str().unwrap().contains("bench_run.csv"));
+    assert!(resp.headers()[header::CONTENT_DISPOSITION].to_str().unwrap().contains("two.csv"));
     let csv = String::from_utf8(axum::body::to_bytes(resp.into_body(), 1 << 20).await.unwrap().to_vec()).unwrap();
     let lines: Vec<&str> = csv.split("\r\n").filter(|l| !l.is_empty()).collect();
-    assert_eq!(lines[0], "timestamp,t1_PSU_1_voltage");
-    assert!(lines[1].ends_with(",4.94"), "{}", lines[1]);
+    assert_eq!(lines[0], "time_utc,time_ms,Tenma · VOUT [V],Load V");
+    assert_eq!(lines.len() - 1, all.len(), "one row per distinct t: {csv}");
+    let cells: Vec<&str> = lines[1].split(',').collect();
+    assert!(cells[0].ends_with(".000Z") && cells[1] == first.to_string() && cells[2] == "4.94" && cells[3] == "0", "{}", lines[1]);
 
-    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id}"), None, None).await.0, StatusCode::OK);
-    assert_eq!(call(&f, "GET", &format!("/recordings/{id}"), None, None).await.0, StatusCode::NOT_FOUND);
+    // rename / describe
+    let (code, v, _) = call(&f, "PATCH", &format!("/recordings/{id2}"), Some(json!({"name": "renamed", "description": "notes"})), None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    assert_eq!((v["name"].clone(), v["description"].clone()), (json!("renamed"), json!("notes")));
+    assert_eq!(call(&f, "PATCH", &format!("/recordings/{id2}"), Some(json!({"name": "one"})), None).await.0, StatusCode::CONFLICT);
+    assert_eq!(call(&f, "PATCH", &format!("/recordings/{id2}"), Some(json!({"name": ""})), None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(call(&f, "PATCH", "/recordings/999", Some(json!({"name": "z"})), None).await.0, StatusCode::NOT_FOUND);
+
+    let (_, list, _) = call(&f, "GET", "/recordings", None, None).await;
+    let names: Vec<&str> = list.as_array().unwrap().iter().map(|r| r["name"].as_str().unwrap()).collect();
+    assert_eq!(names, ["renamed", "one"], "newest first");
+
+    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id1}"), None, None).await.0, StatusCode::NO_CONTENT);
+    assert_eq!(call(&f, "GET", &format!("/recordings/{id1}"), None, None).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id1}"), None, None).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(call(&f, "GET", "/recordings/abc", None, None).await.0, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn recording_requests_are_validated() {
-    let f = fixture("recval");
-    let start = |body: Value| call(&f, "POST", "/recordings/start", Some(body), None);
-    let bad_dev = json!([{"device_id": "nope", "class_name": "PSU", "channel": 1, "method_name": "voltage"}]);
-    let not_readable = json!([{"device_id": "t1", "class_name": "PSU", "channel": 1, "method_name": "output"}]);
-    for (body, want) in [
-        (json!({"name": "a", "interval_seconds": 1.0, "channels": bad_dev}), "unknown device"),
-        (json!({"name": "a", "interval_seconds": 1.0, "channels": not_readable}), "no readable operation"),
-        (json!({"name": "a", "interval_seconds": 0.0, "channels": voltage_channel()}), "interval_seconds"),
-        (json!({"name": "a", "interval_seconds": 1.0, "channels": []}), "at least one channel"),
-        (json!({"name": "  ", "interval_seconds": 1.0, "channels": voltage_channel()}), "name"),
-    ] {
-        let (code, v, _) = start(body).await;
-        assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY, "{v}");
-        assert!(v["detail"].as_str().unwrap().contains(want), "{v}");
-    }
-    let ok = json!({"name": "dup", "interval_seconds": 5.0, "channels": voltage_channel()});
-    assert_eq!(start(ok.clone()).await.0, StatusCode::OK);
-    let (code, v, _) = start(ok).await;
-    assert_eq!(code, StatusCode::BAD_REQUEST);
-    assert!(v["detail"].as_str().unwrap().contains("already exists"));
-    assert_eq!(call(&f, "GET", "/recordings/999/data?limit=0", None, None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(call(&f, "GET", "/recordings/999/data", None, None).await.0, StatusCode::NOT_FOUND);
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn recording_websocket_streams_points_with_elapsed_time() {
-    use futures_util::SinkExt;
+async fn recordings_websocket_snapshot_samples_changes_and_deletion() {
     let f = fixture("recws");
-    let (_, v, _) = call(&f, "POST", "/recordings/start",
-        Some(json!({"name": "live", "interval_seconds": 0.1, "channels": voltage_channel()})), None).await;
-    let id = v["series_id"].as_i64().unwrap();
+    let (_, old, _) = call(&f, "POST", "/recordings", Some(json!({"name": "existing", "interval_s": 60})), None).await;
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let app = router(f.state.clone());
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
-    let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/recordings/ws/{id}")).await.unwrap();
+    let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws/recordings")).await.unwrap();
+    let snap: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
+    assert_eq!(snap["type"], "snapshot");
+    assert_eq!(snap["recordings"][0]["id"], old["id"]);
+
+    let (_, r, _) = call(&f, "POST", "/recordings", Some(json!({"name": "live", "interval_s": 1})), None).await;
+    let id = r["id"].as_i64().unwrap();
     let m: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
-    assert_eq!(m["type"], "data_point");
-    assert_eq!(m["series_id"], id);
-    assert!(m["elapsed_seconds"].is_number(), "{m}");
-    assert_eq!(m["measurements"]["t1_PSU_1_voltage"], 4.94);
-    ws.send(tokio_tungstenite::tungstenite::Message::Text("ping".into())).await.unwrap();
-    let mut saw_pong = false;
-    for _ in 0..10 {
-        let t: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
-        if t["type"] == "pong" {
-            saw_pong = true;
+    assert_eq!((m["type"].clone(), m["recording"]["id"].clone()), (json!("recording"), json!(id)));
+    let (_, s, _) = call(&f, "POST", &format!("/recordings/{id}/series"),
+        Some(json!({"device_id": "t1", "class": "PSU", "channel": 1, "field": "VSET"})), None).await;
+    assert_eq!(s["detail"].as_str().map(|d| d.contains("not a numeric status key")), Some(true), "{s}");
+    let (code, s, _) = call(&f, "POST", &format!("/recordings/{id}/series"),
+        Some(json!({"device_id": "l1", "class": "ELL", "channel": 1, "field": "VIN"})), None).await;
+    assert_eq!(code, StatusCode::CREATED);
+    let m: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
+    assert_eq!(m["type"], "recording");
+    assert_eq!(m["recording"]["series"][0]["id"], s["id"]);
+    assert_eq!(m["recording"]["series"][0]["label"], "Load · VIN");
+
+    let sid = s["id"].as_i64().unwrap().to_string();
+    let samples = loop {
+        let m: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
+        if m["type"] == "samples" {
+            break m;
+        }
+    };
+    assert_eq!(samples["recording_id"], id);
+    assert_eq!(samples["t"].as_i64().unwrap() % 1000, 0, "{samples}");
+    assert_eq!(samples["values"], json!({sid: 0.0}), "every active series, value from the registry");
+
+    assert_eq!(call(&f, "POST", &format!("/recordings/{id}/stop"), None, None).await.0, StatusCode::OK);
+    assert_eq!(call(&f, "DELETE", &format!("/recordings/{id}"), None, None).await.0, StatusCode::NO_CONTENT);
+    let mut seen = Vec::new();
+    loop {
+        let m: Value = serde_json::from_str(&next_text(&mut ws).await).unwrap();
+        seen.push(m["type"].as_str().unwrap().to_string());
+        if m["type"] == "deleted" {
+            assert_eq!(m["recording_id"], id);
             break;
         }
     }
-    assert!(saw_pong);
-    f.state.recordings.shutdown();
+    assert!(seen.contains(&"recording".to_string()), "stop announced: {seen:?}");
 }
 
 // ---- metrics, AI context, OpenAPI ---------------------------------------------------
@@ -474,7 +588,8 @@ async fn openapi_and_docs() {
     let (code, v, _) = call(&f, "GET", "/openapi.json", None, None).await;
     assert_eq!(code, StatusCode::OK);
     assert_eq!(v["openapi"], "3.1.0");
-    assert!(v["paths"]["/recordings/start"]["post"].is_object());
+    assert!(v["paths"]["/recordings"]["post"].is_object());
+    assert!(v["paths"]["/ws/recordings"]["get"].is_object());
     let resp = router(f.state.clone()).oneshot(Request::get("/openapi.yaml").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(resp.headers()[header::CONTENT_TYPE], "application/x-yaml");
     let resp = router(f.state.clone()).oneshot(Request::get("/docs").body(Body::empty()).unwrap()).await.unwrap();

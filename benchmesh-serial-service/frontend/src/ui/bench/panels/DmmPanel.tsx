@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Readout, Annunciators, RotaryDial, Selector, MicroSwitch, Bargraph, prefixed, siNumber } from '../../kit'
 import { DmmProfile } from '../profiles'
 import { ChannelApi, useAction } from '../api'
+import { Recordable } from '../../recording/signal'
 
 /** Full scale of the active range: the range value, or the decade above the reading in AUTO. */
 export function fullScale(range: string | null, reading: number | null): number | null {
@@ -89,7 +90,9 @@ export function DmmPanel({ status, profile, api, online }: {
         value={mode} onChange={(k) => apply(api.set('mode', k))} />
       <div className="bench-dmm__main">
         <div className="kit-glass">
-          <Readout tag={info?.glyph ?? mode} text={main.text} unit={isTemp ? unit : `${main.prefix}${unit}`} label={info?.name ?? 'Reading'} tone="meas" />
+          <Recordable field="MEAS" unit={unit}>
+            <Readout tag={info?.glyph ?? mode} text={main.text} unit={isTemp ? unit : `${main.prefix}${unit}`} label={info?.name ?? 'Reading'} tone="meas" />
+          </Recordable>
           <Bargraph tone="meas" label="Reading as a fraction of the range" fraction={fs && shown != null ? Math.abs(shown) / fs : overload ? 1 : 0} marks={['0', fsText]} />
           <div className="kit-stats" aria-label="Statistics">
             <span><b>MIN</b>{stats.n ? fmt(stats.min) : '—'}</span>

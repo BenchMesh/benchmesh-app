@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Readout, Annunciators, DigitEditor, ArmSwitch, MicroSwitch, Bargraph, fixedText, siNumber, intDigitsFor } from '../../kit'
 import { PsuProfile } from '../profiles'
 import { ChannelApi, useHistory, useSetpoint } from '../api'
+import { Recordable } from '../../recording/signal'
 
 /** Annunciators shown when the instrument reports them (OUT and REM always). */
 const PSU_FLAGS: { key: string; label: string; alert?: boolean }[] = [
@@ -34,9 +35,9 @@ export function PsuPanel({ status, profile, api, online }: {
   return (
     <div className="bench-psu">
       <div className="kit-glass bench-psu__glass">
-        <Readout tag="VOUT" text={fixedText(vout, vDig.intDigits, vDig.decimals)} unit="V" tone="volt" history={vHist} label="Output voltage" />
-        <Readout tag="IOUT" text={fixedText(iout, iDig.intDigits, iDig.decimals)} unit="A" tone="amp" history={iHist} label="Output current" />
-        <Readout tag="POUT" size="mid" text={fixedText(pout, pDigits, 2)} unit="W" tone="watt" label="Output power" />
+        <Recordable field="VOUT" unit="V"><Readout tag="VOUT" text={fixedText(vout, vDig.intDigits, vDig.decimals)} unit="V" tone="volt" history={vHist} label="Output voltage" /></Recordable>
+        <Recordable field="IOUT" unit="A"><Readout tag="IOUT" text={fixedText(iout, iDig.intDigits, iDig.decimals)} unit="A" tone="amp" history={iHist} label="Output current" /></Recordable>
+        <Recordable field="POUT" unit="W"><Readout tag="POUT" size="mid" text={fixedText(pout, pDigits, 2)} unit="W" tone="watt" label="Output power" /></Recordable>
         <Annunciators items={[...flags, { label: 'OUT', on: outputOn }, { label: 'REM', on: remote }]} />
       </div>
       <div className="bench-psu__controls">

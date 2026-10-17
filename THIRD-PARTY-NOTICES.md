@@ -143,16 +143,6 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **Copyright**: Copyright (c) 2017-2024 The Apache Software Foundation
 - **URL**: https://github.com/apache/echarts
 
-### echarts-for-react
-- **License**: MIT
-- **Copyright**: Copyright (c) 2016 hustcc
-- **URL**: https://github.com/hustcc/echarts-for-react
-
-### axios
-- **License**: MIT
-- **Copyright**: Copyright (c) 2014-present Matt Zabriskie and contributors
-- **URL**: https://github.com/axios/axios
-
 ### react-icons
 - **License**: MIT (icon sets under their own licenses; BenchMesh uses VS Code Codicons, CC-BY-4.0)
 - **Copyright**: Copyright (c) 2018 kamijin_fanta

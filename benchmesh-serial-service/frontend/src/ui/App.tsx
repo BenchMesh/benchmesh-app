@@ -1,13 +1,13 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react'
+import React, { useState, lazy, Suspense } from 'react'
 import { RequestLogProvider } from './RequestLogContext'
 import { BenchLayout } from './bench/BenchLayout'
 import { DisclaimerModal } from './DisclaimerModal'
 import { useApiBase, useInstruments, useRegistrySocket } from './data'
+import { RecordingsProvider } from './recording/RecordingsProvider'
 
 // Lazy load modal components to reduce initial bundle size
 const DocsViewer = lazy(() => import('./DocsViewer').then(m => ({ default: m.DocsViewer })))
 const MetricsViewer = lazy(() => import('./MetricsViewer').then(m => ({ default: m.MetricsViewer })))
-const RecordingModal = lazy(() => import('./recording/RecordingModal').then(m => ({ default: m.RecordingModal })))
 
 export default function App() {
   const apiBase = useApiBase()
@@ -17,7 +17,6 @@ export default function App() {
   // ?openDocs=true opens the API docs directly
   const [docsModalOpen, setDocsModalOpen] = useState(() => new URLSearchParams(window.location.search).get('openDocs') === 'true')
   const [metricsModalOpen, setMetricsModalOpen] = useState(false)
-  const [recordingModalOpen, setRecordingModalOpen] = useState(false)
 
   // Disclaimer modal state - shows on first app load if not previously accepted
   const [disclaimerOpen, setDisclaimerOpen] = useState(() => {
@@ -41,6 +40,7 @@ export default function App() {
 
   return (
     <RequestLogProvider>
+      <RecordingsProvider>
         <BenchLayout
           instruments={instruments || []}
           registry={registry}
@@ -49,19 +49,9 @@ export default function App() {
           error={error}
           wsDiag={wsDiag}
           onConfigUpdated={handleConfigUpdated}
-          onOpenRecording={() => setRecordingModalOpen(true)}
           onOpenMetrics={() => setMetricsModalOpen(true)}
           onOpenDocs={() => setDocsModalOpen(true)}
         />
-
-        <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-          <RecordingModal
-            isOpen={recordingModalOpen}
-            onClose={() => setRecordingModalOpen(false)}
-            apiBase={apiBase}
-            instruments={instruments || []}
-          />
-        </Suspense>
 
         {docsModalOpen && (
           <Suspense fallback={<div className="modal-loading">Loading...</div>}>
@@ -77,6 +67,7 @@ export default function App() {
 
         {/* Disclaimer modal - highest priority, shown on first app load */}
         <DisclaimerModal isOpen={disclaimerOpen} onAccept={handleDisclaimerAccept} />
+      </RecordingsProvider>
     </RequestLogProvider>
   )
 }

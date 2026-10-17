@@ -1,5 +1,6 @@
 import React from 'react'
 import { Readout, Annunciators, prefixed, siNumber } from '../../kit'
+import { Recordable } from '../../recording/signal'
 
 const isSi = (v: unknown) => !!v && typeof v === 'object' && 'val' in (v as object)
 
@@ -17,7 +18,7 @@ export function GenericPanel({ status }: { status: Record<string, any> }) {
     <div className="kit-glass">
       {readings.map(([k, v]) => {
         const p = prefixed(siNumber(v), 5)
-        return <Readout key={k} size="small" tag={k} text={p.text} unit={p.prefix} />
+        return <Recordable key={k} field={k} unit=""><Readout size="small" tag={k} text={p.text} unit={p.prefix} /></Recordable>
       })}
       {texts.length > 0 && (
         <div className="kit-stats">

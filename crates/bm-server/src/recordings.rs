@@ -1,371 +1,433 @@
-//! Recordings: periodic sampling of instrument operations into SQLite (`bm-store`), the
-//! `/recordings` API and the live `/recordings/ws/{id}` stream.
+//! Recordings v2 (contract: `ai_context/migration/RECORDINGS.md`): the `/recordings` API,
+//! the `/ws/recordings` stream and ONE sampler for all recordings.
 //!
-//! Differences from the former Python service (deliberate fixes):
-//! - values are read through each device's actor (serialised with polling and API calls;
-//!   Python called drivers directly, bypassing the device lock);
-//! - SI value dicts are stored as plain numbers, so charts and CSV get numbers;
-//! - timestamps are ISO 8601 UTC with `Z` (Python omitted the zone → browsers showed local time);
-//! - live points carry `elapsed_seconds` (Python omitted it → live charts plotted at x=0);
-//! - recordings left open by a previous run are closed at startup;
-//! - a second pause keeps the original pause time; stopping twice keeps the first end time;
-//! - CSV columns are the union of all points' keys (Python crashed on new keys).
+//! The sampler ticks on whole seconds of the wall clock (`t` = multiple of 1000 ms); a
+//! recording samples at `t` iff it is `recording` and `(t / 1000) % interval_s == 0`, so all
+//! recordings share one time domain. Values come from the live registry (no extra instrument
+//! traffic); a value older than [`MAX_AGE`] or of a disconnected device is a gap, never a
+//! repeated stale value. One tick is written in one transaction.
 
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::collections::{BTreeMap, HashMap};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
+use axum::body::Bytes;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
-use bm_driver::engine::Output;
-use bm_store::{iso, now, DataPoint, Series, Store, StoreError};
+use bm_devicedef::ValueKind;
+use bm_store::{now_ms, Recording, Series, Signal, Store, StoreError};
 use serde_json::{json, Map, Value};
 use tokio::sync::broadcast;
 
+use crate::config::str_field;
 use crate::devices::Devices;
-use crate::S;
+use crate::{detail, S};
 
-struct Active {
-    paused: Arc<AtomicBool>,
-    task: tokio::task::JoinHandle<()>,
-    tx: broadcast::Sender<String>,
-}
+/// Registry values older than this are not recorded.
+pub const MAX_AGE: Duration = Duration::from_secs(5);
 
 pub struct Recordings {
     pub store: Arc<Store>,
     devices: Arc<Devices>,
-    active: Mutex<HashMap<i64, Active>>,
-}
-
-#[derive(Debug, Clone)]
-struct Channel {
-    device_id: String,
-    class_name: String,
-    channel: u8,
-    method_name: String,
-}
-
-impl Channel {
-    fn key(&self) -> String {
-        format!("{}_{}_{}_{}", self.device_id, self.class_name, self.channel, self.method_name)
-    }
-}
-
-/// Numeric value of an operation result: SI dicts → number, numbers stay, other values as-is.
-fn sample_value(v: Value) -> Option<Value> {
-    match &v {
-        Value::Null => None,
-        Value::Object(o) if o.contains_key("si") => {
-            o.get("sci").and_then(|s| s.as_str()).and_then(|s| s.trim().parse::<f64>().ok()).map(|n| json!(n))
-        }
-        _ => Some(v),
-    }
+    /// WebSocket messages (JSON text) for every `/ws/recordings` client.
+    tx: broadcast::Sender<String>,
+    sampler: Mutex<Option<tokio::task::JoinHandle<()>>>,
 }
 
 impl Recordings {
+    /// Stops recordings left running by a previous run and starts the sampler (must be
+    /// called inside a tokio runtime).
     pub fn new(store: Arc<Store>, devices: Arc<Devices>) -> Arc<Self> {
-        if let Ok(n) = store.close_orphans() {
-            if n > 0 {
-                eprintln!("closed {n} recording(s) left open by a previous run");
-            }
+        match store.close_orphans() {
+            Ok(0) => {}
+            Ok(n) => eprintln!("stopped {n} recording(s) left running by a previous run"),
+            Err(e) => eprintln!("recordings: {e}"),
         }
-        Arc::new(Recordings { store, devices, active: Mutex::new(HashMap::new()) })
+        let (tx, _) = broadcast::channel(1024);
+        let rec = Arc::new(Recordings { store, devices, tx, sampler: Mutex::new(None) });
+        let task = tokio::spawn(sampler(Arc::downgrade(&rec)));
+        *rec.sampler.lock().unwrap() = Some(task);
+        rec
     }
 
-    /// Stop every active recording (server shutdown).
+    /// Stop the sampler (server shutdown). Recordings stay `recording`; the next start
+    /// stops them at their last sample.
     pub fn shutdown(&self) {
-        let ids: Vec<i64> = self.active.lock().unwrap().keys().copied().collect();
-        for id in ids {
-            let _ = self.stop(id);
+        if let Some(t) = self.sampler.lock().unwrap().take() {
+            t.abort();
         }
     }
 
-    fn validate_channels(&self, channels: &Value) -> Result<Vec<Channel>, String> {
-        let list = channels.as_array().ok_or("`channels` must be a list")?;
-        if list.is_empty() {
-            return Err("at least one channel is required".into());
-        }
-        let mut out = Vec::new();
-        for c in list {
-            let s = |k: &str| c.get(k).and_then(|v| v.as_str()).map(str::to_string).ok_or(format!("channel needs `{k}`"));
-            let ch = Channel {
-                device_id: s("device_id")?,
-                class_name: s("class_name")?,
-                channel: c.get("channel").and_then(|v| v.as_u64()).filter(|n| (1..=9).contains(n)).ok_or("channel number 1-9 required")? as u8,
-                method_name: s("method_name")?,
-            };
-            let (def, _, _) = self.devices.lookup(&ch.device_id).ok_or(format!("unknown device {:?}", ch.device_id))?;
-            let readable = def.classes.get(&ch.class_name).and_then(|b| b.operations.get(&ch.method_name)).is_some_and(|o| o.get.is_some());
-            if !readable {
-                return Err(format!("{} {} has no readable operation {:?}", ch.device_id, ch.class_name, ch.method_name));
-            }
-            out.push(ch);
-        }
-        Ok(out)
+    fn publish(&self, msg: Value) {
+        let _ = self.tx.send(msg.to_string());
     }
 
-    fn start(self: &Arc<Self>, name: &str, description: Option<&str>, interval: f64, channels: &Value) -> Result<Series, ApiError> {
-        let chans = self.validate_channels(channels).map_err(ApiError::Invalid)?;
-        if !(0.1..=86_400.0).contains(&interval) {
-            return Err(ApiError::Invalid("interval_seconds must be between 0.1 and 86400".into()));
+    /// One sampler tick at `t` (ms, multiple of 1000).
+    async fn tick(&self, t: i64) {
+        let store = self.store.clone();
+        let due = match tokio::task::spawn_blocking(move || store.due_series(t)).await {
+            Ok(Ok(d)) => d,
+            Ok(Err(e)) => return eprintln!("recordings: tick {t}: {e}"),
+            Err(_) => return,
+        };
+        if due.is_empty() {
+            return;
         }
-        let name = name.trim();
-        if name.is_empty() || name.len() > 200 {
-            return Err(ApiError::Invalid("name must be 1-200 characters".into()));
-        }
-        let series = self.store.create_series(name, description, interval, channels)?;
-        let paused = Arc::new(AtomicBool::new(false));
-        let (tx, _) = broadcast::channel(256);
-        let task = tokio::spawn(sample_loop(self.clone(), series.clone(), chans, paused.clone(), tx.clone()));
-        self.active.lock().unwrap().insert(series.id, Active { paused, task, tx });
-        Ok(series)
-    }
-
-    fn pause(&self, id: i64) -> Result<Series, ApiError> {
-        let active = self.active.lock().unwrap();
-        let a = active.get(&id).ok_or(ApiError::NotFound(format!("Recording {id} is not active")))?;
-        let s = self.store.series(id)?;
-        a.paused.store(true, Ordering::SeqCst);
-        if s.paused_at.is_some() {
-            return Ok(s); // already paused: keep the original pause time
-        }
-        Ok(self.store.update_state(id, Some(now()), None, 0.0)?)
-    }
-
-    fn resume(&self, id: i64) -> Result<Series, ApiError> {
-        let active = self.active.lock().unwrap();
-        let a = active.get(&id).ok_or(ApiError::NotFound(format!("Recording {id} is not active")))?;
-        let s = self.store.series(id)?;
-        let paused_for = s.paused_at.map(|p| (now() - p).num_microseconds().unwrap_or(0) as f64 / 1e6).unwrap_or(0.0);
-        let s = self.store.update_state(id, None, None, paused_for)?;
-        a.paused.store(false, Ordering::SeqCst);
-        Ok(s)
-    }
-
-    fn stop(&self, id: i64) -> Result<Series, ApiError> {
-        if let Some(a) = self.active.lock().unwrap().remove(&id) {
-            a.task.abort();
-        }
-        let s = self.store.series(id)?;
-        if s.end_time.is_some() {
-            return Ok(s); // already stopped
-        }
-        let t = now();
-        let open_pause = s.paused_at.map(|p| (t - p).num_microseconds().unwrap_or(0) as f64 / 1e6).unwrap_or(0.0);
-        Ok(self.store.update_state(id, None, Some(t), open_pause)?)
-    }
-
-    fn subscribe(&self, id: i64) -> Option<broadcast::Receiver<String>> {
-        self.active.lock().unwrap().get(&id).map(|a| a.tx.subscribe())
-    }
-}
-
-async fn sample_loop(rec: Arc<Recordings>, series: Series, chans: Vec<Channel>, paused: Arc<AtomicBool>, tx: broadcast::Sender<String>) {
-    let mut tick = tokio::time::interval(Duration::from_secs_f64(series.interval_seconds));
-    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tick.tick().await;
-        if paused.load(Ordering::SeqCst) {
-            continue;
-        }
-        let mut m = Map::new();
-        for ch in &chans {
-            let Some((_, client, _)) = rec.devices.lookup(&ch.device_id) else { continue };
-            let c = ch.clone();
-            let r = tokio::task::spawn_blocking(move || client.get(&c.class_name, &c.method_name, c.channel)).await;
-            if let Ok(Ok(Output::Value(v))) = r {
-                if let Some(v) = sample_value(v) {
-                    m.insert(ch.key(), v);
+        let mut values: BTreeMap<i64, Map<String, Value>> = BTreeMap::new();
+        let mut samples = Vec::new();
+        {
+            let reg = self.devices.registry.lock().unwrap();
+            for d in &due {
+                let s = &d.signal;
+                let v = u8::try_from(s.channel)
+                    .ok()
+                    .and_then(|ch| reg.fresh_value(&s.device_id, &s.class, ch, &s.field, MAX_AGE))
+                    .and_then(numeric);
+                if let Some(v) = v {
+                    samples.push((d.series_id, v));
                 }
+                values.entry(d.recording_id).or_default().insert(d.series_id.to_string(), json!(v));
             }
         }
-        if m.is_empty() {
-            continue; // nothing readable (device offline): no point, like the Python service
+        let store = self.store.clone();
+        match tokio::task::spawn_blocking(move || store.insert_samples(t, &samples)).await {
+            Ok(Ok(_)) => {}
+            Ok(Err(e)) => eprintln!("recordings: tick {t}: {e}"),
+            Err(_) => return,
         }
-        let ts = now();
-        let store = rec.store.clone();
-        let measurements = Value::Object(m);
-        let saved = tokio::task::spawn_blocking({
-            let measurements = measurements.clone();
-            move || store.add_point(series.id, ts, &measurements)
-        })
-        .await;
-        if let Ok(Ok(p)) = saved {
-            let _ = tx.send(json!({"type": "data_point", "series_id": series.id, "timestamp": iso(&p.timestamp),
-                "elapsed_seconds": elapsed(&series, &p), "measurements": measurements}).to_string());
+        for (rid, v) in values {
+            self.publish(json!({"type": "samples", "recording_id": rid, "t": t, "values": v}));
         }
+    }
+
+    /// Validate a series request against the configuration and the class contract.
+    /// Returns the signal and the default label.
+    fn validate_signal(&self, b: &Map<String, Value>) -> Result<(Signal, String), ApiError> {
+        let s = |k: &str| b.get(k).and_then(|v| v.as_str()).map(str::to_string).ok_or_else(|| invalid(format!("`{k}` (string) is required")));
+        let device_id = s("device_id")?;
+        let class = s("class")?;
+        let field = s("field")?;
+        let channel = b.get("channel").and_then(|v| v.as_i64()).ok_or_else(|| invalid("`channel` (integer) is required"))?;
+        let (def, _, entry) = self.devices.lookup(&device_id).ok_or_else(|| invalid(format!("unknown device {device_id:?}")))?;
+        let binding = def.classes.get(&class).ok_or_else(|| invalid(format!("device {device_id} has no class {class:?}")))?;
+        let channels = self.devices.model_of(&device_id, &def, &entry).and_then(|m| m.channels.get(&class).copied()).unwrap_or(binding.channels);
+        if !(1..=channels as i64).contains(&channel) {
+            return Err(invalid(format!("{device_id} {class} has channels 1-{channels}, not {channel}")));
+        }
+        let numeric_field = self
+            .devices
+            .catalog
+            .classes
+            .get(&class)
+            .and_then(|c| c.status.get(&field))
+            .is_some_and(|f| matches!(f.kind, ValueKind::Si | ValueKind::Number | ValueKind::Integer));
+        if !numeric_field {
+            return Err(invalid(format!("{field:?} is not a numeric status key of class {class}")));
+        }
+        let name = str_field(&entry, "name").unwrap_or(&device_id).to_string();
+        let label = default_label(&name, channels, channel, &field);
+        Ok((Signal { device_id, class, channel, field }, label))
     }
 }
 
-fn elapsed(s: &Series, p: &DataPoint) -> f64 {
-    (p.timestamp - s.start_time).num_microseconds().unwrap_or(0) as f64 / 1e6
+/// Label of a series added without one. Multi-channel classes name the channel: two scope
+/// `FREQ` columns must be distinguishable in an export.
+fn default_label(device_name: &str, channels: u8, channel: i64, field: &str) -> String {
+    if channels > 1 { format!("{device_name} · CH{channel} · {field}") } else { format!("{device_name} · {field}") }
 }
 
-// ---- API ----------------------------------------------------------------------------
+/// Registry value → sample: SI dict → its `val`; number → itself; anything else → none.
+fn numeric(v: &Value) -> Option<f64> {
+    let n = match v {
+        Value::Number(n) => n.as_f64(),
+        Value::Object(o) if o.contains_key("si") => match o.get("val") {
+            Some(Value::String(s)) => s.trim().parse().ok(),
+            Some(Value::Number(n)) => n.as_f64(),
+            _ => None,
+        },
+        _ => None,
+    };
+    n.filter(|x| x.is_finite())
+}
 
-pub enum ApiError {
-    Invalid(String),
-    NotFound(String),
-    Duplicate(String),
-    Internal(String),
+/// Sleep until the next whole second of the wall clock, tick, repeat. Ends when the
+/// recordings are dropped.
+async fn sampler(rec: Weak<Recordings>) {
+    let mut last = 0i64;
+    loop {
+        let now = now_ms();
+        let next = ((now.div_euclid(1000) + 1) * 1000).max(last + 1000);
+        tokio::time::sleep(Duration::from_millis((next - now).max(0) as u64)).await;
+        let Some(rec) = rec.upgrade() else { return };
+        rec.tick(next).await;
+        last = next;
+    }
+}
+
+// ---- JSON ----------------------------------------------------------------------------
+
+fn series_json(s: &Series) -> Value {
+    json!({"id": s.id, "device_id": s.signal.device_id, "class": s.signal.class, "channel": s.signal.channel,
+           "field": s.signal.field, "label": s.label, "unit": s.unit, "added_at": s.added_at, "removed_at": s.removed_at})
+}
+
+fn recording_json(store: &Store, r: &Recording) -> Result<Value, StoreError> {
+    let series = store.series_of(r.id)?;
+    let (samples, last_t) = store.sample_stats(r.id)?;
+    Ok(json!({
+        "id": r.id, "name": r.name, "description": r.description, "interval_s": r.interval_s, "state": r.state.as_str(),
+        "started_at": r.started_at, "stopped_at": r.stopped_at, "paused_at": r.paused_at,
+        "samples": samples, "last_t": last_t, "series": series.iter().map(series_json).collect::<Vec<_>>(),
+    }))
+}
+
+fn all_recordings_json(store: &Store) -> Result<Value, StoreError> {
+    let list = store.list_recordings()?;
+    Ok(Value::Array(list.iter().map(|r| recording_json(store, r)).collect::<Result<Vec<_>, _>>()?))
+}
+
+// ---- errors --------------------------------------------------------------------------
+
+pub struct ApiError(StatusCode, String);
+
+fn invalid(m: impl Into<String>) -> ApiError {
+    ApiError(StatusCode::UNPROCESSABLE_ENTITY, m.into())
 }
 
 impl From<StoreError> for ApiError {
     fn from(e: StoreError) -> Self {
-        match e {
-            StoreError::DuplicateName(_) => ApiError::Duplicate(e.to_string()),
-            StoreError::NotFound(_) => ApiError::NotFound(e.to_string()),
-            StoreError::Db(m) => ApiError::Internal(m),
-        }
+        let code = match &e {
+            StoreError::DuplicateName(_) | StoreError::Conflict(_) => StatusCode::CONFLICT,
+            StoreError::NotFound(_) => StatusCode::NOT_FOUND,
+            StoreError::Db(m) => {
+                eprintln!("recordings: {m}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        };
+        ApiError(code, e.to_string())
     }
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let (code, msg) = match self {
-            ApiError::Invalid(m) => (StatusCode::UNPROCESSABLE_ENTITY, m),
-            ApiError::NotFound(m) => (StatusCode::NOT_FOUND, m),
-            ApiError::Duplicate(m) => (StatusCode::BAD_REQUEST, m),
-            ApiError::Internal(m) => (StatusCode::INTERNAL_SERVER_ERROR, m),
-        };
-        (code, Json(json!({"detail": msg}))).into_response()
+        detail(self.0, self.1)
     }
 }
 
-fn opt_iso(t: &Option<chrono::NaiveDateTime>) -> Value {
-    t.as_ref().map(|t| json!(iso(t))).unwrap_or(Value::Null)
+/// Run store work off the async workers.
+async fn db<T: Send + 'static>(s: &S, f: impl FnOnce(&Store) -> Result<T, StoreError> + Send + 'static) -> Result<T, ApiError> {
+    let store = s.recordings.store.clone();
+    match tokio::task::spawn_blocking(move || f(&store)).await {
+        Ok(r) => Ok(r?),
+        Err(e) => Err(ApiError(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
 }
 
-fn series_json(s: &Series) -> Value {
-    json!({
-        "id": s.id, "name": s.name, "description": s.description, "interval_seconds": s.interval_seconds,
-        "channels": s.channels, "start_time": iso(&s.start_time), "end_time": opt_iso(&s.end_time),
-        "paused_at": opt_iso(&s.paused_at), "pause_duration_seconds": s.pause_duration_seconds,
-        "total_duration_seconds": s.total_duration_seconds(now()), "data_points_count": s.data_points_count,
-        "status": s.status(),
-    })
+fn object(body: &Bytes) -> Result<Map<String, Value>, ApiError> {
+    match serde_json::from_slice::<Value>(body) {
+        Ok(Value::Object(m)) => Ok(m),
+        Ok(_) => Err(invalid("body must be a JSON object")),
+        Err(e) => Err(invalid(format!("invalid JSON: {e}"))),
+    }
 }
+
+fn rec_id(id: &str) -> Result<i64, ApiError> {
+    id.parse().map_err(|_| ApiError(StatusCode::NOT_FOUND, format!("Recording {id} not found")))
+}
+
+/// Recording name: 1-100 characters after trimming.
+fn valid_name(v: &Value) -> Result<String, ApiError> {
+    let n = v.as_str().map(str::trim).ok_or_else(|| invalid("`name` must be a string"))?;
+    if n.is_empty() || n.chars().count() > 100 {
+        return Err(invalid("`name` must be 1-100 characters"));
+    }
+    Ok(n.to_string())
+}
+
+fn opt_string(b: &Map<String, Value>, k: &str) -> Result<Option<String>, ApiError> {
+    match b.get(k) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => Ok(Some(s.clone())),
+        Some(_) => Err(invalid(format!("`{k}` must be a string"))),
+    }
+}
+
+// ---- routes --------------------------------------------------------------------------
 
 pub fn routes() -> Router<S> {
     Router::new()
-        .route("/recordings", get(list))
-        .route("/recordings/start", post(start))
-        .route("/recordings/{id}", get(detail).delete(remove))
+        .route("/recordings", get(list).post(create))
+        .route("/recordings/{id}", get(one).patch(update).delete(remove))
+        .route("/recordings/{id}/series", post(add_series))
+        .route("/recordings/{id}/series/{sid}", delete(remove_series))
         .route("/recordings/{id}/pause", post(pause))
         .route("/recordings/{id}/resume", post(resume))
         .route("/recordings/{id}/stop", post(stop))
         .route("/recordings/{id}/data", get(data))
         .route("/recordings/{id}/export", get(export))
-        .route("/recordings/ws/{id}", get(ws))
-}
-
-async fn start(State(s): State<S>, Json(b): Json<Value>) -> Result<Json<Value>, ApiError> {
-    let name = b.get("name").and_then(|v| v.as_str()).ok_or(ApiError::Invalid("`name` is required".into()))?;
-    let interval = b.get("interval_seconds").and_then(|v| v.as_f64()).ok_or(ApiError::Invalid("`interval_seconds` is required".into()))?;
-    let description = b.get("description").and_then(|v| v.as_str());
-    let channels = b.get("channels").cloned().unwrap_or(Value::Null);
-    let series = s.recordings.start(name, description, interval, &channels)?;
-    Ok(Json(json!({"series_id": series.id, "name": series.name, "status": "recording"})))
-}
-
-async fn pause(State(s): State<S>, Path(id): Path<i64>) -> Result<Json<Value>, ApiError> {
-    let x = s.recordings.pause(id)?;
-    Ok(Json(json!({"series_id": id, "name": x.name, "status": "paused", "paused_at": opt_iso(&x.paused_at)})))
-}
-
-async fn resume(State(s): State<S>, Path(id): Path<i64>) -> Result<Json<Value>, ApiError> {
-    let x = s.recordings.resume(id)?;
-    Ok(Json(json!({"series_id": id, "name": x.name, "status": "recording", "paused_at": null})))
-}
-
-async fn stop(State(s): State<S>, Path(id): Path<i64>) -> Result<Json<Value>, ApiError> {
-    let x = s.recordings.stop(id)?;
-    Ok(Json(json!({"series_id": id, "name": x.name, "status": "stopped", "data_points_count": x.data_points_count,
-        "duration_seconds": x.total_duration_seconds(now()), "pause_duration_seconds": x.pause_duration_seconds})))
+        .route("/ws/recordings", get(ws))
 }
 
 async fn list(State(s): State<S>) -> Result<Json<Value>, ApiError> {
-    let all = s.recordings.store.list()?;
-    Ok(Json(json!({"recordings": all.iter().map(series_json).collect::<Vec<_>>()})))
+    Ok(Json(db(&s, all_recordings_json).await?))
 }
 
-async fn detail(State(s): State<S>, Path(id): Path<i64>) -> Result<Json<Value>, ApiError> {
-    let x = s.recordings.store.series(id)?;
-    Ok(Json(json!({"series": series_json(&x), "total_points": x.data_points_count})))
+async fn one(State(s): State<S>, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
+    let id = rec_id(&id)?;
+    Ok(Json(db(&s, move |st| recording_json(st, &st.recording(id)?)).await?))
 }
 
-async fn remove(State(s): State<S>, Path(id): Path<i64>) -> Result<Json<Value>, ApiError> {
-    s.recordings.store.series(id)?;
-    let _ = s.recordings.stop(id);
-    s.recordings.store.delete(id)?;
-    Ok(Json(json!({"status": "deleted", "series_id": id})))
+/// Announce a changed recording on the WebSocket; returns its JSON.
+async fn announce(s: &S, id: i64) -> Result<Value, ApiError> {
+    let v = db(s, move |st| recording_json(st, &st.recording(id)?)).await?;
+    s.recordings.publish(json!({"type": "recording", "recording": v}));
+    Ok(v)
 }
 
-async fn data(State(s): State<S>, Path(id): Path<i64>, Query(q): Query<HashMap<String, String>>) -> Result<Json<Value>, ApiError> {
-    let num = |k: &str, d: i64| q.get(k).map(|v| v.parse::<i64>().map_err(|_| ApiError::Invalid(format!("`{k}` must be an integer")))).unwrap_or(Ok(d));
-    let offset = num("offset", 0)?;
-    let limit = num("limit", 1000)?;
-    if offset < 0 || !(1..=100_000).contains(&limit) {
-        return Err(ApiError::Invalid("offset must be >= 0 and limit 1-100000".into()));
-    }
-    let x = s.recordings.store.series(id)?;
-    let pts = s.recordings.store.points(id, offset, limit)?;
-    let points: Vec<Value> = pts
-        .iter()
-        .map(|p| json!({"id": p.id, "series_id": p.series_id, "timestamp": iso(&p.timestamp),
-            "elapsed_seconds": elapsed(&x, p), "measurements": p.measurements}))
-        .collect();
-    Ok(Json(json!({"series_id": id, "total_points": x.data_points_count, "offset": offset, "limit": limit, "data_points": points})))
+/// Respond with the changed recording (and announce it).
+async fn changed(s: &S, id: i64, code: StatusCode) -> Result<Response, ApiError> {
+    Ok((code, Json(announce(s, id).await?)).into_response())
 }
 
-fn csv_field(v: &Value) -> String {
-    let s = match v {
-        Value::String(s) => s.clone(),
-        Value::Null => String::new(),
-        other => other.to_string(),
+async fn create(State(s): State<S>, body: Bytes) -> Result<Response, ApiError> {
+    let b = object(&body)?;
+    let name = valid_name(b.get("name").unwrap_or(&Value::Null))?;
+    let description = opt_string(&b, "description")?.unwrap_or_default();
+    let interval = b
+        .get("interval_s")
+        .and_then(|v| v.as_i64())
+        .filter(|i| (1..=3600).contains(i))
+        .ok_or_else(|| invalid("`interval_s` must be an integer 1-3600"))?;
+    let r = db(&s, move |st| st.create_recording(&name, &description, interval, now_ms())).await?;
+    changed(&s, r.id, StatusCode::CREATED).await
+}
+
+async fn update(State(s): State<S>, Path(id): Path<String>, body: Bytes) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    let b = object(&body)?;
+    let name = match b.get("name") {
+        None | Some(Value::Null) => None,
+        Some(v) => Some(valid_name(v)?),
     };
+    let description = opt_string(&b, "description")?;
+    db(&s, move |st| st.update_recording(id, name.as_deref(), description.as_deref())).await?;
+    changed(&s, id, StatusCode::OK).await
+}
+
+async fn add_series(State(s): State<S>, Path(id): Path<String>, body: Bytes) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    db(&s, move |st| st.recording(id)).await?;
+    let b = object(&body)?;
+    let (signal, default_label) = s.recordings.validate_signal(&b)?;
+    let label = opt_string(&b, "label")?.filter(|l| !l.trim().is_empty()).unwrap_or(default_label);
+    let unit = opt_string(&b, "unit")?.unwrap_or_default();
+    let series = db(&s, move |st| st.add_series(id, &signal, &label, &unit, now_ms())).await?;
+    announce(&s, id).await?;
+    Ok((StatusCode::CREATED, Json(series_json(&series))).into_response())
+}
+
+async fn remove_series(State(s): State<S>, Path((id, sid)): Path<(String, String)>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    let sid: i64 = sid.parse().map_err(|_| ApiError(StatusCode::NOT_FOUND, format!("Series {sid} not found")))?;
+    db(&s, move |st| st.end_series(id, sid, now_ms())).await?;
+    announce(&s, id).await?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+async fn pause(State(s): State<S>, Path(id): Path<String>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    db(&s, move |st| st.pause(id, now_ms())).await?;
+    changed(&s, id, StatusCode::OK).await
+}
+
+async fn resume(State(s): State<S>, Path(id): Path<String>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    db(&s, move |st| st.resume(id)).await?;
+    changed(&s, id, StatusCode::OK).await
+}
+
+async fn stop(State(s): State<S>, Path(id): Path<String>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    db(&s, move |st| st.stop(id, now_ms())).await?;
+    changed(&s, id, StatusCode::OK).await
+}
+
+async fn remove(State(s): State<S>, Path(id): Path<String>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    db(&s, move |st| st.delete_recording(id)).await?;
+    s.recordings.publish(json!({"type": "deleted", "recording_id": id}));
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+async fn data(State(s): State<S>, Path(id): Path<String>, Query(q): Query<HashMap<String, String>>) -> Result<Json<Value>, ApiError> {
+    let id = rec_id(&id)?;
+    let num = |k: &str| -> Result<Option<i64>, ApiError> {
+        q.get(k).map(|v| v.trim().parse::<i64>().map_err(|_| invalid(format!("`{k}` must be an integer")))).transpose()
+    };
+    let (from, to) = (num("from")?, num("to")?);
+    let max_points = num("max_points")?.unwrap_or(2000);
+    if !(10..=20_000).contains(&max_points) {
+        return Err(invalid("`max_points` must be 10-20000"));
+    }
+    if let (Some(f), Some(t)) = (from, to) {
+        if f > t {
+            return Err(invalid("`from` must not be after `to`"));
+        }
+    }
+    let v = db(&s, move |st| {
+        let r = st.recording(id)?;
+        let from = from.unwrap_or(r.started_at);
+        let to = to.unwrap_or_else(|| r.stopped_at.unwrap_or_else(now_ms));
+        let mut series = Vec::new();
+        for x in st.series_of(id)? {
+            let p = st.range(x.id, from, to, max_points as usize)?;
+            series.push(json!({"id": x.id, "t": p.t, "v": p.v}));
+        }
+        Ok(json!({"recording_id": id, "from": from, "to": to, "series": series}))
+    })
+    .await?;
+    Ok(Json(v))
+}
+
+fn csv_field(s: &str) -> String {
     if s.contains([',', '"', '\n', '\r']) {
         format!("\"{}\"", s.replace('"', "\"\""))
     } else {
-        s
+        s.to_string()
     }
 }
 
-async fn export(State(s): State<S>, Path(id): Path<i64>) -> Result<Response, ApiError> {
-    let x = s.recordings.store.series(id)?;
-    let pts = s.recordings.store.points(id, 0, i64::MAX)?;
-    let mut keys: Vec<String> = pts
-        .iter()
-        .flat_map(|p| p.measurements.as_object().map(|o| o.keys().cloned().collect::<Vec<_>>()).unwrap_or_default())
-        .collect();
-    keys.sort();
-    keys.dedup();
-    if keys.is_empty() {
-        keys = x.channels.as_array().into_iter().flatten().map(|c| {
-            format!("{}_{}_{}_{}", c["device_id"].as_str().unwrap_or(""), c["class_name"].as_str().unwrap_or(""),
-                c["channel"], c["method_name"].as_str().unwrap_or(""))
-        }).collect();
-    }
-    let mut out = String::from("timestamp");
-    for k in &keys {
+fn utc(ms: i64) -> String {
+    chrono::DateTime::from_timestamp_millis(ms)
+        .map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
+        .unwrap_or_default()
+}
+
+async fn export(State(s): State<S>, Path(id): Path<String>) -> Result<Response, ApiError> {
+    let id = rec_id(&id)?;
+    let (r, (series, rows)) = db(&s, move |st| Ok((st.recording(id)?, st.export_rows(id)?))).await?;
+    let mut out = String::from("time_utc,time_ms");
+    for x in &series {
+        let col = if x.unit.is_empty() { x.label.clone() } else { format!("{} [{}]", x.label, x.unit) };
         out.push(',');
-        out.push_str(&csv_field(&json!(k)));
+        out.push_str(&csv_field(&col));
     }
     out.push_str("\r\n");
-    for p in &pts {
-        out.push_str(&iso(&p.timestamp));
-        for k in &keys {
+    for (t, vals) in rows {
+        out.push_str(&format!("{},{t}", utc(t)));
+        for v in vals {
             out.push(',');
-            out.push_str(&csv_field(p.measurements.get(k).unwrap_or(&Value::Null)));
+            if let Some(v) = v {
+                out.push_str(&v.to_string());
+            }
         }
         out.push_str("\r\n");
     }
-    let filename = format!("{}.csv", x.name.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '.', "_"));
+    let filename = format!("{}.csv", r.name.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '.', "_"));
     Ok((
         [(header::CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
          (header::CONTENT_DISPOSITION, format!("attachment; filename=\"{filename}\""))],
@@ -374,33 +436,70 @@ async fn export(State(s): State<S>, Path(id): Path<i64>) -> Result<Response, Api
         .into_response())
 }
 
-async fn ws(State(s): State<S>, Path(id): Path<i64>, upgrade: WebSocketUpgrade) -> Response {
-    upgrade.on_upgrade(move |socket| live(s, id, socket))
+// ---- WebSocket -----------------------------------------------------------------------
+
+async fn ws(State(s): State<S>, upgrade: WebSocketUpgrade) -> Response {
+    upgrade.on_upgrade(move |socket| live(s, socket))
 }
 
-async fn live(s: S, id: i64, mut socket: WebSocket) {
-    if s.recordings.store.series(id).is_err() {
-        let _ = socket
-            .send(Message::Close(Some(axum::extract::ws::CloseFrame { code: 1008, reason: "Recording not found".into() })))
-            .await;
+async fn snapshot(s: &S) -> Option<String> {
+    db(s, all_recordings_json).await.ok().map(|list| json!({"type": "snapshot", "recordings": list}).to_string())
+}
+
+async fn live(s: S, mut socket: WebSocket) {
+    let mut rx = s.recordings.tx.subscribe(); // before the snapshot: no change is missed
+    let Some(first) = snapshot(&s).await else { return };
+    if socket.send(Message::Text(first.into())).await.is_err() {
         return;
     }
-    let mut rx = s.recordings.subscribe(id);
     loop {
         tokio::select! {
             msg = socket.recv() => match msg {
-                Some(Ok(Message::Text(_))) => {
-                    if socket.send(Message::Text(json!({"type": "pong"}).to_string().into())).await.is_err() { return; }
-                }
                 Some(Ok(Message::Close(_))) | None | Some(Err(_)) => return,
                 _ => {}
             },
-            point = async { match rx.as_mut() { Some(r) => r.recv().await.ok(), None => std::future::pending().await } } => {
-                match point {
-                    Some(p) => if socket.send(Message::Text(p.into())).await.is_err() { return; },
-                    None => rx = None, // recording stopped (sender gone)
+            m = rx.recv() => {
+                let text = match m {
+                    Ok(t) => t,
+                    // too slow a client: resynchronise with a fresh snapshot
+                    Err(broadcast::error::RecvError::Lagged(_)) => match snapshot(&s).await { Some(t) => t, None => return },
+                    Err(broadcast::error::RecvError::Closed) => return,
+                };
+                if socket.send(Message::Text(text.into())).await.is_err() {
+                    return;
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn default_labels_name_the_channel_of_multi_channel_classes() {
+        assert_eq!(default_label("Tenma", 1, 1, "VOUT"), "Tenma · VOUT");
+        assert_eq!(default_label("Rigol DHO804", 4, 2, "FREQ"), "Rigol DHO804 · CH2 · FREQ");
+    }
+
+    use super::*;
+
+    #[test]
+    fn numeric_values_from_the_registry() {
+        let si = json!({"si": {"number": "4.94"}, "sci": "4.94000E+00", "val": "+4.9400E+00"});
+        assert_eq!(numeric(&si), Some(4.94));
+        assert_eq!(numeric(&json!(12)), Some(12.0));
+        assert_eq!(numeric(&json!(0.5)), Some(0.5));
+        for v in [json!(null), json!("ON"), json!(true), json!([1, 2]), json!({"si": {}, "val": "OL"})] {
+            assert_eq!(numeric(&v), None, "{v}");
+        }
+    }
+
+    #[test]
+    fn csv_fields_and_times() {
+        assert_eq!(csv_field("a,b"), "\"a,b\"");
+        assert_eq!(csv_field("say \"hi\""), "\"say \"\"hi\"\"\"");
+        assert_eq!(csv_field("plain"), "plain");
+        assert_eq!(utc(1_792_236_034_000), "2026-10-17T11:20:34.000Z");
     }
 }

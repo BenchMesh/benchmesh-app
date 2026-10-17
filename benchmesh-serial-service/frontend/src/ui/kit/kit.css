@@ -51,6 +51,15 @@
   --kit-ch2: #1c3d8c;
   --kit-ch3: #8c1c3a;
   --kit-ch4: #6b4a00;
+  /* recording chart series: distinguishable inks on the light panel */
+  --kit-series-1: #1c3d8c;
+  --kit-series-2: #a8322c;
+  --kit-series-3: #2f6b43;
+  --kit-series-4: #8a5a00;
+  --kit-series-5: #6b2f8c;
+  --kit-series-6: #0f6f73;
+  --kit-series-7: #b0477a;
+  --kit-series-8: #4b5649;
   --kit-glow: 0;              /* 1: lit segments, traces and annunciators glow */
   --kit-glass-ink: #2a3527;   /* readout units on glass */
   --kit-glass-shadow: inset 0 2px 6px rgba(40, 55, 35, .25);
@@ -92,6 +101,14 @@
   --kit-ch2: #4fd8e8;
   --kit-ch3: #e46cf0;
   --kit-ch4: #5b8cff;
+  --kit-series-1: #ffb238;
+  --kit-series-2: #4ee39a;
+  --kit-series-3: #7cc7ff;
+  --kit-series-4: #ff6b6b;
+  --kit-series-5: #e46cf0;
+  --kit-series-6: #f5d33b;
+  --kit-series-7: #4fd8e8;
+  --kit-series-8: #b8c0cc;
   --kit-glow: 1;
   --kit-glass-shadow: inset 0 2px 8px rgba(0, 0, 0, .6);
   --kit-ann-off: rgba(255, 255, 255, .09);
@@ -133,6 +150,14 @@
   --kit-ch2: #4fd8e8;
   --kit-ch3: #e46cf0;
   --kit-ch4: #6f9bff;
+  --kit-series-1: #f5c55b;
+  --kit-series-2: #63e0c2;
+  --kit-series-3: #8fc9ff;
+  --kit-series-4: #f58a7a;
+  --kit-series-5: #c9a2ff;
+  --kit-series-6: #9be37a;
+  --kit-series-7: #ffa95e;
+  --kit-series-8: #d0d8e2;
   --kit-glow: 0;
   --kit-glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
   --kit-ann-off: rgba(255, 255, 255, .09);
@@ -348,6 +373,40 @@ button:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px
 .kit-arm[data-confirm="unconfirmed"]::after, .kit-micro[data-confirm="unconfirmed"]::after, .kit-stepper[data-confirm="unconfirmed"]::after,
 .kit-digits[data-confirm="unconfirmed"]::after, .kit-seg button[data-confirm="unconfirmed"]::after, .kit-chips button[data-confirm="unconfirmed"]::after {
   content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--kit-alert);
+}
+
+/* ---- text inputs (forms in drawers and docks) -------------------------------------
+   doubled class: wins over the legacy global input rules in theme.css */
+.kit-input.kit-input {
+  background: var(--kit-ctl-hi); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  padding: 7px 9px; font: 400 .85rem/1.2 var(--kit-font-num); min-width: 0; width: 100%; box-sizing: border-box; outline: none;
+}
+.kit-input.kit-input:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 1px; background: var(--kit-ctl-hi); }
+.kit-input.kit-input[aria-invalid="true"] { border-color: var(--kit-alert); }
+textarea.kit-input.kit-input { resize: vertical; min-height: 3.2em; font-family: var(--kit-font-label); }
+
+/* ---- context menu ------------------------------------------------------------------ */
+.kit-menu {
+  position: fixed; z-index: 1000; min-width: 200px; max-width: min(360px, calc(100vw - 8px));
+  background: var(--kit-panel); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  box-shadow: var(--kit-sheet-shadow); padding: 4px; font: 400 .8rem/1.2 var(--kit-font-num);
+}
+.kit-menu__item {
+  display: grid; grid-template-columns: 1.2em minmax(0, 1fr) auto; align-items: center; gap: 2px 6px;
+  padding: 7px 10px 7px 6px; border-radius: 4px; cursor: pointer; outline: none; position: relative;
+}
+.kit-menu__item:focus, .kit-menu__item:hover { background: var(--kit-ctl-hi); }
+.kit-menu__item:focus-visible { box-shadow: inset 0 0 0 1px var(--kit-accent); }
+.kit-menu__item[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.kit-menu__check { color: var(--kit-accent); font-weight: 700; text-align: center; }
+.kit-menu__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-menu__hint { font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--kit-ink-3); }
+.kit-menu__err { grid-column: 2 / -1; }
+.kit-menu__sep { height: 1px; background: var(--kit-panel-edge); margin: 4px 2px; }
+.kit-menu__item[data-confirm="waiting"] .kit-menu__check { color: var(--kit-warn); animation: kit-await 1.1s ease-in-out infinite; }
+.kit-menu__item[data-confirm="waiting"] .kit-menu__check:empty::before { content: "\2022"; }
+.kit-menu__item[data-confirm="unconfirmed"]::after {
+  content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--kit-alert);
 }
 
 @media (prefers-reduced-motion: reduce) {

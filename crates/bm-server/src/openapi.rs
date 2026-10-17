@@ -29,15 +29,18 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("post", "/instruments/{klass}/{id}/{ch}/{op}/{value}", "instrument-control", "Set an operation (204); 409 = precondition not met"),
     ("get", "/metrics", "monitoring", "Per-device performance metrics"),
     ("get", "/metrics/{id}", "monitoring", "Performance metrics of one device"),
-    ("get", "/recordings", "recordings", "List recordings"),
-    ("post", "/recordings/start", "recordings", "Start a recording {name, interval_seconds, channels, description?}"),
-    ("get", "/recordings/{id}", "recordings", "Recording details"),
-    ("delete", "/recordings/{id}", "recordings", "Delete a recording and its data"),
-    ("post", "/recordings/{id}/pause", "recordings", "Pause a recording"),
-    ("post", "/recordings/{id}/resume", "recordings", "Resume a recording"),
-    ("post", "/recordings/{id}/stop", "recordings", "Stop a recording"),
-    ("get", "/recordings/{id}/data", "recordings", "Recorded points (query `offset`, `limit` ≤ 100000)"),
-    ("get", "/recordings/{id}/export", "recordings", "Recorded points as CSV"),
+    ("get", "/recordings", "recordings", "Recordings with series, sample count and last sample time (newest first)"),
+    ("post", "/recordings", "recordings", "Create a recording {name, description?, interval_s 1-3600} → 201 (state recording, no series); 409 name taken"),
+    ("get", "/recordings/{id}", "recordings", "One recording"),
+    ("patch", "/recordings/{id}", "recordings", "Rename / describe a recording {name?, description?}; 409 name taken"),
+    ("delete", "/recordings/{id}", "recordings", "Delete a recording and its data (204)"),
+    ("post", "/recordings/{id}/series", "recordings", "Add a reading {device_id, class, channel, field, label?, unit?} → 201; 409 stopped or already recorded; 422 not a numeric status key"),
+    ("delete", "/recordings/{id}/series/{sid}", "recordings", "Stop recording a reading (204; its data is kept)"),
+    ("post", "/recordings/{id}/pause", "recordings", "Pause a recording (idempotent)"),
+    ("post", "/recordings/{id}/resume", "recordings", "Resume a paused recording (idempotent)"),
+    ("post", "/recordings/{id}/stop", "recordings", "Stop a recording (final, idempotent)"),
+    ("get", "/recordings/{id}/data", "recordings", "Samples per series (query `from`, `to` ms; `max_points` 10-20000, default 2000; min/max decimation)"),
+    ("get", "/recordings/{id}/export", "recordings", "CSV: time_utc, time_ms, one column per series"),
     ("get", "/ai/context", "ai-assistant", "Installation description for AI assistants (`format=markdown|json`)"),
     ("get", "/ai/system-prompt", "ai-assistant", "Alias of /ai/context"),
     ("get", "/openapi.json", "system", "This specification (JSON)"),
@@ -46,7 +49,7 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/redoc", "system", "API reference (redirects to the UI)"),
     ("get", "/ws/registry", "websockets", "WebSocket: live registry {device: {IDN, CLASS: {status_chN}}} every 0.2 s"),
     ("get", "/ws/metrics", "websockets", "WebSocket: metrics summary every 30 s"),
-    ("get", "/recordings/ws/{id}", "websockets", "WebSocket: live data points of a recording"),
+    ("get", "/ws/recordings", "websockets", "WebSocket: snapshot, then samples per tick, recording changes and deletions"),
 ];
 
 const TAGS: &[(&str, &str)] = &[
@@ -75,7 +78,7 @@ pub fn spec() -> Value {
                 "default": {"description": "Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
             }
         });
-        if matches!(*method, "post" | "put") && !path.contains("/{value}") && !path.ends_with("/pause")
+        if matches!(*method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
             && !path.ends_with("/resume") && !path.ends_with("/stop")
         {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
@@ -116,7 +119,7 @@ mod tests {
         for src in sources {
             for line in src.lines().filter(|l| l.trim_start().starts_with(".route(\"")) {
                 let path = line.split('"').nth(1).unwrap();
-                for m in ["get", "post", "put", "delete"] {
+                for m in ["get", "post", "put", "patch", "delete"] {
                     // `.route("/x", get(a).post(b))`: the first method follows ", ", later ones "."
                     if [", ", "."].iter().any(|p| line.contains(&format!("{p}{m}("))) {
                         in_router.insert((m.to_string(), path.to_string()));
@@ -138,6 +141,8 @@ mod tests {
         assert_eq!(s["openapi"], "3.1.0");
         let op = &s["paths"]["/instruments/{klass}/{id}/{ch}/{op}"]["get"];
         assert_eq!(op["parameters"].as_array().unwrap().len(), 4);
-        assert!(s["paths"]["/recordings/start"]["post"]["requestBody"].is_object());
+        assert!(s["paths"]["/recordings"]["post"]["requestBody"].is_object());
+        assert!(s["paths"]["/recordings/{id}"]["patch"]["requestBody"].is_object());
+        assert!(s["paths"]["/recordings/{id}/stop"]["post"].get("requestBody").is_none());
     }
 }

@@ -81,7 +81,7 @@ fn build(s: &crate::AppState, include: &[&str]) -> Value {
             "set": "POST /instruments/{CLASS}/{device_id}/{channel}/{operation}/{value} → 204",
             "errors": "400 invalid value, 404 unknown device/operation, 409 precondition (message explains), 503 device offline, 504 timeout",
             "live_status": "WebSocket /ws/registry → {device_id: {IDN, CLASS: {status_chN: {...}}}} every 0.2 s",
-            "recordings": "POST /recordings/start {name, interval_seconds, channels:[{device_id, class_name, channel, method_name}]}",
+            "recordings": "POST /recordings {name, interval_s} → recording (samples on whole seconds); POST /recordings/{id}/series {device_id, class, channel, field (numeric status key, e.g. PSU VOUT)}; GET /recordings/{id}/data?from&to&max_points; GET /recordings/{id}/export (CSV); WebSocket /ws/recordings",
             "spec": "/openapi.json",
         }));
     }

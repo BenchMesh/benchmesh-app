@@ -48,17 +48,18 @@ test.describe('Drawers', () => {
     await drawer.locator('.bench-drawer__scrim').click({ position: { x: 10, y: 200 } });
     await expect(drawer).toBeHidden();
   });
+
+  test('Recording opens the recordings drawer', async ({ mockPage }) => {
+    await mockPage.getByRole('button', { name: 'Recording', exact: true }).click();
+    const drawer = mockPage.getByRole('dialog', { name: 'Recordings' });
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toContainText('No recordings yet');
+    await drawer.getByRole('button', { name: 'Close' }).click();
+    await expect(drawer).toBeHidden();
+  });
 });
 
 test.describe('Modals', () => {
-  test('Recording modal opens and closes', async ({ mockPage }) => {
-    await mockPage.getByRole('button', { name: 'Recording', exact: true }).click();
-    const heading = mockPage.getByRole('heading', { name: /Data Recording/ });
-    await expect(heading).toBeVisible();
-    await mockPage.getByRole('button', { name: '×' }).first().click();
-    await expect(heading).toBeHidden();
-  });
-
   test('Metrics modal opens, shows device metrics and closes', async ({ mockPage }) => {
     await mockPage.getByRole('button', { name: 'Metrics', exact: true }).click();
     const heading = mockPage.getByRole('heading', { name: 'Serial Port Utilization Metrics' });

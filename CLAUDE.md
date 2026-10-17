@@ -36,8 +36,8 @@ one generic Rust driver — no per-device code.
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
 | `bm-transport` | serial (`serialport`), Linux USBTMC, port discovery |
-| `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings, metrics, OpenAPI, UI; `benchmesh-server` binary |
-| `bm-store` | recordings database (SQLite, schema-compatible with existing `~/.benchmesh/recordings.db`) |
+| `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
+| `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
 
@@ -152,6 +152,7 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden, persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings, request log |
+| `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
 
 Panel **window controls** (header, top right): fold to the header line (saved with the layout;
 double-click the header works too) and **open in its own window**. A detached panel lives at

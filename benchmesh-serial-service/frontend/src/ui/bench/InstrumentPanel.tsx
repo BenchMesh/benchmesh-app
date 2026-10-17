@@ -12,6 +12,7 @@ import { EllPanel } from './panels/EllPanel'
 import { AwgChannel } from './panels/AwgPanel'
 import { GenericPanel } from './panels/GenericPanel'
 import { OscPanel } from './panels/OscPanel'
+import { SignalScope } from '../recording/signal'
 
 /** Model name for the header: the IDN's model field (`OWON,SPM3103,...` → SPM3103). */
 export function modelOf(idn: string | undefined): string {
@@ -20,7 +21,14 @@ export function modelOf(idn: string | undefined): string {
   return parts.length > 1 ? `${parts[0]} ${parts[1]}` : idn.trim()
 }
 
-function ChannelBody({ instrument, klass, ch, registry, features, setters, online }: {
+function ChannelBody({ instrument, klass, ch, multi, registry, features, setters, online }: {
+  instrument: Instrument; klass: string; ch: string; multi: boolean; registry: any; features: any; setters: Setters; online: boolean
+}) {
+  const scope = useMemo(() => ({ deviceId: instrument.id, klass, channel: ch, name: instrument.name ?? instrument.id, multi }), [instrument.id, instrument.name, klass, ch, multi])
+  return <SignalScope value={scope}><ChannelPanel instrument={instrument} klass={klass} ch={ch} registry={registry} features={features} setters={setters} online={online} /></SignalScope>
+}
+
+function ChannelPanel({ instrument, klass, ch, registry, features, setters, online }: {
   instrument: Instrument; klass: string; ch: string; registry: any; features: any; setters: Setters; online: boolean
 }) {
   const api = useChannelApi(klass, instrument.id, ch)
@@ -123,14 +131,16 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
         <span className="bench-hint">Loading…</span>
       ) : klass.toUpperCase() === 'OSC' ? (
         // one screen for all channels: the scope panel is per instrument, not per channel
-        <OscPanel id={instrument.id} channels={channels} registry={registry} online={online}
-          profile={oscProfile(meta.features, meta.setters, channels.length)} />
+        <SignalScope value={{ deviceId: instrument.id, klass, name: instrument.name ?? instrument.id, multi: channels.length > 1 }}>
+          <OscPanel id={instrument.id} channels={channels} registry={registry} online={online}
+            profile={oscProfile(meta.features, meta.setters, channels.length)} />
+        </SignalScope>
       ) : (
         <div className={`bench-panel__channels${channels.length > 1 ? ' bench-panel__channels--multi' : ''}`}>
           {channels.map((ch) => (
             <section key={ch} className="bench-panel__channel" aria-label={channels.length > 1 ? `Channel ${ch}` : undefined}>
               {channels.length > 1 && klass.toUpperCase() !== 'AWG' && <span className="kit-label">Channel {ch}</span>}
-              <ChannelBody instrument={instrument} klass={klass} ch={ch} registry={registry} features={meta.features} setters={meta.setters} online={online} />
+              <ChannelBody instrument={instrument} klass={klass} ch={ch} multi={channels.length > 1} registry={registry} features={meta.features} setters={meta.setters} online={online} />
             </section>
           ))}
         </div>

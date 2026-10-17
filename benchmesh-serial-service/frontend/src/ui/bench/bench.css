@@ -40,6 +40,7 @@ html, body { background: var(--kit-ground); }
 .bench-btn[aria-pressed="true"] { color: var(--kit-accent); border-color: var(--kit-accent); }
 .bench-btn:disabled { opacity: .45; cursor: not-allowed; }
 .bench-btn--primary { color: var(--kit-panel); background: var(--kit-accent); border-color: var(--kit-accent); }
+.bench-btn--primary:hover { background: var(--kit-accent); filter: brightness(1.08); }
 .bench-icon {
   background: none; border: 1px solid transparent; border-radius: 5px; color: var(--kit-ink-2); cursor: pointer;
   font: 400 .8rem/1 var(--kit-font-num); padding: 5px 7px;

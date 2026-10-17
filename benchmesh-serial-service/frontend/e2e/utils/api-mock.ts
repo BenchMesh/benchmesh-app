@@ -119,6 +119,17 @@ const API_PREFIXES = [
 
 export interface RecordedRequest { method: string; path: string; body?: string | null }
 
+/** Recordings v2 objects as the API returns them (ai_context/migration/RECORDINGS.md). */
+export interface MockSeries {
+  id: number; device_id: string; class: string; channel: number; field: string; label: string; unit: string;
+  added_at: number; removed_at: number | null;
+}
+export interface MockRecording {
+  id: number; name: string; description: string; interval_s: number; state: 'recording' | 'paused' | 'stopped';
+  started_at: number; stopped_at: number | null; paused_at: number | null; samples: number; last_t: number | null;
+  series: MockSeries[];
+}
+
 export interface ApiMock {
   /** Instrument list served by `GET /instruments` (mutable; takes effect on the next poll). */
   instruments: MockInstrument[];
@@ -129,6 +140,12 @@ export interface ApiMock {
   deviceRequests: RecordedRequest[];
   /** Instrument operation paths (as recorded in `posts`) that should fail with the given reply. */
   failures: Map<string, { status: number; detail: string }>;
+  /** Recordings served by the v2 recordings API (mutable; newest first in replies). */
+  recordings: MockRecording[];
+  /** Every request to `/recordings...` other than GET. */
+  recordingRequests: RecordedRequest[];
+  /** Samples per series id for `GET /recordings/{id}/data`. */
+  samples: Map<number, { t: number[]; v: number[] }>;
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -162,6 +179,93 @@ async function handleInstruments(route: Route, api: ApiMock, segs: string[]) {
   return json(route, { detail: 'Not found' }, 404);
 }
 
+const NUMERIC_FIELDS: Record<string, string[]> = {
+  PSU: ['VOUT', 'IOUT', 'POUT'], DMM: ['MEAS'], ELL: ['VIN', 'IIN', 'PIN'], AWG: ['FREQ', 'AMPL', 'OFFS'], OSC: ['VPP', 'VAVG', 'VRMS', 'FREQ'],
+};
+
+/** The v2 recordings API over `api.recordings` (validation and conflicts as the server does them). */
+async function handleRecordings(route: Route, api: ApiMock, segs: string[], url: URL) {
+  const req = route.request();
+  const method = req.method();
+  const body = (() => { try { return JSON.parse(req.postData() ?? 'null'); } catch { return null; } })();
+  if (method !== 'GET') api.recordingRequests.push({ method, path: url.pathname, body: req.postData() });
+  const newest = () => [...api.recordings].sort((a, b) => b.started_at - a.started_at || b.id - a.id);
+  const now = Date.now();
+  if (segs.length === 1) {
+    if (method === 'GET') return json(route, newest());
+    if (method === 'POST') {
+      const name = typeof body?.name === 'string' ? body.name.trim() : '';
+      const iv = body?.interval_s;
+      if (!name || name.length > 100 || !Number.isInteger(iv) || iv < 1 || iv > 3600) return json(route, { detail: 'Invalid recording' }, 422);
+      if (api.recordings.some((r) => r.name === name)) return json(route, { detail: `Recording name '${name}' is taken` }, 409);
+      const r: MockRecording = {
+        id: Math.max(0, ...api.recordings.map((x) => x.id)) + 1, name, description: body.description ?? '', interval_s: iv,
+        state: 'recording', started_at: now, stopped_at: null, paused_at: null, samples: 0, last_t: null, series: [],
+      };
+      api.recordings.push(r);
+      return json(route, r, 201);
+    }
+  }
+  const r = api.recordings.find((x) => x.id === Number(segs[1]));
+  if (!r) return json(route, { detail: 'Recording not found' }, 404);
+  const [, , op, sid] = segs;
+  if (segs.length === 2) {
+    if (method === 'GET') return json(route, r);
+    if (method === 'DELETE') { api.recordings.splice(api.recordings.indexOf(r), 1); return route.fulfill({ status: 204 }); }
+    if (method === 'PATCH') {
+      if (typeof body?.name === 'string' && api.recordings.some((x) => x !== r && x.name === body.name.trim())) {
+        return json(route, { detail: `Recording name '${body.name}' is taken` }, 409);
+      }
+      if (typeof body?.name === 'string') r.name = body.name.trim();
+      if (typeof body?.description === 'string') r.description = body.description;
+      return json(route, r);
+    }
+  }
+  if (op === 'series' && method === 'POST' && segs.length === 3) {
+    if (r.state === 'stopped') return json(route, { detail: 'Recording is stopped' }, 409);
+    if (!(NUMERIC_FIELDS[body?.class] ?? []).includes(body?.field)) return json(route, { detail: 'Not a numeric status field' }, 422);
+    if (r.series.some((x) => x.removed_at == null && x.device_id === body.device_id && x.class === body.class && x.channel === body.channel && x.field === body.field)) {
+      return json(route, { detail: 'Signal is already active in this recording' }, 409);
+    }
+    const s: MockSeries = {
+      id: Math.max(0, ...api.recordings.flatMap((x) => x.series.map((y) => y.id))) + 1,
+      device_id: body.device_id, class: body.class, channel: body.channel, field: body.field,
+      label: body.label ?? `${body.device_id} · ${body.field}`, unit: body.unit ?? '', added_at: now, removed_at: null,
+    };
+    r.series.push(s);
+    return json(route, s, 201);
+  }
+  if (op === 'series' && method === 'DELETE' && sid) {
+    const s = r.series.find((x) => x.id === Number(sid));
+    if (!s) return json(route, { detail: 'Series not found' }, 404);
+    s.removed_at = now;
+    return route.fulfill({ status: 204 });
+  }
+  if (method === 'POST' && (op === 'pause' || op === 'resume' || op === 'stop')) {
+    if (r.state !== 'stopped') {
+      if (op === 'pause') { r.state = 'paused'; r.paused_at = now; }
+      if (op === 'resume') { r.state = 'recording'; r.paused_at = null; }
+      if (op === 'stop') { r.state = 'stopped'; r.stopped_at = now; }
+    }
+    return json(route, r);
+  }
+  if (op === 'data' && method === 'GET') {
+    const from = Number(url.searchParams.get('from') ?? -Infinity);
+    const to = Number(url.searchParams.get('to') ?? Infinity);
+    const series = r.series.map((s) => {
+      const d = api.samples.get(s.id) ?? { t: [], v: [] };
+      const idx = d.t.map((t, i) => [t, i]).filter(([t]) => t >= from && t <= to).map(([, i]) => i);
+      return { id: s.id, t: idx.map((i) => d.t[i]), v: idx.map((i) => d.v[i]) };
+    });
+    return json(route, { recording_id: r.id, from: Number.isFinite(from) ? from : null, to: Number.isFinite(to) ? to : null, series });
+  }
+  if (op === 'export' && method === 'GET') {
+    const header = ['time_utc', 'time_ms', ...r.series.map((s) => `${s.label} [${s.unit}]`)].join(',');
+    return route.fulfill({ status: 200, contentType: 'text/csv', body: header + '\n' });
+  }
+  return json(route, { detail: 'Not found' }, 404);
+}
+
 /** Install the API mock on `page` and return its handle. */
 export async function setupApiMocks(page: Target): Promise<ApiMock> {
   const api: ApiMock = {
@@ -170,6 +274,9 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
     posts: [],
     deviceRequests: [],
     failures: new Map(),
+    recordings: [],
+    recordingRequests: [],
+    samples: new Map(),
   };
 
   await page.route(
@@ -196,7 +303,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           api.deviceRequests.push({ method, path: url.pathname, body: req.postData() });
           return json(route, { status: 'ok' });
         case 'recordings':
-          return json(route, method === 'GET' ? [] : { status: 'ok' });
+          return handleRecordings(route, api, segs, url);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
         default:
@@ -211,18 +318,21 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
 /**
  * Replace `window.WebSocket` with a mock: `/ws/registry` sends `registry` on open and then
  * every 400 ms (the UI flags the stream stale after 1 s without data); `/ws/metrics` sends
- * one metrics snapshot. `window.__pushRegistry(data)` replaces (and sends) the registry;
- * `window.__registryPaused = true` stops the periodic sends.
+ * one metrics snapshot; `/ws/recordings` sends a snapshot of the mocked `GET /recordings`. `window.__pushRegistry(data)` replaces (and sends) the registry;
+ * `window.__registryPaused = true` stops the periodic sends; `window.__pushRecordings(msg)`
+ * sends a recordings message (`samples`, `recording`, `deleted`, `snapshot`).
  */
 export async function setupWebSocketMock(page: Target, registry: unknown = mockRegistry) {
   await page.addInitScript((registryData) => {
     const w = window as any;
     w.__registry = registryData;
     const sockets: any[] = [];
+    const recSockets: any[] = [];
     w.__pushRegistry = (data: unknown) => {
       w.__registry = data;
       for (const s of sockets) s.emit(data);
     };
+    w.__pushRecordings = (msg: unknown) => { for (const s of recSockets) s.emit(msg); };
 
     class MockWebSocket {
       static CONNECTING = 0;
@@ -247,6 +357,11 @@ export async function setupWebSocketMock(page: Target, registry: unknown = mockR
             sockets.push(this);
             this.emit(w.__registry);
             this.timer = setInterval(() => { if (!w.__registryPaused) this.emit(w.__registry); }, 400);
+          } else if (this.url.includes('/ws/recordings')) {
+            recSockets.push(this);
+            // the snapshot is what the (mocked) REST API holds
+            fetch('/recordings').then((r) => r.json()).then((recordings) => this.emit({ type: 'snapshot', recordings }))
+              .catch(() => this.emit({ type: 'snapshot', recordings: [] }));
           } else if (this.url.includes('/ws/metrics')) {
             this.emit({
               'test-psu-1': {
@@ -267,8 +382,10 @@ export async function setupWebSocketMock(page: Target, registry: unknown = mockR
         if (this.readyState === 3) return;
         this.readyState = 3;
         clearInterval(this.timer);
-        const i = sockets.indexOf(this);
-        if (i >= 0) sockets.splice(i, 1);
+        for (const list of [sockets, recSockets]) {
+          const i = list.indexOf(this);
+          if (i >= 0) list.splice(i, 1);
+        }
         this.onclose?.(new CloseEvent('close'));
       }
 

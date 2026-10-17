@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import '../kit/kit.css'
 import './bench.css'
 import { Instrument } from '../types'
@@ -9,9 +9,13 @@ import { clearDetached, markDetached, useDetachedKeys } from './detach'
 import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
+import { RecorderDock } from '../recording/RecorderDock'
 import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, saveLayout } from './layout'
 
-type DrawerKind = 'instruments' | 'log' | null
+// loaded when first opened (with its chart)
+const RecordingsDrawer = lazy(() => import('../recording/RecordingsDrawer').then((m) => ({ default: m.RecordingsDrawer })))
+
+type DrawerKind = 'instruments' | 'log' | 'recordings' | null
 
 function Drawer({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
@@ -41,7 +45,6 @@ interface Props {
   error: string | null
   wsDiag: { ok: boolean; msg: string }
   onConfigUpdated: () => void
-  onOpenRecording: () => void
   onOpenMetrics: () => void
   onOpenDocs: () => void
 }
@@ -58,12 +61,12 @@ function SkinSwitch() {
   )
 }
 
-/** The application shell: top bar, the instrument rack, and drawers for setup and the request log. */
+/** The application shell: top bar, the instrument rack, the recorder dock, and drawers for setup, recordings and the request log. */
 export function BenchLayout(props: Props) {
   return <SkinProvider><BenchShell {...props} /></SkinProvider>
 }
 
-function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenRecording, onOpenMetrics, onOpenDocs }: Props) {
+function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenMetrics, onOpenDocs }: Props) {
   const panels = useMemo(() => panelsOf(instruments), [instruments])
   const [saved, setLayout] = useState<Layout>(() => loadLayout())
   const [arranging, setArranging] = useState(false)
@@ -103,7 +106,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
               {arranging ? 'Done' : 'Arrange'}
             </button>
             <button type="button" className="bench-btn" onClick={() => setDrawer('instruments')}>Instruments</button>
-            <button type="button" className="bench-btn" onClick={onOpenRecording}>Recording</button>
+            <button type="button" className="bench-btn" aria-pressed={drawer === 'recordings'} onClick={() => setDrawer('recordings')}>Recording</button>
             <button type="button" className="bench-btn" onClick={() => setDrawer('log')}>Log</button>
             <button type="button" className="bench-btn" onClick={onOpenMetrics}>Metrics</button>
             <button type="button" className="bench-btn" onClick={onOpenDocs}>API</button>
@@ -139,9 +142,16 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
         )}
       </main>
 
+      <RecorderDock />
+
       {drawer === 'instruments' && (
         <Drawer title="Instruments" onClose={() => setDrawer(null)}>
           <SettingsView apiBase={apiBase} onConfigUpdated={onConfigUpdated} autoAddInstrument={autoAdd} onAutoAddComplete={() => setAutoAdd(false)} />
+        </Drawer>
+      )}
+      {drawer === 'recordings' && (
+        <Drawer title="Recordings" onClose={() => setDrawer(null)}>
+          <Suspense fallback={<span className="bench-hint">Loading…</span>}><RecordingsDrawer /></Suspense>
         </Drawer>
       )}
       {drawer === 'log' && (
