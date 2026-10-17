@@ -296,7 +296,9 @@
 
 /* ---- canvases with fixed boxes ---------------------------------------------------- */
 .kit-bar { height: 28px; }
-.kit-dial { width: 190px; height: 190px; flex: none; cursor: pointer; }
+.kit-dial { width: 190px; height: 190px; flex: none; cursor: pointer; transition: opacity .25s ease; }
+/* applying a range or function: faded and locked where it is, not moved */
+.kit-dial--busy { opacity: .42; cursor: progress; }
 .kit-knob { width: 104px; height: 104px; flex: none; cursor: grab; touch-action: none; }
 .kit-wave { height: 64px; }
 /* oscilloscope screen: 10 × 8 divisions plus marker margins, scales with its panel */

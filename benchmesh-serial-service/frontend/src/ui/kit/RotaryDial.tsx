@@ -28,8 +28,10 @@ export function nearestOption(x: number, y: number, cx: number, cy: number, n: n
  * Function selector drawn as a rotary switch: labels around the edge, a ridged knob pointing
  * at the active option. Click a label, scroll while focused, or use arrow keys.
  */
-export function RotaryDial({ options, value, onChange, label, disabled }: {
+export function RotaryDial({ options, value, onChange, label, disabled, busy }: {
   options: DialOption[]; value: string; onChange: (v: string) => void | Promise<boolean | void>; label: string; disabled?: boolean
+  /** A change is being applied: greyed out and locked in its position. */
+  busy?: boolean
 }) {
   const n = options.length
   const idx = Math.max(0, options.findIndex((o) => o.value === value))
@@ -109,7 +111,7 @@ export function RotaryDial({ options, value, onChange, label, disabled }: {
   return (
     <canvas
       ref={ref}
-      className="kit-canvas kit-dial"
+      className={`kit-canvas kit-dial${busy ? ' kit-dial--busy' : ''}`}
       tabIndex={disabled ? -1 : 0}
       role="slider"
       aria-label={label}

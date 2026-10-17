@@ -31,7 +31,11 @@ commands:
     send: "OUTPut{ch}:STATe?"
     parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
     source: PM p14
-  shape_q: {send: "SOURce{ch}:FUNCtion:SHAPe?", parse: [trim], source: PM p26}
+  shape_q:
+    send: "SOURce{ch}:FUNCtion:SHAPe?"
+    # Replies SIN, SQU, RAMP, PRN - but PULS for pulse: report the setter's name (PUL)
+    parse: [trim, upper, {map: {SIN: SIN, SQU: SQU, RAMP: RAMP, PULS: PUL, PUL: PUL, PRN: PRN, _: ""}}]
+    source: "PM p26; PULS verified on DGE2070 2026-10-17"
   symm_q: {send: "SOURce{ch}:FUNCtion:RAMP:SYMMetry?", parse: [trim, number], source: PM p26}
   freq_q: {send: "SOURce{ch}:FREQuency?", parse: [trim, number], description: "Reply format unverified", source: PM p23-24}
   ampl_q: {send: "SOURce{ch}:VOLTage?", parse: [trim, number], description: "Vpp; reply format unverified", source: PM p35}

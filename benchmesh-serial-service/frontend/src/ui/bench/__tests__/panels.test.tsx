@@ -107,6 +107,29 @@ describe('DmmPanel', () => {
     await waitFor(() => expect(api.set).toHaveBeenCalledWith('range', '20'))
   })
 
+  it('keeps the dial in place, greyed out, while the meter settles after a range change', async () => {
+    let finish: () => void = () => {}
+    const api = mockApi()
+    api.set.mockImplementation(() => new Promise<void>((r) => { finish = r }))
+    const profile = dmmProfile(...fx('owon-xdm1241:DMM'))
+    const { rerender } = render(<DmmPanel status={{ MEAS: si('4.7'), MODE: 'RES', RANGE: '5E6' }} profile={profile} api={api} online />)
+    const dial = screen.getByRole('slider', { name: 'Function' })
+    expect(dial).toHaveAttribute('aria-valuetext', 'Resistance')
+    fireEvent.click(screen.getByRole('button', { name: '500KΩ' }))
+    // request in flight: the dial is locked and faded, still on resistance
+    expect(dial).toHaveAttribute('aria-disabled', 'true')
+    expect(dial.className).toContain('kit-dial--busy')
+    finish()
+    // settling: the meter reports no function for a moment - the dial must not jump
+    rerender(<DmmPanel status={{ MEAS: null, MODE: null, RANGE: '500E3' }} profile={profile} api={api} online />)
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('range', '500E3'))
+    expect(dial).toHaveAttribute('aria-valuetext', 'Resistance')
+    expect(dial.className).toContain('kit-dial--busy')
+    rerender(<DmmPanel status={{ MEAS: si('4.7'), MODE: 'RES', RANGE: '500E3' }} profile={profile} api={api} online />)
+    await waitFor(() => expect(dial).not.toHaveAttribute('aria-disabled'))
+    expect(dial.className).not.toContain('kit-dial--busy')
+  })
+
   it('computes the full scale of the bar', () => {
     expect(fullScale('20', 3.3)).toBe(20)
     expect(fullScale('AUTO', 3.3)).toBe(10)

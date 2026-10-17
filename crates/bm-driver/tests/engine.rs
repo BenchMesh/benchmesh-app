@@ -462,3 +462,17 @@ fn a_set_refreshes_status_on_the_next_poll() {
     let u = e.poll_due().unwrap();
     assert_eq!(osc_status(&u, 1)["SCALE"]["sci"], "2.00000E-01");
 }
+
+#[test]
+fn dge_reports_shapes_under_the_setter_names() {
+    // The DGE2070 answers PULS for pulse while the setter takes PUL (verified 2026-10-17).
+    let (t, _) = sim(move |w: &[u8]| match text(w).trim_end() {
+        "*IDN?" => Some(b"OWON,DGE2070,25130086,SCPI:99.0 FV:V1.0.4.7.0\n".to_vec()),
+        "SOURce1:FUNCtion:SHAPe?" => Some(b"PULS\n".to_vec()),
+        "SOURce2:FUNCtion:SHAPe?" => Some(b"RAMP\n".to_vec()),
+        _ => None,
+    });
+    let mut e = Engine::connect(def("owon_dge"), t).unwrap();
+    assert_eq!(e.get("AWG", "shape", 1).unwrap().value(), json!("PUL"));
+    assert_eq!(e.get("AWG", "shape", 2).unwrap().value(), json!("RAMP"));
+}

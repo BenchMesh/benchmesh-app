@@ -31,7 +31,13 @@ export function useStats(value: number | null, tick: unknown, key: unknown): Sta
 export function DmmPanel({ status, profile, api, online }: {
   status: Record<string, any>; profile: DmmProfile; api: ChannelApi; online: boolean
 }) {
-  const mode = typeof status.MODE === 'string' ? status.MODE : profile.modes[0]?.key ?? ''
+  // The meter reports no function while it settles after a range or function change: keep the
+  // last reported one so the dial never jumps (and statistics do not restart).
+  const reported = typeof status.MODE === 'string' ? status.MODE : null
+  const [lastMode, setLastMode] = useState<string | null>(reported)
+  if (reported != null && reported !== lastMode) setLastMode(reported)
+  const mode = reported ?? lastMode ?? profile.modes[0]?.key ?? ''
+  const settling = online && reported == null && lastMode != null
   const info = profile.modes.find((m) => m.key === mode)
   const [hold, setHold] = useState<number | null>(null)
   const [holdOn, setHoldOn] = useState(false)
@@ -41,6 +47,13 @@ export function DmmPanel({ status, profile, api, online }: {
   const [sensor, setSensor] = useState<string | null>(null)
   const [scale, setScale] = useState<string | null>(null)
   const [error, run] = useAction()
+  // a range/function request is in flight; with `settling` the dial is greyed out meanwhile
+  const [sending, setSending] = useState(false)
+  const apply = (p: Promise<unknown>, onOk?: () => void) => {
+    setSending(true)
+    return run(p, onOk).finally(() => setSending(false))
+  }
+  const applying = sending || settling
 
   const raw = siNumber(status.MEAS)
   const live = holdOn ? hold : raw
@@ -71,9 +84,9 @@ export function DmmPanel({ status, profile, api, online }: {
 
   return (
     <div className="bench-dmm">
-      <RotaryDial label="Function" disabled={!online}
+      <RotaryDial label="Function" disabled={!online || applying} busy={applying}
         options={profile.modes.map((m) => ({ value: m.key, label: m.glyph, title: m.name }))}
-        value={mode} onChange={(k) => run(api.set('mode', k))} />
+        value={mode} onChange={(k) => apply(api.set('mode', k))} />
       <div className="bench-dmm__main">
         <div className="kit-glass">
           <Readout tag={info?.glyph ?? mode} text={main.text} unit={isTemp ? unit : `${main.prefix}${unit}`} label={info?.name ?? 'Reading'} tone="meas" />
@@ -97,7 +110,7 @@ export function DmmPanel({ status, profile, api, online }: {
             <span className="kit-label">Range</span>
             <Selector variant="chips" label="Range" disabled={!online} value={activeRange}
               options={ranges.map((r) => ({ value: r.value, label: r.display }))}
-              onChange={(v) => run(api.set('range', v), () => setRange(v))} />
+              onChange={(v) => apply(api.set('range', v), () => setRange(v))} />
           </div>
         )}
         {isTemp && profile.tempSensors.length > 0 && (
