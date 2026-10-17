@@ -5,7 +5,7 @@ import { Instrument } from '../types'
 import { SettingsView } from '../drawers/SettingsView'
 import { LogsPanel } from '../drawers/LogsPanel'
 import { Rack } from './Rack'
-import { markDetached, useDetachedKeys } from './detach'
+import { clearDetached, markDetached, useDetachedKeys } from './detach'
 import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
@@ -126,7 +126,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
                 {detached.map((k) => (
                   <span key={k} className="bench-detached__item">
                     <button type="button" className="bench-chip" onClick={() => void focusPanelWindow(k)} title="Bring the window to the front">↗ {panelTitle(k)}</button>
-                    <button type="button" className="bench-icon" onClick={() => void closePanelWindow(k)}
+                    <button type="button" className="bench-icon" onClick={() => { clearDetached(k); void closePanelWindow(k) }}
                       aria-label={`Back to the bench: ${panelTitle(k)}`} title="Close the window and show the panel here">↩</button>
                   </span>
                 ))}

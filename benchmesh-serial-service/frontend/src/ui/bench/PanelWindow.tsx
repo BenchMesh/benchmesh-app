@@ -5,7 +5,7 @@ import { useApiBase, useInstruments, useRegistrySocket } from '../data'
 import { getClassDescription } from '../instrumentClasses'
 import { closeWindow, isDesktop, resizeWindow, setWindowOnTop, startWindowDrag, startWindowResize } from '../desktop'
 import { InstrumentPanel } from './InstrumentPanel'
-import { useDetachedHeartbeat } from './detach'
+import { clearDetached, useDetachedHeartbeat } from './detach'
 
 /** `instrumentId:CLASS` → its parts (ids may contain colons). */
 export function splitPanelKey(key: string): [string, string] {
@@ -59,7 +59,9 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
           folded,
           onFold: () => setFolded((f) => !f),
           onTop: isDesktop() ? { on: onTop, toggle: toggleOnTop } : undefined,
-          onClose: closeWindow,
+          // deregister first: the bench shows the panel again at once, without waiting for
+          // the page-hide event or the heartbeat to go stale
+          onClose: () => { clearDetached(panelKey); closeWindow() },
           onDragStart: startWindowDrag,
         }} />
       ) : (

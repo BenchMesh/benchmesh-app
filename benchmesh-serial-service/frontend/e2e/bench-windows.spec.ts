@@ -64,4 +64,20 @@ test.describe('Own window', () => {
     await mockPage.getByRole('button', { name: /Back to the bench/ }).click();
     await expect(mockPage.getByRole('article', { name: PANELS.dmm })).toHaveCount(1);
   });
+
+  test('in its own window the header stays put; only the panel body scrolls', async ({ mockPage }) => {
+    const [win] = await Promise.all([
+      mockPage.waitForEvent('popup'),
+      mockPage.getByRole('article', { name: PANELS.psu }).getByRole('button', { name: 'Open in own window' }).click(),
+    ]);
+    await win.setViewportSize({ width: 420, height: 160 });
+    const head = win.locator('.bench-panel__head');
+    await expect(head).toBeVisible();
+    const top = (await head.boundingBox())!.y;
+    await win.mouse.move(200, 120);
+    await win.mouse.wheel(0, 2000);
+    await expect.poll(() => win.locator('.bench-panel__body').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    expect((await head.boundingBox())!.y).toBe(top);
+    expect(await win.evaluate(() => document.scrollingElement!.scrollTop)).toBe(0);
+  });
 });

@@ -119,7 +119,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
           </span>
         )}
       </header>
-      {folded ? null : !meta ? (
+      {folded ? null : <div className="bench-panel__body">{!meta ? (
         <span className="bench-hint">Loading…</span>
       ) : klass.toUpperCase() === 'OSC' ? (
         // one screen for all channels: the scope panel is per instrument, not per channel
@@ -134,7 +134,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
             </section>
           ))}
         </div>
-      )}
+      )}</div>}
       {!online && !folded && <div className="bench-panel__offline">Offline — reconnecting</div>}
     </article>
   )

@@ -185,10 +185,16 @@ html, body { background: var(--kit-ground); }
 /* ---- panels in their own windows ------------------------------------------------- */
 .bench-detached { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 12px; }
 .bench-detached__item { display: inline-flex; align-items: center; gap: 2px; }
-.bench-window { min-height: 100vh; overflow: auto; }
-.bench-window > .bench-panel { min-height: 100vh; border-radius: 0; border-width: 0; box-shadow: none; align-content: start; }
-.bench-window--folded { min-height: 0; overflow: hidden; }
-.bench-window--folded > .bench-panel { min-height: 0; }
+.bench-panel__body { display: grid; gap: 12px; min-width: 0; }
+/* own window: the header is the title bar and stays put; only the panel body scrolls */
+.bench-window { height: 100vh; min-height: 0; overflow: hidden; }
+.bench-window > .bench-panel {
+  height: 100vh; border-radius: 0; border-width: 0; box-shadow: none;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.bench-window > .bench-panel > .bench-panel__head { flex: none; }
+.bench-window > .bench-panel > .bench-panel__body { flex: 1 1 auto; min-height: 0; overflow: auto; align-content: start; }
+.bench-window--folded, .bench-window--folded > .bench-panel { height: auto; }
 .bench-window__msg { display: flex; gap: 12px; align-items: center; padding: 16px; font: 400 .8rem/1.4 var(--kit-font-num); }
 .bench-window__grip {
   position: fixed; right: 0; bottom: 0; width: 16px; height: 16px; padding: 0; border: 0; cursor: se-resize;
