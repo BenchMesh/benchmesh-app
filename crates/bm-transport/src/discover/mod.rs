@@ -59,8 +59,41 @@ pub fn ports() -> Vec<Port> {
     let mut out = macos::ports();
     #[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
     let mut out: Vec<Port> = Vec::new();
+    #[cfg(not(target_os = "linux"))]
+    out.extend(usbtmc_ports());
     out.sort_by(|a, b| a.path.cmp(&b.path));
     out
+}
+
+/// USBTMC instruments on Windows / macOS (Linux: kernel nodes, listed by `linux.rs`). On Windows
+/// an instrument whose driver belongs to an installed VISA is reached through that VISA.
+#[cfg(not(target_os = "linux"))]
+fn usbtmc_ports() -> Vec<Port> {
+    #[cfg(windows)]
+    let visa: Vec<(String, crate::visa::UsbId)> =
+        crate::visa::resources().into_iter().filter_map(|r| Some((r.clone(), crate::visa::parse_usb_resource(&r)?))).collect();
+    crate::usbtmc_nusb::ports()
+        .into_iter()
+        .map(|(p, d)| {
+            #[cfg(windows)]
+            let p = through_visa(p, &d, &visa);
+            #[cfg(not(windows))]
+            let _ = d;
+            p
+        })
+        .collect()
+}
+
+/// An instrument whose Windows driver is not WinUSB is opened through the VISA that owns it.
+#[cfg(windows)]
+fn through_visa(mut p: Port, d: &nusb::DeviceInfo, visa: &[(String, crate::visa::UsbId)]) -> Port {
+    if crate::usbtmc_nusb::unusable_driver(d).is_some() {
+        let same = |(v, pid, s): &crate::visa::UsbId| *v == d.vendor_id() && *pid == d.product_id() && s.as_deref() == d.serial_number();
+        if let Some((resource, _)) = visa.iter().find(|(_, id)| same(id)) {
+            p.path = resource.clone();
+        }
+    }
+    p
 }
 
 /// `0x1A86`, `1a86`, `6790` (decimal from some APIs is converted by the caller) → `1a86`.

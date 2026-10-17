@@ -18,7 +18,9 @@ one guide for both series. Verified on a **DHO804** (FW 00.01.03, USB `1ab1:044d
 Model differences are only channel count and feature values (`models[].channels/features`).
 
 ## Link and framing
-- USBTMC, kernel driver `/dev/usbtmcN`. Commands end `\n`; replies are one USBTMC message ending `\n`.
+- USBTMC: Linux kernel driver `/dev/usbtmcN`; Windows/macOS own USBTMC protocol over `nusb`
+  (Windows: WinUSB driver) or an installed VISA (`ai_context/migration/IDENTITY.md`, "USBTMC
+  instruments per OS"). Commands end `\n`; replies are one USBTMC message ending `\n`.
 - Every query round trip ≈ 23–29 ms (measured), so polling is split: 250 ms traces
   (`TRIGger:STATus?`, `WAVeform:PREamble?`, `WAVeform:DATA?`), 1 s display + measurements,
   3 s settings. A set re-polls every group at once (engine), so changes show immediately.

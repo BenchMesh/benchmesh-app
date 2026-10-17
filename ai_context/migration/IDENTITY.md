@@ -107,5 +107,21 @@ Response:
 ## Status
 
 Linux: verified on the bench (2026-10-17). Windows and macOS enumeration: compile- and
-clippy-checked for both targets, not yet run on those OSes. USBTMC instruments are only
-reachable on Linux until the userspace USBTMC transport exists.
+clippy-checked for both targets, built and run natively in CI, not yet run with instruments.
+
+## USBTMC instruments per OS
+
+| OS | How BenchMesh talks to them | Port path | One-time setup |
+|---|---|---|---|
+| Linux | kernel `usbtmc` driver | `/dev/usbtmcN` | access to `/dev/usbtmc*` (generic rule, installer) |
+| Windows | own USBTMC protocol over `nusb` | `usb:1ab1:044d:DHO8A272907001` | the instrument needs the **WinUSB** driver (Zadig: select it → WinUSB → Replace Driver), unless … |
+| Windows with a VISA (NI-VISA, Keysight IO Libraries, Rigol UltraSigma) | that VISA, loaded at run time | `USB0::0x1AB1::0x044D::DHO8A272907001::INSTR` | none — the VISA's driver stays |
+| macOS | own USBTMC protocol over `nusb` | `usb:…` | none |
+
+Discovery picks the right path per instrument (on Windows: WinUSB-bound → `usb:`, else the VISA
+resource with the same vid/pid/serial). Identity matching is the same for all paths. If Windows
+has no usable driver, opening fails with the instructions above, and Detect shows them.
+
+The USBTMC protocol (`usbtmc_proto.rs`) discards replies whose bTag belongs to an earlier
+request (a late answer after a timeout) and sends INITIATE_ABORT_BULK_IN after a timeout, so a
+slow reply can no longer leave an instrument "one reply behind".

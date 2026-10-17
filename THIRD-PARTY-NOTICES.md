@@ -93,6 +93,16 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT OR Apache-2.0
 - **URL**: https://github.com/jtakakura/io-kit-rs, https://github.com/servo/core-foundation-rs
 
+### nusb (bm-transport)
+- **License**: Apache-2.0 OR MIT (used under MIT)
+- **URL**: https://github.com/kevinmehall/nusb
+- Userspace USB access for USBTMC instruments on Windows (WinUSB) and macOS.
+
+### libloading (bm-transport)
+- **License**: ISC
+- **URL**: https://github.com/nagisa/rust_libloading
+- Loads an installed VISA library at run time (no VISA code is bundled).
+
 ### rusqlite (bm-store) with bundled SQLite
 - **License**: rusqlite MIT; SQLite is in the public domain
 - **URL**: https://github.com/rusqlite/rusqlite, https://sqlite.org/copyright.html

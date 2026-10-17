@@ -29,8 +29,17 @@ struct Found {
     idn: String,
 }
 
+/// Why a probe found nothing.
+#[derive(Debug)]
+pub enum Miss {
+    /// The port cannot be opened at all (busy, missing driver…): no definition can help.
+    Open(String),
+    /// Opened, but this definition's identify got no matching answer.
+    Identify(String),
+}
+
 /// Identify reply and model name of `def`'s instrument on `port`.
-pub type Probe<'a> = dyn Fn(&Port, &DeviceDef) -> Result<(String, String), String> + Sync + 'a;
+pub type Probe<'a> = dyn Fn(&Port, &DeviceDef) -> Result<(String, String), Miss> + Sync + 'a;
 
 /// Definitions worth trying on a port, most likely first.
 fn candidates<'a>(port: &Port, catalog: &'a Catalog) -> Vec<&'a DeviceDef> {
@@ -82,7 +91,8 @@ pub fn detect(ports: &[Port], catalog: &Catalog, known: &[Known], probe: &Probe<
                     for def in defs {
                         match probe(port, def) {
                             Ok((idn, model)) => return Ok(Some(Found { driver: def.id.clone(), model, idn })),
-                            Err(e) => last = format!("{}: {e}", def.id),
+                            Err(Miss::Open(e)) => return Err(format!("cannot open: {e}")),
+                            Err(Miss::Identify(e)) => last = format!("{}: {e}", def.id),
                         }
                     }
                     Err(format!("no definition answered (last: {last})"))
@@ -142,8 +152,9 @@ pub fn run(devices: &Devices) -> Vec<Value> {
             .collect()
     };
     let probe = |port: &Port, def: &DeviceDef| {
-        let t = bm_transport::open(&def.link, &Endpoint { path: port.path.clone(), ..Endpoint::default() }).map_err(|e| e.to_string())?;
-        let e = Engine::open(Arc::new(def.clone()), t).map_err(|e| e.to_string())?;
+        let t = bm_transport::open(&def.link, &Endpoint { path: port.path.clone(), ..Endpoint::default() })
+            .map_err(|e| Miss::Open(e.to_string()))?;
+        let e = Engine::open(Arc::new(def.clone()), t).map_err(|e| Miss::Identify(e.to_string()))?;
         Ok((e.idn.clone(), e.model.name.clone()))
     };
     detect(&bm_transport::discover::ports(), &devices.catalog, &known, &probe)
@@ -182,6 +193,7 @@ mod tests {
             port(PortKind::Serial, "test-detect/ttyUSB0", "1a86", "7523", None, "8134"),
             port(PortKind::Usbtmc, "test-detect/usbtmc3", "1ab1", "044d", Some("DHO8A272907001"), "0404"),
             port(PortKind::Serial, "test-detect/ttyUSB9", "1a86", "7523", None, "0254"),
+            port(PortKind::Usbtmc, "test-detect/usbtmc4", "1ab1", "044d", Some("DHO8A000000002"), "0404"),
         ];
         let known = vec![Known {
             entry: entry(json!({"id": "owon-xdm1241", "driver": "owon_xdm", "port": "test-detect/ttyUSB2"})),
@@ -196,7 +208,8 @@ mod tests {
                 ("test-detect/usbtmc3", "rigol_dho800") => {
                     Ok(("RIGOL TECHNOLOGIES,DHO804,DHO8A272907001,00.01.03".to_string(), "DHO804".to_string()))
                 }
-                _ => Err("timeout".to_string()),
+                ("test-detect/usbtmc4", _) => Err(Miss::Open("Windows has no driver for this instrument. Either install a VISA …".into())),
+                _ => Err(Miss::Identify("timeout".to_string())),
             }
         };
         let out = detect(&ports, &catalog(), &known, &probe);
@@ -221,6 +234,8 @@ mod tests {
 
         assert_eq!(out[3]["instrument"], Value::Null);
         assert!(out[3]["error"].as_str().unwrap().starts_with("no definition answered"));
+        assert_eq!(out[4]["error"], "cannot open: Windows has no driver for this instrument. Either install a VISA …");
+        assert_eq!(tried.iter().filter(|(p, _)| p == "test-detect/usbtmc4").count(), 1, "an unopenable port is not retried per definition");
         assert!(tried.iter().filter(|(p, _)| p == "test-detect/ttyUSB9").all(|(_, d)| d != "owon_dge" && d != "rigol_dho800"), "serial ports only get serial definitions");
     }
 
@@ -228,7 +243,7 @@ mod tests {
     fn a_held_port_is_not_probed() {
         let ports = vec![port(PortKind::Serial, "test-detect/held", "1a86", "7523", None, "0264")];
         let _g = lock::acquire("test-detect/held").unwrap();
-        let probe = |_: &Port, _: &DeviceDef| -> Result<(String, String), String> { panic!("probed a held port") };
+        let probe = |_: &Port, _: &DeviceDef| -> Result<(String, String), Miss> { panic!("probed a held port") };
         let out = detect(&ports, &catalog(), &[], &probe);
         assert!(out[0]["error"].as_str().unwrap().contains("in use"));
     }

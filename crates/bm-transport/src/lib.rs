@@ -1,6 +1,8 @@
 //! Physical transports for the BenchMesh engine.
 //!
 //! - [`SerialTransport`]: RS-232 / USB-serial via `serialport` (Linux, macOS, Windows).
+//! - USBTMC on Windows / macOS: userspace protocol ([`usbtmc_proto`]) over `nusb`
+//!   ([`usbtmc_nusb`], WinUSB on Windows), or an installed VISA ([`visa`]).
 //! - [`UsbTmcTransport`]: Linux kernel `usbtmc` driver (`/dev/usbtmcN`); one `read()`
 //!   returns one whole device message — never split a message into several reads
 //!   (split reads strand data on the device and desync the USBTMC tags; see the DGE
@@ -20,6 +22,9 @@ use bm_driver::engine::Transport;
 pub mod discover;
 pub mod identity;
 pub mod lock;
+pub mod usbtmc_nusb;
+pub mod usbtmc_proto;
+pub mod visa;
 #[cfg(target_os = "linux")]
 mod usbtmc;
 #[cfg(target_os = "linux")]
@@ -41,10 +46,15 @@ pub fn open(link: &Link, ep: &Endpoint) -> io::Result<Box<dyn Transport>> {
     let guard = lock::acquire(&ep.path)?;
     let inner: Box<dyn Transport> = match link {
         Link::Serial(s) => Box::new(SerialTransport::open(s, ep)?),
+        Link::Usbtmc(_) if visa::is_resource(&ep.path) => Box::new(visa::VisaTransport::open(&ep.path)?),
+        Link::Usbtmc(_) if ep.path.starts_with(usbtmc_nusb::PREFIX) => Box::new(usbtmc_nusb::open(&ep.path)?),
         #[cfg(target_os = "linux")]
         Link::Usbtmc(_) => Box::new(UsbTmcTransport::open(&ep.path)?),
         #[cfg(not(target_os = "linux"))]
-        Link::Usbtmc(_) => return Err(io::Error::new(io::ErrorKind::Unsupported, "USBTMC is only implemented on Linux so far")),
+        Link::Usbtmc(_) => {
+            let msg = format!("{}: not a USBTMC instrument path (use Detect, a `usb:` path or a VISA resource)", ep.path);
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
+        }
         Link::Tcp(_) => return Err(io::Error::new(io::ErrorKind::Unsupported, "TCP transport not implemented yet")),
     };
     Ok(Box::new(Held { inner, _guard: guard }))
