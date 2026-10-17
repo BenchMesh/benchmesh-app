@@ -5,6 +5,9 @@ import { Instrument } from '../types'
 import { SettingsView } from '../drawers/SettingsView'
 import { LogsPanel } from '../drawers/LogsPanel'
 import { Rack } from './Rack'
+import { markDetached, useDetachedKeys } from './detach'
+import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
+import { getClassDescription } from '../instrumentClasses'
 import { Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
 import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, saveLayout } from './layout'
 
@@ -71,6 +74,19 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
   const layout = useMemo(() => (loading ? saved : reconcile(saved, panels)), [saved, panels, loading])
   useEffect(() => { if (layout !== EMPTY_LAYOUT) saveLayout(layout) }, [layout])
 
+  const detached = useDetachedKeys()
+  const [detachError, setDetachError] = useState<string | null>(null)
+  const detach = (key: string, title: string, size: { width: number; height: number }) => {
+    setDetachError(null)
+    markDetached(key) // off the bench at once; the window keeps it registered while it lives
+    openPanelWindow(key, title, size.width, size.height).catch((e) => setDetachError(`Could not open a window: ${e instanceof Error ? e.message : e}`))
+  }
+  const panelTitle = (key: string) => {
+    const p = panels.find((x) => x.key === key)
+    const ins = instruments.find((i) => i.id === p?.instrumentId)
+    return p ? `${getClassDescription(p.klass)} · ${ins?.name ?? p.instrumentId}` : key
+  }
+
   const apiOk = !loading && !error
   const empty = !loading && !error && instruments.length === 0
 
@@ -103,7 +119,23 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
             <button type="button" className="bench-btn bench-btn--primary" onClick={() => { setAutoAdd(true); setDrawer('instruments') }}>Add instrument</button>
           </div>
         ) : (
-          <Rack panels={panels} instruments={instruments} registry={registry} layout={layout} onLayout={setLayout} arranging={arranging} />
+          <>
+            {(detached.length > 0 || detachError) && (
+              <div className="bench-detached" aria-label="Panels in their own windows">
+                {detached.length > 0 && <span className="kit-label">In own windows</span>}
+                {detached.map((k) => (
+                  <span key={k} className="bench-detached__item">
+                    <button type="button" className="bench-chip" onClick={() => void focusPanelWindow(k)} title="Bring the window to the front">↗ {panelTitle(k)}</button>
+                    <button type="button" className="bench-icon" onClick={() => void closePanelWindow(k)}
+                      aria-label={`Back to the bench: ${panelTitle(k)}`} title="Close the window and show the panel here">↩</button>
+                  </span>
+                ))}
+                {detachError && <span className="kit-error" role="alert">{detachError}</span>}
+              </div>
+            )}
+            <Rack panels={panels} instruments={instruments} registry={registry} layout={layout} onLayout={setLayout} arranging={arranging}
+              detached={detached} onDetach={detach} />
+          </>
         )}
       </main>
 

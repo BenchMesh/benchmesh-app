@@ -7,15 +7,27 @@
   "build": {},
   "app": {
     "windows": [],
-    "security": { "csp": null }
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage"],
+    "targets": [
+      "deb",
+      "appimage"
+    ],
     "category": "Utility",
     "shortDescription": "Browser-based cockpit for lab instruments",
     "longDescription": "BenchMesh connects, controls, logs and automates serial and USBTMC lab instruments from one interface.",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "resources": {
       "../../devices/": "devices/",
       "../../benchmesh-serial-service/frontend/dist/": "ui/"

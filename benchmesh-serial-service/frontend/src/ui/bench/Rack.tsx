@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Instrument } from '../types'
 import { InstrumentPanel } from './InstrumentPanel'
-import { BenchLayout, columnsFor, hide, move, PanelRef, setSize, show, spanFor } from './layout'
+import { BenchLayout, columnsFor, hide, move, PanelRef, setSize, show, spanFor, toggleFold } from './layout'
 import { getClassDescription } from '../instrumentClasses'
 
 /** Columns that fit the rack's current width. */
@@ -24,20 +24,23 @@ function useColumns(ref: React.RefObject<HTMLElement>) {
  * The bench: instrument panels in a responsive grid, in the user's order and widths.
  * In arrange mode panels can be dragged (or moved with ◀ ▶), resized and hidden.
  */
-export function Rack({ panels, instruments, registry, layout, onLayout, arranging }: {
+export function Rack({ panels, instruments, registry, layout, onLayout, arranging, detached, onDetach }: {
   panels: PanelRef[]
   instruments: Instrument[]
   registry: any
   layout: BenchLayout
   onLayout: (l: BenchLayout) => void
   arranging: boolean
+  /** Panels shown in their own window: left out of the rack (not rendered at all). */
+  detached: string[]
+  onDetach: (key: string, title: string, size: { width: number; height: number }) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const columns = useColumns(ref)
   const [dragging, setDragging] = useState<string | null>(null)
   const [target, setTarget] = useState<string | null>(null)
   const byKey = new Map(panels.map((p) => [p.key, p]))
-  const visible = layout.order.filter((k) => byKey.has(k) && !layout.hidden.includes(k))
+  const visible = layout.order.filter((k) => byKey.has(k) && !layout.hidden.includes(k) && !detached.includes(k))
   const hidden = layout.hidden.filter((k) => byKey.has(k))
   const label = (k: string) => {
     const p = byKey.get(k)!
@@ -87,6 +90,11 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
                 instrument={instrument}
                 klass={p.klass}
                 registry={registry}
+                win={{
+                  folded: (layout.folded ?? []).includes(k),
+                  onFold: () => onLayout(toggleFold(layout, k)),
+                  onDetach: (size) => onDetach(k, label(k), size),
+                }}
                 arrange={arranging ? {
                   size,
                   onSize: (s) => onLayout(setSize(layout, k, s)),

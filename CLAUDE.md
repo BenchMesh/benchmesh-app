@@ -153,6 +153,17 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings, request log |
 
+Panel **window controls** (header, top right): fold to the header line (saved with the layout;
+double-click the header works too) and **open in its own window**. A detached panel lives at
+`/ui/?panel=<instrumentId:CLASS>` (`bench/PanelWindow.tsx`): in the desktop app an undecorated
+Tauri window (`panel-*`, opened from the UI via `window.__TAURI__`; permissions in
+`crates/benchmesh-app/capabilities/panels.json`) whose header drags it, with fold (shrinks the
+window), keep-on-top and close; in a browser a popup. While its window lives it writes a
+heartbeat (`bench/detach.ts`) and the bench leaves the panel out (never drawn twice) and lists it
+under "In own windows"; closing (or a crash) brings it back. Closing the main window closes the
+app. On Linux Wayland the app runs through XWayland (`GDK_BACKEND=x11`) because Wayland does not
+allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out.
+
 Every control that changes the instrument waits for **confirmation**: after the request is sent it
 pulses discreetly until the instrument's reported value (registry status, or a read-back for
 setpoints) equals the requested one, and shows a small red dot if that does not happen within 6 s

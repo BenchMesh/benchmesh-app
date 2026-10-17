@@ -56,6 +56,14 @@ export function SkinProvider({ children }: { children: React.ReactNode }) {
     setState(s)
   }, [])
   useEffect(() => { applySkin(skin) }, [skin])
+  // follow a skin chosen in another window (detached instrument windows share the choice)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === SKIN_STORAGE_KEY && isSkin(e.newValue)) { applySkin(e.newValue); setState(e.newValue) }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
   const value = useMemo(() => ({ skin, setSkin }), [skin, setSkin])
   return <SkinContext.Provider value={value}>{children}</SkinContext.Provider>
 }

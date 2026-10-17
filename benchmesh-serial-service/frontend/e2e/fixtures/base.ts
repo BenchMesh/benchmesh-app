@@ -8,12 +8,15 @@ import { ApiMock, acceptDisclaimer, setupApiMocks, setupWebSocketMock } from '..
  */
 export const test = base.extend<{ api: ApiMock; mockPage: Page }>({
   api: async ({ page }, use) => {
-    const api = await setupApiMocks(page);
-    await setupWebSocketMock(page);
-    await acceptDisclaimer(page);
+    // on the context, so instrument windows opened from the bench (popups) are mocked too
+    const context = page.context();
+    const api = await setupApiMocks(context);
+    await setupWebSocketMock(context);
+    await acceptDisclaimer(context);
     await use(api);
     // don't let in-flight route handlers (e.g. a deliberately unanswered request) hold up teardown
     await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await context.unrouteAll({ behavior: 'ignoreErrors' });
   },
 
   mockPage: async ({ page, api }, use) => {

@@ -120,6 +120,7 @@ test.describe('Arrange mode', () => {
       order: ['test-dmm-1:DMM', 'test-lcr-1:LCR', 'test-psu-1:PSU'],
       size: { 'test-psu-1:PSU': 'l', 'test-dmm-1:DMM': 'm', 'test-lcr-1:LCR': 's' },
       hidden: ['test-dmm-1:DMM'],
+      folded: [],
     });
 
     await gotoBench(mockPage, 2);

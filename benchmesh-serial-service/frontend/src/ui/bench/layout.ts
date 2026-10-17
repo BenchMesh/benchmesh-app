@@ -10,6 +10,8 @@ export interface BenchLayout {
   order: string[]
   size: Record<string, PanelSize>
   hidden: string[]
+  /** Panels folded to their header line. */
+  folded: string[]
 }
 
 export interface PanelRef {
@@ -18,7 +20,7 @@ export interface PanelRef {
   klass: string
 }
 
-export const EMPTY_LAYOUT: BenchLayout = { order: [], size: {}, hidden: [] }
+export const EMPTY_LAYOUT: BenchLayout = { order: [], size: {}, hidden: [], folded: [] }
 
 export const SIZES: { value: PanelSize; label: string; title: string }[] = [
   { value: 's', label: 'S', title: 'One column' },
@@ -49,10 +51,11 @@ export function reconcile(layout: BenchLayout, panels: PanelRef[]): BenchLayout 
   const size: Record<string, PanelSize> = {}
   for (const p of panels) size[p.key] = layout.size[p.key] ?? defaultSize(p.klass)
   const hidden = layout.hidden.filter((k) => keys.has(k))
+  const folded = (layout.folded ?? []).filter((k) => keys.has(k))
   const same = order.length === layout.order.length && order.every((k, i) => k === layout.order[i]) &&
     hidden.length === layout.hidden.length && Object.keys(layout.size).length === order.length &&
-    order.every((k) => layout.size[k] === size[k])
-  return same ? layout : { order, size, hidden }
+    order.every((k) => layout.size[k] === size[k]) && layout.folded != null && folded.length === layout.folded.length
+  return same ? layout : { order, size, hidden, folded }
 }
 
 export function move(layout: BenchLayout, key: string, toIndex: number): BenchLayout {
@@ -73,6 +76,11 @@ export function show(layout: BenchLayout, key: string): BenchLayout {
   return { ...layout, hidden: layout.hidden.filter((k) => k !== key) }
 }
 
+export function toggleFold(layout: BenchLayout, key: string): BenchLayout {
+  const folded = layout.folded ?? []
+  return { ...layout, folded: folded.includes(key) ? folded.filter((k) => k !== key) : [...folded, key] }
+}
+
 export const COLUMN_MIN_PX = 300
 export const GAP_PX = 14
 
@@ -90,7 +98,9 @@ const STORAGE_KEY = 'benchmesh:bench-layout'
 export function loadLayout(): BenchLayout {
   try {
     const v = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
-    if (v && Array.isArray(v.order) && Array.isArray(v.hidden) && v.size && typeof v.size === 'object') return v
+    if (v && Array.isArray(v.order) && Array.isArray(v.hidden) && v.size && typeof v.size === 'object') {
+      return { ...v, folded: Array.isArray(v.folded) ? v.folded : [] }
+    }
   } catch { /* unavailable or corrupt: start fresh */ }
   return EMPTY_LAYOUT
 }

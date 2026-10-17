@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useRef } from 'react'
+import { CloseIcon, DetachIcon, FoldIcon, PinIcon, UnfoldIcon } from './icons'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector } from '../kit'
 import { Instrument } from '../types'
@@ -46,13 +47,30 @@ export interface ArrangeProps {
   onMove: (delta: number) => void
 }
 
+/** Window-like controls in the panel header (top right). */
+export interface WindowControls {
+  folded: boolean
+  onFold: () => void
+  /** On the bench: open the panel in its own window, sized like the panel is now. */
+  onDetach?: (size: { width: number; height: number }) => void
+  /** In its own window: keep that window above other programs. */
+  onTop?: { on: boolean; toggle: () => void }
+  /** In its own window: close it (the panel returns to the bench). */
+  onClose?: () => void
+  /** In its own window: the header moves the (undecorated) window. */
+  onDragStart?: () => void
+}
+
 /**
- * One instrument class on the bench: header (class, name, model, link) and its channels.
- * In arrange mode the header carries the drag handle, size and hide controls.
+ * One instrument class on the bench: header (class, name, model, link, window controls) and
+ * its channels; folded, only the header. In arrange mode the header carries the drag handle,
+ * size and hide controls.
  */
-export function InstrumentPanel({ instrument, klass, registry, arrange }: {
-  instrument: Instrument; klass: string; registry: any; arrange?: ArrangeProps
+export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
+  instrument: Instrument; klass: string; registry: any; arrange?: ArrangeProps; win?: WindowControls
 }) {
+  const el = useRef<HTMLElement>(null)
+  const folded = win?.folded ?? false
   const meta = useInstrumentMeta(klass, instrument.id)
   const online = isOnline(registry, instrument)
   const cls = instrument.classes.find((c) => c.class === klass)
@@ -61,13 +79,36 @@ export function InstrumentPanel({ instrument, klass, registry, arrange }: {
   const title = getClassDescription(klass)
 
   return (
-    <article className={`bench-panel bench-panel--${klass.toLowerCase()}${online ? '' : ' bench-panel--offline'}`} aria-label={`${title}: ${instrument.name ?? instrument.id}`}>
-      <header className="bench-panel__head">
+    <article ref={el} className={`bench-panel bench-panel--${klass.toLowerCase()}${online ? '' : ' bench-panel--offline'}${folded ? ' bench-panel--folded' : ''}`}
+      aria-label={`${title}: ${instrument.name ?? instrument.id}`}>
+      <header className={`bench-panel__head${win?.onDragStart ? ' bench-panel__head--drag' : ''}`}
+        onPointerDown={(e) => {
+          if (win?.onDragStart && e.button === 0 && !(e.target as HTMLElement).closest('button, [role="group"]')) win.onDragStart()
+        }}
+        onDoubleClick={(e) => { if (win && !(e.target as HTMLElement).closest('button, [role="group"]')) win.onFold() }}>
         {arrange && <span className="bench-panel__grip" aria-hidden="true" title="Drag to move">⠿</span>}
         <h2 className="bench-panel__title">{title}</h2>
         <span className="bench-panel__name">{instrument.name ?? instrument.id}</span>
         <span className="bench-panel__model">{modelOf(idn)}</span>
         <span className="bench-panel__link" data-online={online}><i />{online ? 'connected' : 'offline'}</span>
+        {win && (
+          <span className="bench-panel__wctl">
+            {win.onTop && (
+              <button type="button" className="bench-wbtn" aria-pressed={win.onTop.on} onClick={win.onTop.toggle}
+                aria-label="Keep on top" title={win.onTop.on ? 'Kept on top of other windows' : 'Keep on top of other windows'}><PinIcon /></button>
+            )}
+            <button type="button" className="bench-wbtn" onClick={win.onFold} aria-expanded={!folded}
+              aria-label={folded ? 'Unfold' : 'Fold'} title={folded ? 'Unfold' : 'Fold to the header'}>{folded ? <UnfoldIcon /> : <FoldIcon />}</button>
+            {win.onDetach && (
+              <button type="button" className="bench-wbtn" aria-label="Open in own window" title="Open in its own window"
+                onClick={() => { const r = el.current?.getBoundingClientRect(); win.onDetach!({ width: r?.width ?? 600, height: r?.height ?? 400 }) }}><DetachIcon /></button>
+            )}
+            {win.onClose && (
+              <button type="button" className="bench-wbtn bench-wbtn--close" onClick={win.onClose}
+                aria-label="Close window" title="Close: back to the bench"><CloseIcon /></button>
+            )}
+          </span>
+        )}
         {arrange && (
           <span className="bench-panel__arrange">
             <button type="button" className="bench-icon" onClick={() => arrange.onMove(-1)} aria-label="Move earlier" title="Move earlier">◀</button>
@@ -78,7 +119,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange }: {
           </span>
         )}
       </header>
-      {!meta ? (
+      {folded ? null : !meta ? (
         <span className="bench-hint">Loading…</span>
       ) : klass.toUpperCase() === 'OSC' ? (
         // one screen for all channels: the scope panel is per instrument, not per channel
@@ -94,7 +135,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange }: {
           ))}
         </div>
       )}
-      {!online && <div className="bench-panel__offline">Offline — reconnecting</div>}
+      {!online && !folded && <div className="bench-panel__offline">Offline — reconnecting</div>}
     </article>
   )
 }

@@ -1,4 +1,7 @@
-import { Page, Route } from '@playwright/test';
+import { BrowserContext, Page, Route } from '@playwright/test';
+
+/** Mocks go on a page or on the whole browser context (then popups are covered too). */
+type Target = Page | BrowserContext;
 
 /**
  * Fully mocked BenchMesh API for the E2E suite.
@@ -160,7 +163,7 @@ async function handleInstruments(route: Route, api: ApiMock, segs: string[]) {
 }
 
 /** Install the API mock on `page` and return its handle. */
-export async function setupApiMocks(page: Page): Promise<ApiMock> {
+export async function setupApiMocks(page: Target): Promise<ApiMock> {
   const api: ApiMock = {
     instruments: structuredClone(mockInstruments),
     config: structuredClone(mockConfig),
@@ -211,7 +214,7 @@ export async function setupApiMocks(page: Page): Promise<ApiMock> {
  * one metrics snapshot. `window.__pushRegistry(data)` replaces (and sends) the registry;
  * `window.__registryPaused = true` stops the periodic sends.
  */
-export async function setupWebSocketMock(page: Page, registry: unknown = mockRegistry) {
+export async function setupWebSocketMock(page: Target, registry: unknown = mockRegistry) {
   await page.addInitScript((registryData) => {
     const w = window as any;
     w.__registry = registryData;
@@ -279,7 +282,7 @@ export async function setupWebSocketMock(page: Page, registry: unknown = mockReg
 }
 
 /** Skip the first-run safety disclaimer. */
-export async function acceptDisclaimer(page: Page) {
+export async function acceptDisclaimer(page: Target) {
   await page.addInitScript(() => {
     try { localStorage.setItem('benchmesh:disclaimer-accepted', 'true'); } catch { /* ignore */ }
   });

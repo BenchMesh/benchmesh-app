@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "instrument-windows",
+  "description": "The UI (served by the embedded server on 127.0.0.1) opens instrument panels in their own undecorated windows and moves, resizes, pins and closes them.",
+  "windows": ["main", "panel-*"],
+  "remote": { "urls": ["http://127.0.0.1:*", "http://localhost:*"] },
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-size",
+    "core:window:allow-set-focus",
+    "core:window:allow-close"
+  ]
+}

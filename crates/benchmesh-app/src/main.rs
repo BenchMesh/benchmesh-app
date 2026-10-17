@@ -9,6 +9,10 @@
 //! - `BENCHMESH_SIMULATE=captures/<session>` replays recorded instrument traffic (no hardware).
 //! - Closing the app stops every device (definitions' on_disconnect steps run, e.g. the
 //!   OWON load is returned to local mode).
+//! - Instrument panels can be detached into their own undecorated windows (`panel-*`, opened
+//!   by the UI; capability `capabilities/panels.json`). Closing the main window closes them too.
+//! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
+//!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -17,7 +21,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use bm_server::run::{start, RunningServer, ServerOptions};
-use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 struct Server(Mutex<Option<RunningServer>>);
 
@@ -61,8 +65,29 @@ fn exit_on_signals(handle: tauri::AppHandle) {
     });
 }
 
+/// Wayland does not let applications keep a window above others (the compositor decides), so
+/// "keep on top" for detached instrument windows needs X11. Under XWayland GNOME/KDE honour it.
+#[cfg(target_os = "linux")]
+fn prefer_x11_for_keep_on_top() {
+    let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
+    let chosen = std::env::var_os("GDK_BACKEND").is_some();
+    let native = std::env::var("BENCHMESH_NATIVE_WAYLAND").is_ok_and(|v| v == "1");
+    if wayland && !chosen && !native {
+        // SAFETY: called first thing in main, before any other thread exists.
+        unsafe { std::env::set_var("GDK_BACKEND", "x11") };
+    }
+}
+
 fn main() {
+    #[cfg(target_os = "linux")]
+    prefer_x11_for_keep_on_top();
     let app = tauri::Builder::default()
+        // the main window owns the app: closing it closes detached instrument windows too
+        .on_window_event(|window, event| {
+            if window.label() == "main" && matches!(event, WindowEvent::Destroyed) {
+                window.app_handle().exit(0);
+            }
+        })
         .setup(|app| {
             let resources = app.path().resource_dir()?;
             let data = data_dir();

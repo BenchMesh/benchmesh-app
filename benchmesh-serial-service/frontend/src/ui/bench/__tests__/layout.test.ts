@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reconcile, move, setSize, hide, show, columnsFor, spanFor, panelsOf, EMPTY_LAYOUT } from '../layout'
+import { reconcile, move, setSize, hide, show, toggleFold, columnsFor, spanFor, panelsOf, EMPTY_LAYOUT } from '../layout'
 
 const instruments = [
   { id: 'tenma', classes: [{ class: 'PSU', channels: ['/instruments/PSU/tenma/1'] }] },
@@ -19,6 +19,7 @@ describe('reconcile', () => {
     expect(l.order).toEqual(['dge:AWG', 'tenma:PSU', 'spm:DMM', 'spm:PSU'])
     expect(l.size).toEqual({ 'dge:AWG': 's', 'tenma:PSU': 'm', 'spm:DMM': 'm', 'spm:PSU': 'm' })
     expect(l.hidden).toEqual([])
+    expect(l.folded).toEqual([])
   })
   it('is stable when nothing changed', () => {
     const l = reconcile(EMPTY_LAYOUT, panelsOf(instruments))
@@ -52,5 +53,19 @@ describe('responsive grid', () => {
     expect(spanFor('l', 2)).toBe(2)
     expect(spanFor('full', 5)).toBe(5)
     expect(spanFor('m', 1)).toBe(1)
+  })
+})
+
+describe('folding', () => {
+  it('folds and unfolds a panel, and forgets folded panels that are gone', () => {
+    const l = reconcile(EMPTY_LAYOUT, panelsOf(instruments))
+    const f = toggleFold(l, 'spm:DMM')
+    expect(f.folded).toEqual(['spm:DMM'])
+    expect(toggleFold(f, 'spm:DMM').folded).toEqual([])
+    const gone = reconcile({ ...f, folded: ['spm:DMM', 'gone:PSU'] }, panelsOf(instruments))
+    expect(gone.folded).toEqual(['spm:DMM'])
+  })
+  it('reads layouts saved before folding existed', () => {
+    expect(reconcile({ order: [], size: {}, hidden: [] } as any, panelsOf(instruments)).folded).toEqual([])
   })
 })

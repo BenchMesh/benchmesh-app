@@ -169,3 +169,30 @@ html, body { background: var(--kit-ground); }
 }
 .bench-drawer__head h2 { margin: 0; font: 600 1rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; }
 .bench-drawer__body { flex: 1; overflow: auto; min-height: 0; }
+
+/* ---- window controls in the panel header ---------------------------------------- */
+.bench-panel__wctl { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
+.bench-wbtn {
+  display: inline-grid; place-items: center; width: 24px; height: 22px; padding: 0; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 5px; color: var(--kit-ink-3);
+}
+.bench-wbtn:hover { background: var(--kit-ctl); border-color: var(--kit-panel-edge); color: var(--kit-ink); }
+.bench-wbtn[aria-pressed="true"] { color: var(--kit-accent); border-color: var(--kit-accent); }
+.bench-wbtn--close:hover { color: var(--kit-alert); }
+.bench-panel--folded { gap: 0; }
+.bench-panel__head--drag { cursor: grab; user-select: none; -webkit-user-select: none; }
+
+/* ---- panels in their own windows ------------------------------------------------- */
+.bench-detached { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 12px; }
+.bench-detached__item { display: inline-flex; align-items: center; gap: 2px; }
+.bench-window { min-height: 100vh; overflow: auto; }
+.bench-window > .bench-panel { min-height: 100vh; border-radius: 0; border-width: 0; box-shadow: none; align-content: start; }
+.bench-window--folded { min-height: 0; overflow: hidden; }
+.bench-window--folded > .bench-panel { min-height: 0; }
+.bench-window__msg { display: flex; gap: 12px; align-items: center; padding: 16px; font: 400 .8rem/1.4 var(--kit-font-num); }
+.bench-window__grip {
+  position: fixed; right: 0; bottom: 0; width: 16px; height: 16px; padding: 0; border: 0; cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--kit-ink-3) 50%, var(--kit-ink-3) 58%, transparent 58%,
+    transparent 70%, var(--kit-ink-3) 70%, var(--kit-ink-3) 78%, transparent 78%);
+  opacity: .6;
+}
