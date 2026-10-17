@@ -34,7 +34,7 @@ from mcp_services.testing.client_helper import test_changed
 async def main():
     result = await test_changed([
         "benchmesh-serial-service/src/benchmesh_service/api.py",
-        "benchmesh-serial-service/frontend/src/ui/classes/PSU/GenericPSU.tsx"
+        "benchmesh-serial-service/frontend/src/ui/bench/panels/PsuPanel.tsx"
     ])
 
     if result['backend']:

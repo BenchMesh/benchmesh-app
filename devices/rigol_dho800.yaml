@@ -1,0 +1,248 @@
+# RIGOL DHO800 / DHO900 series digital oscilloscopes (one programming guide covers both).
+# Hand-authored from the programming guide and verified on a DHO804. See
+# ai_context/migration/device-notes/rigol_dho800.md.
+schema: benchmesh.device/v1
+id: rigol_dho800
+vendor: RIGOL
+family: DHO800/DHO900 series digital oscilloscope
+version: 1.0.0
+sources:
+  - {doc: "DHO800/DHO900 Programming Guide (DHO800-Series_programmingguide_EN.pdf)", pages: "CHANnel 3.6, TIMebase, TRIGger, ACQuire, MEASure, WAVeform 3.28 (pp. 404-414)"}
+models:
+  - {"name": "DHO804", "match": "^RIGOL TECHNOLOGIES,DHO804,", "verified": true}
+  - {"name": "DHO802", "match": "^RIGOL TECHNOLOGIES,DHO802,", "channels": {"OSC": 2}, "features": {"OSC": {"bandwidth_hz": 70e6}}}
+  - {"name": "DHO814", "match": "^RIGOL TECHNOLOGIES,DHO814,", "features": {"OSC": {"bandwidth_hz": 100e6}}}
+  - {"name": "DHO812", "match": "^RIGOL TECHNOLOGIES,DHO812,", "channels": {"OSC": 2}, "features": {"OSC": {"bandwidth_hz": 100e6}}}
+  - {"name": "DHO914", "match": "^RIGOL TECHNOLOGIES,DHO914S?,", "features": {"OSC": {"bandwidth_hz": 125e6, "scale": {"min": 200e-6, "max": 10}}}}
+  - {"name": "DHO924", "match": "^RIGOL TECHNOLOGIES,DHO924S?,", "features": {"OSC": {"bandwidth_hz": 250e6, "scale": {"min": 200e-6, "max": 10}}}}
+identify: idn
+link:
+  usbtmc: {vid: "1ab1"}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}
+  timing: {min_gap_ms: 0}
+session:
+  # Screen data (1000 points per trace), one byte per point.
+  on_connect: [wav_mode, wav_form]
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+
+  # --- vertical (per channel) ----------------------------------------------------------
+  disp_q:
+    send: ":CHANnel{ch}:DISPlay?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+    cache_ms: 500
+    source: "CHANnel<n>:DISPlay"
+  scale_q: {send: ":CHANnel{ch}:SCALe?", parse: [trim, number], source: "CHANnel<n>:SCALe"}
+  offset_q: {send: ":CHANnel{ch}:OFFSet?", parse: [trim, number], source: "CHANnel<n>:OFFSet"}
+  coup_q: {send: ":CHANnel{ch}:COUPling?", parse: [trim], source: "CHANnel<n>:COUPling"}
+  probe_q: {send: ":CHANnel{ch}:PROBe?", parse: [trim, number], source: "CHANnel<n>:PROBe"}
+  bwl_q: {send: ":CHANnel{ch}:BWLimit?", parse: [trim], source: "CHANnel<n>:BWLimit; 20M or OFF"}
+  inv_q:
+    send: ":CHANnel{ch}:INVert?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+    source: "CHANnel<n>:INVert"
+  disp_set:
+    send: ":CHANnel{ch}:DISPlay {on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: configure
+    invalidates: [disp_q]
+  scale_set:
+    send: ":CHANnel{ch}:SCALe {v}"
+    params: {v: {type: number, min: 0.0001, max: 10000, format: "%g", unit: "V/div"}}
+    reply: none
+    safety: configure
+    description: "Range depends on the probe ratio (1X: 500 µV/div–10 V/div on DHO800); the scope clamps"
+  offset_set:
+    send: ":CHANnel{ch}:OFFSet {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    description: "Range depends on the vertical scale (±1 V up to 65 mV/div, …); the scope clamps"
+  coup_set:
+    send: ":CHANnel{ch}:COUPling {c}"
+    params: {c: {type: enum, values: {"DC": "DC", "AC": "AC", "GND": "GND"}}}
+    reply: none
+    safety: configure
+  probe_set:
+    send: ":CHANnel{ch}:PROBe {r}"
+    params: {r: {type: enum, values: {"0.1": "0.1", "1": "1", "10": "10", "100": "100", "1000": "1000"}}}
+    reply: none
+    safety: configure
+  bwl_set:
+    send: ":CHANnel{ch}:BWLimit {b}"
+    params: {b: {type: enum, values: {"20M": "20M", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  inv_set:
+    send: ":CHANnel{ch}:INVert {on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: configure
+
+  # --- horizontal, trigger, acquisition (global) ----------------------------------------
+  tb_q: {send: ":TIMebase:MAIN:SCALe?", parse: [trim, number], source: "TIMebase[:MAIN]:SCALe"}
+  tbofs_q: {send: ":TIMebase:MAIN:OFFSet?", parse: [trim, number], source: "TIMebase[:MAIN]:OFFSet"}
+  trig_stat_q: {send: ":TRIGger:STATus?", parse: [trim], source: "TRIGger:STATus; TD, WAIT, RUN, AUTO or STOP"}
+  sweep_q: {send: ":TRIGger:SWEep?", parse: [trim], source: "TRIGger:SWEep; AUTO, NORM or SING"}
+  tsrc_q: {send: ":TRIGger:EDGE:SOURce?", parse: [trim], source: "TRIGger:EDGE:SOURce"}
+  slope_q: {send: ":TRIGger:EDGE:SLOPe?", parse: [trim], source: "TRIGger:EDGE:SLOPe; POS, NEG or RFAL"}
+  tlev_q: {send: ":TRIGger:EDGE:LEVel?", parse: [trim, number], source: "TRIGger:EDGE:LEVel"}
+  acq_q: {send: ":ACQuire:TYPE?", parse: [trim], source: "ACQuire:TYPE"}
+  srate_q: {send: ":ACQuire:SRATe?", parse: [trim, number], source: "ACQuire:SRATe"}
+  tb_set:
+    send: ":TIMebase:MAIN:SCALe {v}"
+    params: {v: {type: number, min: 1e-9, max: 1000, format: "%g", unit: "s/div"}}
+    reply: none
+    safety: configure
+  tbofs_set:
+    send: ":TIMebase:MAIN:OFFSet {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+  sweep_set:
+    send: ":TRIGger:SWEep {s}"
+    params: {s: {type: enum, values: {"AUTO": "AUTO", "NORM": "NORMal", "SING": "SINGle"}}}
+    reply: none
+    safety: configure
+  tsrc_set:
+    send: ":TRIGger:EDGE:SOURce {s}"
+    params: {s: {type: enum, values: {"CHAN1": "CHANnel1", "CHAN2": "CHANnel2", "CHAN3": "CHANnel3", "CHAN4": "CHANnel4", "AC": "ACLine"}}}
+    reply: none
+    safety: configure
+  slope_set:
+    send: ":TRIGger:EDGE:SLOPe {s}"
+    params: {s: {type: enum, values: {"POS": "POSitive", "NEG": "NEGative", "RFAL": "RFALl"}}}
+    reply: none
+    safety: configure
+  tlev_set:
+    send: ":TRIGger:EDGE:LEVel {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+  acq_set:
+    send: ":ACQuire:TYPE {t}"
+    params: {t: {type: enum, values: {"NORM": "NORMal", "PEAK": "PEAK", "AVER": "AVERages"}}}
+    reply: none
+    safety: configure
+  run_set:
+    send: "{a}"
+    params: {a: {type: enum, values: {"RUN": ":RUN", "STOP": ":STOP", "SINGLE": ":SINGle", "AUTO": ":AUToscale", "CLEAR": ":CLEar"}}}
+    reply: none
+    safety: configure
+    description: "Run/stop acquisition, single shot, autoscale (changes all settings), clear the screen"
+
+  # --- waveform and measurements --------------------------------------------------------
+  wav_mode: {send: ":WAVeform:MODE NORMal", reply: none, safety: configure}
+  wav_form: {send: ":WAVeform:FORMat BYTE", reply: none, safety: configure}
+  wav_src: {send: ":WAVeform:SOURce CHANnel{ch}", reply: none, safety: configure}
+  wav_pre:
+    send: ":WAVeform:PREamble?"
+    before: [wav_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {fields: {sep: ",", names: [format, type, points, count, xinc, xorig, xref, yinc, yorig, yref]}}]
+    source: "WAVeform:PREamble? p413"
+  wav_data:
+    send: ":WAVeform:DATA?"
+    before: [wav_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    reply: block
+    parse: [{samples: u8}]
+    source: "WAVeform:DATA? p407; screen data, NORMal mode, BYTE format"
+  vpp_q:
+    send: ":MEASure:ITEM? VPP,CHANnel{ch}"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, number]
+  vavg_q:
+    send: ":MEASure:ITEM? VAVG,CHANnel{ch}"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, number]
+  vrms_q:
+    send: ":MEASure:ITEM? VRMS,CHANnel{ch}"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, number]
+  freq_q:
+    send: ":MEASure:ITEM? FREQuency,CHANnel{ch}"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, number]
+  screenshot:
+    send: ":DISPlay:DATA? PNG"
+    reply: block
+    timeout_ms: 10000
+    max_bytes: 8000000
+
+classes:
+  OSC:
+    channels: 4
+    ui_component: GenericOSC
+    features:
+      lock: false
+      compulsory_lock: false
+      channel_colors: {"1": "#FFD700", "2": "#00CED1", "3": "#FF69B4", "4": "#4169E1"}
+      divisions: {horizontal: 10, vertical: 8}
+      bandwidth_hz: 70e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X; multiplied by the probe ratio"}
+      timebase: {min: 5e-9, max: 1000}
+      probe: ["0.1", "1", "10", "100", "1000"]
+      measurements: [VPP, VAVG, VRMS, FREQ]
+    # Each query takes ~25 ms over USBTMC: traces fast, measurements medium, settings slow
+    # (a set re-polls everything at once, so changes still show immediately).
+    poll:
+      - every_ms: 250
+        read: [trig_stat_q, wav_pre, wav_data]
+      - every_ms: 1000
+        read: [disp_q, vpp_q, vavg_q, vrms_q, freq_q]
+      - every_ms: 3000
+        read: [scale_q, offset_q, coup_q, probe_q, bwl_q, inv_q, tb_q, tbofs_q, sweep_q, tsrc_q, slope_q, tlev_q, acq_q, srate_q]
+    status:
+      DISPLAY: disp_q
+      SCALE: {expr: scale_q, as: si}
+      OFFSET: {expr: offset_q, as: si}
+      COUPLING: coup_q
+      PROBE: probe_q
+      BWLIMIT: bwl_q
+      INVERT: inv_q
+      TIMEBASE: {expr: tb_q, as: si}
+      TIMEOFFSET: {expr: tbofs_q, as: si}
+      TRIG_STATUS: trig_stat_q
+      TRIG_SWEEP: sweep_q
+      TRIG_SOURCE: tsrc_q
+      TRIG_SLOPE: slope_q
+      TRIG_LEVEL: {expr: tlev_q, as: si}
+      ACQ_TYPE: acq_q
+      SRATE: srate_q
+      # Screen trace: 8-bit codes; volts = (code - WAVE_Y0) * WAVE_DY, time = WAVE_X0 + i * WAVE_DX
+      WAVE: wav_data
+      WAVE_Y0: "wav_pre == null ? null : num(wav_pre.yorig) + num(wav_pre.yref)"
+      WAVE_DY: "wav_pre == null ? null : num(wav_pre.yinc)"
+      WAVE_X0: "wav_pre == null ? null : num(wav_pre.xorig)"
+      WAVE_DX: "wav_pre == null ? null : num(wav_pre.xinc)"
+      # 9.9E37 = "no valid measurement"
+      VPP: "vpp_q == null || vpp_q > 1e30 ? null : vpp_q"
+      VAVG: "vavg_q == null || vavg_q > 1e30 ? null : vavg_q"
+      VRMS: "vrms_q == null || vrms_q > 1e30 ? null : vrms_q"
+      FREQ: "freq_q == null || freq_q > 1e30 ? null : freq_q"
+    operations:
+      display: {get: disp_q, set: disp_set}
+      scale: {get: scale_q, set: scale_set, as: si}
+      offset: {get: offset_q, set: offset_set, as: si}
+      coupling: {get: coup_q, set: coup_set}
+      probe: {get: probe_q, set: probe_set}
+      bwlimit: {get: bwl_q, set: bwl_set}
+      invert: {get: inv_q, set: inv_set}
+      timebase: {get: tb_q, set: tb_set, as: si}
+      timebase_offset: {get: tbofs_q, set: tbofs_set, as: si}
+      trigger_status: {get: trig_stat_q}
+      trigger_sweep: {get: sweep_q, set: sweep_set}
+      trigger_source: {get: tsrc_q, set: tsrc_set}
+      trigger_slope: {get: slope_q, set: slope_set}
+      trigger_level: {get: tlev_q, set: tlev_set, as: si}
+      acquire_type: {get: acq_q, set: acq_set}
+      sample_rate: {get: srate_q}
+      run: {set: run_set}
+      waveform: {get: wav_data}
+      # screenshot: {get: screenshot, as: bytes}  — disabled: via the Linux usbtmc driver the PNG
+      # transfer stalled after 24 564 bytes and the DHO804 rebooted (2026-10-17); needs the
+      # userspace USBTMC transport. See device-notes/rigol_dho800.md.

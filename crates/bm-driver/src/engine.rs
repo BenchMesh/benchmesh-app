@@ -183,6 +183,11 @@ impl Engine {
         for s in action.steps() {
             self.run_step(&s, ch, Some(value))?;
         }
+        // Show the effect on the next poll instead of after the slowest group's interval.
+        let now = Instant::now();
+        for slot in self.schedule.iter_mut().filter(|slot| slot.class == class) {
+            slot.next = now;
+        }
         Ok(())
     }
 
@@ -209,7 +214,7 @@ impl Engine {
             let channels = self.channels(&class).unwrap_or(1);
             for ch in 1..=channels {
                 for name in &binding.poll[group].read {
-                    let per_channel = uses_ch(&self.def.commands[name]);
+                    let per_channel = uses_ch(&self.def, &self.def.commands[name]);
                     let v = if ch > 1 && !per_channel {
                         self.latest.get(&1).and_then(|r| r.get(name)).cloned().unwrap_or(Value::Null)
                     } else {
@@ -305,7 +310,8 @@ impl Engine {
         let reply = self.exchange(&cmd, wire.as_bytes())?;
         let out = match reply {
             None => Output::Value(Value::Null),
-            Some(bytes) if cmd.reply == Reply::Block => Output::Bytes(bytes),
+            // a block without parse steps is returned as-is (images); with steps it is data
+            Some(bytes) if cmd.reply == Reply::Block && cmd.parse.is_empty() => Output::Bytes(bytes),
             Some(bytes) => match parse_reply(&cmd, &bytes) {
                 Ok(v) => Output::Value(v),
                 Err(e) => {
@@ -426,8 +432,14 @@ impl Engine {
     }
 }
 
-fn uses_ch(cmd: &Command) -> bool {
-    template::placeholders(&cmd.send).map(|p| p.iter().any(|x| x == "ch")).unwrap_or(false)
+/// A command is per channel if its text uses `{ch}` or one of its `before` steps does
+/// (e.g. `:WAVeform:DATA?` after selecting `:WAVeform:SOURce CHANnel{ch}`).
+fn uses_ch(def: &DeviceDef, cmd: &Command) -> bool {
+    fn go(def: &DeviceDef, cmd: &Command, depth: u8) -> bool {
+        template::placeholders(&cmd.send).map(|p| p.iter().any(|x| x == "ch")).unwrap_or(false)
+            || (depth < 8 && cmd.before.iter().any(|s| def.commands.get(s.command()).is_some_and(|c| go(def, c, depth + 1))))
+    }
+    go(def, cmd, 0)
 }
 
 /// Fill an `effects` template with the caller's API values and `{ch}`.

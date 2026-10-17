@@ -1,0 +1,3 @@
+version: 1
+devices:
+- {id: rigol-dho804, name: Rigol DHO804, driver: rigol_dho800, model: DHO804, transport: usbtmc, device: /dev/usbtmc3}

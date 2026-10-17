@@ -7,6 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
 
+  /* e2e/with-service/ needs a running backend: playwright.config.with-service.ts */
+  testIgnore: 'with-service/**',
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

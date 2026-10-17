@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Instrument } from '../InstrumentPod';
+import { Instrument } from '../types';
 import { RecordingControls } from './RecordingControls';
 import { RecordingList } from './RecordingList';
 import { RecordingDetails } from './RecordingDetails';

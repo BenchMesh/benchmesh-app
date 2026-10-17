@@ -126,7 +126,7 @@ Discover all available tests without running them.
     "count": 46
   },
   "frontend": {
-    "output": "GenericPSU.test.tsx\n...",
+    "output": "panels.test.tsx\n...",
     "count": 12
   }
 }
@@ -143,7 +143,7 @@ Run tests for changed files.
 {
   "changed_files": [
     "benchmesh-serial-service/src/benchmesh_service/api.py",
-    "benchmesh-serial-service/frontend/src/ui/classes/PSU/GenericPSU.tsx"
+    "benchmesh-serial-service/frontend/src/ui/bench/panels/PsuPanel.tsx"
   ]
 }
 ```

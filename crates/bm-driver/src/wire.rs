@@ -90,7 +90,7 @@ pub fn format_param(name: &str, spec: &Param, value: &str) -> Result<String, Err
             }
             Ok(value.to_string())
         }
-        ValueKind::Si | ValueKind::Bytes => Err(Error::Definition(format!("param `{name}` has a class-only kind"))),
+        ValueKind::Si | ValueKind::Bytes | ValueKind::List => Err(Error::Definition(format!("param `{name}` has a class-only kind"))),
     }
 }
 

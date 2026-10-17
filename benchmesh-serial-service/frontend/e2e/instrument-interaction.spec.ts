@@ -1,143 +1,144 @@
 import { test, expect } from './fixtures/base';
-import { waitForInstruments, waitForWebSocket } from './utils/api-mock';
+import { PANELS } from './utils/api-mock';
 
-test.describe('Instrument Interaction', () => {
-  test('should display PSU controls', async ({ mockPage }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
+test.describe('PSU setpoints', () => {
+  test('editing a digit sends nothing until Enter, then POSTs the new voltage', async ({ mockPage, api }) => {
+    const v = mockPage.getByRole('spinbutton', { name: 'Voltage setpoint' });
+    await expect(v).toHaveAttribute('aria-valuenow', '5');
 
-    // Find PSU card
-    const psuCard = mockPage.locator('.card').filter({ hasText: 'test-psu-1' });
+    await v.focus();
+    // the units digit is selected first: 5.00 → 7.00
+    await v.press('ArrowUp');
+    await v.press('ArrowUp');
+    await expect(v).toHaveAttribute('aria-valuenow', '7');
+    await expect(v).toHaveClass(/kit-digits--pending/);
+    expect(api.posts).toEqual([]);
 
-    // Wait for the card to be fully loaded
-    await psuCard.waitFor({ state: 'visible' });
-
-    // PSU should have interactive elements (buttons, inputs)
-    // This is a basic check - actual controls depend on the GenericPSU component
-    const buttons = psuCard.locator('button');
-    const buttonCount = await buttons.count();
-
-    // PSU should have at least some buttons for channel control
-    expect(buttonCount).toBeGreaterThan(0);
+    await v.press('Enter');
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/PSU/test-psu-1/1/voltage/7']);
+    await expect(v).not.toHaveClass(/kit-digits--pending/);
+    await expect(v).toHaveAttribute('aria-valuenow', '7');
   });
 
-  test('should handle measurement context', async ({ mockPage }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
-
-    // The MeasurementProvider wraps the app
-    // Verify that measurement status bar is present
-    const statusBar = mockPage.locator('.measurement-status-bar, .status-bar, [class*="status"]');
-    const count = await statusBar.count();
-
-    // Should have some status elements
-    expect(count).toBeGreaterThanOrEqual(0);
+  test('moving the digit selection changes finer digits', async ({ mockPage, api }) => {
+    const i = mockPage.getByRole('spinbutton', { name: 'Current limit' });
+    await expect(i).toHaveAttribute('aria-valuenow', '1');
+    await i.focus();
+    await i.press('ArrowRight'); // tenths
+    await i.press('ArrowDown');  // 1.000 → 0.900
+    await i.press('Enter');
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/PSU/test-psu-1/1/current/0.9']);
   });
 
-  test('should display real-time data updates', async ({ mockPage, page }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
-
-    // Find PSU card
-    const psuCard = mockPage.locator('.card').filter({ hasText: 'test-psu-1' });
-
-    // The card should be visible and contain data
-    await expect(psuCard).toBeVisible();
-
-    // Wait a moment for WebSocket updates
-    await page.waitForTimeout(2500);
-
-    // Card should still be visible after updates
-    await expect(psuCard).toBeVisible();
+  test('Escape reverts an unsent edit', async ({ mockPage, api }) => {
+    const v = mockPage.getByRole('spinbutton', { name: 'Voltage setpoint' });
+    await expect(v).toHaveAttribute('aria-valuenow', '5');
+    await v.focus();
+    await v.press('ArrowDown');
+    await expect(v).toHaveAttribute('aria-valuenow', '4');
+    await v.press('Escape');
+    await expect(v).toHaveAttribute('aria-valuenow', '5');
+    await v.press('Enter');
+    // let any request that Enter could have triggered reach the mock
+    await mockPage.waitForLoadState('networkidle');
+    expect(api.posts).toEqual([]);
   });
 
-  test('should handle device control actions', async ({ mockPage, page }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
+  test('a rejected setpoint shows the API error and keeps the draft', async ({ mockPage, api }) => {
+    api.failures.set('/instruments/PSU/test-psu-1/1/voltage/6', { status: 500, detail: 'Instrument did not acknowledge' });
+    const psu = mockPage.getByRole('article', { name: PANELS.psu });
+    const v = psu.getByRole('spinbutton', { name: 'Voltage setpoint' });
+    await expect(v).toHaveAttribute('aria-valuenow', '5');
+    await v.focus();
+    await v.press('ArrowUp');
+    await v.press('Enter');
 
-    // Mock a control action endpoint
-    let controlActionCalled = false;
-    await page.route('**/instruments/*/PSU/*/*', async (route) => {
-      controlActionCalled = true;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true })
-      });
+    await expect(psu.getByRole('alert')).toHaveText('Instrument did not acknowledge');
+    await expect(v).toHaveClass(/kit-digits--error/);
+    await expect(v).toHaveAttribute('aria-valuenow', '6');
+  });
+});
+
+test.describe('PSU output switch', () => {
+  test('needs two presses to switch on; the first only arms it', async ({ mockPage, api }) => {
+    const out = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('button', { name: /^Output/ });
+    await expect(out).toHaveAttribute('data-state', 'off');
+
+    await out.click();
+    await expect(out).toHaveAttribute('data-state', 'armed');
+    await expect(out).toContainText('press again to confirm');
+    expect(api.posts).toEqual([]);
+
+    await out.click();
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/PSU/test-psu-1/1/output/ON']);
+  });
+
+  test('disarms by itself when not confirmed within 3 s', async ({ mockPage, api }) => {
+    const out = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('button', { name: /^Output/ });
+    await out.click();
+    await expect(out).toHaveAttribute('data-state', 'armed');
+    await expect(out).toHaveAttribute('data-state', 'off', { timeout: 5000 });
+    expect(api.posts).toEqual([]);
+  });
+
+  test('switches off with a single press', async ({ mockPage, api }) => {
+    await mockPage.evaluate(() => {
+      const w = window as any;
+      const r = structuredClone(w.__registry);
+      r['test-psu-1'].PSU.status_ch1.OUTPUT = 'ON';
+      w.__pushRegistry(r);
     });
-
-    // Find PSU card
-    const psuCard = mockPage.locator('.card').filter({ hasText: 'test-psu-1' });
-
-    // Try to find and click a control button (if exists)
-    const buttons = psuCard.locator('button');
-    const buttonCount = await buttons.count();
-
-    if (buttonCount > 0) {
-      // Click the first button
-      await buttons.first().click();
-
-      // Wait a bit for the action to process
-      await page.waitForTimeout(500);
-    }
-
-    // Note: We can't verify controlActionCalled here as it depends on actual UI implementation
-    // This test verifies the structure is in place
+    const out = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('button', { name: /^Output/ });
+    await expect(out).toHaveAttribute('data-state', 'on');
+    await out.click();
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/PSU/test-psu-1/1/output/OFF']);
   });
 
-  test('should handle API errors gracefully', async ({ mockPage, page }) => {
-    // Mock an error response
-    await page.route('**/instruments/test-psu-1/PSU/*/*', async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal server error' })
-      });
-    });
+  test('shows the API error when switching fails', async ({ mockPage, api }) => {
+    api.failures.set('/instruments/PSU/test-psu-1/1/output/ON', { status: 503, detail: 'Device busy' });
+    const out = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('button', { name: /^Output/ });
+    await out.click();
+    await out.click();
+    await expect(out.getByRole('alert')).toHaveText('Device busy');
+  });
+});
 
-    await waitForInstruments(mockPage, 2);
-
-    // The app should still be functional despite errors
-    const psuCard = mockPage.locator('.card').filter({ hasText: 'test-psu-1' });
-    await expect(psuCard).toBeVisible();
+test.describe('DMM controls', () => {
+  test('the function dial sends the next mode with the arrow keys', async ({ mockPage, api }) => {
+    const dial = mockPage.getByRole('article', { name: PANELS.dmm }).getByRole('slider', { name: 'Function' });
+    await dial.focus();
+    await dial.press('ArrowRight');
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/DMM/test-dmm-1/1/mode/CURR']);
   });
 
-  test('should maintain state across WebSocket updates', async ({ mockPage, page }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
-
-    // Get initial card count
-    const initialCards = await mockPage.locator('.card').count();
-    expect(initialCards).toBe(2);
-
-    // Wait for a few WebSocket updates
-    await page.waitForTimeout(3000);
-
-    // Card count should remain the same
-    const finalCards = await mockPage.locator('.card').count();
-    expect(finalCards).toBe(initialCards);
+  test('range chips send the chosen range', async ({ mockPage, api }) => {
+    const dmm = mockPage.getByRole('article', { name: PANELS.dmm });
+    await dmm.getByRole('group', { name: 'Range' }).getByRole('button', { name: '5 V' }).click();
+    await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/DMM/test-dmm-1/1/range/5']);
   });
 
-  test('should handle rapid user interactions', async ({ mockPage, page }) => {
-    await waitForInstruments(mockPage, 2);
-    await waitForWebSocket(mockPage);
+  test('a failed range change shows the API error', async ({ mockPage, api }) => {
+    api.failures.set('/instruments/DMM/test-dmm-1/1/range/50', { status: 400, detail: 'Range not supported' });
+    const dmm = mockPage.getByRole('article', { name: PANELS.dmm });
+    await dmm.getByRole('group', { name: 'Range' }).getByRole('button', { name: '50 V' }).click();
+    await expect(dmm.getByRole('alert')).toHaveText('Range not supported');
+  });
+});
 
-    // Find PSU card
-    const psuCard = mockPage.locator('.card').filter({ hasText: 'test-psu-1' });
+test.describe('Request log', () => {
+  test('instrument operations are recorded in the Log drawer', async ({ mockPage, api }) => {
+    const v = mockPage.getByRole('spinbutton', { name: 'Voltage setpoint' });
+    await expect(v).toHaveAttribute('aria-valuenow', '5');
+    await v.focus();
+    await v.press('ArrowUp');
+    await v.press('Enter');
+    await expect.poll(() => api.posts.length).toBe(1);
 
-    // Get all buttons in the card
-    const buttons = psuCard.locator('button');
-    const buttonCount = await buttons.count();
-
-    if (buttonCount > 0) {
-      // Rapidly click buttons
-      for (let i = 0; i < Math.min(3, buttonCount); i++) {
-        await buttons.nth(i).click({ timeout: 1000 });
-        await page.waitForTimeout(100);
-      }
-    }
-
-    // Card should still be visible and functional
-    await expect(psuCard).toBeVisible();
+    await mockPage.getByRole('button', { name: 'Log', exact: true }).click();
+    const log = mockPage.getByRole('dialog', { name: 'Request log' });
+    const entry = log.locator('.log-entry').filter({ hasText: '/instruments/PSU/test-psu-1/1/voltage/6' });
+    await expect(entry).toBeVisible();
+    await expect(entry).toContainText('POST');
+    await expect(entry).toContainText('204');
   });
 });

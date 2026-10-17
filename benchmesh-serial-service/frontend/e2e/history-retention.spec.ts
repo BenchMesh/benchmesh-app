@@ -1,301 +1,110 @@
 /**
- * E2E tests for history retention and persistence
+ * Request log persistence and retention: logs live in localStorage, are shown in the Log
+ * drawer, are pruned to the retention period on load and when the setting changes, and
+ * are capped at 1000 entries.
  *
- * Tests:
- * - Request logs persist across page reload
- * - Logs older than retention period are removed
- * - Logs within retention period are kept
- * - Changing retention setting triggers cleanup
- * - 1000-entry hard limit is enforced
+ * Panels log their own requests while loading (setpoint queries), so assertions look at the
+ * seeded entries by id rather than at total counts.
  */
+import { Page } from '@playwright/test';
+import { test, expect, gotoBench } from './fixtures/base';
 
-import { test, expect } from '@playwright/test';
-import { mockAPIResponses } from './utils/api-mock';
+const DAY = 24 * 60 * 60 * 1000;
 
-test.describe('History Retention and Persistence', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear localStorage before each test
-    await page.goto('http://localhost:57666/ui');
-    await page.evaluate(() => localStorage.clear());
+interface Seed { id: string; ageMs: number; method?: string; url?: string; status?: number }
 
-    // Mock API responses
-    await mockAPIResponses(page);
+/** Replace the stored logs (and optionally the retention), then reload the app. */
+async function seed(page: Page, logs: Seed[], retentionDays?: number) {
+  // let the panels' own (logged) setpoint queries finish so they cannot overwrite the seed
+  await expect(page.getByRole('spinbutton', { name: 'Voltage setpoint' })).toHaveAttribute('aria-valuenow', '5');
+  await expect(page.getByRole('spinbutton', { name: 'Current limit' })).toHaveAttribute('aria-valuenow', '1');
+  await page.evaluate(([entries, days]) => {
+    const now = Date.now();
+    localStorage.setItem('benchmesh:requestLogs', JSON.stringify(entries.map((e) => ({
+      id: e.id,
+      timestamp: new Date(now - e.ageMs).toISOString(),
+      method: e.method ?? 'GET',
+      url: e.url ?? `/instruments/PSU/test-psu-1/1/${e.id}`,
+      status: e.status ?? 200,
+      duration: 12,
+    }))));
+    if (days) localStorage.setItem('benchmesh:historyRetentionDays', String(days));
+  }, [logs, retentionDays] as const);
+  await gotoBench(page, 3);
+}
 
-    await page.goto('http://localhost:57666/ui');
-    await page.waitForSelector('[data-testid="workbench"]', { timeout: 10000 });
+const storedIds = (page: Page) => page.evaluate(() =>
+  (JSON.parse(localStorage.getItem('benchmesh:requestLogs') ?? '[]') as { id: string }[]).map((l) => l.id));
+
+test.describe('Request log persistence', () => {
+  test('stored logs are shown in the Log drawer after a reload', async ({ mockPage }) => {
+    await seed(mockPage, [
+      { id: 'seed-get', ageMs: 1000, method: 'GET', url: 'http://localhost/instruments/PSU/test-1/1/voltage' },
+      { id: 'seed-post', ageMs: 2000, method: 'POST', url: 'http://localhost/instruments/PSU/test-1/1/current/2.5' },
+    ]);
+    await mockPage.getByRole('button', { name: 'Log', exact: true }).click();
+    const log = mockPage.getByRole('dialog', { name: 'Request log' });
+    await expect(log.getByText('/instruments/PSU/test-1/1/voltage', { exact: true })).toBeVisible();
+    await expect(log.locator('.log-entry').filter({ hasText: '/instruments/PSU/test-1/1/current/2.5' })).toContainText('POST');
   });
 
-  test('request logs persist across page reload', async ({ page }) => {
-    // Add some test logs manually via localStorage (simulating logged requests)
-    await page.evaluate(() => {
-      const testLogs = [
-        {
-          id: 'test-1',
-          timestamp: new Date().toISOString(),
-          method: 'GET',
-          url: '/instruments/PSU/test-1/1/voltage',
-          status: 200,
-          duration: 45,
-        },
-        {
-          id: 'test-2',
-          timestamp: new Date().toISOString(),
-          method: 'POST',
-          url: '/instruments/PSU/test-1/1/current/2.5',
-          status: 200,
-          duration: 52,
-        },
-      ];
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
-
-    // Reload page
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
-
-    // Open bottom panel History tab
-    const bottomPanelToggle = page.locator('[title="Show Bottom Panel"]');
-    if (await bottomPanelToggle.isVisible()) {
-      await bottomPanelToggle.click();
-    }
-
-    const historyTab = page.locator('[data-testid="bottom-panel-tab-history"]');
-    await historyTab.click();
-
-    // Verify logs are loaded and displayed
-    await expect(page.getByText('GET')).toBeVisible();
-    await expect(page.getByText('/instruments/PSU/test-1/1/voltage')).toBeVisible();
-    await expect(page.getByText('POST')).toBeVisible();
+  test('new requests are persisted automatically', async ({ mockPage }) => {
+    // the PSU panel queries its setpoints on load
+    await expect.poll(async () => (await mockPage.evaluate(() => localStorage.getItem('benchmesh:requestLogs') ?? ''))).toContain('/instruments/PSU/test-psu-1/1/voltage');
   });
 
-  test('logs older than retention period are removed on load', async ({ page }) => {
-    // Set retention to 1 day
-    await page.evaluate(() => {
-      localStorage.setItem('benchmesh:historyRetentionDays', '1');
-    });
-
-    // Add test logs: one recent, one old (3 days ago)
-    await page.evaluate(() => {
-      const now = Date.now();
-      const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
-
-      const testLogs = [
-        {
-          id: 'recent-1',
-          timestamp: new Date(now).toISOString(),
-          method: 'GET',
-          url: '/instruments/PSU/test-1/1/voltage',
-          status: 200,
-        },
-        {
-          id: 'old-1',
-          timestamp: new Date(threeDaysAgo).toISOString(),
-          method: 'POST',
-          url: '/instruments/PSU/test-1/1/current/2.5',
-          status: 200,
-        },
-      ];
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
-
-    // Reload page to trigger cleanup on load
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
-
-    // Check localStorage - old log should be removed
-    const storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-
-    // Only recent log should remain
-    expect(storedLogs.length).toBe(1);
-    expect(storedLogs[0].id).toBe('recent-1');
+  test('Clear empties the log and its storage', async ({ mockPage }) => {
+    await seed(mockPage, [{ id: 'seed-1', ageMs: 1000 }]);
+    await mockPage.getByRole('button', { name: 'Log', exact: true }).click();
+    const log = mockPage.getByRole('dialog', { name: 'Request log' });
+    await expect(log.locator('.log-entry').first()).toBeVisible();
+    await log.getByRole('button', { name: 'Clear' }).click();
+    await expect(log.getByText('No API requests logged yet')).toBeVisible();
+    await expect.poll(() => storedIds(mockPage)).toEqual([]);
   });
 
-  test('logs within retention period are kept', async ({ page }) => {
-    // Set retention to 7 days
-    await page.evaluate(() => {
-      localStorage.setItem('benchmesh:historyRetentionDays', '7');
-    });
+  test('the method filter hides other methods', async ({ mockPage }) => {
+    await seed(mockPage, [
+      { id: 'seed-get', ageMs: 1000, method: 'GET', url: 'http://localhost/seeded/get' },
+      { id: 'seed-post', ageMs: 2000, method: 'POST', url: 'http://localhost/seeded/post' },
+    ]);
+    await mockPage.getByRole('button', { name: 'Log', exact: true }).click();
+    const log = mockPage.getByRole('dialog', { name: 'Request log' });
+    await log.locator('select').first().selectOption('POST');
+    await expect(log.getByText('/seeded/post')).toBeVisible();
+    await expect(log.getByText('/seeded/get')).toHaveCount(0);
+  });
+});
 
-    // Add logs from 5 days ago (within 7 day retention)
-    await page.evaluate(() => {
-      const fiveDaysAgo = Date.now() - (5 * 24 * 60 * 60 * 1000);
-
-      const testLogs = [
-        {
-          id: 'kept-1',
-          timestamp: new Date(fiveDaysAgo).toISOString(),
-          method: 'GET',
-          url: '/instruments/PSU/test-1/1/voltage',
-          status: 200,
-        },
-      ];
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
-
-    // Reload page
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
-
-    // Check localStorage - log should still be there
-    const storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-
-    expect(storedLogs.length).toBe(1);
-    expect(storedLogs[0].id).toBe('kept-1');
+test.describe('Retention', () => {
+  test('logs older than the retention period are removed on load', async ({ mockPage }) => {
+    await seed(mockPage, [{ id: 'recent', ageMs: 1000 }, { id: 'old', ageMs: 3 * DAY }], 1);
+    const ids = await storedIds(mockPage);
+    expect(ids).toContain('recent');
+    expect(ids).not.toContain('old');
   });
 
-  test('changing retention from 7 days to 1 day removes old logs', async ({ page }) => {
-    // Set initial retention to 7 days
-    await page.evaluate(() => {
-      localStorage.setItem('benchmesh:historyRetentionDays', '7');
-    });
-
-    // Add logs: one recent (12 hours), one old (3 days ago)
-    await page.evaluate(() => {
-      const now = Date.now();
-      const twelveHoursAgo = now - (12 * 60 * 60 * 1000);
-      const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
-
-      const testLogs = [
-        {
-          id: 'recent-1',
-          timestamp: new Date(twelveHoursAgo).toISOString(),
-          method: 'GET',
-          url: '/instruments/PSU/test-1/1/voltage',
-          status: 200,
-        },
-        {
-          id: 'old-1',
-          timestamp: new Date(threeDaysAgo).toISOString(),
-          method: 'POST',
-          url: '/instruments/PSU/test-1/1/current/2.5',
-          status: 200,
-        },
-      ];
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
-
-    // Reload page
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
-
-    // Both logs should be loaded (within 7 days)
-    let storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-    expect(storedLogs.length).toBe(2);
-
-    // Open settings and change retention to 1 day
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await dropdown.selectOption('1');
-
-    // Wait a moment for cleanup event to process
-    await page.waitForTimeout(500);
-
-    // Check localStorage - old log (3 days) should be removed
-    storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-
-    expect(storedLogs.length).toBe(1);
-    expect(storedLogs[0].id).toBe('recent-1');
+  test('logs within the retention period are kept', async ({ mockPage }) => {
+    await seed(mockPage, [{ id: 'five-days', ageMs: 5 * DAY }], 7);
+    expect(await storedIds(mockPage)).toContain('five-days');
   });
 
-  test('enforces 1000-entry hard limit', async ({ page }) => {
-    // Add 1005 test logs
-    await page.evaluate(() => {
-      const now = Date.now();
-      const testLogs = Array.from({ length: 1005 }, (_, i) => ({
-        id: `log-${i}`,
-        timestamp: new Date(now - i * 1000).toISOString(), // 1 second apart
-        method: 'GET',
-        url: `/test/${i}`,
-        status: 200,
-      }));
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
+  test('lowering the retention in the Instruments drawer prunes older logs', async ({ mockPage }) => {
+    await seed(mockPage, [{ id: 'half-day', ageMs: DAY / 2 }, { id: 'three-days', ageMs: 3 * DAY }], 7);
+    expect(await storedIds(mockPage)).toEqual(expect.arrayContaining(['half-day', 'three-days']));
 
-    // Reload page to trigger load with hard limit
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
+    await mockPage.getByRole('button', { name: 'Instruments', exact: true }).click();
+    const drawer = mockPage.getByRole('dialog', { name: 'Instruments' });
+    await drawer.getByTestId('settings-tab-miscellaneous').click();
+    await drawer.getByLabel(/History Retention/).selectOption('1');
 
-    // Check localStorage - should be capped at 1000
-    const storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-
-    expect(storedLogs.length).toBeLessThanOrEqual(1000);
+    await expect.poll(() => storedIds(mockPage)).not.toContain('three-days');
+    expect(await storedIds(mockPage)).toContain('half-day');
   });
 
-  test('persists new logs to localStorage automatically', async ({ page }) => {
-    // Clear any existing logs
-    await page.evaluate(() => {
-      localStorage.removeItem('benchmesh:requestLogs');
-    });
-
-    // The page will have empty logs initially
-    // In a real scenario, making API requests would add logs
-    // For this test, we'll verify the storage mechanism is set up
-
-    const logsExist = await page.evaluate(() => {
-      // Check if logs key exists (may be empty array)
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs !== null;
-    });
-
-    // After page load, logs storage should be initialized (even if empty)
-    expect(logsExist).toBe(true);
-  });
-
-  test('clear logs button removes all logs from localStorage', async ({ page }) => {
-    // Add some test logs
-    await page.evaluate(() => {
-      const testLogs = [
-        {
-          id: 'test-1',
-          timestamp: new Date().toISOString(),
-          method: 'GET',
-          url: '/test',
-          status: 200,
-        },
-      ];
-      localStorage.setItem('benchmesh:requestLogs', JSON.stringify(testLogs));
-    });
-
-    // Reload and open history panel
-    await page.reload();
-    await page.waitForSelector('[data-testid="workbench"]');
-
-    const bottomPanelToggle = page.locator('[title="Show Bottom Panel"]');
-    if (await bottomPanelToggle.isVisible()) {
-      await bottomPanelToggle.click();
-    }
-
-    const historyTab = page.locator('[data-testid="bottom-panel-tab-history"]');
-    await historyTab.click();
-
-    // Click clear logs button
-    const clearButton = page.locator('button:has-text("Clear All")');
-    await clearButton.click();
-
-    // Wait a moment for state update and localStorage save
-    await page.waitForTimeout(300);
-
-    // Verify localStorage is cleared
-    const storedLogs = await page.evaluate(() => {
-      const logs = localStorage.getItem('benchmesh:requestLogs');
-      return logs ? JSON.parse(logs) : [];
-    });
-
-    expect(storedLogs.length).toBe(0);
+  test('the log is capped at 1000 entries', async ({ mockPage }) => {
+    await seed(mockPage, Array.from({ length: 1005 }, (_, i) => ({ id: `log-${i}`, ageMs: i * 1000 })));
+    // new requests from the panels push the log over the cap, which trims the oldest
+    await expect.poll(async () => (await storedIds(mockPage)).length).toBeLessThanOrEqual(1000);
   });
 });

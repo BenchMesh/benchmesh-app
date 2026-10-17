@@ -1,14 +1,55 @@
 schema: benchmesh.class/v1
 class: OSC
 description: >
-  Oscilloscope, one status block per analog channel.
+  Digital oscilloscope. One status block per analog channel: the channel's vertical
+  settings, its screen trace and measurements, plus the instrument-wide horizontal,
+  trigger and acquisition settings (repeated in every channel block). The screen trace is
+  raw sample codes with a linear scale: volts = (code - WAVE_Y0) * WAVE_DY,
+  time = WAVE_X0 + i * WAVE_DX. Features describe the model: divisions, bandwidth_hz,
+  scale/timebase ranges, probe ratios, measurement items, channel_colors.
 status:
-  DISPLAY:  {type: enum, values: [ON, OFF], description: "Channel displayed"}
-  SCALE:    {type: si, required: true, description: "Vertical scale (V/div)"}
-  OFFSET:   {type: si, required: true, description: "Vertical offset (V)"}
-  COUPLING: {type: string, required: true, description: "AC, DC or GND"}
-  TIMEBASE: {type: si, required: true, description: "Horizontal scale (s/div)"}
+  DISPLAY:     {type: enum, values: [ON, OFF], required: true, description: "Channel shown on screen"}
+  SCALE:       {type: si, required: true, description: "Vertical scale (V/div)"}
+  OFFSET:      {type: si, required: true, description: "Vertical offset (V)"}
+  COUPLING:    {type: string, required: true, description: "AC, DC or GND"}
+  PROBE:       {type: number, description: "Probe attenuation ratio"}
+  BWLIMIT:     {type: string, description: "Bandwidth limit (e.g. 20M) or OFF"}
+  INVERT:      {type: enum, values: [ON, OFF]}
+  TIMEBASE:    {type: si, required: true, description: "Horizontal scale (s/div)"}
+  TIMEOFFSET:  {type: si, description: "Horizontal position (s)"}
+  TRIG_STATUS: {type: string, description: "TD (triggered), WAIT, RUN, AUTO or STOP"}
+  TRIG_SWEEP:  {type: string, description: "AUTO, NORM or SING"}
+  TRIG_SOURCE: {type: string, description: "Edge trigger source, e.g. CHAN1"}
+  TRIG_SLOPE:  {type: string, description: "POS, NEG or RFAL"}
+  TRIG_LEVEL:  {type: si, description: "Edge trigger level (V)"}
+  ACQ_TYPE:    {type: string, description: "Acquisition type, e.g. NORM, PEAK, AVER"}
+  SRATE:       {type: number, description: "Sample rate (Sa/s)"}
+  WAVE:        {type: list, description: "Screen trace as sample codes; null when the channel is off"}
+  WAVE_Y0:     {type: number, description: "Code of 0 V"}
+  WAVE_DY:     {type: number, description: "Volts per code"}
+  WAVE_X0:     {type: number, description: "Time of the first sample relative to the trigger (s)"}
+  WAVE_DX:     {type: number, description: "Time between samples (s)"}
+  VPP:         {type: number, description: "Peak-to-peak voltage (V), null when not measurable"}
+  VAVG:        {type: number, description: "Average voltage (V)"}
+  VRMS:        {type: number, description: "RMS voltage (V)"}
+  FREQ:        {type: number, description: "Frequency (Hz)"}
 operations:
-  output:        {get: true, set: true, value: enum, values: [ON, OFF], description: "Channel display"}
-  channel_scale: {get: true, set: true, value: si}
-  screenshot:    {get: true, value: bytes}
+  display:         {get: true, set: true, value: enum, values: [ON, OFF], required: [get, set], description: "Show or hide the channel"}
+  scale:           {get: true, set: true, value: si, required: [get, set], description: "Vertical scale (V/div)"}
+  offset:          {get: true, set: true, value: si, description: "Vertical offset (V)"}
+  coupling:        {get: true, set: true, value: string, description: "AC, DC or GND"}
+  probe:           {get: true, set: true, value: string, description: "Probe ratio"}
+  bwlimit:         {get: true, set: true, value: string, description: "Bandwidth limit"}
+  invert:          {get: true, set: true, value: enum, values: [ON, OFF]}
+  timebase:        {get: true, set: true, value: si, required: [get, set], description: "Horizontal scale (s/div)"}
+  timebase_offset: {get: true, set: true, value: si, description: "Horizontal position (s)"}
+  trigger_status:  {get: true, value: string}
+  trigger_sweep:   {get: true, set: true, value: string, description: "AUTO, NORM or SING"}
+  trigger_source:  {get: true, set: true, value: string}
+  trigger_slope:   {get: true, set: true, value: string}
+  trigger_level:   {get: true, set: true, value: si}
+  acquire_type:    {get: true, set: true, value: string}
+  sample_rate:     {get: true, value: number}
+  run:             {set: true, value: string, required: [set], description: "RUN, STOP, SINGLE, AUTO (autoscale) or CLEAR"}
+  waveform:        {get: true, value: list, description: "Screen trace sample codes (see WAVE)"}
+  screenshot:      {get: true, value: bytes}

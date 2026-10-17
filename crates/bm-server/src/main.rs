@@ -69,7 +69,31 @@ fn main() {
         eprintln!("SIMULATION: instruments replayed from {} (no hardware is used; recordings in memory)", s.display());
     }
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("signal runtime");
-    let _ = rt.block_on(tokio::signal::ctrl_c());
+    rt.block_on(shutdown_signal());
     eprintln!("stopping devices…");
     server.stop();
+}
+
+/// Ctrl-C or SIGTERM: both stop the devices cleanly. A device thread finishes its current
+/// exchange first; killing it mid-read leaves USBTMC instruments one reply behind.
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        match signal(SignalKind::terminate()) {
+            Ok(mut term) => {
+                tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {}
+                    _ = term.recv() => {}
+                }
+            }
+            Err(_) => {
+                let _ = tokio::signal::ctrl_c().await;
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
+    }
 }

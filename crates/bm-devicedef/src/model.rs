@@ -404,6 +404,8 @@ pub enum ValueKind {
     Si,
     /// Binary payload (e.g. a screenshot), served as a file (classes only).
     Bytes,
+    /// Array of numbers, e.g. waveform samples (classes only).
+    List,
 }
 
 /// One reply transformation. Unit steps are plain strings (`- trim`); others are maps
@@ -434,6 +436,20 @@ pub enum ParseStep {
     Bits(BTreeMap<String, String>),
     /// Raw replies that mean "no value" (result becomes null).
     NullIf(Vec<String>),
+    /// Binary sample data (e.g. an oscilloscope's block payload) → list of integers.
+    Samples(SampleFormat),
+}
+
+/// Encoding of one sample in a binary `samples` reply.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum SampleFormat {
+    U8,
+    I8,
+    U16le,
+    I16le,
+    U16be,
+    I16be,
 }
 
 /// A command invocation: `cmd_name` or `{cmd: name, args: {param: value}}`.

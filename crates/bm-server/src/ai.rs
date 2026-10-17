@@ -12,7 +12,7 @@ use axum::extract::{Query, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use bm_devicedef::{DeviceDef, Safety, ValueKind};
+use bm_devicedef::DeviceDef;
 use serde_json::{json, Value};
 
 use crate::config::str_field;
@@ -26,20 +26,18 @@ fn operations(def: &DeviceDef, class: &str) -> Vec<Value> {
     b.operations
         .iter()
         .map(|(name, o)| {
-            let set_cmd = o.set.as_ref().and_then(|a| a.steps().first().map(|s| s.command().to_string())).and_then(|c| def.commands.get(&c));
-            let param = set_cmd.and_then(|c| c.params.values().find(|p| p.from.is_none()));
-            let mut v = json!({"name": name, "get": o.get.is_some(), "set": o.set.is_some()});
+            let setter = crate::opspec::setter(def, o);
+            let mut v = json!({"name": name, "get": o.get.is_some(), "set": setter.is_some()});
             if let Some(d) = &o.description {
                 v["description"] = json!(d);
             }
-            if let Some(p) = param {
-                v["value"] = match p.kind {
-                    ValueKind::Enum => json!({"type": "enum", "values": p.values.keys().collect::<Vec<_>>()}),
-                    _ => json!({"type": format!("{:?}", p.kind).to_lowercase(), "min": p.min, "max": p.max, "unit": p.unit}),
-                };
-            }
-            if set_cmd.is_some_and(|c| c.safety == Safety::Energize) {
-                v["energizes"] = json!(true);
+            if let Some((spec, energizes)) = setter {
+                if let Some(spec) = spec {
+                    v["value"] = spec;
+                }
+                if energizes {
+                    v["energizes"] = json!(true);
+                }
             }
             v
         })

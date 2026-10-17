@@ -205,6 +205,16 @@ async fn features_methods_and_drivers() {
         .map(|m| (m["http_method"].as_str().unwrap().into(), m["name"].as_str().unwrap().into()))
         .collect();
     assert!(names.contains(&("GET".into(), "voltage".into())) && names.contains(&("POST".into(), "voltage".into())));
+    // Setters carry the definition's value spec so UIs can build controls without device code.
+    let post = |name: &str| v["methods"].as_array().unwrap().iter().find(|m| m["http_method"] == "POST" && m["name"] == name).cloned().unwrap();
+    assert_eq!(post("voltage")["value"], json!({"type": "number", "min": 0.0, "max": 60.0, "format": "%.2f", "unit": "V"}));
+    assert_eq!(post("current")["value"]["format"], "%.3f");
+    assert_eq!(post("output")["value"], json!({"type": "enum", "values": ["OFF", "ON"]}));
+    assert_eq!(post("output")["energizes"], true);
+    assert!(post("voltage").get("energizes").is_none());
+    let (_, v, _) = call(&f, "GET", "/instruments/ELL/l1/methods", None, None).await;
+    let input = v["methods"].as_array().unwrap().iter().find(|m| m["http_method"] == "POST" && m["name"] == "input").unwrap();
+    assert_eq!(input["energizes"], true, "load input energizes: {input}");
     let (_, v, _) = call(&f, "GET", "/drivers", None, None).await;
     assert_eq!(v["owon_dge"]["supported_transports"], json!(["usbtmc"]));
     assert_eq!(v["tenma_72"]["vendor"], "TENMA");

@@ -153,6 +153,23 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **Copyright**: Copyright (c) 2014-present Matt Zabriskie and contributors
 - **URL**: https://github.com/axios/axios
 
+### react-icons
+- **License**: MIT (icon sets under their own licenses; BenchMesh uses VS Code Codicons, CC-BY-4.0)
+- **Copyright**: Copyright (c) 2018 kamijin_fanta
+- **URL**: https://github.com/react-icons/react-icons
+
+### B612 and B612 Mono fonts (@fontsource/b612, @fontsource/b612-mono)
+- **License**: SIL Open Font License 1.1 (fonts); MIT (Fontsource packaging)
+- **Copyright**: Copyright 2012 The B612 Project Authors (Airbus, Intactile Design)
+- **URL**: https://github.com/polarsys/b612 , https://github.com/fontsource/font-files
+- Bundled with the UI (instrument readouts and labels); the fonts are unmodified.
+
+### Chakra Petch font (@fontsource/chakra-petch)
+- **License**: SIL Open Font License 1.1 (font); MIT (Fontsource packaging)
+- **Copyright**: Copyright 2018 The Chakra Petch Project Authors (Cadson Demak)
+- **URL**: https://github.com/cadsondemak/Chakra-Petch
+- Bundled with the UI (panel titles); the font is unmodified.
+
 ---
 
 ## Electron Dependencies
@@ -255,3 +272,6 @@ All dependencies use permissive open source licenses that allow:
 - ✓ Private use
 
 No copyleft (GPL-style) licenses are used in BenchMesh or its dependencies.
+
+The bundled fonts are under the SIL Open Font License 1.1, which permits bundling them with
+software; the fonts themselves may not be sold on their own.

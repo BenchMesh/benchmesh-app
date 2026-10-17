@@ -29,6 +29,10 @@ pub struct UsbTmcTransport {
 }
 
 impl UsbTmcTransport {
+    /// Open the device. No automatic device clear: on the DHO804 a clear sometimes recovers a
+    /// device left one reply behind by an interrupted session, and sometimes leaves the next
+    /// exchange unanswered (verified 2026-10-17). Interrupted sessions are avoided instead
+    /// (graceful shutdown); proper abort/resync needs the userspace USBTMC transport.
     pub fn open(path: &str) -> io::Result<Self> {
         let file = OpenOptions::new().read(true).write(true).open(path)?;
         Ok(UsbTmcTransport { file, buf: vec![0; MAX_MESSAGE], timeout_ms: 0 })

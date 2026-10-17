@@ -18,6 +18,7 @@ pub mod config;
 pub mod ai;
 pub mod devices;
 pub mod openapi;
+pub mod opspec;
 pub mod recordings;
 pub mod run;
 
@@ -33,7 +34,7 @@ use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
-use bm_devicedef::{Link, Repr, ValueKind};
+use bm_devicedef::{Link, Repr};
 use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
 use tower::ServiceBuilder;
@@ -261,22 +262,26 @@ async fn methods(State(s): State<S>, Path((klass, id)): Path<(String, String)>) 
                 "description": format!("Query {desc}"), "parameters": [channel.clone()], "returns": returns,
                 "example": format!("GET /instruments/{klass}/{id}/1/{op}")}));
         }
-        if let Some(set) = &o.set {
-            // Value type: the single caller param of the first step's command.
-            let kind = set.steps().first().and_then(|st| def.commands.get(st.command())).and_then(|c| {
-                c.params.values().find(|p| p.from.is_none()).map(|p| match p.kind {
-                    ValueKind::Number => "float",
-                    ValueKind::Integer => "int",
-                    ValueKind::Bool => "bool",
-                    _ => "str",
-                })
-            });
-            let mut params = vec![channel.clone()];
-            params.push(json!({"name": "value", "type": kind.unwrap_or("str"), "required": true, "default": null,
-                               "description": "Value to set"}));
-            list.push(json!({"name": op, "full_name": format!("set_{op}"), "http_method": "POST",
+        if let Some((spec, energizes)) = opspec::setter(&def, o) {
+            // Parameter type (Python-style names) from the value spec of the setter's caller param.
+            let kind = match spec.as_ref().and_then(|v| v["type"].as_str()) {
+                Some("number") => "float",
+                Some("integer") => "int",
+                Some("bool") => "bool",
+                _ => "str",
+            };
+            let params = vec![channel.clone(), json!({"name": "value", "type": kind, "required": true, "default": null,
+                               "description": "Value to set"})];
+            let mut m = json!({"name": op, "full_name": format!("set_{op}"), "http_method": "POST",
                 "description": format!("Set {desc}"), "parameters": params, "returns": "none",
-                "example": format!("POST /instruments/{klass}/{id}/1/{op}/<value>")}));
+                "example": format!("POST /instruments/{klass}/{id}/1/{op}/<value>")});
+            if let Some(spec) = spec {
+                m["value"] = spec;
+            }
+            if energizes {
+                m["energizes"] = json!(true);
+            }
+            list.push(m);
         }
     }
     list.sort_by_key(|m| (m["http_method"] != "GET", m["name"].as_str().unwrap_or_default().to_string()));

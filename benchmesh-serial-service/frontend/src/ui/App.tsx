@@ -1,14 +1,11 @@
 import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react'
-import { Instrument } from './InstrumentPod'
-import { MeasurementProvider } from './MeasurementContext'
+import { Instrument } from './types'
 import { RequestLogProvider } from './RequestLogContext'
-import { WorkbenchLayout } from './workbench/WorkbenchLayout'
-import { ClassicLayout } from './ClassicLayout'
+import { BenchLayout } from './bench/BenchLayout'
 import { DisclaimerModal } from './DisclaimerModal'
 import { apiBaseUrl, wsUrl } from '../api/base'
 
 // Lazy load modal components to reduce initial bundle size
-const ConfigModal = lazy(() => import('./ConfigModal').then(m => ({ default: m.ConfigModal })))
 const DocsViewer = lazy(() => import('./DocsViewer').then(m => ({ default: m.DocsViewer })))
 const MetricsViewer = lazy(() => import('./MetricsViewer').then(m => ({ default: m.MetricsViewer })))
 const RecordingModal = lazy(() => import('./recording/RecordingModal').then(m => ({ default: m.RecordingModal })))
@@ -135,159 +132,69 @@ export default function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { data: instruments, loading, error } = useInstruments(apiBase, refreshTrigger)
   const { registry, wsDiag } = useRegistrySocket(apiBase)
-  const [configModalOpen, setConfigModalOpen] = useState(false)
-  const [docsModalOpen, setDocsModalOpen] = useState(false)
+  // ?openDocs=true opens the API docs directly
+  const [docsModalOpen, setDocsModalOpen] = useState(() => new URLSearchParams(window.location.search).get('openDocs') === 'true')
   const [metricsModalOpen, setMetricsModalOpen] = useState(false)
   const [recordingModalOpen, setRecordingModalOpen] = useState(false)
-  const [autoOpenedConfig, setAutoOpenedConfig] = useState(false)
-
-  // Check if running in Electron - use state to ensure preload script has time to run
-  const [isElectron, setIsElectron] = useState(false)
-
-  // Interface mode: 'classic' or 'workbench' (default: workbench)
-  const [interfaceMode, setInterfaceMode] = useState<'classic' | 'workbench'>(() => {
-    const saved = localStorage.getItem('benchmesh-interface-mode')
-    return (saved === 'classic' || saved === 'workbench') ? saved : 'workbench'
-  })
 
   // Disclaimer modal state - shows on first app load if not previously accepted
   const [disclaimerOpen, setDisclaimerOpen] = useState(() => {
-    const accepted = localStorage.getItem('benchmesh:disclaimer-accepted')
-    return accepted !== 'true' // Show if not accepted
+    try {
+      return localStorage.getItem('benchmesh:disclaimer-accepted') !== 'true'
+    } catch {
+      return true
+    }
   })
-
-  // Check for Electron context after mount
-  useEffect(() => {
-    const checkElectron = () => {
-      const inElectron = window.electron?.isElectron === true
-      console.log('Electron context check:', {
-        electron: window.electron,
-        isElectron: inElectron
-      })
-      setIsElectron(inElectron)
-    }
-
-    // Check immediately and after a short delay to ensure preload has run
-    checkElectron()
-    const timer = setTimeout(checkElectron, 100)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const apiOk = !loading && !error
-  const hasInstruments = instruments && instruments.length > 0
-
-  // Auto-open docs modal if openDocs URL parameter is present (for Electron documentation window)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('openDocs') === 'true') {
-      setDocsModalOpen(true)
-    }
-  }, [])
-
-  // Auto-open config modal disabled - replaced with tutorial tooltip in workbench
-  // useEffect(() => {
-  //   if (!autoOpenedConfig && !loading && !error && instruments !== null && instruments.length === 0) {
-  //     const timer = setTimeout(() => {
-  //       setConfigModalOpen(true)
-  //       setAutoOpenedConfig(true)
-  //     }, 500)
-  //     return () => clearTimeout(timer)
-  //   }
-  // }, [autoOpenedConfig, loading, error, instruments])
 
   function handleConfigUpdated() {
     setRefreshTrigger(prev => prev + 1)
   }
 
-  function toggleInterface() {
-    const newMode = interfaceMode === 'classic' ? 'workbench' : 'classic'
-    setInterfaceMode(newMode)
-    localStorage.setItem('benchmesh-interface-mode', newMode)
-  }
-
   function handleDisclaimerAccept(dontShowAgain: boolean) {
     setDisclaimerOpen(false)
     if (dontShowAgain) {
-      localStorage.setItem('benchmesh:disclaimer-accepted', 'true')
+      try { localStorage.setItem('benchmesh:disclaimer-accepted', 'true') } catch { /* storage unavailable */ }
     }
   }
 
   return (
     <RequestLogProvider>
-      <MeasurementProvider registry={registry}>
-        {interfaceMode === 'classic' ? (
-        <ClassicLayout
+        <BenchLayout
           instruments={instruments || []}
           registry={registry}
           apiBase={apiBase}
           loading={loading}
           error={error}
           wsDiag={wsDiag}
-          onOpenConfig={() => setConfigModalOpen(true)}
+          onConfigUpdated={handleConfigUpdated}
           onOpenRecording={() => setRecordingModalOpen(true)}
+          onOpenMetrics={() => setMetricsModalOpen(true)}
           onOpenDocs={() => setDocsModalOpen(true)}
-          onOpenMetrics={() => setMetricsModalOpen(true)}
-          onSwitchToWorkbench={toggleInterface}
-          isElectron={isElectron}
         />
-      ) : (
-        <WorkbenchLayout
-          instruments={instruments || []}
-          registry={registry}
-          apiBase={apiBase}
-          loading={loading}
-          error={error}
-          wsDiag={wsDiag}
-          onConfigUpdated={handleConfigUpdated}
-          onOpenRecording={() => setRecordingModalOpen(true)}
-          onOpenMetrics={() => setMetricsModalOpen(true)}
-          onSwitchToClassic={toggleInterface}
-          isElectron={isElectron}
-        />
-      )}
 
-      <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-        <ConfigModal
-          isOpen={configModalOpen}
-          onClose={() => setConfigModalOpen(false)}
-          apiBase={apiBase}
-          onConfigUpdated={handleConfigUpdated}
-        />
-      </Suspense>
-
-      <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-        <RecordingModal
-          isOpen={recordingModalOpen}
-          onClose={() => setRecordingModalOpen(false)}
-          apiBase={apiBase}
-          instruments={instruments || []}
-        />
-      </Suspense>
-
-      {docsModalOpen && (
         <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-          <DocsViewer
-            onClose={() => setDocsModalOpen(false)}
+          <RecordingModal
+            isOpen={recordingModalOpen}
+            onClose={() => setRecordingModalOpen(false)}
             apiBase={apiBase}
+            instruments={instruments || []}
           />
         </Suspense>
-      )}
 
-      {metricsModalOpen && (
-        <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-          <MetricsViewer
-            onClose={() => setMetricsModalOpen(false)}
-            apiBase={apiBase}
-          />
-        </Suspense>
-      )}
+        {docsModalOpen && (
+          <Suspense fallback={<div className="modal-loading">Loading...</div>}>
+            <DocsViewer onClose={() => setDocsModalOpen(false)} apiBase={apiBase} />
+          </Suspense>
+        )}
+
+        {metricsModalOpen && (
+          <Suspense fallback={<div className="modal-loading">Loading...</div>}>
+            <MetricsViewer onClose={() => setMetricsModalOpen(false)} apiBase={apiBase} />
+          </Suspense>
+        )}
 
         {/* Disclaimer modal - highest priority, shown on first app load */}
-        <DisclaimerModal
-          isOpen={disclaimerOpen}
-          onAccept={handleDisclaimerAccept}
-        />
-      </MeasurementProvider>
+        <DisclaimerModal isOpen={disclaimerOpen} onAccept={handleDisclaimerAccept} />
     </RequestLogProvider>
   )
 }

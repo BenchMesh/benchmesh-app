@@ -1,197 +1,74 @@
 # BenchMesh E2E Tests
 
-End-to-end tests for the BenchMesh frontend using Playwright.
+End-to-end tests for the BenchMesh bench UI using Playwright. The API and the registry
+WebSocket are fully mocked, so the suite needs no backend or hardware.
 
-## Overview
-
-These tests verify the BenchMesh UI functionality by simulating real user interactions in a browser. The tests use mocked API and WebSocket connections to ensure reliable and fast execution.
-
-## Test Structure
+## Structure
 
 ```
 e2e/
-├── fixtures/
-│   └── base.ts           # Base test fixture with mocks
-├── utils/
-│   └── api-mock.ts       # API and WebSocket mocking utilities
-├── app-navigation.spec.ts          # Navigation and modal tests
-├── instrument-display.spec.ts      # Instrument card display tests
-├── instrument-interaction.spec.ts  # Device interaction tests
-└── api-integration.spec.ts         # API/WebSocket integration tests
+├── fixtures/base.ts                 # `api` (mock handle) and `mockPage` (bench loaded) fixtures
+├── utils/api-mock.ts                # API route mock, WebSocket mock, mock instruments/registry
+├── app-navigation.spec.ts           # top bar, drawers (Instruments, Log), modals, disclaimer
+├── instrument-display.spec.ts       # panels per class, names, model, online/offline, live values
+├── instrument-interaction.spec.ts   # setpoints (Enter sends), output arm switch, DMM dial/range, errors
+├── add-instrument.spec.ts           # Instruments drawer: configured devices, add-instrument form
+├── settings-view.spec.ts            # Instruments drawer tabs, history retention setting
+├── history-retention.spec.ts        # request log persistence, retention pruning, 1000-entry cap
+├── api-integration.spec.ts          # instrument polling (ETag/304, retry), WebSocket status
+├── bench-arrange.spec.ts            # arrange mode: reorder, drag and drop, widths, hide, persistence, responsive
+└── with-service/                    # against a real service (separate config, not run by default)
 ```
 
-## Running Tests
+## Running
 
-### Run all tests (headless)
 ```bash
-npm run test:e2e
+npx vite build                 # the suite serves dist/ via `npm run preview` on :5173
+npm run test:e2e               # all mocked specs (headless)
+npx playwright test bench-arrange.spec.ts
+npx playwright test -g "output"
+npm run test:e2e:ui | test:e2e:headed | test:e2e:debug
+npm run test:e2e:service       # with-service/ against a running backend on :57666
 ```
 
-### Run tests with UI mode (interactive)
-```bash
-npm run test:e2e:ui
-```
+## Mocks
 
-### Run tests in headed mode (visible browser)
-```bash
-npm run test:e2e:headed
-```
+`utils/api-mock.ts`:
 
-### Run tests in debug mode
-```bash
-npm run test:e2e:debug
-```
+- **Instruments**: a PSU (`test-psu-1`) and a DMM (`test-dmm-1`), both online, and an
+  oscilloscope (`test-osc-1`) without IDN (offline, generic panel). `PANELS` holds their
+  panel names (`"<class description>: <name>"`).
+- **Features / methods**: PSU `absolute_limits` and numeric setters with value specs; DMM
+  `modes` and `RANGe`; served at `GET /instruments/{CLS}/{id}` and `/methods`.
+- **Operations**: `GET .../{ch}/{op}` returns `{value}`; `POST .../{ch}/{op}/{value}` returns
+  204 and is recorded in `api.posts`. `api.failures.set(path, {status, detail})` makes an
+  operation fail.
+- **WebSocket**: `/ws/registry` sends the registry every 400 ms. In the page,
+  `window.__pushRegistry(data)` replaces it and `window.__registryPaused = true` stops it.
+- The fixture pre-accepts the safety disclaimer.
 
-### Run specific test file
-```bash
-npx playwright test app-navigation.spec.ts
-```
-
-### Run specific test
-```bash
-npx playwright test -g "should load the app"
-```
-
-## Test Coverage
-
-### App Navigation (`app-navigation.spec.ts`)
-- ✅ Brand display
-- ✅ Status indicators (WebSocket, API)
-- ✅ Navigation buttons
-- ✅ Configuration modal
-- ✅ Documentation modal
-- ✅ Metrics modal
-- ✅ Recording modal
-- ✅ Measurement status bar
-
-### Instrument Display (`instrument-display.spec.ts`)
-- ✅ Instrument card rendering
-- ✅ Instrument IDs
-- ✅ IDN information
-- ✅ Online/offline status
-- ✅ PSU channel display
-- ✅ DMM measurement display
-- ✅ Empty instrument list handling
-
-### Instrument Interaction (`instrument-interaction.spec.ts`)
-- ✅ PSU controls
-- ✅ Measurement context
-- ✅ Real-time data updates
-- ✅ Device control actions
-- ✅ API error handling
-- ✅ State persistence across WebSocket updates
-- ✅ Rapid user interaction handling
-
-### API Integration (`api-integration.spec.ts`)
-- ✅ Successful API responses
-- ✅ 304 Not Modified handling
-- ✅ API error recovery and retry
-- ✅ Network timeout handling
-- ✅ ETag support (If-None-Match)
-- ✅ Malformed JSON handling
-- ✅ WebSocket connection failures
-- ✅ WebSocket update stream
-- ✅ Concurrent API and WebSocket data
-
-## Mock Data
-
-The tests use mock data defined in `utils/api-mock.ts`:
-
-- **Mock Instruments**: 2 test devices (PSU and DMM)
-- **Mock Registry**: Simulated real-time device data
-- **Mock WebSocket**: Simulated WebSocket connection with periodic updates
-
-## Configuration
-
-Tests are configured in `playwright.config.ts`:
-
-- **Base URL**: `http://localhost:57666`
-- **Timeout**: 30 seconds per test
-- **Retries**: 2 on CI, 0 locally
-- **Browser**: Chromium (Desktop Chrome)
-- **Screenshots**: On failure only
-- **Videos**: On failure only
-- **Traces**: On first retry
-
-## CI Integration
-
-These tests run automatically on:
-- Pull requests
-- Pushes to main branch
-- Manual workflow dispatch
-
-See `.github/workflows/e2e-tests.yml` for CI configuration.
-
-## Writing New Tests
-
-### 1. Use the base fixture
+## Writing tests
 
 ```typescript
 import { test, expect } from './fixtures/base';
+import { PANELS } from './utils/api-mock';
 
-test('my test', async ({ mockPage }) => {
-  // mockPage has API and WebSocket mocks pre-configured
-  await expect(mockPage.locator('.brand')).toBeVisible();
+test('sets the voltage', async ({ mockPage, api }) => {
+  const v = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('spinbutton', { name: 'Voltage setpoint' });
+  await v.focus();
+  await v.press('ArrowUp');
+  await v.press('Enter');
+  await expect.poll(() => api.posts.map((p) => p.path)).toEqual(['/instruments/PSU/test-psu-1/1/voltage/6']);
 });
 ```
 
-### 2. Add custom mocks if needed
+- Use `api` without `mockPage` to change the mock (e.g. `api.instruments = []`) or add
+  `page.route` overrides before `page.goto('/ui/')`; routes added later win.
+- Prefer roles and labels (`getByRole('article', { name })`, `spinbutton`, `slider`, `img`).
+- No fixed sleeps: use web-first assertions and `expect.poll`.
 
-```typescript
-test('custom mock', async ({ mockPage, page }) => {
-  await page.route('**/my-endpoint', async (route) => {
-    await route.fulfill({
-      status: 200,
-      body: JSON.stringify({ data: 'test' })
-    });
-  });
-});
-```
+## Known UI bugs (`test.fixme`)
 
-### 3. Use helper utilities
-
-```typescript
-import { waitForInstruments, waitForWebSocket } from './utils/api-mock';
-
-test('wait for data', async ({ mockPage }) => {
-  await waitForInstruments(mockPage, 2);
-  await waitForWebSocket(mockPage);
-  // Now instruments and WebSocket are ready
-});
-```
-
-## Best Practices
-
-1. **Use data-testid attributes** for stable selectors (when possible)
-2. **Avoid hardcoded timeouts** - use `waitFor` methods instead
-3. **Test user behavior** - not implementation details
-4. **Keep tests independent** - each test should work in isolation
-5. **Use descriptive test names** - clearly state what's being tested
-6. **Mock external dependencies** - API, WebSocket, etc.
-7. **Clean up after tests** - close modals, reset state
-
-## Troubleshooting
-
-### Tests fail with timeout errors
-- Increase timeout in `playwright.config.ts`
-- Check if selectors are correct
-- Verify mock data is being returned
-
-### WebSocket tests fail
-- Check if WebSocket mock is properly initialized
-- Verify timing - may need to adjust wait times
-
-### CI tests fail but local tests pass
-- Check for timing issues
-- Verify retry configuration
-- Review CI logs for specific errors
-
-## Future Enhancements
-
-- [ ] Add visual regression tests
-- [ ] Add accessibility tests (a11y)
-- [ ] Add performance tests
-- [ ] Test recording functionality in detail
-- [ ] Test configuration changes and device hot-reload
-- [ ] Add mobile viewport tests
-- [ ] Add cross-browser tests (Firefox, Safari)
+- Empty bench "Add instrument" opens the drawer without the new form (config load race).
+- Switching the Instruments drawer tab discards an unsaved new instrument.
+- The "Offline — reconnecting" badge blocks the arrange controls of a narrow offline panel.

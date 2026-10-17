@@ -1,4 +1,7 @@
 # Instrument Class Contract (as-is, extracted 2026-10-16)
+> **Note (2026-10-17):** the React components analysed below (`ClassPods`, `GenericPSU`, …) were
+> replaced by the bench UI (`frontend/src/ui/bench/`, one panel per class). The registry statuses
+> and operations documented here are unchanged and are what the bench panels consume.
 
 Input for migration Phase 2 (class schemas). Derived from the consumers (frontend,
 Node-RED nodes, recording service) and producers (Python drivers, manifests).

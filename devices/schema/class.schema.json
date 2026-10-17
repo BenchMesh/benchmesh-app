@@ -101,6 +101,11 @@
           "const": "bytes",
           "description": "Binary payload (e.g. a screenshot), served as a file (classes only).",
           "type": "string"
+        },
+        {
+          "const": "list",
+          "description": "Array of numbers, e.g. waveform samples (classes only).",
+          "type": "string"
         }
       ]
     }

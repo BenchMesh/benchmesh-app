@@ -284,7 +284,7 @@ fn check_command(d: &DeviceDef, name: &str, cmd: &Command, cx: &mut Ctx) {
         let pat = format!("{at}.params.{p}");
         match spec.kind {
             ValueKind::Enum if spec.values.is_empty() => cx.err(&pat, "enum param needs `values`"),
-            ValueKind::Si | ValueKind::Bytes => cx.err(&pat, "`si`/`bytes` are class value kinds, not wire param kinds"),
+            ValueKind::Si | ValueKind::Bytes | ValueKind::List => cx.err(&pat, "`si`/`bytes`/`list` are class value kinds, not wire param kinds"),
             _ => {}
         }
         if let Some(expr) = &spec.from {

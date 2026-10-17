@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RecordingApi, StartRecordingRequest, ChannelConfig } from '../../api/recordingApi';
-import { Instrument } from '../InstrumentPod';
+import { Instrument } from '../types';
 
 interface RecordingControlsProps {
   apiBase: string;

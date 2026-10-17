@@ -103,15 +103,21 @@ Unit steps are strings, others single-key maps:
 `trim`, `unquote`, `lower`, `upper`, `number` (f64, accepts `+1.0E-04` and `+0.0000E-308`),
 `byte` (first byte as integer), `{split: {sep, index}}`, `{fields: {sep, names}}` (→ map),
 `{regex: {pattern, group}}`, `{replace: {from, to}}`, `{map: {raw: value}}` (unmapped = error
-unless `_` key), `{bits: {name: "N" | "A..B"}}` (→ map of bool/int), `{null_if: [raw...]}`.
+unless `_` key), `{bits: {name: "N" | "A..B"}}` (→ map of bool/int), `{null_if: [raw...]}`,
+`{samples: u8|i8|u16le|i16le|u16be|i16be}` (binary payload → list of integers; first step, e.g. an
+oscilloscope's `reply: block` waveform). A `block` reply without parse steps is returned as bytes
+(images); with steps it is data.
 
 ### `classes.<CLS>` (binding)
 | Key | Meaning |
 |---|---|
-| `channels`, `ui_component`, `features` | registry/UI metadata (features = the UI dictionary served by `GET /instruments/{class}/{id}`) |
-| `poll` | list of groups `{every_ms, read: [query commands]}`; slower groups' values persist between refreshes; per channel when `{ch}` is used |
+| `channels`, `ui_component`, `features` | registry/UI metadata (features = the UI dictionary served by `GET /instruments/{class}/{id}`). The bench UI uses one panel per class and ignores `ui_component` |
+| `poll` | list of groups `{every_ms, read: [query commands]}`; slower groups' values persist between refreshes; per channel when the command or one of its `before` steps uses `{ch}` (e.g. `:WAV:DATA?` after `:WAV:SOUR CHAN{ch}`). A successful set makes all of the class's groups due at once, so slow groups can be slow without delaying feedback |
 | `status.<KEY>` | CEL expression over poll results (by command name), `state`, `ch`. Shorthand string = raw value; `{expr, as: si}` = SI value dict |
-| `operations.<op>` | `{get: cmd \| [steps], set: cmd \| [steps], as: raw\|si\|bytes}`; POST value binds to the single caller param (or `{value}` in step args) |
+| `operations.<op>` | `{get: cmd \| [steps], set: cmd \| [steps], as: raw\|si\|bytes}`; POST value binds to the single caller param (or `{value}` in step args). `GET .../methods` reports each setter's value spec (type, min/max, format, unit, enum values) and `energizes` |
+
+Class contracts (`devices/classes/*.yaml`) type status keys and operations with `number`, `integer`,
+`bool`, `string`, `enum`, `si`, `bytes` (files) or `list` (numeric arrays, e.g. waveform samples).
 
 ### CEL environment (interpreter contract)
 - Variables: poll command names (parsed results; maps for `fields`/`bits`), `state`, `ch`.

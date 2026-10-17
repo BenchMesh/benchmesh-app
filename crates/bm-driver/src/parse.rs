@@ -1,6 +1,6 @@
 //! Reply parse pipeline (`commands.<name>.parse`).
 
-use bm_devicedef::{Command, OnEmpty, ParseStep};
+use bm_devicedef::{Command, OnEmpty, ParseStep, SampleFormat};
 use regex::Regex;
 use serde_json::{json, Map, Value};
 
@@ -35,7 +35,8 @@ pub fn lenient_number(s: &str) -> Option<f64> {
 
 /// Parse one framed reply with the command's pipeline.
 pub fn parse_reply(cmd: &Command, reply: &[u8]) -> Result<Value, Error> {
-    if reply.iter().all(|b| b.is_ascii_whitespace()) && !matches!(cmd.parse.first(), Some(ParseStep::Byte)) {
+    let binary = matches!(cmd.parse.first(), Some(ParseStep::Byte | ParseStep::Samples(_)));
+    if reply.iter().all(|b| b.is_ascii_whitespace()) && !binary {
         return match cmd.on_empty {
             OnEmpty::Null => Ok(Value::Null),
             OnEmpty::Error => Err(Error::Parse("empty reply".into())),
@@ -133,11 +134,33 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
             }
             Ok(Cur::Val(Value::Object(out)))
         }
+        ParseStep::Samples(format) => {
+            let Cur::Bytes(b) = cur else { return Err(Error::Parse("samples: needs the raw reply (first step)".into())) };
+            Ok(Cur::Val(Value::Array(samples(&b, *format)?)))
+        }
         ParseStep::NullIf(values) => {
             let t = cur.text("null_if")?;
             Ok(if values.contains(&t) { Cur::Val(Value::Null) } else { Cur::Val(Value::String(t)) })
         }
     }
+}
+
+fn samples(b: &[u8], format: SampleFormat) -> Result<Vec<Value>, Error> {
+    use SampleFormat::*;
+    let width = if matches!(format, U8 | I8) { 1 } else { 2 };
+    if b.len() % width != 0 {
+        return Err(Error::Parse(format!("samples: {} bytes is not a multiple of {width}", b.len())));
+    }
+    Ok(b.chunks_exact(width)
+        .map(|c| match format {
+            U8 => json!(c[0]),
+            I8 => json!(c[0] as i8),
+            U16le => json!(u16::from_le_bytes([c[0], c[1]])),
+            I16le => json!(i16::from_le_bytes([c[0], c[1]])),
+            U16be => json!(u16::from_be_bytes([c[0], c[1]])),
+            I16be => json!(i16::from_be_bytes([c[0], c[1]])),
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -170,6 +193,21 @@ mod tests {
         let c = cmd("send: x\nreply: {bytes: 1}\nparse: [byte, {bits: {cv: '0', tracking: '2..3', out: '6'}}]");
         assert_eq!(parse_reply(&c, &[0x51]).unwrap(), json!({"cv": true, "tracking": 0, "out": true}));
         assert_eq!(parse_reply(&c, &[0x10]).unwrap(), json!({"cv": false, "tracking": 0, "out": false}));
+    }
+
+    #[test]
+    fn binary_samples() {
+        let c = cmd("send: x\nreply: block\nparse: [{samples: u8}]");
+        assert_eq!(parse_reply(&c, &[0, 127, 255]).unwrap(), json!([0, 127, 255]));
+        let c = cmd("send: x\nreply: block\nparse: [{samples: i16le}]");
+        assert_eq!(parse_reply(&c, &[0x01, 0x00, 0xff, 0xff]).unwrap(), json!([1, -1]));
+        let c = cmd("send: x\nreply: block\nparse: [{samples: u16be}]");
+        assert_eq!(parse_reply(&c, &[0x01, 0x00]).unwrap(), json!([256]));
+        // a byte that looks like whitespace is still a sample, and an odd tail is an error
+        let c = cmd("send: x\nreply: block\nparse: [{samples: u8}]");
+        assert_eq!(parse_reply(&c, &[32, 10]).unwrap(), json!([32, 10]));
+        let c = cmd("send: x\nreply: block\nparse: [{samples: u16le}]");
+        assert!(parse_reply(&c, &[1, 2, 3]).is_err());
     }
 
     #[test]

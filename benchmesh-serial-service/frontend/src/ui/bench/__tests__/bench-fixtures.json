@@ -1,0 +1,1833 @@
+{
+ "tenma-72-2540:PSU": {
+  "features": {
+   "absolute_limits": {
+    "current": {
+     "max": 5.0,
+     "unit": "A"
+    },
+    "power": {
+     "max": 150.0,
+     "unit": "W"
+    },
+    "voltage": {
+     "max": 30.0,
+     "unit": "V"
+    }
+   },
+   "auto_lock": true,
+   "channels": 1,
+   "compulsory_lock": false,
+   "lock": true,
+   "memory_banks": 5,
+   "memory_storage": [
+    "V",
+    "A"
+   ],
+   "protection": {
+    "OCP": {
+     "type": "boolean"
+    },
+    "OVP": {
+     "type": "boolean"
+    }
+   }
+  },
+  "methods": [
+   {
+    "description": "Query current",
+    "http_method": "GET",
+    "name": "current"
+   },
+   {
+    "description": "Query output current",
+    "http_method": "GET",
+    "name": "output_current"
+   },
+   {
+    "description": "Query output voltage",
+    "http_method": "GET",
+    "name": "output_voltage"
+   },
+   {
+    "description": "Query voltage",
+    "http_method": "GET",
+    "name": "voltage"
+   },
+   {
+    "description": "Set current",
+    "http_method": "POST",
+    "name": "current",
+    "value": {
+     "format": "%.3f",
+     "max": 15.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "A"
+    }
+   },
+   {
+    "description": "Set ocp",
+    "http_method": "POST",
+    "name": "ocp",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set output",
+    "energizes": true,
+    "http_method": "POST",
+    "name": "output",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set ovp",
+    "http_method": "POST",
+    "name": "ovp",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set voltage",
+    "http_method": "POST",
+    "name": "voltage",
+    "value": {
+     "format": "%.2f",
+     "max": 60.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "V"
+    }
+   }
+  ]
+ },
+ "owon-spm3103:PSU": {
+  "features": {
+   "absolute_limits": {
+    "current": {
+     "display": "A",
+     "max": 10.0
+    },
+    "power": {
+     "display": "W",
+     "max": 300.0
+    },
+    "voltage": {
+     "display": "V",
+     "max": 30.0
+    }
+   },
+   "channels": 1,
+   "compulsory_lock": false,
+   "lock": false,
+   "memory_banks": 4,
+   "memory_storage": [
+    "V",
+    "A",
+    "OVP",
+    "OCP"
+   ],
+   "modes": {
+    "CC": {
+     "protection": {
+      "OCP": {
+       "display": "A",
+       "max": 10.2,
+       "min": 0.1,
+       "step": 0.001,
+       "type": "number"
+      }
+     },
+     "setpoint": {
+      "display": "A",
+      "max": 10.1,
+      "min": 0.01,
+      "step": 0.001,
+      "type": "number",
+      "ui_step": 0.001
+     }
+    },
+    "CV": {
+     "protection": {
+      "OVP": {
+       "display": "V",
+       "max": 32,
+       "min": 0.1,
+       "step": 0.01,
+       "type": "number"
+      }
+     },
+     "setpoint": {
+      "display": "V",
+      "max": 31.0,
+      "min": 0.01,
+      "step": 0.01,
+      "type": "number",
+      "ui_step": 0.01
+     }
+    }
+   }
+  },
+  "methods": [
+   {
+    "description": "Query current",
+    "http_method": "GET",
+    "name": "current"
+   },
+   {
+    "description": "Query current limit",
+    "http_method": "GET",
+    "name": "current_limit"
+   },
+   {
+    "description": "Query output",
+    "http_method": "GET",
+    "name": "output"
+   },
+   {
+    "description": "Query output current",
+    "http_method": "GET",
+    "name": "output_current"
+   },
+   {
+    "description": "Query output power",
+    "http_method": "GET",
+    "name": "output_power"
+   },
+   {
+    "description": "Query output voltage",
+    "http_method": "GET",
+    "name": "output_voltage"
+   },
+   {
+    "description": "Query voltage",
+    "http_method": "GET",
+    "name": "voltage"
+   },
+   {
+    "description": "Query voltage limit",
+    "http_method": "GET",
+    "name": "voltage_limit"
+   },
+   {
+    "description": "Set current",
+    "http_method": "POST",
+    "name": "current",
+    "value": {
+     "format": "%.3f",
+     "max": 10.1,
+     "min": 0.0,
+     "type": "number",
+     "unit": "A"
+    }
+   },
+   {
+    "description": "Set current limit",
+    "http_method": "POST",
+    "name": "current_limit",
+    "value": {
+     "format": "%.3f",
+     "max": 10.2,
+     "min": 0.1,
+     "type": "number",
+     "unit": "A"
+    }
+   },
+   {
+    "description": "Set output",
+    "energizes": true,
+    "http_method": "POST",
+    "name": "output",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set remote",
+    "http_method": "POST",
+    "name": "remote",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set voltage",
+    "http_method": "POST",
+    "name": "voltage",
+    "value": {
+     "format": "%.3f",
+     "max": 31.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set voltage limit",
+    "http_method": "POST",
+    "name": "voltage_limit",
+    "value": {
+     "format": "%.3f",
+     "max": 32.0,
+     "min": 0.1,
+     "type": "number",
+     "unit": "V"
+    }
+   }
+  ]
+ },
+ "owon-spm3103:DMM": {
+  "features": {
+   "RANGe": {
+    "CAP": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "2nF",
+      "value": "2E-9"
+     },
+     {
+      "display": "20nF",
+      "value": "20E-9"
+     },
+     {
+      "display": "200nF",
+      "value": "200E-9"
+     },
+     {
+      "display": "2µF",
+      "value": "2E-6"
+     },
+     {
+      "display": "20µF",
+      "value": "20E-6"
+     },
+     {
+      "display": "200µF",
+      "value": "200E-6"
+     },
+     {
+      "display": "10mF",
+      "value": "10E-3"
+     }
+    ],
+    "CURR_AC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "200mA",
+      "value": "200E-3"
+     },
+     {
+      "display": "10A",
+      "value": "10"
+     }
+    ],
+    "CURR_DC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "200mA",
+      "value": "200E-3"
+     },
+     {
+      "display": "10A",
+      "value": "10"
+     }
+    ],
+    "RES": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "200Ω",
+      "value": "200"
+     },
+     {
+      "display": "2KΩ",
+      "value": "2E3"
+     },
+     {
+      "display": "20KΩ",
+      "value": "20E3"
+     },
+     {
+      "display": "200KΩ",
+      "value": "200E3"
+     },
+     {
+      "display": "2MΩ",
+      "value": "2E6"
+     },
+     {
+      "display": "20MΩ",
+      "value": "20E6"
+     },
+     {
+      "display": "100MΩ",
+      "value": "100E6"
+     }
+    ],
+    "VOLT_AC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "200mV",
+      "value": "200E-3"
+     },
+     {
+      "display": "2V",
+      "value": "2"
+     },
+     {
+      "display": "20V",
+      "value": "20"
+     },
+     {
+      "display": "200V",
+      "value": "200"
+     },
+     {
+      "display": "750V",
+      "value": "750"
+     }
+    ],
+    "VOLT_DC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "200mV",
+      "value": "200E-3"
+     },
+     {
+      "display": "2V",
+      "value": "2"
+     },
+     {
+      "display": "20V",
+      "value": "20"
+     },
+     {
+      "display": "200V",
+      "value": "200"
+     },
+     {
+      "display": "1000V",
+      "value": "1000"
+     }
+    ]
+   },
+   "channels": 1,
+   "delta": true,
+   "hold": true,
+   "modes": {
+    "CAP": {
+     "symbol": "C",
+     "techname": "CAP",
+     "ui_component": "GenericRange",
+     "ui_name": "Capacitance",
+     "unit": "F"
+    },
+    "CONT": {
+     "note": "buzzer",
+     "symbol": "R",
+     "techname": "CONT",
+     "ui_name": "Continuity",
+     "unit": "Ω"
+    },
+    "CURR_AC": {
+     "note": "AC",
+     "symbol": "I",
+     "techname": "CURR:AC",
+     "ui_component": "GenericRange",
+     "ui_name": "Current AC",
+     "unit": "A"
+    },
+    "CURR_DC": {
+     "note": "DC",
+     "symbol": "I",
+     "techname": "CURR:DC",
+     "ui_component": "GenericRange",
+     "ui_name": "Current DC",
+     "unit": "A"
+    },
+    "DIOD": {
+     "symbol": "D",
+     "techname": "DIOD",
+     "ui_name": "Diode",
+     "unit": "V"
+    },
+    "RES": {
+     "symbol": "R",
+     "techname": "RES",
+     "ui_component": "GenericRange",
+     "ui_name": "Resistance",
+     "unit": "Ω"
+    },
+    "VOLT_AC": {
+     "note": "AC",
+     "symbol": "U",
+     "techname": "VOLT:AC",
+     "ui_component": "GenericRange",
+     "ui_name": "Voltage AC",
+     "unit": "V"
+    },
+    "VOLT_DC": {
+     "note": "DC",
+     "symbol": "U",
+     "techname": "VOLT:DC",
+     "ui_component": "GenericRange",
+     "ui_name": "Voltage DC",
+     "unit": "V"
+    }
+   }
+  },
+  "methods": [
+   {
+    "description": "Query function",
+    "http_method": "GET",
+    "name": "function"
+   },
+   {
+    "description": "Query measurement",
+    "http_method": "GET",
+    "name": "measurement"
+   },
+   {
+    "description": "Set mode",
+    "http_method": "POST",
+    "name": "mode",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CAP",
+      "CONT",
+      "CURR_AC",
+      "CURR_DC",
+      "DIOD",
+      "RES",
+      "VOLT_AC",
+      "VOLT_DC"
+     ]
+    }
+   },
+   {
+    "description": "Set range",
+    "http_method": "POST",
+    "name": "range",
+    "value": {
+     "type": "enum",
+     "values": [
+      "10",
+      "1000",
+      "2",
+      "20",
+      "200",
+      "200E-3",
+      "200E3",
+      "20E3",
+      "2E3",
+      "2E6",
+      "750",
+      "AUTO",
+      "MAX",
+      "MIN"
+     ]
+    }
+   }
+  ]
+ },
+ "owon-xdm1241:DMM": {
+  "features": {
+   "DB:REFerence": [
+    50,
+    75,
+    93,
+    110,
+    124,
+    125,
+    135,
+    150,
+    250,
+    300,
+    500,
+    600,
+    800,
+    900,
+    1000,
+    1200,
+    8000
+   ],
+   "DBM:REFerence": [
+    50,
+    75,
+    93,
+    110,
+    124,
+    125,
+    135,
+    150,
+    250,
+    300,
+    500,
+    600,
+    800,
+    900,
+    1000,
+    1200,
+    8000
+   ],
+   "RANGe": {
+    "CAP": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "50nF",
+      "value": "50E-9"
+     },
+     {
+      "display": "500nF",
+      "value": "500E-9"
+     },
+     {
+      "display": "5µF",
+      "value": "5E-6"
+     },
+     {
+      "display": "50µF",
+      "value": "50E-6"
+     },
+     {
+      "display": "500µF",
+      "value": "500E-6"
+     },
+     {
+      "display": "5mF",
+      "value": "5E-3"
+     },
+     {
+      "display": "50mF",
+      "value": "50E-3"
+     }
+    ],
+    "CURR": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "500µA",
+      "value": "500E-6"
+     },
+     {
+      "display": "5mA",
+      "value": "5E-3"
+     },
+     {
+      "display": "50mA",
+      "value": "50E-3"
+     },
+     {
+      "display": "500mA",
+      "value": "500E-3"
+     },
+     {
+      "display": "5A",
+      "value": "5"
+     },
+     {
+      "display": "10A",
+      "value": "10"
+     }
+    ],
+    "CURR_AC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "500µA",
+      "value": "500E-6"
+     },
+     {
+      "display": "5mA",
+      "value": "5E-3"
+     },
+     {
+      "display": "50mA",
+      "value": "50E-3"
+     },
+     {
+      "display": "500mA",
+      "value": "500E-3"
+     },
+     {
+      "display": "5A",
+      "value": "5"
+     },
+     {
+      "display": "10A",
+      "value": "10"
+     }
+    ],
+    "FRESistance": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "500Ω",
+      "value": "500"
+     },
+     {
+      "display": "5KΩ",
+      "value": "5E3"
+     },
+     {
+      "display": "50KΩ",
+      "value": "50E3"
+     },
+     {
+      "display": "500KΩ",
+      "value": "500E3"
+     },
+     {
+      "display": "5MΩ",
+      "value": "5E6"
+     },
+     {
+      "display": "50MΩ",
+      "value": "50E6"
+     },
+     {
+      "display": "500MΩ",
+      "value": "500E6"
+     }
+    ],
+    "RES": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "500Ω",
+      "value": "500"
+     },
+     {
+      "display": "5KΩ",
+      "value": "5E3"
+     },
+     {
+      "display": "50KΩ",
+      "value": "50E3"
+     },
+     {
+      "display": "500KΩ",
+      "value": "500E3"
+     },
+     {
+      "display": "5MΩ",
+      "value": "5E6"
+     },
+     {
+      "display": "50MΩ",
+      "value": "50E6"
+     },
+     {
+      "display": "500MΩ",
+      "value": "500E6"
+     }
+    ],
+    "TEMP": {
+     "Scale": [
+      {
+       "display": "Celsius",
+       "symbol": "C",
+       "unit": "°C"
+      },
+      {
+       "display": "Fahrenheit",
+       "symbol": "F",
+       "unit": "°F"
+      },
+      {
+       "display": "Kelvin",
+       "symbol": "K",
+       "unit": "K"
+      }
+     ],
+     "Sensor": [
+      {
+       "display": "KITS90",
+       "value": "KITS90"
+      },
+      {
+       "display": "PT100",
+       "value": "PT100"
+      }
+     ]
+    },
+    "VOLT": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "50mV",
+      "value": "50E-3"
+     },
+     {
+      "display": "500mV",
+      "value": "500E-3"
+     },
+     {
+      "display": "5V",
+      "value": "5"
+     },
+     {
+      "display": "50V",
+      "value": "50"
+     },
+     {
+      "display": "500V",
+      "value": "500"
+     },
+     {
+      "display": "1000V",
+      "value": "1000"
+     }
+    ],
+    "VOLT_AC": [
+     {
+      "display": "AUTO",
+      "value": "AUTO"
+     },
+     {
+      "display": "MINimum",
+      "value": "MIN"
+     },
+     {
+      "display": "MAXimum",
+      "value": "MAX"
+     },
+     {
+      "display": "500mV",
+      "value": "500E-3"
+     },
+     {
+      "display": "5V",
+      "value": "5"
+     },
+     {
+      "display": "50V",
+      "value": "50"
+     },
+     {
+      "display": "500V",
+      "value": "500"
+     },
+     {
+      "display": "750V",
+      "value": "750"
+     }
+    ]
+   },
+   "channels": 1,
+   "compulsory_lock": false,
+   "delta": true,
+   "lock": true,
+   "modes": {
+    "CAP": {
+     "symbol": "C",
+     "techname": "CAP",
+     "ui_component": "GenericRange",
+     "ui_name": "Capacitance",
+     "unit": "F"
+    },
+    "CONT": {
+     "note": "buzzer",
+     "symbol": "R",
+     "techname": "CONT",
+     "ui_name": "Continuity",
+     "unit": "Ω"
+    },
+    "CURR": {
+     "note": "DC",
+     "symbol": "I",
+     "techname": "CURR",
+     "ui_component": "GenericRange",
+     "ui_name": "Current DC",
+     "unit": "A"
+    },
+    "CURR_AC": {
+     "note": "AC",
+     "symbol": "I",
+     "techname": "CURR AC",
+     "ui_component": "GenericRange",
+     "ui_name": "Current AC",
+     "unit": "A"
+    },
+    "DIOD": {
+     "symbol": "D",
+     "techname": "DIOD",
+     "ui_name": "Diode",
+     "unit": "V"
+    },
+    "FREQ": {
+     "symbol": "f",
+     "techname": "FREQ",
+     "ui_name": "Frequency",
+     "unit": "Hz"
+    },
+    "FRESistance": {
+     "note": "4W",
+     "symbol": "R",
+     "techname": "RES",
+     "ui_component": "GenericRange",
+     "ui_name": "Resistance",
+     "unit": "Ω"
+    },
+    "PER": {
+     "symbol": "T",
+     "techname": "PER",
+     "ui_name": "Period",
+     "unit": "s"
+    },
+    "RES": {
+     "symbol": "R",
+     "techname": "RES",
+     "ui_component": "GenericRange",
+     "ui_name": "Resistance",
+     "unit": "Ω"
+    },
+    "TEMP": {
+     "symbol": "T",
+     "techname": "TEMP",
+     "ui_component": "GenericTemp",
+     "ui_name": "Temperature",
+     "unit": "K"
+    },
+    "VOLT": {
+     "note": "DC",
+     "symbol": "U",
+     "techname": "VOLT",
+     "ui_component": "GenericRange",
+     "ui_name": "Voltage DC",
+     "unit": "V"
+    },
+    "VOLT_AC": {
+     "note": "AC",
+     "symbol": "U",
+     "techname": "VOLT AC",
+     "ui_component": "GenericRange",
+     "ui_name": "Voltage AC",
+     "unit": "V"
+    }
+   },
+   "rate": [
+    {
+     "display": "fast",
+     "value": "F"
+    },
+    {
+     "display": "normal",
+     "value": "M"
+    },
+    {
+     "display": "slow",
+     "value": "L"
+    }
+   ]
+  },
+  "methods": [
+   {
+    "description": "Query function",
+    "http_method": "GET",
+    "name": "function"
+   },
+   {
+    "description": "Query measurement",
+    "http_method": "GET",
+    "name": "measurement"
+   },
+   {
+    "description": "Query rate",
+    "http_method": "GET",
+    "name": "rate"
+   },
+   {
+    "description": "Set mode",
+    "http_method": "POST",
+    "name": "mode",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CAP",
+      "CONT",
+      "CURR",
+      "CURR_AC",
+      "DIOD",
+      "FREQ",
+      "FRESistance",
+      "PER",
+      "RES",
+      "TEMP",
+      "VOLT",
+      "VOLT_AC"
+     ]
+    }
+   },
+   {
+    "description": "Set range",
+    "http_method": "POST",
+    "name": "range",
+    "value": {
+     "type": "string"
+    }
+   },
+   {
+    "description": "Set rate",
+    "http_method": "POST",
+    "name": "rate",
+    "value": {
+     "type": "enum",
+     "values": [
+      "F",
+      "L",
+      "M",
+      "S"
+     ]
+    }
+   },
+   {
+    "description": "Set temp scale",
+    "http_method": "POST",
+    "name": "temp_scale",
+    "value": {
+     "type": "enum",
+     "values": [
+      "C",
+      "F",
+      "K"
+     ]
+    }
+   },
+   {
+    "description": "Set temp sensor",
+    "http_method": "POST",
+    "name": "temp_sensor",
+    "value": {
+     "type": "enum",
+     "values": [
+      "KITS90",
+      "PT100"
+     ]
+    }
+   }
+  ]
+ },
+ "owon-oel1515:ELL": {
+  "features": {
+   "absolute_limits": {
+    "current": {
+     "max": 15.0,
+     "unit": "A"
+    },
+    "power": {
+     "max": 150.0,
+     "unit": "W"
+    },
+    "voltage": {
+     "max": 150.0,
+     "unit": "V"
+    }
+   },
+   "channels": 1,
+   "compulsory_lock": true,
+   "dynamic_list": true,
+   "lock": true,
+   "modes": {
+    "CURR": {
+     "setpoint": {
+      "max": 15.0,
+      "min": 0.0,
+      "step": 0.001,
+      "symbol": "I",
+      "ui_step": 0.01,
+      "unit": "A"
+     },
+     "ui_name": "Constant Current"
+    },
+    "DYN": {
+     "ui_name": "Dynamic"
+    },
+    "POW": {
+     "setpoint": {
+      "max": 200,
+      "min": 0.5,
+      "step": 0.1,
+      "symbol": "P",
+      "ui_step": 1.0,
+      "unit": "W"
+     },
+     "ui_name": "Constant Power"
+    },
+    "RES": {
+     "setpoint": {
+      "max": 1000,
+      "min": 0.05,
+      "step": 0.01,
+      "symbol": "R",
+      "ui_step": 0.1,
+      "unit": "Ω"
+     },
+     "ui_name": "Constant Resistance"
+    },
+    "VOLT": {
+     "setpoint": {
+      "max": 150.0,
+      "min": 0.0,
+      "step": 0.01,
+      "symbol": "U",
+      "ui_step": 0.1,
+      "unit": "V"
+     },
+     "ui_name": "Constant Voltage"
+    }
+   },
+   "parallel": false,
+   "remote_sense": false,
+   "slew_presets": [
+    "SLOW",
+    "NORM",
+    "FAST"
+   ]
+  },
+  "methods": [
+   {
+    "description": "Query curr",
+    "http_method": "GET",
+    "name": "curr"
+   },
+   {
+    "description": "Query input",
+    "http_method": "GET",
+    "name": "input"
+   },
+   {
+    "description": "Query pow",
+    "http_method": "GET",
+    "name": "pow"
+   },
+   {
+    "description": "Query remote",
+    "http_method": "GET",
+    "name": "remote"
+   },
+   {
+    "description": "Query res",
+    "http_method": "GET",
+    "name": "res"
+   },
+   {
+    "description": "Query short",
+    "http_method": "GET",
+    "name": "short"
+   },
+   {
+    "description": "Query volt",
+    "http_method": "GET",
+    "name": "volt"
+   },
+   {
+    "description": "Set curr",
+    "http_method": "POST",
+    "name": "curr",
+    "value": {
+     "format": "%.3f",
+     "max": 40.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "A"
+    }
+   },
+   {
+    "description": "Set input",
+    "energizes": true,
+    "http_method": "POST",
+    "name": "input",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set mode",
+    "http_method": "POST",
+    "name": "mode",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CURR",
+      "DYN",
+      "POW",
+      "RES",
+      "VOLT"
+     ]
+    }
+   },
+   {
+    "description": "Set pow",
+    "http_method": "POST",
+    "name": "pow",
+    "value": {
+     "format": "%.3f",
+     "max": 500.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "W"
+    }
+   },
+   {
+    "description": "Set remote",
+    "http_method": "POST",
+    "name": "remote",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set remote compensation",
+    "http_method": "POST",
+    "name": "remote_compensation",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set res",
+    "http_method": "POST",
+    "name": "res",
+    "value": {
+     "format": "%.2f",
+     "max": 10000.0,
+     "min": 0.05,
+     "type": "number",
+     "unit": "ohm"
+    }
+   },
+   {
+    "description": "Set short",
+    "energizes": true,
+    "http_method": "POST",
+    "name": "short",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set volt",
+    "http_method": "POST",
+    "name": "volt",
+    "value": {
+     "format": "%.3f",
+     "max": 600.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "V"
+    }
+   }
+  ]
+ },
+ "owon-dge2070:AWG": {
+  "features": {
+   "channel_colors": {
+    "1": "#FFD700",
+    "2": "#4169E1"
+   },
+   "channels": 2,
+   "compulsory_lock": false,
+   "lock": false
+  },
+  "methods": [
+   {
+    "description": "Query amplitude",
+    "http_method": "GET",
+    "name": "amplitude"
+   },
+   {
+    "description": "Query frequency",
+    "http_method": "GET",
+    "name": "frequency"
+   },
+   {
+    "description": "Query offset",
+    "http_method": "GET",
+    "name": "offset"
+   },
+   {
+    "description": "Query output",
+    "http_method": "GET",
+    "name": "output"
+   },
+   {
+    "description": "Query shape",
+    "http_method": "GET",
+    "name": "shape"
+   },
+   {
+    "description": "Query symmetry",
+    "http_method": "GET",
+    "name": "symmetry"
+   },
+   {
+    "description": "Set amplitude",
+    "http_method": "POST",
+    "name": "amplitude",
+    "value": {
+     "format": "%g",
+     "max": 20.0,
+     "min": 0.001,
+     "type": "number",
+     "unit": "Vpp"
+    }
+   },
+   {
+    "description": "Set frequency",
+    "http_method": "POST",
+    "name": "frequency",
+    "value": {
+     "format": "%g",
+     "max": 70000000.0,
+     "min": 1e-06,
+     "type": "number",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set offset",
+    "http_method": "POST",
+    "name": "offset",
+    "value": {
+     "format": "%g",
+     "max": 10.0,
+     "min": -10.0,
+     "type": "number",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set output",
+    "energizes": true,
+    "http_method": "POST",
+    "name": "output",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set phase",
+    "http_method": "POST",
+    "name": "phase",
+    "value": {
+     "format": "%g",
+     "max": 360.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "deg"
+    }
+   },
+   {
+    "description": "Set shape",
+    "http_method": "POST",
+    "name": "shape",
+    "value": {
+     "type": "enum",
+     "values": [
+      "PRN",
+      "PUL",
+      "RAMP",
+      "SIN",
+      "SQU"
+     ]
+    }
+   },
+   {
+    "description": "Set symmetry",
+    "http_method": "POST",
+    "name": "symmetry",
+    "value": {
+     "format": "%g",
+     "max": 100.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "%"
+    }
+   }
+  ]
+ },
+ "rigol-dho804:OSC": {
+  "features": {
+   "bandwidth_hz": 70000000.0,
+   "channel_colors": {
+    "1": "#FFD700",
+    "2": "#00CED1",
+    "3": "#FF69B4",
+    "4": "#4169E1"
+   },
+   "channels": 4,
+   "compulsory_lock": false,
+   "divisions": {
+    "horizontal": 10,
+    "vertical": 8
+   },
+   "lock": false,
+   "measurements": [
+    "VPP",
+    "VAVG",
+    "VRMS",
+    "FREQ"
+   ],
+   "probe": [
+    "0.1",
+    "1",
+    "10",
+    "100",
+    "1000"
+   ],
+   "scale": {
+    "max": 10,
+    "min": 0.0005,
+    "note": "V/div at probe 1X; multiplied by the probe ratio"
+   },
+   "timebase": {
+    "max": 1000,
+    "min": 5e-09
+   }
+  },
+  "methods": [
+   {
+    "description": "Query acquire type",
+    "http_method": "GET",
+    "name": "acquire_type"
+   },
+   {
+    "description": "Query bwlimit",
+    "http_method": "GET",
+    "name": "bwlimit"
+   },
+   {
+    "description": "Query coupling",
+    "http_method": "GET",
+    "name": "coupling"
+   },
+   {
+    "description": "Query display",
+    "http_method": "GET",
+    "name": "display"
+   },
+   {
+    "description": "Query invert",
+    "http_method": "GET",
+    "name": "invert"
+   },
+   {
+    "description": "Query offset",
+    "http_method": "GET",
+    "name": "offset"
+   },
+   {
+    "description": "Query probe",
+    "http_method": "GET",
+    "name": "probe"
+   },
+   {
+    "description": "Query sample rate",
+    "http_method": "GET",
+    "name": "sample_rate"
+   },
+   {
+    "description": "Query scale",
+    "http_method": "GET",
+    "name": "scale"
+   },
+   {
+    "description": "Query timebase",
+    "http_method": "GET",
+    "name": "timebase"
+   },
+   {
+    "description": "Query timebase offset",
+    "http_method": "GET",
+    "name": "timebase_offset"
+   },
+   {
+    "description": "Query trigger level",
+    "http_method": "GET",
+    "name": "trigger_level"
+   },
+   {
+    "description": "Query trigger slope",
+    "http_method": "GET",
+    "name": "trigger_slope"
+   },
+   {
+    "description": "Query trigger source",
+    "http_method": "GET",
+    "name": "trigger_source"
+   },
+   {
+    "description": "Query trigger status",
+    "http_method": "GET",
+    "name": "trigger_status"
+   },
+   {
+    "description": "Query trigger sweep",
+    "http_method": "GET",
+    "name": "trigger_sweep"
+   },
+   {
+    "description": "Query waveform",
+    "http_method": "GET",
+    "name": "waveform"
+   },
+   {
+    "description": "Set acquire type",
+    "http_method": "POST",
+    "name": "acquire_type",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AVER",
+      "NORM",
+      "PEAK"
+     ]
+    }
+   },
+   {
+    "description": "Set bwlimit",
+    "http_method": "POST",
+    "name": "bwlimit",
+    "value": {
+     "type": "enum",
+     "values": [
+      "20M",
+      "OFF"
+     ]
+    }
+   },
+   {
+    "description": "Set coupling",
+    "http_method": "POST",
+    "name": "coupling",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AC",
+      "DC",
+      "GND"
+     ]
+    }
+   },
+   {
+    "description": "Set display",
+    "http_method": "POST",
+    "name": "display",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set invert",
+    "http_method": "POST",
+    "name": "invert",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set offset",
+    "http_method": "POST",
+    "name": "offset",
+    "value": {
+     "format": "%g",
+     "max": 10000.0,
+     "min": -10000.0,
+     "type": "number",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set probe",
+    "http_method": "POST",
+    "name": "probe",
+    "value": {
+     "type": "enum",
+     "values": [
+      "0.1",
+      "1",
+      "10",
+      "100",
+      "1000"
+     ]
+    }
+   },
+   {
+    "description": "Set run",
+    "http_method": "POST",
+    "name": "run",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AUTO",
+      "CLEAR",
+      "RUN",
+      "SINGLE",
+      "STOP"
+     ]
+    }
+   },
+   {
+    "description": "Set scale",
+    "http_method": "POST",
+    "name": "scale",
+    "value": {
+     "format": "%g",
+     "max": 10000.0,
+     "min": 0.0001,
+     "type": "number",
+     "unit": "V/div"
+    }
+   },
+   {
+    "description": "Set timebase",
+    "http_method": "POST",
+    "name": "timebase",
+    "value": {
+     "format": "%g",
+     "max": 1000.0,
+     "min": 1e-09,
+     "type": "number",
+     "unit": "s/div"
+    }
+   },
+   {
+    "description": "Set timebase offset",
+    "http_method": "POST",
+    "name": "timebase_offset",
+    "value": {
+     "format": "%g",
+     "max": 10000.0,
+     "min": -10000.0,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set trigger level",
+    "http_method": "POST",
+    "name": "trigger_level",
+    "value": {
+     "format": "%g",
+     "max": 10000.0,
+     "min": -10000.0,
+     "type": "number",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set trigger slope",
+    "http_method": "POST",
+    "name": "trigger_slope",
+    "value": {
+     "type": "enum",
+     "values": [
+      "NEG",
+      "POS",
+      "RFAL"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger source",
+    "http_method": "POST",
+    "name": "trigger_source",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AC",
+      "CHAN1",
+      "CHAN2",
+      "CHAN3",
+      "CHAN4"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger sweep",
+    "http_method": "POST",
+    "name": "trigger_sweep",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AUTO",
+      "NORM",
+      "SING"
+     ]
+    }
+   }
+  ]
+ }
+}

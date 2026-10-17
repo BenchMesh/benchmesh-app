@@ -1,0 +1,332 @@
+/*
+ * BenchMesh instrument kit and its skins. Canvas components read their colours from these
+ * tokens (getComputedStyle) at draw time, so a skin lives here only; `skin.tsx` sets
+ * `data-skin` on the root element and makes canvases repaint.
+ * - Reflective LCD (default, `:root`): dark segments on grey-green glass, one ink colour;
+ *   state is shown by what is lit, not by colour.
+ * - LED segment (`[data-skin="led"]`): dark rack, glowing colour-coded segments.
+ * - Cockpit glass (`[data-skin="glass"]`): calm dark panels, readouts as B612 Mono text.
+ */
+@import '@fontsource/b612/400.css';
+@import '@fontsource/b612/700.css';
+@import '@fontsource/b612-mono/400.css';
+@import '@fontsource/b612-mono/700.css';
+@import '@fontsource/chakra-petch/500.css';
+@import '@fontsource/chakra-petch/600.css';
+
+:root {
+  --kit-font-label: "B612", "Segoe UI", system-ui, sans-serif;
+  --kit-font-num: "B612 Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --kit-font-title: "Chakra Petch", "B612", system-ui, sans-serif;
+
+  --kit-ground: #d7dbd2;      /* bench surface behind the panels */
+  --kit-panel: #e9ece4;       /* instrument front panel */
+  --kit-panel-edge: #b7bfb1;
+  --kit-ink: #1d231c;         /* labels, lit segments */
+  --kit-ink-2: #4b5649;       /* secondary text */
+  --kit-ink-3: #7d8a79;       /* tertiary labels */
+  --kit-glass-top: #c5d1bc;   /* LCD glass gradient */
+  --kit-glass-bottom: #b7c4ad;
+  --kit-glass-edge: #93a089;
+  --kit-seg-on: #1f2a1d;      /* lit segment */
+  --kit-seg-off: rgba(20, 40, 18, .075); /* ghost segment */
+  --kit-glass-ink-2: #3a4736; /* secondary text on glass */
+  --kit-glass-ink-3: #5d6b58;
+  --kit-ctl: #dfe4d8;         /* control face */
+  --kit-ctl-hi: #f3f5ef;
+  --kit-accent: #2f6b43;      /* selection, applied */
+  --kit-warn: #9a6a12;        /* armed, pending */
+  --kit-alert: #a8322c;       /* errors, tripped protection */
+  --kit-ok: var(--kit-accent); /* connected, healthy */
+  --kit-r-panel: 10px;
+  --kit-r-ctl: 6px;
+
+  /* per-quantity readout colours: one ink on LCD */
+  --kit-volt: var(--kit-seg-on);
+  --kit-amp: var(--kit-seg-on);
+  --kit-watt: var(--kit-seg-on);
+  --kit-meas: var(--kit-seg-on);
+  /* multi-trace channel colours: distinguishable dark inks on the green glass */
+  --kit-ch1: #1f2a1d;
+  --kit-ch2: #1c3d8c;
+  --kit-ch3: #8c1c3a;
+  --kit-ch4: #6b4a00;
+  --kit-glow: 0;              /* 1: lit segments, traces and annunciators glow */
+  --kit-glass-ink: #2a3527;   /* readout units on glass */
+  --kit-glass-shadow: inset 0 2px 6px rgba(40, 55, 35, .25);
+  --kit-ann-off: rgba(30, 45, 28, .13);
+  --kit-ann-on: var(--kit-seg-on);
+  --kit-led-off: #9aa596;     /* unlit indicator lamp */
+  --kit-panel-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 4px 12px rgba(60, 70, 50, .15);
+  --kit-scrim: rgba(30, 40, 28, .25);
+  --kit-sheet-shadow: -8px 0 24px rgba(40, 50, 35, .2);
+  color-scheme: light;
+}
+
+/* LED segment: dark rack, glowing seven-segment digits colour-coded by quantity. */
+:root[data-skin="led"] {
+  --kit-ground: #0b0d10;
+  --kit-panel: #171b21;
+  --kit-panel-edge: #2b323c;
+  --kit-ink: #d9dee6;
+  --kit-ink-2: #98a2b1;
+  --kit-ink-3: #6b7584;
+  --kit-glass-top: #07090b;
+  --kit-glass-bottom: #07090b;
+  --kit-glass-edge: #000;
+  --kit-seg-on: #7cc7ff;
+  --kit-seg-off: rgba(255, 255, 255, .05);
+  --kit-glass-ink: #98a2b1;
+  --kit-glass-ink-2: #98a2b1;
+  --kit-glass-ink-3: #6b7584;
+  --kit-ctl: #1d222a;
+  --kit-ctl-hi: #262c36;
+  --kit-accent: #ffb238;
+  --kit-warn: #ffb238;
+  --kit-alert: #ff5d5d;
+  --kit-volt: #ffb238;
+  --kit-amp: #4ee39a;
+  --kit-watt: #ff6b6b;
+  --kit-meas: #7cc7ff;
+  --kit-ch1: #f5d33b;
+  --kit-ch2: #4fd8e8;
+  --kit-ch3: #e46cf0;
+  --kit-ch4: #5b8cff;
+  --kit-glow: 1;
+  --kit-glass-shadow: inset 0 2px 8px rgba(0, 0, 0, .6);
+  --kit-ann-off: rgba(255, 255, 255, .09);
+  --kit-ann-on: #4ee39a;
+  --kit-ok: #4ee39a;
+  --kit-led-off: #3a414c;
+  --kit-panel-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 6px 18px rgba(0, 0, 0, .45);
+  --kit-scrim: rgba(0, 0, 0, .5);
+  --kit-sheet-shadow: -8px 0 24px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+/* Cockpit glass: calm dark glass panels, numbers as B612 Mono text, no glow. */
+:root[data-skin="glass"] {
+  --kit-ground: #0e1217;
+  --kit-panel: #18202b;
+  --kit-panel-edge: #2c394a;
+  --kit-ink: #e4ebf3;
+  --kit-ink-2: #9dadc0;
+  --kit-ink-3: #6b7a8d;
+  --kit-glass-top: #080d13;
+  --kit-glass-bottom: #0d141d;
+  --kit-glass-edge: #1f2a38;
+  --kit-seg-on: #8fc9ff;
+  --kit-seg-off: rgba(255, 255, 255, .045);
+  --kit-glass-ink: #9dadc0;
+  --kit-glass-ink-2: #9dadc0;
+  --kit-glass-ink-3: #6b7a8d;
+  --kit-ctl: #1a2330;
+  --kit-ctl-hi: #233042;
+  --kit-accent: #8fc9ff;
+  --kit-warn: #f5c55b;
+  --kit-alert: #f58a7a;
+  --kit-volt: #f5c55b;
+  --kit-amp: #63e0c2;
+  --kit-watt: #f58a7a;
+  --kit-meas: #8fc9ff;
+  --kit-ch1: #f5d33b;
+  --kit-ch2: #4fd8e8;
+  --kit-ch3: #e46cf0;
+  --kit-ch4: #6f9bff;
+  --kit-glow: 0;
+  --kit-glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+  --kit-ann-off: rgba(255, 255, 255, .09);
+  --kit-ann-on: #63e0c2;
+  --kit-ok: #63e0c2;
+  --kit-led-off: #3a4656;
+  --kit-panel-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px rgba(0, 0, 0, .35);
+  --kit-scrim: rgba(0, 0, 0, .5);
+  --kit-sheet-shadow: -8px 0 24px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+/* Canvas components fill their box by default; fixed-size ones (.kit-dial, .kit-knob,
+   .kit-bar, .kit-wave, .kit-readout__spark) override it below with equal specificity. */
+.kit-canvas { display: block; width: 100%; height: 100%; }
+
+/* ---- display glass ---------------------------------------------------------------- */
+.kit-glass {
+  background: linear-gradient(180deg, var(--kit-glass-top), var(--kit-glass-bottom));
+  border: 1px solid var(--kit-glass-edge);
+  border-radius: 8px;
+  box-shadow: var(--kit-glass-shadow);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ---- readout ---------------------------------------------------------------------- */
+.kit-readout {
+  --rh: 56px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 2px 10px;
+  min-width: 0;
+}
+.kit-readout--big { --rh: clamp(44px, 9cqi, 76px); }
+.kit-readout--mid { --rh: clamp(32px, 6cqi, 50px); }
+.kit-readout--small { --rh: clamp(24px, 5cqi, 34px); }
+.kit-readout__tag {
+  font: 700 .68rem/1 var(--kit-font-num); letter-spacing: .12em; color: var(--kit-glass-ink-3);
+  align-self: start; padding-top: 4px;
+}
+.kit-readout__num { height: var(--rh); min-width: 0; }
+.kit-readout__unit {
+  font: 700 1rem/1 var(--kit-font-num); color: var(--kit-glass-ink); min-width: 2.4ch; padding-bottom: 3px; white-space: nowrap;
+}
+.kit-readout--small .kit-readout__unit { font-size: .8rem; }
+.kit-readout__spark { grid-column: 2 / 4; height: 20px; }
+
+/* Glass skin: the number as text. The box is a size container so the digits shrink to fit
+   it like the segment canvas does; --kit-numtext-w is the string's advance in em. */
+.kit-numtext {
+  container-type: size; height: 100%; min-width: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: flex-end;
+}
+.kit-numtext > span {
+  font: 400 min(86cqh, calc(100cqw / var(--kit-numtext-w, 6)))/1 var(--kit-font-num);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* the point gets its own narrow slot: the mono font's full-width cell would leave a gap */
+.kit-numtext__dp { display: inline-block; width: .28em; text-indent: -.16em; }
+
+/* ---- annunciators ----------------------------------------------------------------- */
+.kit-anns { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.kit-ann {
+  font: 700 .66rem/1 var(--kit-font-num); letter-spacing: .14em; color: var(--kit-ann-off);
+  user-select: none; transition: color .15s, text-shadow .15s;
+}
+.kit-ann[data-on="true"] { color: var(--kit-ann-on); text-shadow: 0 0 calc(8px * var(--kit-glow)) currentColor; }
+.kit-ann--alert[data-on="true"] { color: var(--kit-alert); }
+
+/* ---- labels ----------------------------------------------------------------------- */
+.kit-field { display: grid; gap: 5px; min-width: 0; }
+.kit-label {
+  font: 700 .64rem/1 var(--kit-font-num); letter-spacing: .14em; text-transform: uppercase; color: var(--kit-ink-3);
+}
+.kit-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+
+/* ---- digit editor ----------------------------------------------------------------- */
+.kit-digits {
+  display: inline-flex; align-items: baseline; padding: 6px 10px; border-radius: var(--kit-r-ctl);
+  background: var(--kit-ctl); border: 1px solid var(--kit-panel-edge); cursor: ns-resize;
+  font: 400 1.35rem/1 var(--kit-font-num); font-variant-numeric: tabular-nums; color: var(--kit-ink);
+  max-width: 100%; position: relative;
+}
+.kit-digits:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px; }
+.kit-digits[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.kit-digits__d { position: relative; padding: 2px 1px; border-radius: 3px; }
+.kit-digits__d--sel { background: var(--kit-ctl-hi); color: var(--kit-accent); box-shadow: inset 0 -2px 0 var(--kit-accent); }
+.kit-digits__d--sel::before, .kit-digits__d--sel::after {
+  position: absolute; left: 50%; transform: translateX(-50%); font-size: .45em; color: var(--kit-accent); opacity: .8;
+}
+.kit-digits__d--sel::before { content: "\25B2"; top: -.95em; }
+.kit-digits__d--sel::after { content: "\25BC"; bottom: -.95em; }
+/* separators get their own narrow slot: the mono font's full-width cell would leave a gap */
+.kit-digits__sep { display: inline-block; width: .32em; text-indent: -.14em; color: var(--kit-ink-2); }
+.kit-digits__sep--grp { width: .3em; }
+.kit-digits__sign { min-width: .6em; color: var(--kit-ink-2); }
+.kit-digits__unit { margin-left: 6px; font: 700 .78rem/1 var(--kit-font-num); color: var(--kit-ink-2); }
+.kit-digits__hint { margin-left: 8px; font: 400 .6rem/1 var(--kit-font-num); letter-spacing: .1em; color: var(--kit-warn); visibility: hidden; }
+.kit-digits--pending { border-color: var(--kit-warn); }
+.kit-digits--pending .kit-digits__hint { visibility: visible; }
+.kit-digits--busy { opacity: .7; }
+.kit-digits--error { border-color: var(--kit-alert); }
+.kit-digits--applied { animation: kit-applied .6s ease; }
+.kit-error { font: 400 .68rem/1.3 var(--kit-font-num); color: var(--kit-alert); }
+@keyframes kit-applied { 0% { box-shadow: 0 0 0 0 var(--kit-accent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+
+/* ---- arm-to-enable switch --------------------------------------------------------- */
+.kit-arm {
+  --led: var(--kit-led-off);
+  display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+  background: var(--kit-ctl); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  padding: 8px 13px 8px 10px; font: 700 .76rem/1 var(--kit-font-num); letter-spacing: .12em; text-transform: uppercase;
+  text-align: left;
+}
+.kit-arm:disabled { opacity: .5; cursor: not-allowed; }
+.kit-arm__led {
+  width: 13px; height: 13px; border-radius: 50%; background: var(--led); flex: none;
+  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .3);
+}
+.kit-arm:not([data-state="off"]) .kit-arm__led { box-shadow: 0 0 calc(10px * var(--kit-glow)) var(--led), inset 0 -2px 3px rgba(0, 0, 0, .3); }
+.kit-arm__sub { display: block; margin-top: 3px; font: 400 .6rem/1.2 var(--kit-font-num); letter-spacing: .05em; text-transform: none; color: var(--kit-ink-2); }
+.kit-arm[data-state="on"] { --led: var(--kit-ok); border-color: color-mix(in srgb, var(--kit-ok) 55%, var(--kit-panel-edge)); }
+.kit-arm[data-state="armed"] { --led: var(--kit-warn); border-color: var(--kit-warn); animation: kit-armed 1s steps(2, jump-none) infinite; }
+.kit-arm[data-state="busy"] { --led: var(--kit-warn); }
+@keyframes kit-armed { 50% { background: var(--kit-ctl-hi); } }
+
+/* ---- micro switch ----------------------------------------------------------------- */
+.kit-micro {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer; background: none; border: 0; padding: 3px 0;
+  color: var(--kit-ink-2); font: 700 .64rem/1 var(--kit-font-num); letter-spacing: .14em; text-transform: uppercase;
+}
+.kit-micro:disabled { opacity: .45; cursor: not-allowed; }
+.kit-micro__trk { width: 22px; height: 10px; border-radius: 5px; background: var(--kit-ctl-hi); border: 1px solid var(--kit-panel-edge); position: relative; flex: none; }
+.kit-micro__trk::after {
+  content: ""; position: absolute; top: 1px; left: 1px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--kit-ink-3); transition: left .15s, background .15s;
+}
+.kit-micro[aria-checked="true"] { color: var(--kit-ink); }
+.kit-micro[aria-checked="true"] .kit-micro__trk::after { left: 13px; background: var(--kit-accent); }
+
+/* ---- selectors -------------------------------------------------------------------- */
+.kit-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl); overflow: hidden; background: var(--kit-ctl); max-width: 100%; }
+.kit-seg button {
+  background: none; border: 0; color: var(--kit-ink-2); font: 700 .72rem/1 var(--kit-font-num); letter-spacing: .1em;
+  padding: 7px 10px; cursor: pointer;
+}
+.kit-seg button + button { border-left: 1px solid var(--kit-panel-edge); }
+.kit-seg button[aria-pressed="true"] { background: var(--kit-ctl-hi); color: var(--kit-accent); box-shadow: inset 0 -2px 0 var(--kit-accent); }
+.kit-seg button:disabled { opacity: .4; cursor: not-allowed; }
+.kit-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.kit-chips button {
+  background: var(--kit-ctl); color: var(--kit-ink-2); border: 1px solid var(--kit-panel-edge); border-radius: 999px;
+  padding: 4px 9px; font: 400 .7rem/1 var(--kit-font-num); cursor: pointer;
+}
+.kit-chips button[aria-pressed="true"] { color: var(--kit-accent); border-color: var(--kit-accent); }
+.kit-chips button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ---- canvases with fixed boxes ---------------------------------------------------- */
+.kit-bar { height: 28px; }
+.kit-dial { width: 190px; height: 190px; flex: none; cursor: pointer; }
+.kit-knob { width: 104px; height: 104px; flex: none; cursor: grab; touch-action: none; }
+.kit-wave { height: 64px; }
+/* oscilloscope screen: 10 × 8 divisions plus marker margins, scales with its panel */
+.kit-scope { aspect-ratio: 10 / 8.4; height: auto; max-height: 70vh; }
+
+/* stepper: ◀ value ▶ for 1-2-5 settings */
+.kit-stepper {
+  display: inline-flex; align-items: stretch; border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  background: var(--kit-ctl); overflow: hidden; max-width: 100%;
+}
+.kit-stepper:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px; }
+.kit-stepper button {
+  background: none; border: 0; color: var(--kit-ink-2); padding: 5px 8px; cursor: pointer; font: 400 .7rem/1 var(--kit-font-num);
+}
+.kit-stepper button:hover:not(:disabled) { background: var(--kit-ctl-hi); color: var(--kit-accent); }
+.kit-stepper button:disabled { opacity: .4; cursor: not-allowed; }
+.kit-stepper__val {
+  min-width: 8.5ch; padding: 6px 4px; text-align: center; font: 400 .95rem/1 var(--kit-font-num);
+  font-variant-numeric: tabular-nums; color: var(--kit-ink); white-space: nowrap;
+}
+.kit-stepper--busy .kit-stepper__val { opacity: .6; }
+.kit-stepper--error { border-color: var(--kit-alert); }
+.kit-stepper[aria-disabled="true"] { opacity: .5; }
+.kit-dial:focus-visible, .kit-knob:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px; border-radius: 50%; }
+
+.kit-stats { display: flex; gap: 12px; flex-wrap: wrap; font: 400 .7rem/1 var(--kit-font-num); color: var(--kit-glass-ink-2); font-variant-numeric: tabular-nums; }
+.kit-stats b { color: var(--kit-glass-ink-3); font-weight: 700; letter-spacing: .1em; margin-right: 4px; }
+
+button:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-arm, .kit-digits, .kit-ann, .kit-micro__trk::after { animation: none !important; transition: none !important; }
+}

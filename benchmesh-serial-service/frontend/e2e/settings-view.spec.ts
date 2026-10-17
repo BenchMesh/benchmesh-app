@@ -1,161 +1,57 @@
 /**
- * E2E tests for Settings view functionality
- *
- * Tests:
- * - Settings view opens when clicking settings icon
- * - Tab switching between Instruments and Miscellaneous
- * - History retention dropdown functionality
- * - Settings persistence across page reload
+ * Settings in the Instruments drawer: tab switching and the history retention setting
+ * (Miscellaneous tab).
  */
+import { Page } from '@playwright/test';
+import { test, expect } from './fixtures/base';
 
-import { test, expect } from '@playwright/test';
-import { mockAPIResponses } from './utils/api-mock';
+async function openMiscellaneous(page: Page) {
+  await page.getByRole('button', { name: 'Instruments', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: 'Instruments' });
+  await drawer.getByTestId('settings-tab-miscellaneous').click();
+  await expect(drawer.getByTestId('settings-tab-miscellaneous')).toHaveClass(/settings-view__tab--active/);
+  return drawer;
+}
 
-test.describe('Settings View', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock API responses
-    await mockAPIResponses(page);
+test.describe('Settings tabs', () => {
+  test('switches between instrument configuration and Miscellaneous', async ({ mockPage }) => {
+    await mockPage.getByRole('button', { name: 'Instruments', exact: true }).click();
+    const drawer = mockPage.getByRole('dialog', { name: 'Instruments' });
+    await expect(drawer.getByTestId('instrument-config-view')).toBeVisible();
 
-    // Navigate to workbench UI
-    await page.goto('http://localhost:57666/ui');
-    await page.waitForSelector('[data-testid="workbench"]', { timeout: 10000 });
+    await drawer.getByTestId('settings-tab-miscellaneous').click();
+    await expect(drawer.getByRole('heading', { name: 'History & Logs' })).toBeVisible();
+    await expect(drawer.getByTestId('instrument-config-view')).toBeHidden(); // kept mounted: unsaved edits survive
+
+    await drawer.getByTestId('settings-tab-instruments').click();
+    await expect(drawer.getByTestId('settings-tab-instruments')).toHaveClass(/settings-view__tab--active/);
+    await expect(drawer.getByTestId('instrument-config-view')).toBeVisible();
+  });
+});
+
+test.describe('History retention setting', () => {
+  test('offers 1, 3, 5 and 7 days and defaults to 3', async ({ mockPage }) => {
+    const drawer = await openMiscellaneous(mockPage);
+    const select = drawer.getByLabel(/History Retention/);
+    await expect(select.locator('option')).toHaveText(['1 day', '3 days', '5 days', '7 days']);
+    await expect(select).toHaveValue('3');
   });
 
-  test('opens Settings view when clicking settings icon in ActivityBar', async ({ page }) => {
-    // Click settings icon in ActivityBar
-    const settingsIcon = page.locator('[data-testid="activity-bar-view-settings"]');
-    await expect(settingsIcon).toBeVisible();
-    await settingsIcon.click();
+  test('changing it updates the description and persists to localStorage', async ({ mockPage }) => {
+    const drawer = await openMiscellaneous(mockPage);
+    const select = drawer.getByLabel(/History Retention/);
+    await select.selectOption('7');
+    await expect(drawer.getByText(/older than 7 days will be automatically removed/)).toBeVisible();
+    await expect.poll(() => mockPage.evaluate(() => localStorage.getItem('benchmesh:historyRetentionDays'))).toBe('7');
 
-    // Verify sidebar opens with Settings view
-    await expect(page.locator('[data-testid="sidebar"]')).toBeVisible();
-    await expect(page.locator('[data-testid="settings-view"]')).toBeVisible();
-
-    // Verify sidebar title
-    const sidebarTitle = page.locator('.sidebar__title');
-    await expect(sidebarTitle).toHaveText('Settings');
+    await select.selectOption('1');
+    await expect(drawer.getByText(/older than 1 day will be automatically removed/)).toBeVisible();
   });
 
-  test('defaults to Miscellaneous tab on open', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-    await expect(page.locator('[data-testid="settings-view"]')).toBeVisible();
-
-    // Verify Miscellaneous tab is active by default
-    const miscTab = page.locator('[data-testid="settings-tab-miscellaneous"]');
-    await expect(miscTab).toHaveClass(/settings-view__tab--active/);
-
-    // Verify Miscellaneous content is visible
-    await expect(page.locator('.settings-view__sections')).toBeVisible();
-    await expect(page.getByText('History & Logs')).toBeVisible();
-  });
-
-  test('switches between Instruments and Miscellaneous tabs', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Click Instruments tab
-    const instrumentsTab = page.locator('[data-testid="settings-tab-instruments"]');
-    await instrumentsTab.click();
-
-    // Verify Instruments tab is active
-    await expect(instrumentsTab).toHaveClass(/settings-view__tab--active/);
-
-    // Verify Instruments placeholder content
-    await expect(page.getByText('Instrument configuration - Coming soon')).toBeVisible();
-
-    // Switch back to Miscellaneous
-    const miscTab = page.locator('[data-testid="settings-tab-miscellaneous"]');
-    await miscTab.click();
-
-    // Verify Miscellaneous tab is active
-    await expect(miscTab).toHaveClass(/settings-view__tab--active/);
-    await expect(page.getByText('History & Logs')).toBeVisible();
-  });
-
-  test('displays history retention dropdown with all options', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Verify dropdown exists
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await expect(dropdown).toBeVisible();
-
-    // Verify all options are available
-    const options = await dropdown.locator('option').allTextContents();
-    expect(options).toEqual(['1 day', '3 days', '5 days', '7 days']);
-  });
-
-  test('defaults to 3 days retention', async ({ page }) => {
-    // Clear localStorage to ensure fresh state
-    await page.evaluate(() => localStorage.clear());
-
-    // Open settings
-    await page.goto('http://localhost:57666/ui');
-    await page.waitForSelector('[data-testid="workbench"]');
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Verify default value
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await expect(dropdown).toHaveValue('3');
-  });
-
-  test('changes history retention setting', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Change retention to 7 days
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await dropdown.selectOption('7');
-
-    // Verify selection changed
-    await expect(dropdown).toHaveValue('7');
-
-    // Verify description text updates
-    await expect(page.getByText(/7 days will be automatically removed/)).toBeVisible();
-  });
-
-  test('persists retention setting to localStorage', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Change retention to 5 days
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await dropdown.selectOption('5');
-
-    // Verify localStorage was updated
-    const storedValue = await page.evaluate(() =>
-      localStorage.getItem('benchmesh:historyRetentionDays')
-    );
-    expect(storedValue).toBe('5');
-  });
-
-  test('loads retention setting from localStorage on mount', async ({ page }) => {
-    // Set retention in localStorage before page load
-    await page.evaluate(() => {
-      localStorage.setItem('benchmesh:historyRetentionDays', '7');
-    });
-
-    // Reload page
-    await page.goto('http://localhost:57666/ui');
-    await page.waitForSelector('[data-testid="workbench"]');
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-
-    // Verify dropdown shows stored value
-    const dropdown = page.locator('[data-testid="history-retention-dropdown"]');
-    await expect(dropdown).toHaveValue('7');
-  });
-
-  test('closes Settings view when clicking close button', async ({ page }) => {
-    // Open settings
-    await page.locator('[data-testid="activity-bar-view-settings"]').click();
-    await expect(page.locator('[data-testid="settings-view"]')).toBeVisible();
-
-    // Click close button
-    const closeButton = page.locator('.sidebar__close');
-    await closeButton.click();
-
-    // Verify sidebar is closed
-    await expect(page.locator('[data-testid="sidebar"]')).not.toBeVisible();
+  test('is restored after a reload', async ({ mockPage }) => {
+    await mockPage.evaluate(() => localStorage.setItem('benchmesh:historyRetentionDays', '5'));
+    await mockPage.reload();
+    const drawer = await openMiscellaneous(mockPage);
+    await expect(drawer.getByLabel(/History Retention/)).toHaveValue('5');
   });
 });

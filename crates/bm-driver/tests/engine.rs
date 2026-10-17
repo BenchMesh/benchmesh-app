@@ -360,3 +360,100 @@ fn actor_publishes_metrics() {
     assert_eq!(m["quality_tier"], "excellent");
     h.stop();
 }
+
+/// Simulated scope state: channel displayed, channel V/div, selected waveform source.
+type DhoState = Arc<Mutex<(Vec<bool>, Vec<f64>, usize)>>;
+
+/// Minimal DHO800: per-channel display/scale, waveform source selection, IEEE block data.
+fn dho(state: DhoState) -> impl FnMut(&[u8]) -> Option<Vec<u8>> + Send + 'static {
+    move |w| {
+        let c = text(w).trim_end().to_string();
+        let mut s = state.lock().unwrap();
+        let line = |t: String| Some(format!("{t}\n").into_bytes());
+        let chan = |prefix: &str| c.strip_prefix(prefix).and_then(|r| r[..1].parse::<usize>().ok());
+        if c == "*IDN?" {
+            return line("RIGOL TECHNOLOGIES,DHO804,DHO8A272907001,00.01.03".into());
+        }
+        if let Some(src) = c.strip_prefix(":WAVeform:SOURce CHANnel") {
+            s.2 = src.parse().unwrap();
+            return None;
+        }
+        if c == ":WAVeform:PREamble?" {
+            return line("0,0,4,1,2.0e-08,-1.0e-05,0,1.0e-02,0,128".into());
+        }
+        if c == ":WAVeform:DATA?" {
+            let codes: Vec<u8> = (0..4).map(|i| 128 + (s.2 as u8) * 10 + i).collect();
+            let mut r = format!("#1{}", codes.len()).into_bytes();
+            r.extend(codes);
+            r.push(b'\n');
+            return Some(r);
+        }
+        if c.starts_with(":MEASure:ITEM? VPP") {
+            return line("9.9E37".into());
+        }
+        if c.starts_with(":MEASure:ITEM?") {
+            return line("1.5E-3".into());
+        }
+        if let Some(n) = chan(":CHANnel") {
+            let rest = &c[":CHANnel1".len()..];
+            return match rest {
+                ":DISPlay?" => line(if s.0[n - 1] { "1" } else { "0" }.into()),
+                ":SCALe?" => line(format!("{:e}", s.1[n - 1])),
+                ":OFFSet?" | ":PROBe?" => line("0.0".into()),
+                ":COUPling?" => line("DC".into()),
+                ":BWLimit?" => line("OFF".into()),
+                ":INVert?" => line("0".into()),
+                r if r.starts_with(":SCALe ") => {
+                    s.1[n - 1] = r[7..].parse().unwrap();
+                    None
+                }
+                _ => None,
+            };
+        }
+        match c.as_str() {
+            ":TIMebase:MAIN:SCALe?" => line("2.0e-06".into()),
+            ":TIMebase:MAIN:OFFSet?" | ":TRIGger:EDGE:LEVel?" => line("0.0".into()),
+            ":TRIGger:STATus?" | ":TRIGger:SWEep?" => line("AUTO".into()),
+            ":TRIGger:EDGE:SOURce?" => line("CHAN1".into()),
+            ":TRIGger:EDGE:SLOPe?" => line("POS".into()),
+            ":ACQuire:TYPE?" => line("NORM".into()),
+            ":ACQuire:SRATe?" => line("3.125E+8".into()),
+            _ => None,
+        }
+    }
+}
+
+fn osc_status(updates: &[bm_driver::engine::StatusUpdate], ch: u8) -> std::collections::BTreeMap<String, Value> {
+    updates.iter().rev().find(|u| u.class == "OSC" && u.ch == ch).map(|u| u.status.clone()).expect("OSC status")
+}
+
+#[test]
+fn oscilloscope_traces_are_per_channel_and_hidden_channels_have_none() {
+    let state = Arc::new(Mutex::new((vec![true, true, false, false], vec![0.05; 4], 0)));
+    let (t, _) = sim(dho(state));
+    let mut e = Engine::connect(def("rigol_dho800"), t).unwrap();
+    let u = e.poll_due().unwrap();
+    let (s1, s2, s3) = (osc_status(&u, 1), osc_status(&u, 2), osc_status(&u, 3));
+    // the waveform source is selected per channel (`before:` step), so traces differ
+    assert_eq!(s1["WAVE"], json!([138, 139, 140, 141]));
+    assert_eq!(s2["WAVE"], json!([148, 149, 150, 151]));
+    assert_eq!(s3["WAVE"], Value::Null, "hidden channel has no trace");
+    assert_eq!((s1["WAVE_Y0"].clone(), s1["WAVE_DY"].clone(), s1["WAVE_DX"].clone()), (json!(128.0), json!(0.01), json!(2e-8)));
+    assert_eq!(s1["VPP"], Value::Null, "9.9E37 means no valid measurement");
+    assert_eq!(s1["VRMS"], json!(0.0015));
+    assert_eq!(s1["DISPLAY"], json!("ON"));
+    assert_eq!(s3["DISPLAY"], json!("OFF"));
+    assert_eq!(s1["TIMEBASE"]["si"]["number"], "2");
+}
+
+#[test]
+fn a_set_refreshes_status_on_the_next_poll() {
+    let state = Arc::new(Mutex::new((vec![true, false, false, false], vec![0.05; 4], 0)));
+    let (t, _) = sim(dho(state));
+    let mut e = Engine::connect(def("rigol_dho800"), t).unwrap();
+    e.poll_due().unwrap();
+    e.set("OSC", "scale", 1, "0.2").unwrap();
+    // the slow settings group is not due for seconds; a set makes every group due now
+    let u = e.poll_due().unwrap();
+    assert_eq!(osc_status(&u, 1)["SCALE"]["sci"], "2.00000E-01");
+}

@@ -14,7 +14,7 @@ export default tseslint.config(
   // Non-type-checked recommended config (type-aware linting is too slow/noisy
   // for a gate on this codebase right now).
   ...tseslint.configs.recommended,
-  reactHooks.configs['recommended-latest'],
+  reactHooks.configs.flat['recommended-latest'],
   {
     rules: {
       // Existing codebase uses `any` liberally at API/WebSocket boundaries.

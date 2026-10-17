@@ -638,6 +638,19 @@
             "null_if"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Binary sample data (e.g. an oscilloscope's block payload) → list of integers.",
+          "properties": {
+            "samples": {
+              "$ref": "#/$defs/SampleFormat"
+            }
+          },
+          "required": [
+            "samples"
+          ],
+          "type": "object"
         }
       ]
     },
@@ -836,6 +849,18 @@
           "type": "string"
         }
       ]
+    },
+    "SampleFormat": {
+      "description": "Encoding of one sample in a binary `samples` reply.",
+      "enum": [
+        "u8",
+        "i8",
+        "u16le",
+        "i16le",
+        "u16be",
+        "i16be"
+      ],
+      "type": "string"
     },
     "SerialLink": {
       "additionalProperties": false,
@@ -1099,6 +1124,11 @@
         {
           "const": "bytes",
           "description": "Binary payload (e.g. a screenshot), served as a file (classes only).",
+          "type": "string"
+        },
+        {
+          "const": "list",
+          "description": "Array of numbers, e.g. waveform samples (classes only).",
           "type": "string"
         }
       ]

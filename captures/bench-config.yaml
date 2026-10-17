@@ -12,3 +12,4 @@ devices:
 - {id: owon-oel1515, name: OWON OEL, driver: owon_oel, model: OEL1515, transport: serial,
    port: /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AL036DJT-if00-port0, baud: 115200, serial: 8N1}
 - {id: owon-dge2070, name: OWON DGE, driver: owon_dge, model: DGE2070, transport: usbtmc, device: /dev/usbtmc2}
+- {id: rigol-dho804, name: Rigol DHO804, driver: rigol_dho800, model: DHO804, transport: usbtmc, device: /dev/usbtmc3}

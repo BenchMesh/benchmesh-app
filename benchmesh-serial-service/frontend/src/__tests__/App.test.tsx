@@ -29,12 +29,11 @@ class MockWebSocket {
 
 
 describe('App', () => {
-  it('renders instrument card from API', async () => {
-    // Classic layout shows instrument cards; skip the first-run disclaimer
+  it('shows each instrument class as a panel on the bench', async () => {
     localStorage.setItem('benchmesh:disclaimer-accepted', 'true')
-    localStorage.setItem('benchmesh-interface-mode', 'classic')
     render(<App />)
-    await waitFor(() => expect(screen.getByText('psu-1')).toBeInTheDocument())
-    expect(screen.getByText('ACME PSU-1000')).toBeInTheDocument()
+    const panel = await screen.findByRole('article', { name: 'Power Supply Unit: psu-1' })
+    expect(panel).toHaveTextContent('ACME PSU-1000')
+    expect(screen.getByRole('button', { name: 'Arrange' })).toBeInTheDocument()
   })
 })
