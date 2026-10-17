@@ -327,6 +327,29 @@
 
 button:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px; }
 
+/* ---- confirmation: a change was sent and the instrument has not reported it yet ----------
+   `data-confirm="waiting"`: the part that shows the new value pulses slowly (no spinner).
+   `data-confirm="unconfirmed"`: not reported within the timeout — a small red corner dot. */
+@keyframes kit-await { 0%, 100% { opacity: 1; } 50% { opacity: .28; } }
+.kit-arm[data-confirm="waiting"] { --led: var(--kit-warn); }
+.kit-arm[data-confirm="waiting"] .kit-arm__led { animation: kit-await 1.1s ease-in-out infinite; }
+.kit-micro[data-confirm="waiting"] .kit-micro__trk::after { background: var(--kit-warn); animation: kit-await 1.1s ease-in-out infinite; }
+.kit-seg button[data-confirm="waiting"], .kit-chips button[data-confirm="waiting"] { position: relative; color: var(--kit-ink); }
+.kit-seg button[data-confirm="waiting"]::before, .kit-chips button[data-confirm="waiting"]::before {
+  content: ""; position: absolute; left: 4px; right: 4px; bottom: 1px; height: 2px; border-radius: 1px;
+  background: var(--kit-warn); animation: kit-await 1.1s ease-in-out infinite;
+}
+.kit-stepper[data-confirm="waiting"] .kit-stepper__val,
+.kit-digits[data-confirm="waiting"] .kit-digits__d { animation: kit-await 1.1s ease-in-out infinite; }
+.kit-arm[data-confirm="unconfirmed"], .kit-micro[data-confirm="unconfirmed"], .kit-stepper[data-confirm="unconfirmed"],
+.kit-digits[data-confirm="unconfirmed"], .kit-seg button[data-confirm="unconfirmed"], .kit-chips button[data-confirm="unconfirmed"] { position: relative; }
+.kit-arm[data-confirm="unconfirmed"]::after, .kit-micro[data-confirm="unconfirmed"]::after, .kit-stepper[data-confirm="unconfirmed"]::after,
+.kit-digits[data-confirm="unconfirmed"]::after, .kit-seg button[data-confirm="unconfirmed"]::after, .kit-chips button[data-confirm="unconfirmed"]::after {
+  content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--kit-alert);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kit-arm, .kit-digits, .kit-ann, .kit-micro__trk::after { animation: none !important; transition: none !important; }
+  [data-confirm="waiting"], [data-confirm="waiting"] *, [data-confirm="waiting"]::before { animation: none !important; }
+  .kit-stepper[data-confirm="waiting"] .kit-stepper__val, .kit-digits[data-confirm="waiting"] .kit-digits__d { color: var(--kit-warn); }
 }

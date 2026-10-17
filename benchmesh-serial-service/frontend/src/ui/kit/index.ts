@@ -9,6 +9,8 @@
  * - Annunciators: state flags, always present, lit when active.
  * - RotaryDial / Selector: mutually exclusive functions, modes and ranges.
  * - Bargraph / Sparkline: fraction of range, recent history.
+ * - Confirmation (`confirm.ts`): after a change is sent, the control pulses (`data-confirm="waiting"`)
+ *   until the instrument reports the new value; after 6 s without it a red dot marks it "unconfirmed".
  */
 import './kit.css'
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { SegmentDisplay } from './SegmentDisplay'
 import { Sparkline } from './Sparkline'
 import type { Tone } from './useCanvas'
+import { NOT_CONFIRMED, useConfirmation } from './confirm'
 
 /**
  * Measured value: tag, seven-segment number, unit, optional trend underneath. `tone` names
@@ -41,14 +42,20 @@ export function MicroSwitch({ label, checked, onChange, disabled, title }: {
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirmation(checked)
   return (
     <button
       type="button" role="switch" aria-checked={checked} className="kit-micro" disabled={disabled || busy}
-      title={error ?? title}
+      data-confirm={confirm.state} aria-busy={confirm.state === 'waiting' || busy}
+      title={error ?? (confirm.state === 'unconfirmed' ? NOT_CONFIRMED : title)}
       onClick={async () => {
+        const next = !checked
         setBusy(true)
         setError(null)
-        try { await onChange(!checked) } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setBusy(false) }
+        try {
+          await onChange(next)
+          confirm.begin(next)
+        } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setBusy(false) }
       }}
     >
       <span className="kit-micro__trk" />
@@ -60,18 +67,33 @@ export function MicroSwitch({ label, checked, onChange, disabled, title }: {
 
 export interface Choice { value: string; label: React.ReactNode; title?: string; disabled?: boolean }
 
-/** Mutually exclusive choice: `seg` for modes, `chips` for ranges and options. */
+/**
+ * Mutually exclusive choice: `seg` for modes, `chips` for ranges and options. `value` is the
+ * instrument's reported choice; the chosen option is marked as waiting until it is reported.
+ * `onChange` may return a promise of `false` when the request failed (stops waiting).
+ */
 export function Selector({ options, value, onChange, label, variant = 'seg', disabled }: {
-  options: Choice[]; value: string | null; onChange: (v: string) => void; label: string; variant?: 'seg' | 'chips'; disabled?: boolean
+  options: Choice[]; value: string | null; onChange: (v: string) => void | Promise<boolean | void>
+  label: string; variant?: 'seg' | 'chips'; disabled?: boolean
 }) {
+  const confirm = useConfirmation(value)
+  const choose = (v: string) => {
+    confirm.begin(v)
+    const r = onChange(v)
+    if (r instanceof Promise) r.then((ok) => { if (ok === false) confirm.cancel() }, () => confirm.cancel())
+  }
   return (
     <div className={variant === 'seg' ? 'kit-seg' : 'kit-chips'} role="group" aria-label={label}>
-      {options.map((o) => (
-        <button key={o.value} type="button" aria-pressed={o.value === value} title={o.title}
-          disabled={disabled || o.disabled} onClick={() => o.value !== value && onChange(o.value)}>
-          {o.label}
-        </button>
-      ))}
+      {options.map((o) => {
+        const target = confirm.target === o.value
+        return (
+          <button key={o.value} type="button" aria-pressed={o.value === value} title={target && confirm.state === 'unconfirmed' ? NOT_CONFIRMED : o.title}
+            data-confirm={target ? confirm.state : undefined} aria-busy={target && confirm.state === 'waiting'}
+            disabled={disabled || o.disabled} onClick={() => o.value !== value && choose(o.value)}>
+            {o.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

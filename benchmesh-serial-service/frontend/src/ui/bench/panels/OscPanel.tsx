@@ -33,6 +33,7 @@ function OscChannel({ id, ch, status, profile, online }: {
   const offset = siNumber(status.OFFSET) ?? 0
   const probe = siNumber(status.PROBE) ?? 1
   const set = (op: string, v: string | number) => api.set(op, v)
+  const sendTo = (op: string, v: number) => api.set(op, v).then(() => v)
   return (
     <section className={`bench-osc__ch${on ? '' : ' bench-osc__ch--off'}`} aria-label={`Channel ${ch}`} style={{ '--ch': chVar(ch) } as React.CSSProperties}>
       <div className="bench-osc__ch-head">
@@ -42,12 +43,12 @@ function OscChannel({ id, ch, status, profile, online }: {
       {on && (
         <>
           <div className="kit-row">
-            <Stepper label={`CH${ch} scale`} disabled={!online || scale == null} text={`${siText(scale, 'V')}/div`}
-              onStep={(d) => set('scale', step125(scale!, d, profile.scale.min * probe, profile.scale.max * probe))} />
+            <Stepper label={`CH${ch} scale`} disabled={!online || scale == null} text={`${siText(scale, 'V')}/div`} value={scale} format={(v) => `${siText(v, 'V')}/div`}
+              onStep={(d) => sendTo('scale', step125(scale!, d, profile.scale.min * probe, profile.scale.max * probe))} />
             {profile.offset && (
-              <Stepper label={`CH${ch} position`} disabled={!online || scale == null} text={siText(offset, 'V')}
+              <Stepper label={`CH${ch} position`} disabled={!online || scale == null} text={siText(offset, 'V')} value={offset} format={(v) => siText(v, 'V')}
                 title="Vertical offset, 0.2 div per step"
-                onStep={(d) => set('offset', Number((offset + d * 0.2 * scale!).toPrecision(6)))} />
+                onStep={(d) => sendTo('offset', Number((offset + d * 0.2 * scale!).toPrecision(6)))} />
             )}
           </div>
           {profile.couplings.length > 0 && (
@@ -80,6 +81,7 @@ export function OscPanel({ id, channels, registry, profile, online }: {
 }) {
   const api: ChannelApi = useChannelApi('OSC', id, channels[0] ?? '1')
   const [error, run] = useAction()
+  const sendTo = (op: string, v: number) => api.set(op, v).then(() => v)
   const st = Object.fromEntries(channels.map((ch) => [ch, channelStatus(registry, id, 'OSC', ch)]))
   const g = st[channels[0]] ?? {}
   const traces = channels.map((ch) => traceOf(ch, st[ch])).filter((t): t is ScopeTrace => t != null)
@@ -155,11 +157,11 @@ export function OscPanel({ id, channels, registry, profile, online }: {
           )}
         </div>
         <div className="kit-row">
-          <Stepper label="Time/div" disabled={!online || timebase == null} text={`${siText(timebase, 's')}/div`}
-            onStep={(d) => api.set('timebase', step125(timebase!, d, profile.timebase.min, profile.timebase.max))} />
+          <Stepper label="Time/div" disabled={!online || timebase == null} text={`${siText(timebase, 's')}/div`} value={timebase} format={(v) => `${siText(v, 's')}/div`}
+            onStep={(d) => sendTo('timebase', step125(timebase!, d, profile.timebase.min, profile.timebase.max))} />
           {profile.timebaseOffset && (
-            <Stepper label="H position" disabled={!online || timebase == null} text={siText(tOffset, 's')} title="Horizontal position, 0.5 div per step"
-              onStep={(d) => api.set('timebase_offset', Number((tOffset - d * 0.5 * timebase!).toPrecision(6)))} />
+            <Stepper label="H position" disabled={!online || timebase == null} text={siText(tOffset, 's')} value={tOffset} format={(v) => siText(v, 's')} title="Horizontal position, 0.5 div per step"
+              onStep={(d) => sendTo('timebase_offset', Number((tOffset - d * 0.5 * timebase!).toPrecision(6)))} />
           )}
         </div>
         <div className="kit-field">
@@ -181,7 +183,7 @@ export function OscPanel({ id, channels, registry, profile, online }: {
           {profile.triggerLevel && (
             <Stepper label="Trigger level" disabled={!online || level == null} text={siText(level, 'V')}
               title="0.1 div of the source channel per step"
-              onStep={(d) => api.set('trigger_level', Number(((level ?? 0) + d * 0.1 * (srcScale ?? 0.1)).toPrecision(6)))} />
+              value={level} format={(v) => siText(v, 'V')} onStep={(d) => sendTo('trigger_level', Number(((level ?? 0) + d * 0.1 * (srcScale ?? 0.1)).toPrecision(6)))} />
           )}
         </div>
         {error && <span className="kit-error" role="alert">{error}</span>}

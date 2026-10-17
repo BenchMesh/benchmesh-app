@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { digitModel, DigitSpec } from './digitModel'
 import { useFocusedWheel } from './useFocusedWheel'
+import { NOT_CONFIRMED, nearly, useConfirmation } from './confirm'
 
 export interface DigitEditorHandle {
   /** Propose a value (e.g. from a knob): shown as pending until applied. */
@@ -36,7 +37,9 @@ export const DigitEditor = forwardRef<DigitEditorHandle, Props>(function DigitEd
   const [error, setError] = useState<string | null>(null)
   const el = useRef<HTMLDivElement>(null)
 
-  const base = value ?? Math.max(spec.min, 0)
+  const confirm = useConfirmation<number | null>(value, nearly)
+  // after Enter, show the sent value until the instrument reports it
+  const base = (confirm.state === 'waiting' ? confirm.target : null) ?? value ?? Math.max(spec.min, 0)
   const shown = draft ?? base
   const pending = draft != null && draft !== value
 
@@ -55,6 +58,7 @@ export const DigitEditor = forwardRef<DigitEditorHandle, Props>(function DigitEd
     setStatus('busy')
     try {
       await onCommit(draft)
+      confirm.begin(draft)
       setDraft(null)
       setStatus('applied')
     } catch (e) {
@@ -115,6 +119,9 @@ export const DigitEditor = forwardRef<DigitEditorHandle, Props>(function DigitEd
       <div
         ref={el}
         className={cls.join(' ')}
+        data-confirm={draft == null ? confirm.state : 'idle'}
+        aria-busy={confirm.state === 'waiting' || status === 'busy'}
+        title={confirm.state === 'unconfirmed' && draft == null ? `${NOT_CONFIRMED} (sent ${confirm.target}, reads ${value ?? '—'})` : undefined}
         tabIndex={disabled ? -1 : 0}
         role="spinbutton"
         aria-label={label}

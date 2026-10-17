@@ -88,10 +88,11 @@ export function useSetpoint(api: ChannelApi, op: string | null, parse: (v: unkno
     api.get(op).then((v) => { if (!cancelled) setEntry({ op, value: parseRef.current(v) }) }).catch(() => {})
     return () => { cancelled = true }
   }, [api, op])
+  // after a set, read the setpoint back: the editor waits until the instrument reports it
   const commit = useCallback(async (v: number) => {
     if (!op) return
     await api.set(op, v)
-    setEntry({ op, value: v })
+    api.get(op).then((r) => setEntry({ op, value: parseRef.current(r) })).catch(() => {})
   }, [api, op])
   return [entry.op === op ? entry.value : null, commit] as const
 }
@@ -102,8 +103,9 @@ export function useSetpoint(api: ChannelApi, op: string | null, parse: (v: unkno
  */
 export function useAction() {
   const [error, setError] = useState<string | null>(null)
-  const run = useCallback((p: Promise<unknown>, onOk?: () => void) => {
-    p.then(() => { setError(null); onOk?.() }).catch((e) => setError(e instanceof Error ? e.message : String(e)))
-  }, [])
+  /** Resolves to whether the request succeeded (controls stop waiting for confirmation on false). */
+  const run = useCallback((p: Promise<unknown>, onOk?: () => void): Promise<boolean> =>
+    p.then(() => { setError(null); onOk?.(); return true })
+      .catch((e) => { setError(e instanceof Error ? e.message : String(e)); return false }), [])
   return [error, run] as const
 }

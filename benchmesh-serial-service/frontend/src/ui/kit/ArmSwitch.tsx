@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { NOT_CONFIRMED, useConfirmation } from './confirm'
 
 const ARM_MS = 3000
 
@@ -17,6 +18,7 @@ export function ArmSwitch({ label, on, onChange, disabled }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>()
+  const confirm = useConfirmation(on)
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -25,6 +27,7 @@ export function ArmSwitch({ label, on, onChange, disabled }: {
     setError(null)
     try {
       await onChange(next)
+      confirm.begin(next)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -46,12 +49,14 @@ export function ArmSwitch({ label, on, onChange, disabled }: {
   }
 
   const state = busy ? 'busy' : on ? 'on' : armed ? 'armed' : 'off' // armed only matters while off
-  const sub = error ?? {
+  const waiting = confirm.state === 'waiting'
+  const sub = error ?? (waiting ? `switching ${confirm.target ? 'on' : 'off'}…` : confirm.state === 'unconfirmed' ? 'not confirmed' : {
     busy: 'sending…', on: 'press once to switch off', armed: 'press again to confirm', off: 'press twice to switch on',
-  }[state]
+  }[state])
 
   return (
-    <button type="button" className="kit-arm" data-state={state} aria-pressed={on} disabled={disabled} onClick={click}>
+    <button type="button" className="kit-arm" data-state={state} data-confirm={confirm.state} aria-pressed={on} aria-busy={waiting || busy}
+      title={confirm.state === 'unconfirmed' ? NOT_CONFIRMED : undefined} disabled={disabled} onClick={click}>
       <span className="kit-arm__led" />
       <span>
         {label}

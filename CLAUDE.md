@@ -153,6 +153,11 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings, request log |
 
+Every control that changes the instrument waits for **confirmation**: after the request is sent it
+pulses discreetly until the instrument's reported value (registry status, or a read-back for
+setpoints) equals the requested one, and shows a small red dot if that does not happen within 6 s
+(`kit/confirm.ts`). Pass the reported value, never a locally assumed one.
+
 Adding a class panel: write `bench/panels/<Cls>Panel.tsx` from kit components, a `<cls>Profile()`
 in `profiles.ts` (with tests against `bench/__tests__/bench-fixtures.json`, captured from the
 simulated bench), and dispatch it in `InstrumentPanel.tsx`.

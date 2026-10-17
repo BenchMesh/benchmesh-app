@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useCanvas, token } from './useCanvas'
+import { NOT_CONFIRMED, useConfirmation } from './confirm'
 import { useFocusedWheel } from './useFocusedWheel'
 
 export interface DialOption { value: string; label: string; title?: string }
@@ -28,10 +29,19 @@ export function nearestOption(x: number, y: number, cx: number, cy: number, n: n
  * at the active option. Click a label, scroll while focused, or use arrow keys.
  */
 export function RotaryDial({ options, value, onChange, label, disabled }: {
-  options: DialOption[]; value: string; onChange: (v: string) => void; label: string; disabled?: boolean
+  options: DialOption[]; value: string; onChange: (v: string) => void | Promise<boolean | void>; label: string; disabled?: boolean
 }) {
   const n = options.length
   const idx = Math.max(0, options.findIndex((o) => o.value === value))
+  // the requested function is marked (blinking) until the instrument reports it
+  const confirm = useConfirmation(value)
+  const targetIdx = confirm.target != null ? options.findIndex((o) => o.value === confirm.target) : -1
+  const [blink, setBlink] = useState(true)
+  useEffect(() => {
+    if (confirm.state !== 'waiting') { setBlink(true); return }
+    const t = setInterval(() => setBlink((b) => !b), 550)
+    return () => clearInterval(t)
+  }, [confirm.state])
   const ref = useCanvas((ctx, w, h, el) => {
     const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2
     const ink = token(el, '--kit-ink'), ink2 = token(el, '--kit-ink-2'), ink3 = token(el, '--kit-ink-3')
@@ -43,6 +53,12 @@ export function RotaryDial({ options, value, onChange, label, disabled }: {
       const a = angleOf(i, n)
       ctx.fillStyle = i === idx ? accent : ink2
       ctx.fillText(o.label, cx + Math.cos(a) * (R - 15), cy + Math.sin(a) * (R - 15))
+      if (i === targetIdx && blink) {
+        ctx.fillStyle = confirm.state === 'unconfirmed' ? token(el, '--kit-alert') : accent
+        ctx.beginPath()
+        ctx.arc(cx + Math.cos(a) * (R - 28), cy + Math.sin(a) * (R - 28), 2.6, 0, 7)
+        ctx.fill()
+      }
       ctx.strokeStyle = ink3
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -76,14 +92,19 @@ export function RotaryDial({ options, value, onChange, label, disabled }: {
     ctx.closePath()
     ctx.fill()
     ctx.restore()
-  }, [options.map((o) => o.label).join('|'), idx, disabled])
+  }, [options.map((o) => o.label).join('|'), idx, disabled, targetIdx, blink, confirm.state])
 
   const pick = (i: number) => {
     if (disabled || !n) return
     const o = options[(i + n) % n]
-    if (o.value !== value) onChange(o.value)
+    if (o.value === (confirm.target ?? value)) return
+    confirm.begin(o.value)
+    const r = onChange(o.value)
+    if (r instanceof Promise) r.then((ok) => { if (ok === false) confirm.cancel() }, () => confirm.cancel())
   }
-  useFocusedWheel(ref, (dir) => pick(idx - dir))
+  // keep turning from the requested position, not the still-reported one
+  const at = targetIdx >= 0 ? targetIdx : idx
+  useFocusedWheel(ref, (dir) => pick(at - dir))
 
   return (
     <canvas
@@ -93,6 +114,9 @@ export function RotaryDial({ options, value, onChange, label, disabled }: {
       role="slider"
       aria-label={label}
       aria-valuetext={options[idx]?.title ?? options[idx]?.label}
+      aria-busy={confirm.state === 'waiting'}
+      data-confirm={confirm.state}
+      title={confirm.state === 'unconfirmed' ? NOT_CONFIRMED : undefined}
       aria-disabled={disabled || undefined}
       onClick={(e) => {
         const r = e.currentTarget.getBoundingClientRect()
@@ -101,7 +125,7 @@ export function RotaryDial({ options, value, onChange, label, disabled }: {
       }}
       onKeyDown={(e) => {
         const d = ['ArrowRight', 'ArrowDown'].includes(e.key) ? 1 : ['ArrowLeft', 'ArrowUp'].includes(e.key) ? -1 : 0
-        if (d) { e.preventDefault(); pick(idx + d) }
+        if (d) { e.preventDefault(); pick(at + d) }
       }}
     />
   )
