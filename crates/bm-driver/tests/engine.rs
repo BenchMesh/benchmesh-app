@@ -430,9 +430,14 @@ fn osc_status(updates: &[bm_driver::engine::StatusUpdate], ch: u8) -> std::colle
 #[test]
 fn oscilloscope_traces_are_per_channel_and_hidden_channels_have_none() {
     let state = Arc::new(Mutex::new((vec![true, true, false, false], vec![0.05; 4], 0)));
-    let (t, _) = sim(dho(state));
+    let (t, log) = sim(dho(state));
     let mut e = Engine::connect(def("rigol_dho800"), t).unwrap();
     let u = e.poll_due().unwrap();
+    // A refused command sends nothing, not even its `before` steps: selecting a hidden
+    // channel as the waveform source makes the DHO804 log "-200 Command execute failed".
+    let texts: Vec<String> = log.lock().unwrap().texts().iter().map(|w| w.trim_end().to_string()).collect();
+    assert!(texts.iter().any(|w| w == ":WAVeform:SOURce CHANnel2"));
+    assert!(!texts.iter().any(|w| w == ":WAVeform:SOURce CHANnel3" || w == ":WAVeform:SOURce CHANnel4"), "{texts:?}");
     let (s1, s2, s3) = (osc_status(&u, 1), osc_status(&u, 2), osc_status(&u, 3));
     // the waveform source is selected per channel (`before:` step), so traces differ
     assert_eq!(s1["WAVE"], json!([138, 139, 140, 141]));

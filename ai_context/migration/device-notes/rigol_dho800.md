@@ -33,6 +33,13 @@ Model differences are only channel count and feature values (`models[].channels/
   (= 50 mV · 8 div / 234 codes), xinc 20 ns at 2 µs/div (1000 points over 10 div), xorig −10 µs.
 - Hidden channels: the data query is skipped (`requires: disp_q == 'ON'`) → `WAVE: null`.
 
+## Error queue
+Commands the scope rejects show **"Remote cmd execute error"** on its screen and queue
+`-200,"Command execute failed"` (`:SYSTem:ERRor:NEXT?`). Selecting a hidden channel as
+`:WAVeform:SOURce` is rejected: the engine used to run `before` steps ahead of the `requires`
+check, so every poll selected CH3/CH4 (10 errors in 3 polls; the message flashed constantly).
+Fixed in the engine (2026-10-17): 0 errors over polling, verify and all setters.
+
 ## Measurements
 `:MEASure:ITEM? <item>,CHANnel<n>` (VPP, VAVG, VRMS, FREQuency). **9.9E37** means "no valid
 measurement" (e.g. FREQ on a flat line) → status null.

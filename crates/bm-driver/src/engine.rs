@@ -290,13 +290,16 @@ impl Engine {
 
     fn run(&mut self, name: &str, ch: u8, args: &BTreeMap<String, String>) -> Result<Output, Error> {
         let cmd = self.command(name)?;
-        for s in &cmd.before {
-            self.run_step(s, ch, None)?;
-        }
+        // Check the precondition first: a refused command sends nothing, not even its
+        // `before` steps (a DHO804 logs "Command execute failed" when a hidden channel is
+        // selected as waveform source).
         if let Some(req) = &cmd.requires {
             if self.eval_with_queries(&req.expr, ch)? != Value::Bool(true) {
                 return Err(Error::Refused(req.message.clone()));
             }
+        }
+        for s in &cmd.before {
+            self.run_step(s, ch, None)?;
         }
         let mut computed = BTreeMap::new();
         for spec in cmd.params.values() {

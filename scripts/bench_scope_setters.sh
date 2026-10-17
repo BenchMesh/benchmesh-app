@@ -29,7 +29,7 @@ restore_value() {
   python3 -c 'import json,sys; v=json.loads(sys.argv[1])["value"]; v=v["val"] if isinstance(v,dict) else v; print(int(v) if isinstance(v,float) and v.is_integer() else v)' "$1"
 }
 
-check display ON 2
+check display ON 3
 check scale 0.1
 check offset 0.02
 check coupling AC

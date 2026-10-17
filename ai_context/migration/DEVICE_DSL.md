@@ -85,7 +85,7 @@ Updated by command `effects`. Referenced as `{state.x}` in templates and `state.
 | `on_empty` | `error` (default) or `"null"` (empty reply means "no value", e.g. OEL in local mode) |
 | `cache_ms`, `invalidates` | result caching and invalidation |
 | `effects` | `{state_var: template}` after success; placeholders get the caller's API values |
-| `before` | steps that must run first |
+| `before` | steps that must run first (only after `requires` passed: a refused command sends nothing) |
 | `requires` | `{expr: CEL, message}` refuse (4xx with message) unless true. Preferred over hidden side effects (OEL: setpoint only in the matching mode) |
 | `safety` | `query` (read-only, the only kind allowed in polls) · `configure` · `energize` (can switch outputs/inputs on; future PDF-generated definitions never auto-run these) |
 | `timeout_ms`, `max_bytes` | per-command overrides (block replies) |
