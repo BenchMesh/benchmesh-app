@@ -35,7 +35,7 @@ one generic Rust driver — no per-device code.
 |---|---|
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
-| `bm-transport` | serial (`serialport`), Linux USBTMC, port discovery |
+| `bm-transport` | serial (`serialport`), Linux USBTMC, port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
 | `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
@@ -50,6 +50,14 @@ cargo run -p bm-server -- --config captures/bench-config.yaml --simulate capture
 ./target/debug/bm-probe --config captures/bench-config.yaml verify    # bench check (read-only)
 cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
 ```
+
+**Instrument identity:** a config entry may carry `match` (USB vid/pid + serial number or chip
+revision, port position as a tie-breaker, and the serial number from the identify reply) instead
+of a fixed `port`/`device`; the instrument is then found on whatever port it is plugged into, on
+every reconnect, on Linux/Windows/macOS without udev rules or admin rights. `POST /devices/detect`
+identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
+them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
+lists what the OS reports. `system/udev_rules.txt` is a development aid, not part of the product.
 
 Bench/hardware notes and wire captures: `captures/`, `scripts/wire_capture/`,
 `scripts/bench_setters.sh`, `ai_context/migration/device-notes/`.
@@ -151,7 +159,7 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel`, `AwgChannel`, `OscPanel` — one screen for all channels, `GenericPanel`) |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden, persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
-| `drawers/` | instrument configuration + settings, request log |
+| `drawers/` | instrument configuration + settings (incl. **Detect**: `DetectView.tsx`, `detect.ts`), request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
 
 Panel **window controls** (header, top right): fold to the header line (saved with the layout;

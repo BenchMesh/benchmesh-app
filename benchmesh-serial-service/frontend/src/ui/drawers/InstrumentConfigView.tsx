@@ -12,6 +12,8 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Accordion, AccordionItem } from './Accordion';
+import { DetectView } from './DetectView';
+import { identitySummary, type DeviceMatch } from './detect';
 
 interface Device {
   id: string;
@@ -27,6 +29,9 @@ interface Device {
   // TCP/IP transport fields (future)
   host?: string;
   model: string;
+  // Identity: find the instrument on any USB port (ai_context/migration/IDENTITY.md);
+  // with it, `port` / `device` is only the last path seen.
+  match?: DeviceMatch;
   // Internal UUID for stable accordion tracking (not sent to backend)
   _uuid?: string;
 }
@@ -306,26 +311,66 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
   }
 
   function sanitizeDeviceForSave(device: Device): any {
-    // Ensure all required fields are present and remove internal _uuid
+    // Keep every field of the entry (also ones this form does not know, e.g. `match`),
+    // ensure the required ones and drop the UI-only _uuid
     const sanitized: any = {
+      ...device,
       id: device.id || '',
       name: device.name || '',
       driver: device.driver || '',
       model: device.model || '',
       transport: device.transport || 'serial',
     };
-    // Note: _uuid is intentionally omitted - it's for internal UI use only
+    delete sanitized._uuid;
+    if (!device.match) delete sanitized.match;
 
-    // Add transport-specific required fields
+    // Transport-specific fields; with `match` the path is only a hint and may be absent
     if (sanitized.transport === 'serial') {
-      sanitized.port = device.port || '';
-      sanitized.baud = device.baud || 115200;
-      sanitized.serial = device.serial || '8N1';
+      delete sanitized.device;
+      if (device.match) {
+        if (!device.port) delete sanitized.port;
+      } else {
+        sanitized.port = device.port || '';
+        sanitized.baud = device.baud || 115200;
+        sanitized.serial = device.serial || '8N1';
+      }
     } else if (sanitized.transport === 'usbtmc') {
-      sanitized.device = device.device || '';
+      delete sanitized.port;
+      delete sanitized.baud;
+      delete sanitized.serial;
+      if (device.match) {
+        if (!device.device) delete sanitized.device;
+      } else {
+        sanitized.device = device.device || '';
+      }
     }
 
     return sanitized;
+  }
+
+  /** Drop the identity: the entry opens a fixed port / device path again. */
+  function switchToFixedPath(index: number) {
+    const d = devices[index];
+    const usbtmc = (d.transport || 'serial') === 'usbtmc';
+    updateDeviceMultiple(index, usbtmc
+      ? { match: undefined, device: d.device || '/dev/usbtmc0' }
+      : { match: undefined, port: d.port || '/dev/ttyUSB0' });
+  }
+
+  function renderIdentity(device: Device, index: number) {
+    const path = (device.transport || 'serial') === 'usbtmc' ? device.device : device.port;
+    return (
+      <div className="instrument-config__field" data-testid="identity-field">
+        <label>Identity</label>
+        <div className="instrument-config__identity">{identitySummary(device.match)}</div>
+        <span className="instrument-config__field-hint">
+          Found by its identity on any USB port{path ? ` (last seen on ${path})` : ''}.{' '}
+          <button type="button" className="instrument-config__link-btn" onClick={() => switchToFixedPath(index)}>
+            Use a fixed port instead
+          </button>
+        </span>
+      </div>
+    );
   }
 
   function setDeviceState(deviceId: string, state: Partial<DeviceState>) {
@@ -570,6 +615,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
         {/* Serial Transport Fields */}
         {(device.transport || 'serial') === 'serial' && (
           <>
+            {device.match ? renderIdentity(device, index) : (
             <div className="instrument-config__field">
               <label>
                 Port<span className="required">*</span>
@@ -618,6 +664,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               )}
               <span className="instrument-config__hint">Serial port path</span>
             </div>
+            )}
 
             <div className="instrument-config__field">
               <label>
@@ -651,7 +698,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
         )}
 
         {/* USB TMC Transport Fields */}
-        {(device.transport || 'serial') === 'usbtmc' && (
+        {(device.transport || 'serial') === 'usbtmc' && (device.match ? renderIdentity(device, index) : (
           <div className="instrument-config__field">
             <label>
               USB TMC Device<span className="required">*</span>
@@ -700,7 +747,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
             )}
             <span className="instrument-config__hint">USB TMC device path</span>
           </div>
-        )}
+        ))}
 
         {/* Driver and Model */}
         <div className="instrument-config__field">
@@ -831,6 +878,14 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
   return (
     <div className="instrument-config" data-testid="instrument-config-view">
       <div className="instrument-config__content">
+        <DetectView
+          apiBase={apiBase}
+          configured={Array.from(originalDevices.values())}
+          onChanged={() => {
+            loadConfig();
+            onConfigUpdated();
+          }}
+        />
         {loading && <p className="instrument-config__loading">Loading configuration...</p>}
         {error && <div className="instrument-config__error">{error}</div>}
 

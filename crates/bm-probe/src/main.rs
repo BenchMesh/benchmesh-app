@@ -63,6 +63,8 @@ struct Configured {
     id: String,
     driver: String,
     endpoint: Endpoint,
+    /// `match`: found by identity on any port (see ai_context/migration/IDENTITY.md).
+    identity: Option<bm_transport::identity::Identity>,
 }
 
 fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
@@ -80,15 +82,23 @@ fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
                 baud: d.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
                 format: s(d, "serial"),
             },
+            identity: d.get("match").and_then(|m| serde_yaml_ng::from_value(m.clone()).ok()),
         })
         .collect())
 }
 
 fn connect(cat: &Catalog, dev: &Configured) -> Result<(Engine, Arc<DeviceDef>), String> {
     let def = Arc::new(cat.devices.get(&dev.driver).ok_or(format!("{}: no definition `{}`", dev.id, dev.driver))?.1.clone());
-    let t = bm_transport::open(&def.link, &dev.endpoint).map_err(|e| format!("{}: open {}: {e}", dev.id, dev.endpoint.path))?;
-    let e = Engine::connect(def.clone(), t).map_err(|e| format!("{}: connect: {e}", dev.id))?;
-    Ok((e, def))
+    let attempts = bm_transport::attempts(&def.link, &dev.endpoint, dev.identity.as_ref()).map_err(|e| format!("{}: {e}", dev.id))?;
+    let mut errors = Vec::new();
+    for a in attempts {
+        let port = a.port.clone();
+        match a.connect(def.clone()) {
+            Ok(e) => return Ok((e, def)),
+            Err(e) => errors.push(format!("{port}: {e}")),
+        }
+    }
+    Err(format!("{}: connect: {}", dev.id, errors.join("; ")))
 }
 
 fn ms(t: Instant) -> f64 {
@@ -106,7 +116,8 @@ fn show(v: &Value) -> String {
 fn verify(cat: &Catalog, devs: &[&Configured], polls: usize, screenshots: bool) -> bool {
     let mut ok = true;
     for dev in devs {
-        println!("=== {} ({}) {}", dev.id, dev.driver, dev.endpoint.path);
+        let place = dev.identity.as_ref().map(|i| format!("[{}]", i.describe())).unwrap_or_else(|| dev.endpoint.path.clone());
+        println!("=== {} ({}) {place}", dev.id, dev.driver);
         let t0 = Instant::now();
         let (mut e, def) = match connect(cat, dev) {
             Ok(x) => x,

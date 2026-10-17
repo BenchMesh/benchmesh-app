@@ -325,8 +325,14 @@ version = "0.1.0"
 dependencies = [
  "bm-devicedef",
  "bm-driver",
+ "core-foundation",
+ "core-foundation-sys",
+ "io-kit-sys",
  "libc",
+ "serde",
+ "serde_json",
  "serialport",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

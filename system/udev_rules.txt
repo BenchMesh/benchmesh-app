@@ -1,3 +1,6 @@
+# DEVELOPMENT AID ONLY — not shipped and not needed by BenchMesh. The app identifies instruments
+# itself on Linux, Windows and macOS (config `match`, see ai_context/migration/IDENTITY.md).
+# Note: rules with ACTION=="add" lose their symlink on a `udevadm trigger` (change event).
 # FTDI FT232R (has serial) → /dev/ttyFTDI0
 ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="AL036DJT", SYMLINK+="ttyOEL1515", MODE="0660", GROUP="dialout"
 ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="067b", ATTRS{idProduct}=="23a3", ATTRS{serial}=="DDAKb135B02", SYMLINK+="ttyDodgy", MODE="0660", GROUP="dialout"

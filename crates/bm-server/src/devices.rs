@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bm_devicedef::{Catalog, DeviceDef, Model};
-use bm_driver::actor::{ActorConfig, Connector, DeviceClient, DeviceHandle, Event};
+use bm_driver::actor::{fixed_connector, ActorConfig, Connector, DeviceClient, DeviceHandle, Event};
+use bm_transport::identity::Identity;
 use bm_transport::Endpoint;
 use serde_json::{json, Map, Value};
 
@@ -15,6 +16,8 @@ use crate::config::{str_field, DeviceEntry};
 /// tests: simulators.
 pub type ConnectorFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Connector + Send + Sync>;
 
+/// Real ports: the entry's fixed `port`/`device`, or — with `match` — wherever the
+/// instrument is plugged in (re-resolved on every reconnect).
 pub fn hardware_connectors() -> ConnectorFactory {
     Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {
         let link = def.link.clone();
@@ -23,8 +26,14 @@ pub fn hardware_connectors() -> ConnectorFactory {
             baud: entry.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
             format: str_field(entry, "serial").map(str::to_string),
         };
-        Box::new(move || bm_transport::open(&link, &ep))
+        let id = identity_of(entry);
+        Box::new(move || bm_transport::attempts(&link, &ep, id.as_ref()))
     })
+}
+
+/// The entry's `match` (validated by `config::validate_entry`).
+pub fn identity_of(entry: &DeviceEntry) -> Option<Identity> {
+    entry.get("match").and_then(|m| serde_json::from_value(m.clone()).ok())
 }
 
 /// Simulated instruments replaying a capture session (`captures/<session>/<device-id>.jsonl.gz`):
@@ -34,7 +43,7 @@ pub fn simulated_connectors(session: std::path::PathBuf) -> ConnectorFactory {
         let id = str_field(entry, "id").unwrap_or_default().to_string();
         let path = session.join(format!("{id}.jsonl.gz"));
         let def = def.clone();
-        Box::new(move || {
+        fixed_connector(&format!("sim:{id}"), move || {
             let responder = bm_driver::replay::responder_from_capture(&def, &path)
                 .map_err(|e| std::io::Error::new(e.kind(), format!("simulation for {id}: {}: {e}", path.display())))?;
             let mut t = bm_driver::sim::SimTransport::new(responder);
@@ -48,6 +57,8 @@ pub fn simulated_connectors(session: std::path::PathBuf) -> ConnectorFactory {
 pub struct DeviceState {
     pub idn: Option<String>,
     pub model: Option<String>,
+    /// Port of the current connection.
+    pub port: Option<String>,
     pub connected: bool,
     pub consecutive_failures: u32,
     pub last_error: Option<String>,
@@ -101,9 +112,10 @@ impl Registry {
     fn apply(&mut self, id: &str, ev: Event) {
         let d = self.devices.entry(id.to_string()).or_default();
         match ev {
-            Event::Connected { idn, model } => {
+            Event::Connected { idn, model, port } => {
                 d.idn = Some(idn);
                 d.model = Some(model);
+                d.port = Some(port);
                 d.connected = true;
                 d.consecutive_failures = 0;
                 d.last_error = None;
@@ -119,6 +131,7 @@ impl Registry {
             Event::Disconnected { reason } => {
                 d.connected = false;
                 d.idn = None;
+                d.port = None;
                 d.status.clear();
                 d.status_at.clear();
                 if reason != "stopped" {
@@ -149,11 +162,13 @@ pub struct Devices {
     pub registry: Arc<Mutex<Registry>>,
     pub managed: Mutex<Vec<(String, Managed)>>,
     pub actor: ActorConfig,
+    /// Real ports exist (Detect probes them); false for simulations and tests.
+    pub hardware: bool,
 }
 
 impl Devices {
     pub fn new(catalog: Catalog, connectors: ConnectorFactory, actor: ActorConfig) -> Self {
-        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor }
+        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false }
     }
 
     pub fn driver_ids(&self) -> Vec<String> {
@@ -255,7 +270,7 @@ mod tests {
     fn fresh_value_requires_connection_and_a_recent_update() {
         let mut r = Registry::default();
         let age = Duration::from_millis(50);
-        r.apply("d", Event::Connected { idn: "X".into(), model: "M".into() });
+        r.apply("d", Event::Connected { idn: "X".into(), model: "M".into(), port: "p".into() });
         assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), None, "no status yet");
         r.apply("d", status(1.5));
         assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), Some(&json!(1.5)));

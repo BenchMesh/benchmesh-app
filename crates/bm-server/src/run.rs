@@ -79,7 +79,9 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         Some(session) => simulated_connectors(session.clone()),
         None => hardware_connectors(),
     };
-    let devices = Arc::new(Devices::new(catalog, connectors, ActorConfig::default()));
+    let mut devices = Devices::new(catalog, connectors, ActorConfig::default());
+    devices.hardware = opts.simulate.is_none();
+    let devices = Arc::new(devices);
     let mut warnings = Vec::new();
     for e in entries {
         let known = devices.driver_ids();

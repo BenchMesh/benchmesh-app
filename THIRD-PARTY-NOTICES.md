@@ -85,6 +85,14 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT OR Apache-2.0
 - **URL**: https://github.com/rust-lang/libc
 
+### windows-sys (bm-transport, Windows only)
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/microsoft/windows-rs
+
+### io-kit-sys, core-foundation, core-foundation-sys (bm-transport, macOS only)
+- **License**: MIT OR Apache-2.0
+- **URL**: https://github.com/jtakakura/io-kit-rs, https://github.com/servo/core-foundation-rs
+
 ### rusqlite (bm-store) with bundled SQLite
 - **License**: rusqlite MIT; SQLite is in the public domain
 - **URL**: https://github.com/rusqlite/rusqlite, https://sqlite.org/copyright.html

@@ -40,6 +40,8 @@ pub enum Error {
     NotFound(String),
     /// Identify reply matches no model of the definition.
     UnknownModel(String),
+    /// The instrument answered but is not the configured one (e.g. another serial number).
+    WrongInstrument(String),
     /// Transport failure: the link is lost.
     Io(String),
 }
@@ -56,6 +58,7 @@ impl fmt::Display for Error {
             Error::Refused(m) => write!(f, "refused: {m}"),
             Error::NotFound(m) => write!(f, "not found: {m}"),
             Error::UnknownModel(idn) => write!(f, "unknown model (identify reply {idn:?})"),
+            Error::WrongInstrument(m) => write!(f, "wrong instrument: {m}"),
             Error::Io(m) => write!(f, "i/o: {m}"),
         }
     }

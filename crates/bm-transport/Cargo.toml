@@ -10,6 +10,18 @@ rust-version.workspace = true
 bm-devicedef = { path = "../bm-devicedef" }
 bm-driver = { path = "../bm-driver" }
 serialport.workspace = true
+serde.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Properties", "Win32_System_Registry"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+io-kit-sys = "0.4"
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+
+[dev-dependencies]
+serde_json.workspace = true

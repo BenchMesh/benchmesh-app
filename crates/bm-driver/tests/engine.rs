@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bm_devicedef::{load_catalog, DeviceDef};
-use bm_driver::actor::{ActorConfig, DeviceHandle, Event};
+use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, DeviceHandle, Event};
 use bm_driver::engine::{Engine, Output, Transport};
 use bm_driver::sim::{SimTransport, WireLog};
 use bm_driver::Error;
@@ -277,7 +277,7 @@ fn dge_screenshot_is_one_ieee_block() {
 fn actor_publishes_status_serves_requests_and_disconnects_cleanly() {
     let opened = Arc::new(Mutex::new(Vec::<Arc<Mutex<WireLog>>>::new()));
     let o2 = opened.clone();
-    let connector = Box::new(move || {
+    let connector = fixed_connector("sim", move || {
         let t = SimTransport::new(Box::new(oel("current")));
         o2.lock().unwrap().push(t.log.clone());
         Ok(Box::new(t) as Box<dyn Transport>)
@@ -297,10 +297,53 @@ fn actor_publishes_status_serves_requests_and_disconnects_cleanly() {
 }
 
 #[test]
+fn actor_skips_the_wrong_instrument_before_its_session_starts() {
+    let logs = Arc::new(Mutex::new(Vec::<Arc<Mutex<WireLog>>>::new()));
+    let l2 = logs.clone();
+    let connector: bm_driver::actor::Connector = Box::new(move || {
+        let attempt = |port: &str, accept: Option<bm_driver::actor::Accept>| {
+            let logs = l2.clone();
+            Attempt {
+                port: port.into(),
+                open: Box::new(move || {
+                    let t = SimTransport::new(Box::new(oel("current")));
+                    logs.lock().unwrap().push(t.log.clone());
+                    Ok(Box::new(t) as Box<dyn Transport>)
+                }),
+                accept,
+            }
+        };
+        Ok(vec![attempt("A", Some(Arc::new(|_: &str| Err("serial 999 expected".to_string())))), attempt("B", None)])
+    });
+    let (etx, erx) = channel();
+    let h = DeviceHandle::spawn("oel", def("owon_oel"), connector, Box::new(move |e| etx.send(e).unwrap()), ActorConfig::default());
+    match erx.recv_timeout(Duration::from_secs(2)).unwrap() {
+        Event::Connected { port, .. } => assert_eq!(port, "B"),
+        other => panic!("expected connected, got {other:?}"),
+    }
+    h.stop();
+    let first = logs.lock().unwrap()[0].lock().unwrap().texts();
+    assert_eq!(first, vec!["*IDN?\r".to_string()], "only identify reaches the rejected instrument (no remote mode)");
+}
+
+#[test]
+fn actor_reports_why_no_port_was_found() {
+    let connector: bm_driver::actor::Connector = Box::new(|| Err("no free port matches usb 1a86:7523 rev 0264".into()));
+    let (etx, erx) = channel();
+    let cfg = ActorConfig { reconnect_backoff: Duration::from_millis(50), ..Default::default() };
+    let h = DeviceHandle::spawn("xdm", def("owon_xdm"), connector, Box::new(move |e| etx.send(e).unwrap()), cfg);
+    match erx.recv_timeout(Duration::from_secs(2)).unwrap() {
+        Event::Disconnected { reason } => assert!(reason.contains("no free port matches usb 1a86:7523"), "{reason}"),
+        other => panic!("expected disconnected, got {other:?}"),
+    }
+    h.stop();
+}
+
+#[test]
 fn actor_reconnects_after_the_link_goes_silent() {
     let opens = Arc::new(Mutex::new(0));
     let o2 = opens.clone();
-    let connector = Box::new(move || {
+    let connector = fixed_connector("sim", move || {
         let n = {
             let mut n = o2.lock().unwrap();
             *n += 1;
@@ -338,7 +381,7 @@ fn actor_reconnects_after_the_link_goes_silent() {
 
 #[test]
 fn actor_publishes_metrics() {
-    let connector = Box::new(|| Ok(Box::new(SimTransport::new(Box::new(tenma(Arc::new(Mutex::new((5.0, 0.5, false))))))) as Box<dyn Transport>));
+    let connector = fixed_connector("sim", || Ok(Box::new(SimTransport::new(Box::new(tenma(Arc::new(Mutex::new((5.0, 0.5, false))))))) as Box<dyn Transport>));
     let (etx, erx) = channel();
     let cfg = ActorConfig { metrics_every: Duration::from_millis(300), ..Default::default() };
     let h = DeviceHandle::spawn("tenma-1", def("tenma_72"), connector, Box::new(move |e| etx.send(e).unwrap()), cfg);

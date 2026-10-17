@@ -75,3 +75,32 @@ jobs:
 
       - name: Validate device definitions
         run: cargo run -q -p bm-devicedef -- validate devices
+
+  # Port discovery has Windows (SetupAPI) and macOS (IORegistry) code: build, lint and test the
+  # transport crate natively there, and run the real enumeration once (no instruments attached).
+  transport-platforms:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Clippy (bm-transport)
+        run: cargo clippy -p bm-transport --all-targets -- -D warnings
+
+      - name: Tests (bm-transport)
+        run: cargo test -p bm-transport
+
+      - name: Enumerate ports
+        run: cargo run -q -p bm-transport --example ports

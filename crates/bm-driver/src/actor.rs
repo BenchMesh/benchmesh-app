@@ -14,12 +14,67 @@ use crate::metrics::Metrics;
 
 use crate::Error;
 
-/// Opens the device's transport (called again on every reconnect).
-pub type Connector = Box<dyn FnMut() -> std::io::Result<Box<dyn Transport>> + Send>;
+/// Checks an identify reply before the session starts (e.g. the instrument's serial number).
+pub type Accept = Arc<dyn Fn(&str) -> Result<(), String> + Send + Sync>;
+
+/// One port to try: opened, identified, accepted, then the session starts.
+pub struct Attempt {
+    /// Where (shown in errors and reported with [`Event::Connected`]).
+    pub port: String,
+    pub open: Box<dyn FnOnce() -> std::io::Result<Box<dyn Transport>> + Send>,
+    pub accept: Option<Accept>,
+}
+
+impl Attempt {
+    /// Identify on this transport, check the reply, start the session.
+    pub fn connect(self, def: Arc<DeviceDef>) -> Result<Engine, Error> {
+        let mut e = (self.open)().map_err(|e| Error::Io(e.to_string())).and_then(|t| Engine::open(def, t))?;
+        if let Some(accept) = &self.accept {
+            accept(&e.idn).map_err(Error::WrongInstrument)?;
+        }
+        e.start_session()?;
+        Ok(e)
+    }
+}
+
+/// The ports to try, in order (called again on every reconnect, so a device that moved to
+/// another port is found again). `Err` = nothing to try, with the reason.
+pub type Connector = Box<dyn FnMut() -> Result<Vec<Attempt>, String> + Send>;
+
+/// A connector for one fixed transport (tests, simulators, fixed ports).
+pub fn fixed_connector<F>(port: &str, open: F) -> Connector
+where
+    F: FnMut() -> std::io::Result<Box<dyn Transport>> + Send + 'static,
+{
+    let port = port.to_string();
+    let open = Arc::new(std::sync::Mutex::new(open));
+    Box::new(move || {
+        let open = open.clone();
+        Ok(vec![Attempt { port: port.clone(), open: Box::new(move || (open.lock().unwrap())()), accept: None }])
+    })
+}
+
+/// Try the attempts in order; the first that connects wins.
+fn connect_any(def: &Arc<DeviceDef>, attempts: Vec<Attempt>) -> Result<(Engine, String), Error> {
+    let mut errors = Vec::new();
+    for a in attempts {
+        let port = a.port.clone();
+        match a.connect(def.clone()) {
+            Ok(e) => return Ok((e, port)),
+            Err(e) => errors.push((port, e)),
+        }
+    }
+    match errors.len() {
+        0 => Err(Error::Io("no port to try".into())),
+        1 => Err(errors.pop().unwrap().1),
+        _ => Err(Error::Io(errors.iter().map(|(p, e)| format!("{p}: {e}")).collect::<Vec<_>>().join("; "))),
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
-    Connected { idn: String, model: String },
+    /// `port`: where the device was found.
+    Connected { idn: String, model: String, port: String },
     Status(StatusUpdate),
     Disconnected { reason: String },
     /// Performance metrics (same fields as the former Python `/metrics`).
@@ -175,10 +230,8 @@ fn run(
     let mut next_metrics = Instant::now() + cfg.metrics_every;
     loop {
         // ---- connect -------------------------------------------------------------------
-        let engine = connector()
-            .map_err(|e| Error::Io(e.to_string()))
-            .and_then(|t| Engine::connect(def.clone(), t));
-        let mut engine = match engine {
+        let engine = connector().map_err(Error::NotFound).and_then(|attempts| connect_any(&def, attempts));
+        let (mut engine, port) = match engine {
             Ok(e) => e,
             Err(err) => {
                 events(Event::Disconnected { reason: err.to_string() });
@@ -188,7 +241,7 @@ fn run(
                 continue;
             }
         };
-        events(Event::Connected { idn: engine.idn.clone(), model: engine.model.name.clone() });
+        events(Event::Connected { idn: engine.idn.clone(), model: engine.model.name.clone(), port });
         metrics.connected();
 
         // ---- serve ---------------------------------------------------------------------

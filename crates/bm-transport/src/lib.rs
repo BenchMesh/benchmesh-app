@@ -5,14 +5,21 @@
 //!   returns one whole device message — never split a message into several reads
 //!   (split reads strand data on the device and desync the USBTMC tags; see the DGE
 //!   screenshot capture).
+//!
+//! Every open transport holds its port ([`lock`]); configured instruments are found by
+//! [`identity`] on whatever port they are plugged into ([`attempts`]).
 
 use std::io::{self, Read, Write};
+use std::sync::Arc;
 use std::time::Duration;
 
 use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink};
+use bm_driver::actor::Attempt;
 use bm_driver::engine::Transport;
 
 pub mod discover;
+pub mod identity;
+pub mod lock;
 #[cfg(target_os = "linux")]
 mod usbtmc;
 #[cfg(target_os = "linux")]
@@ -29,16 +36,66 @@ pub struct Endpoint {
     pub format: Option<String>,
 }
 
-/// Open the transport a definition's `link` describes.
+/// Open the transport a definition's `link` describes (holding the port until dropped).
 pub fn open(link: &Link, ep: &Endpoint) -> io::Result<Box<dyn Transport>> {
-    match link {
-        Link::Serial(s) => Ok(Box::new(SerialTransport::open(s, ep)?)),
+    let guard = lock::acquire(&ep.path)?;
+    let inner: Box<dyn Transport> = match link {
+        Link::Serial(s) => Box::new(SerialTransport::open(s, ep)?),
         #[cfg(target_os = "linux")]
-        Link::Usbtmc(_) => Ok(Box::new(UsbTmcTransport::open(&ep.path)?)),
+        Link::Usbtmc(_) => Box::new(UsbTmcTransport::open(&ep.path)?),
         #[cfg(not(target_os = "linux"))]
-        Link::Usbtmc(_) => Err(io::Error::new(io::ErrorKind::Unsupported, "USBTMC is only implemented on Linux so far")),
-        Link::Tcp(_) => Err(io::Error::new(io::ErrorKind::Unsupported, "TCP transport not implemented yet")),
+        Link::Usbtmc(_) => return Err(io::Error::new(io::ErrorKind::Unsupported, "USBTMC is only implemented on Linux so far")),
+        Link::Tcp(_) => return Err(io::Error::new(io::ErrorKind::Unsupported, "TCP transport not implemented yet")),
+    };
+    Ok(Box::new(Held { inner, _guard: guard }))
+}
+
+/// A transport together with its port lock.
+struct Held {
+    inner: Box<dyn Transport>,
+    _guard: lock::PortGuard,
+}
+
+impl Transport for Held {
+    fn write(&mut self, data: &[u8]) -> io::Result<()> {
+        self.inner.write(data)
     }
+
+    fn read(&mut self, timeout: Duration) -> io::Result<Vec<u8>> {
+        self.inner.read(timeout)
+    }
+}
+
+/// The kind of port a definition's link is found on.
+pub fn port_kind(link: &Link) -> Option<discover::PortKind> {
+    match link {
+        Link::Serial(_) => Some(discover::PortKind::Serial),
+        Link::Usbtmc(_) => Some(discover::PortKind::Usbtmc),
+        Link::Tcp(_) => None,
+    }
+}
+
+/// The ports to try for a configured instrument: its fixed path, or — with an identity —
+/// every attached port matching it (best first), each accepted only if the identify reply
+/// carries the identity's serial number. `ep.path` is then the last known port (a hint).
+pub fn attempts(link: &Link, ep: &Endpoint, id: Option<&identity::Identity>) -> Result<Vec<Attempt>, String> {
+    let attempt = |path: &str, accept: Option<bm_driver::actor::Accept>| {
+        let (link, ep) = (link.clone(), Endpoint { path: path.to_string(), ..ep.clone() });
+        Attempt { port: path.to_string(), open: Box::new(move || open(&link, &ep)), accept }
+    };
+    let Some(id) = id else {
+        return Ok(vec![attempt(&ep.path, None)]);
+    };
+    let kind = port_kind(link).ok_or("identity matching needs a USB link (serial or usbtmc)")?;
+    let ports = discover::ports();
+    let hint = Some(ep.path.as_str()).filter(|p| !p.is_empty());
+    let found = id.candidates(kind, &ports, hint);
+    if found.is_empty() {
+        return Err(format!("no free {} port matches {}", kind.as_str(), id.describe()));
+    }
+    let check = id.clone();
+    let accept: bm_driver::actor::Accept = Arc::new(move |idn: &str| check.check_idn(idn));
+    Ok(found.into_iter().map(|p| attempt(&p.path, Some(accept.clone()))).collect())
 }
 
 pub struct SerialTransport {

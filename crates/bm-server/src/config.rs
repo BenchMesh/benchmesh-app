@@ -1,4 +1,6 @@
-//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device, baud?, serial?}]}`.
+//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|match, baud?, serial?}]}`.
+//! `match` = the instrument's identity (`ai_context/migration/IDENTITY.md`); `port`/`device` is
+//! then only the last known port.
 //! Device entries are kept as raw JSON objects (unknown keys survive round trips).
 
 use std::path::{Path, PathBuf};
@@ -52,10 +54,22 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
     if !known_drivers.iter().any(|k| k == driver) {
         return Err(format!("unknown driver {driver:?}; available: {known_drivers:?}"));
     }
+    let identified = match d.get("match") {
+        None => false,
+        Some(m) => {
+            let id: bm_transport::identity::Identity =
+                serde_json::from_value(m.clone()).map_err(|e| format!("invalid `match`: {e}"))?;
+            let hex4 = |s: &str| s.len() == 4 && s.chars().all(|c| c.is_ascii_hexdigit());
+            if !hex4(&id.usb.vid) || !hex4(&id.usb.pid) || id.usb.revision.as_deref().is_some_and(|r| !hex4(r)) {
+                return Err("invalid `match`: usb vid, pid and revision are 4 hex digits".into());
+            }
+            true
+        }
+    };
     match str_field(d, "transport").unwrap_or("serial") {
         "serial" => {
-            if str_field(d, "port").unwrap_or_default().is_empty() {
-                return Err("serial device needs `port`".into());
+            if !identified && str_field(d, "port").unwrap_or_default().is_empty() {
+                return Err("serial device needs `port` or `match`".into());
             }
             if let Some(b) = d.get("baud") {
                 const BAUDS: [u64; 10] = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400];
@@ -71,8 +85,8 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
             }
         }
         "usbtmc" => {
-            if str_field(d, "device").unwrap_or_default().is_empty() {
-                return Err("usbtmc device needs `device`".into());
+            if !identified && str_field(d, "device").unwrap_or_default().is_empty() {
+                return Err("usbtmc device needs `device` or `match`".into());
             }
         }
         t => return Err(format!("unsupported transport {t:?} (serial, usbtmc)")),

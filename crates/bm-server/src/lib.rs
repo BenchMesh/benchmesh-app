@@ -6,7 +6,7 @@
 //! - `GET  /instruments/{CLS}/{id}/{ch}/{op}` → `{"path","value"}`;
 //!   `POST /instruments/{CLS}/{id}/{ch}/{op}/{value}` → 204
 //! - `GET  /drivers`, `/drivers/{id}`, `/config`, `POST /config`, `POST /devices`,
-//!   `PUT|DELETE /devices/{id}`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
+//!   `PUT|DELETE /devices/{id}`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
 //! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}}}}` every interval
 //! - `/ui` static UI (+ SPA routes `/ui/docs`, `/ui/metrics`)
 //!
@@ -15,6 +15,7 @@
 //! device timeout 504, malformed device reply 502.
 
 pub mod config;
+pub mod detect;
 pub mod ai;
 pub mod devices;
 pub mod openapi;
@@ -75,6 +76,7 @@ pub fn router(state: S) -> Router {
         .route("/config", get(get_config).post(post_config))
         .route("/devices", post(add_device))
         .route("/devices/{id}", put(update_device).delete(delete_device))
+        .route("/devices/detect", post(detect_devices))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
         .route("/ws/registry", get(ws_registry))
@@ -113,7 +115,7 @@ fn driver_error(e: bm_driver::Error) -> Response {
         E::BadArgument(_) => StatusCode::BAD_REQUEST,
         E::NotFound(_) => StatusCode::NOT_FOUND,
         E::Refused(_) => StatusCode::CONFLICT,
-        E::Io(_) | E::UnknownModel(_) => StatusCode::SERVICE_UNAVAILABLE,
+        E::Io(_) | E::UnknownModel(_) | E::WrongInstrument(_) => StatusCode::SERVICE_UNAVAILABLE,
         E::Timeout { .. } => StatusCode::GATEWAY_TIMEOUT,
         E::Framing(_) | E::Parse(_) => StatusCode::BAD_GATEWAY,
         E::Expr(_) | E::Definition(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -484,6 +486,16 @@ async fn delete_device(State(s): State<S>, Path(id): Path<String>) -> Response {
 }
 
 // ---- discovery ----------------------------------------------------------------------
+
+/// Identify the instruments on the attached USB ports (sends identify queries only).
+async fn detect_devices(State(s): State<S>) -> Response {
+    if !s.devices.hardware {
+        return Json(json!({"ports": []})).into_response();
+    }
+    let devs = s.devices.clone();
+    let ports = blocking(move || detect::run(&devs)).await;
+    Json(json!({"ports": ports})).into_response()
+}
 
 fn excluded(q: &std::collections::HashMap<String, String>) -> Vec<String> {
     q.get("exclude").map(|e| e.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()).unwrap_or_default()

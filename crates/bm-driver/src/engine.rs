@@ -92,6 +92,14 @@ pub struct ExchangeStats {
 impl Engine {
     /// Identify the device, match the model, run `session.on_connect`.
     pub fn connect(def: Arc<DeviceDef>, transport: Box<dyn Transport>) -> Result<Engine, Error> {
+        let mut e = Engine::open(def, transport)?;
+        e.start_session()?;
+        Ok(e)
+    }
+
+    /// Identify the device and match the model; nothing else is sent. Callers check
+    /// [`Engine::idn`] (e.g. the instrument's serial number) before [`Engine::start_session`].
+    pub fn open(def: Arc<DeviceDef>, transport: Box<dyn Transport>) -> Result<Engine, Error> {
         let compiled = def
             .classes
             .iter()
@@ -127,10 +135,15 @@ impl Engine {
             .find(|m| Regex::new(&m.pattern).map(|r| r.is_match(&e.idn)).unwrap_or(false))
             .cloned()
             .ok_or_else(|| Error::UnknownModel(e.idn.clone()))?;
-        for s in def.session.on_connect.clone() {
-            e.run_step(&s, 1, None)?;
-        }
         Ok(e)
+    }
+
+    /// Run `session.on_connect` (e.g. switch the instrument to remote mode).
+    pub fn start_session(&mut self) -> Result<(), Error> {
+        for s in self.def.session.on_connect.clone() {
+            self.run_step(&s, 1, None)?;
+        }
+        Ok(())
     }
 
     /// Run `session.on_disconnect` (best effort).
