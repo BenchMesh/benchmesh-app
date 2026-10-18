@@ -1,0 +1,34 @@
+# LAN (raw socket) check: the replies of keysight_infiniivision.yaml, framed as the socket delivers
+# them (every reply, blocks included, ends with a line feed). Replies as the Keysight InfiniiVision
+# 1000 X-Series Programmer's Guide v01.20 describes them (PDF pages; the guide gives reply formats,
+# few literal examples). Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keysight_infiniivision
+transport: tcpip
+model: DSOX1102A
+replies:
+  - {send: '\*IDN\?', reply: "KEYSIGHT TECHNOLOGIES,DSOX1102A,CN12345678,02.12.2021071625", source: "p116 format"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "p207"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "+500.0E-03", source: "p219 NR3"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "-1.00000E+00", source: "p211 NR3"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "DC", source: "p206"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "+10.0E+00", source: "p212 NR3"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "0", source: "p205"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "0", source: "p209"}
+  - {send: ':TIMebase:SCALe\?', reply: "+100.0E-06", source: "p567 NR3"}
+  - {send: ':TIMebase:POSition\?', reply: "+0.0E+00", source: "p564 NR3"}
+  - {send: ':OPERegister:CONDition\?', reply: "+8", source: "p150; bit 3 Run set, bit 5 Wait clear"}
+  - {send: ':TRIGger:SWEep\?', reply: "AUTO", source: "p584"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "CHAN1", source: "p590"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "EITH", source: "p589"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "+250.0E-03", source: "p587 NR3"}
+  - {send: ':ACQuire:TYPE\?', reply: "HRES", source: "p189"}
+  - {send: ':ACQuire:SRATe\?', reply: "+2.00000000E+09", source: "p188 NR3"}
+  - {send: ':WAVeform:PREamble\?', reply: "+0,+0,+1000,+1,+1.00000000E-06,-5.00000000E-04,+0,+3.92156863E-02,+0.00000E+00,+128", source: "p637 field formats"}
+  - {send: ':WAVeform:DATA\?', reply: "#800000008\x80\x81\x90\xa0\x80\x60\x01\xff\n", source: "p630 (#8 header, BYTE, 0x01/0xFF clipped)"}
+  - {send: ':MEASure:VPP\? CHANnel[1-4]', reply: "+3.12E+00", source: "p384 NR3"}
+  - {send: ':MEASure:VAVerage\? DISPlay,CHANnel[1-4]', reply: "+1.05E-02", source: "p380 NR3"}
+  - {send: ':MEASure:VRMS\? DISPlay,DC,CHANnel[1-4]', reply: "+1.10E+00", source: "p385 NR3"}
+  - {send: ':MEASure:FREQuency\? CHANnel[1-4]', reply: "+9.9E+37", source: "p360; p347 +9.9E+37 = not measurable"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 0.5, OFFSET: -1.0, COUPLING: "DC", BWLIMIT: "OFF", INVERT: "OFF", PROBE: 10, TIMEBASE: 1.0e-4, TIMEOFFSET: 0.0, TRIG_SWEEP: "AUTO", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "RFAL", TRIG_LEVEL: 0.25, ACQ_TYPE: "HRES", SRATE: 2.0e9, TRIG_STATUS: "TD", WAVE: [128, 129, 144, 160, 128, 96, 1, 255], WAVE_Y0: 128, WAVE_DY: 3.92156863e-2, WAVE_X0: -5.0e-4, WAVE_DX: 1.0e-6, VPP: 3.12, VAVG: 0.0105, VRMS: 1.1, FREQ: null}

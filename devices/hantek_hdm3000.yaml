@@ -15,10 +15,13 @@ sources:
 models:
   - name: HDM3055
     match: "(?i)HDM3055"
+    note: &hdm_if "LAN (socket 5025) only on the B, H and X variants; S/A variants have USB + RS-232/485 only (UG p.22). RS-232/485 settings undocumented: not offered. GPIB (H) not supported"
   - name: HDM3065
     match: "(?i)HDM3065"
+    note: *hdm_if
   - name: HDM3075
     match: "(?i)HDM3075"
+    note: *hdm_if
     features:
       DMM:
         rate: [{value: "0.001", display: "0.001 PLC (fastest)"}, {value: "0.02", display: "0.02 PLC"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slowest)"}]

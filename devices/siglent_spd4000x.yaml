@@ -32,6 +32,7 @@ link:
       rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
       timing: {min_gap_ms: 50, gap_after_write_ms: 50}
   tcp: {port: 5025}
+  # GPIB only through the optional USB-GPIB module (UM p.7): not supported.
 framing:
   tx: {terminator: "\n"}
   rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}

@@ -9,7 +9,7 @@ family: UTG4000A series function/arbitrary waveform generator
 version: 0.1.0
 sources:
   - {doc: "UTG4000A Programming Manual V1.0 (UTG4000A_Programming_Manual_V1.0.pdf, June 2023, SW V1.23.07)", pages: "5 (*IDN?), 9 (OUTPut), 11 (AMPLitude:UNIT, LOAD), 13 (BASE:WAVe, FREQuency), 14 (PHASe, AMPLitude, OFFSet), 16 (RAMP:SYMMetry)"}
-  - {note: "Limits: AWG.md §2.5 (80…200 MHz sine; model list from the product page, unverified). The *IDN? model field is the family (UTG4000)"}
+  - {note: "Limits: AWG.md §2.5 (80…200 MHz sine; model list from the product page, unverified). The *IDN? model field is the family (UTG4000). LAN: the manual shows VXI-11 only (TCPIP0::<ip>::inst0::INSTR, no raw socket port), so no tcp link; USB id undocumented (the manual's 0x5345::0x1234 is a placeholder)"}
 models:
   - {"name": "UTG4082A", "match": "^UNI-T Technologies, ?UTG4082A,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
   - {"name": "UTG4122A", "match": "^UNI-T Technologies, ?UTG4122A,", "features": {"AWG": {"max_freq_hz": {"SIN": 120e6}}}}

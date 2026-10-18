@@ -1,0 +1,20 @@
+# LAN check of rigol_dg1000z (raw SCPI socket 5555): the replies of
+# devices/examples/rigol_dg1000z.yaml, framed as a socket delivers them (line feed after every
+# reply). Spec: ai_context/migration/coverage/README.md.
+definition: rigol_dg1000z
+transport: tcpip
+model: DG1062Z
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DG1062Z,DG1ZA000000001,00.01.03", source: "PDF p42"}
+  - {send: ':OUTP[12]\?', reply: "ON", source: "PDF p70"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "SQU", source: "PDF p121"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "1.000000E+03", source: "PDF p109"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "PDF p199"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "5.000000E+00", source: "PDF p194"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "1.000000E+00", source: "PDF p195"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "1.000000E+01", source: "PDF p167"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "5.000000E+01", source: "PDF p120"}
+  - {send: ':OUTP[12]:LOAD\?', reply: "9.900000E+37", source: "PDF p68 (High-Z)"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SQU", FREQ: 1000.0, AMPL: 5.0, OFFS: 1.0, PHASE: 10.0, SYMM: 50.0, LOAD: "HIGHZ"}

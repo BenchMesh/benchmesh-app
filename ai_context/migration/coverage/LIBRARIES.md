@@ -273,7 +273,7 @@ command disagreements already decided against the manual are in `crosscheck/*.md
 - Risk: fixed `reply {bytes: 6}` for ISET? on every model. Protocol 2.1 sends 5 bytes, so reads would run to their timeout; this is verified only on our 2540. The 72-2550 may identify as `KORADKA6003P` and then fall to korad_ka, which is acceptable.
 
 **rigol_dp700 / rigol_dp800**: [EEVblog DP832 firmware/bug list](https://eevblog.com/forum/testgear/rigol-dp832-firmware-updates-and-bug-list): LAN dropouts (stuck in remote, recover with Back key), DHCP renewal every 5 min on fw 1.14, an `OUTP:TRAC?` timeout fixed in firmware.
-- CONTRADICTS the dp800 note "no raw LAN socket port": newAM/dp800 drives a DP832 over raw TCP 5555 with our exact commands. Add `tcp: {port: 5555}`.
+- RESOLVED 2026-10-18 (tcp 5555 added) — was: CONTRADICTS the dp800 note "no raw LAN socket port": newAM/dp800 drives a DP832 over raw TCP 5555 with our exact commands. Add `tcp: {port: 5555}`.
 - Risk (dp700): sigrok's DP700 profile uses no channel arguments (`:OUTP?`, `:MEAS:VOLT?`). We send `:OUTP? CH1` / `:MEAS:ALL? CH1` to a single-channel DP711/712; unverified.
 
 **siglent_spd1000x**: pymeasure (26 vectors) and siglent-mcp (hardware-confirmed, fw 2.1.1.9) agree with our `stat` bits; the LAN server is single-client and can wedge after an abrupt disconnect (power cycle). [EEVblog](https://eevblog.com/forum/testgear/spd3303x-e-scpi-interface-issues/msg2483208): on fw 2.01.01.07R1, `OUTP`/`MODE:SET` had to be sent without `\n`, and one user waited 2 s after `OUTP CH1,ON`.
@@ -475,7 +475,7 @@ firmware-version split first), agilent_34401a (PY1CX real transcript; already in
 Priority order. Each needs a manual check or first-contact capture before it is applied.
 
 1. tenma_72: split 72-13320/13330 (LF, per-channel OUT, 2-byte status) and 72-13360 (RS485 variant).
-2. owon_xdm3000: USBTMC `5345:1234`, rate `S` not `L`, baud ≤ 57600.
+2. owon_xdm3000: USBTMC `5345:1234` (added 2026-10-18), rate `S` not `L`, baud ≤ 57600.
 3. owon_xdm: `1E9` overload → null/OL; DIOD/CONT swap below fw V4.3; FRES only on 2041/3041/3051.
 4. tinysa: `swt_q` with an SI prefix (`m`, `u`).
 5. Siglent SDG (and probably SPD3303X): prefer TCP; treat Linux USBTMC as unverified (bTag defect).

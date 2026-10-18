@@ -11,10 +11,11 @@ link:
     framing:
       tx: {terminator: "\n"}
       rx: {mode: message, strip_trailing: "\n", timeout_ms: 3000}
-# LAN socket / RS-232: every reply ends with a line feed
+# LAN socket / RS-232: every reply ends with a line feed (a block trace too: that one is left over,
+# so a stray line feed at the start of the next reply is skipped)
 framing:
   tx: {terminator: "\n"}
-  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 3000, drain_idle_ms: 100}
+  rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", strip_trailing: "\r", timeout_ms: 3000, drain_idle_ms: 100}
   timing: {min_gap_ms: 0}
 session:
   # trace as ASCII text (some families default to binary)

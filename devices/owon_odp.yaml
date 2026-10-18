@@ -25,6 +25,8 @@ session:
   on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
 link:
   serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+  # The programming manual (p.3) names COM, USB and LAN, but the user manual lists USB and RS232
+  # only and no socket port is documented: no tcp link offered.
 commands:
   idn: {source: "PM p.4"}
   info: null

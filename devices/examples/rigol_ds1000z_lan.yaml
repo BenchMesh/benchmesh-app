@@ -1,0 +1,34 @@
+# LAN (raw socket) check: the replies of rigol_ds1000z.yaml, framed as the socket delivers them
+# (every reply, blocks included, ends with a line feed). Replies as the MSO1000Z/DS1000Z Programming
+# Guide shows them (PDF pages): checks the definition through the real engine without hardware.
+# Spec: ai_context/migration/coverage/README.md.
+definition: rigol_ds1000z
+transport: tcpip
+model: DS1104Z
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DS1104Z,DS1ZA160801111,00.04.04.SP4", source: "p96 format, serial from p246"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "p26"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "1.000000e+00", source: "p30"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "1.000000e-02", source: "p27"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "AC", source: "p26"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "1.000000e+01", source: "p30 (reply format as SCALe)"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "20M", source: "p25"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "1", source: "p27"}
+  - {send: ':TIMebase:MAIN:SCALe\?', reply: "2.0000000e-04", source: "p173"}
+  - {send: ':TIMebase:MAIN:OFFSet\?', reply: "2.0000000e-04", source: "p172"}
+  - {send: ':TRIGger:STATus\?', reply: "TD", source: "p175"}
+  - {send: ':TRIGger:SWEep\?', reply: "SING", source: "p175"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "CHAN1", source: "p178"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "NEG", source: "p178"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "1.600000e-01", source: "p179"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVER", source: "p22"}
+  - {send: ':ACQuire:SRATe\?', reply: "2.000000e+09", source: "p23"}
+  - {send: ':WAVeform:PREamble\?', reply: "0,2,6000000,1,1.000000e-09,-3.000000e-03,0,4.132813e-01,0,122", source: "p242"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000008\x7a\x7f\x90\xa0\x7a\x60\x50\x7a\n", source: "p235 (#9 header + BYTE data + LF)"}
+  - {send: ':MEASure:ITEM\? VPP,CHANnel[1-4]', reply: "3.120000e+00", source: "p141 (format)"}
+  - {send: ':MEASure:ITEM\? VAVG,CHANnel[1-4]', reply: "8.888889e-03", source: "p141"}
+  - {send: ':MEASure:ITEM\? VRMS,CHANnel[1-4]', reply: "1.100000e+00", source: "p141 (format)"}
+  - {send: ':MEASure:ITEM\? FREQuency,CHANnel[1-4]', reply: "9.9E37", source: "p141; 9.9E37 = no valid value"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 1.0, OFFSET: 0.01, COUPLING: "AC", BWLIMIT: "20M", INVERT: "ON", PROBE: 10, TIMEBASE: 2.0e-4, TRIG_SWEEP: "SING", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.16, ACQ_TYPE: "AVER", SRATE: 2.0e9, TRIG_STATUS: "TD", WAVE: [122, 127, 144, 160, 122, 96, 80, 122], WAVE_Y0: 122, WAVE_DY: 0.4132813, WAVE_X0: -0.003, WAVE_DX: 1.0e-9, VPP: 3.12, FREQ: null}

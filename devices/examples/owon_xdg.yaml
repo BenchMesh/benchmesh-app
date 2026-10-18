@@ -1,6 +1,7 @@
 # Replies as the XDG SCPI protocol shows them (printed pages; reply formats NR1/NR3 per the
 # "Returns" lines): checks the definition through the real engine without hardware.
 definition: owon_xdg
+transport: usbtmc
 model: XDG3202
 replies:
   - {send: '\*IDN\?', reply: "OWON,XDG3202,1837001,SCPI:99.0 FV:V1.2.0", source: "p10"}

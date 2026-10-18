@@ -17,7 +17,11 @@ models:
   - {"name": "DG4162", "match": "^Rigol Technologies,DG4162,", "features": {"AWG": {"max_freq_hz": {"SIN": 160e6, "SQU": 50e6}}}}
   - {"name": "DG4202", "match": "^Rigol Technologies,DG4202,", "features": {"AWG": {"max_freq_hz": {"SIN": 200e6, "SQU": 60e6}}}}
 link:
+  # guide p557 example USB0::0X1AB1::0X0640 (other reports say 0641): vendor only, identify picks the model
   usbtmc: {vid: "1ab1"}
+  # LAN is built in (guide p2, :SYST:COMM:LAN p528-540); the guide names no socket port: 5555 is
+  # Rigol's raw SCPI port (documented for DG1000Z p203), unconfirmed on DG4000. VXI-11 also works.
+  tcp: {port: 5555}
 commands:
   outp_q: {source: "PDF p199; reply ON/OFF"}
   outp_set: {source: "PDF p199"}

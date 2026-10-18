@@ -12,7 +12,7 @@ family: UTS1000B/T, UTS3000B/T spectrum analyzer
 version: 0.1.0
 sources:
   - {doc: "UTS Spectrum Analyzer Programming Manual V1.0 (UTS_Spectrum_Analyzer_Programming_Manual_V1.0.pdf)", pages: "printed p7 *IDN?, p36-37 MARKer MAXimum, p41-43 MARKer X/Y, p51 RLEVel/PDIVision, p62 FORMat / INITiate:CONTinuous, p66 OUTPut, p80-82 BANDwidth, p91 DETector, p93-95 FREQuency, p98-104 POWer:ATTenuation / GAIN:STATe, p107-108 SWEep, p115 SOURce:POWer, p116-118 TRACe:TYPE / TRACe<n>:DATA?"}
-  - {note: "USBTMC vid:pid not documented (UNI-T instruments commonly 5345:xxxx or 6656:xxxx) — matched by *IDN?"}
+  - {note: "USBTMC vid:pid not documented (UNI-T instruments commonly 5345:xxxx or 6656:xxxx) — matched by *IDN?. LAN raw socket 5025 is not in the manual (it documents LAN only via NI-VISA, PDF p220): unconfirmed, VXI-11-only units cannot be used"}
 models:
   - {name: UTS1015B, match: "(?i)^UNI-T[^,]*,\\s*UTS1015B,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}}
   - {name: UTS1015T, match: "(?i)^UNI-T[^,]*,\\s*UTS1015T,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}, tg: {min: -40, max: 0}}}}

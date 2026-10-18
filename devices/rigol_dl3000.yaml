@@ -41,7 +41,8 @@ link:
       rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
       timing: {min_gap_ms: 10, gap_after_write_ms: 50}
   # LAN (standard on the A models, an option otherwise). Raw-socket port not stated in the PG;
-  # 5555 is RIGOL's usual socket port, verify on the instrument.
+  # 5555 is RIGOL's usual socket port, verify on the instrument. GPIB only through a USB-GPIB
+  # converter (PG p.10): not supported.
   tcp:
     port: 5555
     framing:

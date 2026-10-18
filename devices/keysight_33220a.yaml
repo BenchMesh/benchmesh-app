@@ -16,7 +16,8 @@ models:
   - {"name": "33210A", "match": "^(Agilent|Keysight) Technologies,33210A,", "note": "Limits from the 33210A datasheet, not from a local manual", "features": {"AWG": {"max_freq_hz": {"SIN": 10e6, "SQU": 10e6, "PUL": 5e6, "RAMP": 0.1e6}}}}
 link:
   usbtmc: {vid: "0957"}
-  # raw SCPI socket
+  # raw SCPI socket 5025 (Keysight's standard socket port; the guide names telnet 5024, PDF p258, and
+  # socket sessions). GPIB (IEEE-488) is also standard on the 33220A: not supported here.
   tcp: {port: 5025}
 commands:
   outp_q: {send: "OUTP?", source: "PDF p189; reply 0/1"}

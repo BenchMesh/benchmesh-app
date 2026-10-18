@@ -16,21 +16,21 @@ version: 0.1.0
 sources:
   - {doc: "Keysight InfiniiVision 1000 X-Series Programmer's Guide v01.20 (1000X_ProgrammersGuide_v01.20_akmetron.pdf)", pages: "p3 models, p116 *IDN?, p137-163 root (:AUToscale :OPERegister:CONDition? :RUN :SINGle :STOP), p188-189 ACQuire, p205-219 CHANnel, p347 9.9E+37, p360-385 MEASure, p564-590 TIMebase/TRIGger, p630-648 WAVeform"}
   - {doc: "Agilent InfiniiVision 2000 X-Series Programmer's Guide v02.30 (2000X_ProgrammersGuide_xdevs.pdf)", pages: "p3 models, p130 *IDN? (AGILENT TECHNOLOGIES), p167 OPERegister, p220-234 CHANnel, p351-373 MEASure, p580-606 TIMebase/TRIGger, p639-644 WAVeform"}
-  - {note: "1200 X (DSOX1202/1204) and 3000T use the same command tree; their guides were not fetched. USB vendor id 2a8d (Keysight); Agilent-era units report 0957. LAN raw socket 5025 (5024 is the telnet prompt, binary data corrupted there, p630)"}
+  - {note: "1200 X (DSOX1202/1204) and 3000T use the same command tree; their guides were not fetched. USB vendor id 2a8d (Keysight); Agilent-era units report 0957 (guide examples: 2a8d:1797 on 1000 X p828, 0957:17a6; no pid set, it differs per model). LAN raw socket 5025 where the model has LAN, see the model notes (5024 is the telnet prompt, binary data corrupted there, p630); GPIB only through the 2000 X GPIB module (not supported)"}
 models:
-  - {name: EDUX1002A, match: "^KEYSIGHT TECHNOLOGIES,EDUX1002[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}}
-  - {name: EDUX1052G, match: "^KEYSIGHT TECHNOLOGIES,EDUX1052[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}, note: "1200 X guide not fetched; same tree"}
-  - {name: DSOX1102A, match: "^KEYSIGHT TECHNOLOGIES,DSOX1102[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "100 MHz with the DSOX1B7T102 upgrade"}
-  - {name: DSOX1202G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1202[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
-  - {name: DSOX1204G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1204[AG],", features: {OSC: {bandwidth_hz: 70e6}}, note: "1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
-  - {name: DSO-X 2002A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2002A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}}
-  - {name: DSO-X 2004A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2004A,", features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}}
-  - {name: DSO-X 2012A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2012A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}}
-  - {name: DSO-X 2014A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2014A,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}}
-  - {name: DSO-X 2022A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2022A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}}
-  - {name: DSO-X 2024A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2024A,", features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}}
-  - {name: DSOX3000T, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]4T,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "3000T guide not fetched; same tree. Bandwidth from the model number (100 MHz-1 GHz)"}
-  - {name: DSOX3000T 2ch, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]2T,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "3000T guide not fetched; same tree"}
+  - {name: EDUX1002A, match: "^KEYSIGHT TECHNOLOGIES,EDUX1002[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}, note: "no LAN: USB only (1000 X guide p29)"}
+  - {name: EDUX1052G, match: "^KEYSIGHT TECHNOLOGIES,EDUX1052[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}, note: "LAN not confirmed; 1200 X guide not fetched; same tree"}
+  - {name: DSOX1102A, match: "^KEYSIGHT TECHNOLOGIES,DSOX1102[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "no LAN: USB only (1000 X guide p29). 100 MHz with the DSOX1B7T102 upgrade"}
+  - {name: DSOX1202G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1202[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "LAN not confirmed; 1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
+  - {name: DSOX1204G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1204[AG],", features: {OSC: {bandwidth_hz: 70e6}}, note: "LAN not confirmed; 1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
+  - {name: DSO-X 2002A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2002A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSO-X 2004A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2004A,", features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSO-X 2012A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2012A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSO-X 2014A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2014A,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSO-X 2022A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2022A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSO-X 2024A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2024A,", features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}, note: "LAN only with the LAN/VGA option module (2000 X guide p41)"}
+  - {name: DSOX3000T, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]4T,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "LAN standard (community, not in a fetched guide). 3000T guide not fetched; same tree. Bandwidth from the model number (100 MHz-1 GHz)"}
+  - {name: DSOX3000T 2ch, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]2T,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "LAN standard (community, not in a fetched guide). 3000T guide not fetched; same tree"}
 identify: idn
 link:
   usbtmc: {vid: "2a8d"}

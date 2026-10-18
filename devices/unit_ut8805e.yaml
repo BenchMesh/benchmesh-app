@@ -17,6 +17,8 @@ models:
     match: "(?i)^UNI-T,? *UT8805"
 link:
   serial: {baud: 9600, format: 8N1, flow: none}
+  # LAN is VXI-11 only (UT8805E data sheet (VXI11, USBTMC)): not supported, so the base's raw socket is removed
+  tcp: null
 commands:
   func:
     # UT8806E prints `VOLT: AC` (unquoted, space after the colon); quotes are removed as well

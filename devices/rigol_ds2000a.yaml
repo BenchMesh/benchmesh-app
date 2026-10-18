@@ -12,7 +12,7 @@ family: DS2000A/MSO2000A series digital oscilloscope
 version: 0.1.0
 sources:
   - {doc: "MSO2000A/DS2000A Programming Guide PGA18106-1110 (MSODS2000A_ProgrammingGuide_EN.pdf)", pages: "PDF p4-5 models, p18-19 RUN/STOP/SINGle/AUToscale/CLEar, p22 *IDN?, p28-29 ACQuire, p98-103 CHANnel, p188/218/226/228 MEASure, p291-292 TIMebase, p304-305 and p317-319 TRIGger, p377-390 WAVeform, p394 USB id"}
-  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide)."}
+  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide). GPIB only through the RIGOL USB-GPIB module (p4, not supported)."}
 models:
   - {name: DS2102A, match: "^RIGOL TECHNOLOGIES,DS2102A,", features: {OSC: {bandwidth_hz: 100e6, timebase: {min: 5e-9, max: 1000}}}}
   - {name: DS2202A, match: "^RIGOL TECHNOLOGIES,DS2202A,", features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}

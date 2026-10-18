@@ -10,12 +10,15 @@ link:
     framing:
       tx: {terminator: "\n"}
       rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}
+  # LAN raw SCPI socket. 5555 is Rigol's port (stated in the DSA800 guide p224 and the DG guides'
+  # :SYSTem:COMMunicate:LAN:SOCKet? reply, not in the scope guides); others set their own.
   tcp:
     port: 5555
-# serial/LAN: every reply (blocks too) ends with a line feed
+# serial/LAN: every reply (blocks too) ends with a line feed; the one after a block is left over,
+# so a stray line feed at the start of the next reply is skipped
 framing:
   tx: {terminator: "\n"}
-  rx: {mode: terminator, terminator: "\n", timeout_ms: 2000, drain_idle_ms: 100}
+  rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", timeout_ms: 2000, drain_idle_ms: 100}
   timing: {min_gap_ms: 0}
 session:
   on_connect: [wav_mode, wav_form]

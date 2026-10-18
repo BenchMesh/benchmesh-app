@@ -1,8 +1,8 @@
 # GW Instek GDS-1000B digital oscilloscopes (GDS-1054B, GDS-1072B, GDS-1074B, GDS-1102B, GDS-1104B).
 # Written from the programming manual, not yet seen live (models are "awaiting confirmation").
 # The USB device port is a CDC-ACM virtual COM port (p5, p16), so the link is `serial` (the baud
-# rate is not used by CDC). The LAN socket server has a user-chosen port (1024-65535, off by
-# default, p10), so no tcp link is offered.
+# rate is not used by CDC). LAN: a raw socket server (p8-12), off by default, on a port the user
+# picks (1024-65535, p10) — give that port in the config entry's host (`192.168.1.20:3000`).
 # Waveform: `:ACQuire<n>:MEMory?` returns the whole record (1e3 … 1e7 points) as signed 16-bit
 # big-endian codes, volts = code / 25 * vertical scale (p36-38). The trace is only polled while the
 # record length is at most 10 000 points (a 10 Mpts read would block the link for minutes).
@@ -13,7 +13,7 @@ vendor: GW Instek
 family: GDS-1000B series digital oscilloscope
 version: 0.1.0
 sources:
-  - {doc: "GDS-1000B Programming Manual (GDS-1000B_Programming_Manual.pdf); printed page = PDF page", pages: "p5-7 USB CDC, p10 socket server, p16-17 syntax, p29 *IDN?, p36-41 ACQuire/HEADer, p42 AUTOSet, p43-48 CHANnel, p77-93 MEASure, p112 RUN/STOP/SINGle, p114-115 TIMebase, p119-122 TRIGger, p131-132 TRIGger:STATe?"}
+  - {doc: "GDS-1000B Programming Manual (GDS-1000B_Programming_Manual.pdf); printed page = PDF page", pages: "p5-7 USB CDC, p8-12 LAN / socket server, p16-17 syntax, p29 *IDN?, p36-41 ACQuire/HEADer, p42 AUTOSet, p43-48 CHANnel, p77-93 MEASure, p112 RUN/STOP/SINGle, p114-115 TIMebase, p119-122 TRIGger, p131-132 TRIGger:STATe?"}
   - {note: "Model list from GW Instek's GDS-1000B range (the manual names GDS-1074B/1102B/1104B in examples). Horizontal divisions (10) and the time origin (position - 5 div) are not stated in the manual"}
 models:
   - {name: GDS-1054B, match: "^GW,GDS-1054B,", features: {OSC: {bandwidth_hz: 50e6}}}
@@ -24,9 +24,15 @@ models:
 identify: idn
 link:
   serial: {baud: 115200, format: 8N1, flow: none, settle_ms: 50}
+  # LAN socket server (Utility > I/O > Socket Server, p10). The manual names no default port, so
+  # 3000 is only a placeholder (not from the manual): put the scope's port in the config host.
+  # Same framing as the virtual COM port.
+  tcp: {port: 3000}
+# virtual COM port and socket: replies end with a line feed (the memory block too, p37; it is left
+# over, so a stray line feed at the start of the next reply is skipped)
 framing:
   tx: {terminator: "\n"}
-  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 2000, drain_idle_ms: 100}
+  rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", strip_trailing: "\r", timeout_ms: 2000, drain_idle_ms: 100}
   timing: {min_gap_ms: 0}
 session:
   # without this the memory query puts a ~600-byte settings string before the block (p41)

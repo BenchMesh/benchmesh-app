@@ -1,0 +1,34 @@
+# USB TMC check: the replies of gwinstek_gsp9300.yaml, one USB TMC message each.
+# Replies from the GSP-9300 programming manual (printed pages; trace shortened to 7 points,
+# the first values quoted from the manual's :TRAC? TRAC1 example). Over RS-232.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: gwinstek_gsp9300
+transport: usbtmc
+model: GSP-9300
+replies:
+  - {send: '\*IDN\?', reply: "GWINSTEK,GSP9300,ENXXXXXX,T1.0.0.0", source: "p74 (GWINSTEK,GSP9300,XXXXXXXX,T.X.X.X.X)"}
+  - {send: ':SENSe:FREQuency:CENTer\?', reply: "1.500000e+09", source: "p161 (NR3 Hz)"}
+  - {send: ':SENSe:FREQuency:SPAN\?', reply: "3.000000e+09", source: "p162"}
+  - {send: ':SENSe:FREQuency:STARt\?', reply: "0.000000e+00", source: "p163"}
+  - {send: ':SENSe:FREQuency:STOP\?', reply: "3.000000e+09", source: "p163"}
+  - {send: ':SENSe:BANDwidth:RESolution\?', reply: "1.000000e+06", source: "p152"}
+  - {send: ':SENSe:BANDwidth:RESolution:AUTO\?', reply: "1", source: "p152"}
+  - {send: ':SENSe:BANDwidth:VIDeo\?', reply: "1.000000e+06", source: "p153"}
+  - {send: ':SENSe:BANDwidth:VIDeo:AUTO\?', reply: "1", source: "p153"}
+  - {send: ':DISPlay:WINDow:TRACe:Y:SCALe:RLEVel\?', reply: "0.000000e+00", source: "p128"}
+  - {send: ':DISPlay:WINDow:TRACe:Y:SCALe:PDIVision\?', reply: "1.000000e+01", source: "p127"}
+  - {send: ':INPut:ATTenuation\?', reply: "10", source: "p132"}
+  - {send: ':INPut:ATTenuation:AUTO\?', reply: "1", source: "p132"}
+  - {send: ':SENSe:DETector:FUNCtion\?', reply: "NORMal", source: "p159"}
+  - {send: ':SENSe:SWEep:TIME\?', reply: "6.000000e-02", source: "p189 (60 ms)"}
+  - {send: ':INITiate:CONTinuous\?', reply: "1", source: "p131"}
+  - {send: ':STATus:OPERation:CONDition\?', reply: "0", source: "p202"}
+  - {send: ':CALCulate:MARKer1:STATe\?', reply: "1", source: "p104"}
+  - {send: ':CALCulate:MARKer1:X\?', reply: "1.000000e+08", source: "p106"}
+  - {send: ':CALCulate:MARKer1:Y\?', reply: "-5.43e+1", source: "p106"}
+  - {send: ':TRACe:DATA\? TRACe1', reply: "-5.234e+01,-4.593e+01,-5.533e+01,-4.604e+01,-5.353e+01,-4.557e+01,-5.280e+01", source: "p217 (shortened)"}
+  - {send: ':OUTPut:STATe\?', reply: "0", source: "p142"}
+  - {send: ':SOURce:POWer\?', reply: "-1.000000e+01", source: "p192"}
+expect:
+  SAL:
+    1: {CENTER: 1500000000, STOP: 3000000000, RBW: 1000000, REF_LEVEL: 0, ATTEN: 10, DETECTOR: NORM, SWEEP_MODE: CONT, SWEEPING: false, MARKER: "ON", MARKER_LEVEL: -54.3, POINTS: 7, TG_OUTPUT: "OFF", TG_LEVEL: -10}

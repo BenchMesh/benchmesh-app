@@ -21,7 +21,8 @@ identify: idn
 link:
   # RS-232 or USB CDC, 115200 8N1 default (p.100, 185); only one interface is active at a time
   serial: {baud: 115200, format: 8N1, flow: none}
-  # LAN raw socket port 1026 (p.107)
+  # LAN raw socket port 1026 (p.107). LAN and GPIB are options; RS-232 and USB are standard
+  # (p.99). GPIB is not supported.
   tcp: {port: 1026}
 framing:
   # commands end with LF (or CR LF); replies end with 0x0A (p.114)

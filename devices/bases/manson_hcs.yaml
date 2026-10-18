@@ -9,6 +9,9 @@ version: 0.1.0
 identify: gmax
 link:
   serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+  # USB is a CP210x virtual COM port (Manson PC software manual p.1-2). The same software also
+  # talks to Manson supplies over Ethernet (IP + port from the unit's LAN menu) or RS485 (with a
+  # bus id); neither is documented for the HCS-3xxx protocol here: not offered.
 framing:
   tx: {terminator: "\r"}
   # "<data>\rOK\r" for queries, "OK\r" for setters: the reply ends at "OK\r"; the "\r" between

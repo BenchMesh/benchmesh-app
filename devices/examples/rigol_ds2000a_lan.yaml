@@ -1,0 +1,32 @@
+# LAN (raw socket) check: the replies of rigol_ds2000a.yaml, framed as the socket delivers them
+# (every reply, blocks included, ends with a line feed). Replies as the MSO2000A/DS2000A Programming
+# Guide shows them (PDF pages): checks the definition through the real engine without hardware.
+# Spec: ai_context/migration/coverage/README.md.
+definition: rigol_ds2000a
+transport: tcpip
+model: DS2202A
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DS2202A,DS2A0000000000,00.03.05", source: "p22 format; serial from p394"}
+  - {send: ':CHANnel[12]:DISPlay\?', reply: "1", source: "p99"}
+  - {send: ':CHANnel[12]:SCALe\?', reply: "1.000000e+00", source: "p102 (scientific notation)"}
+  - {send: ':CHANnel[12]:OFFSet\?', reply: "-2.000000e-01", source: "p101 (scientific notation)"}
+  - {send: ':CHANnel[12]:COUPling\?', reply: "DC", source: "p99"}
+  - {send: ':CHANnel[12]:PROBe\?', reply: "10", source: "p103"}
+  - {send: ':CHANnel[12]:BWLimit\?', reply: "OFF", source: "p98"}
+  - {send: ':CHANnel[12]:INVert\?', reply: "0", source: "p100"}
+  - {send: ':TIMebase:MAIN:SCALe\?', reply: "1.000000e-06", source: "p292"}
+  - {send: ':TIMebase:MAIN:OFFSet\?', reply: "0.000000e+00", source: "p291"}
+  - {send: ':TRIGger:STATus\?', reply: "AUTO", source: "p304"}
+  - {send: ':TRIGger:SWEep\?', reply: "AUTO", source: "p305"}
+  - {send: ':TRIGger:EDGe:SOURce\?', reply: "CHAN1", source: "p319"}
+  - {send: ':TRIGger:EDGe:SLOPe\?', reply: "POS", source: "p319"}
+  - {send: ':TRIGger:EDGe:LEVel\?', reply: "0.000000e+00", source: "p318"}
+  - {send: ':ACQuire:TYPE\?', reply: "NORM", source: "p29"}
+  - {send: ':ACQuire:SRATe\?', reply: "1.00000e+09", source: "p28"}
+  - {send: ':WAVeform:PREamble\?', reply: "0,0,1400,1,1.000000e-08,-7.000000e-06,0,4.000000e-02,0,127", source: "p390"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000006\x7f\x8e\xa0\x7f\x70\x60\n", source: "p377 (#9 header + BYTE data)"}
+  - {send: ':MEASure:(VPP|VAVG|VRMS)\? CHANnel[12]', reply: "1.000000e+00", source: "p218/226/228 (format)"}
+  - {send: ':MEASure:FREQuency\? CHANnel[12]', reply: "9.9e37", source: "p188 invalid result"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 1, OFFSET: -0.2, COUPLING: "DC", BWLIMIT: "OFF", INVERT: "OFF", PROBE: 10, TIMEBASE: 1.0e-6, TRIG_SWEEP: "AUTO", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "POS", TRIG_LEVEL: 0, ACQ_TYPE: "NORM", SRATE: 1.0e9, TRIG_STATUS: "AUTO", WAVE: [127, 142, 160, 127, 112, 96], WAVE_Y0: 127, WAVE_DY: 0.04, WAVE_X0: -7.0e-6, WAVE_DX: 1.0e-8, VPP: 1.0, FREQ: null}

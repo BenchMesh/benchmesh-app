@@ -15,6 +15,8 @@ models:
 identify: idn
 link:
   serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+  # The LAN models (User Manual p.8) take SCPI over LAN too (programming manual p.3), but no
+  # socket port is documented anywhere (manuals or community): no tcp link offered.
 framing:
   tx: {terminator: "\r"}
   rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 300, drain_idle_ms: 20}

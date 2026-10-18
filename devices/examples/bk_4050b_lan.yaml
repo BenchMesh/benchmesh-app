@@ -1,0 +1,13 @@
+# LAN check of bk_4050b (raw SCPI socket 5025, Siglent OEM convention): the replies of
+# devices/examples/bk_4050b.yaml, framed as a socket delivers them (line feed after every reply).
+# Spec: ai_context/migration/coverage/README.md.
+definition: bk_4050b
+transport: tcpip
+model: 4050B
+replies:
+  - {send: '\*IDN\?', reply: "*IDN BK Precision,4050B,00-00-00-13-22,1.01.01.10R1,20.234.3.", source: "PM p4"}
+  - {send: 'C[12]:OUTP\?', reply: "C1: OUTP ON, LOAD, HZ, PLRT, NOR", source: "PM p9, p11"}
+  - {send: 'C[12]:BSWV\?', reply: "C1:BSWV WVTP, SINE,FRQ,100HZ,PERI,0.01S,AMP,2V, OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0", source: "PM p9, p11"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 100.0, AMPL: 2.0, OFFS: 0.0, PHASE: 0.0, LOAD: "HIGHZ"}

@@ -9,6 +9,7 @@ version: 0.1.0
 sources:
   - {doc: "894_895_programming_manual.pdf (BenchMeshDOC/bk_894)", pages: "6-7 (interfaces), 9 (*IDN?), 14-43 (SCPI)"}
   - {note: "RS-232/USB virtual COM: 9600-115200 8N1, no flow control, commands must be paced (PM p.6-7); 9600 assumed"}
+  - {note: "LAN is VXI-11 only: 'Telnet and raw socket are not supported' (UM p.76), so no tcp link. GPIB (895) not supported. USBTMC vid:pid undocumented"}
 models:
   - name: "894"
     match: '(?i)^B&K Precision,\s*894\b'

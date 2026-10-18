@@ -12,7 +12,7 @@ family: MSO5000 series digital oscilloscope
 version: 0.1.0
 sources:
   - {doc: "MSO5000 Programming Guide PGA25105-1110 (MSO5000_ProgrammingGuide_EN.pdf)", pages: "PDF p4 models, p18-19 AUToscale/CLEar/RUN/STOP/SINGle, p21-22 ACQuire, p62-65 CHANnel, p136-137 MEASure:ITEM, p189-190 TIMebase, p194-198 TRIGger, p260-266 WAVeform, p269 USB id"}
-  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide)."}
+  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide). GPIB only through the RIGOL USB-GPIB module (p4, not supported)."}
 models:
   - {name: MSO5072, match: "^RIGOL TECHNOLOGIES,MSO5072,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}}
   - {name: MSO5074, match: "^RIGOL TECHNOLOGIES,MSO5074,", features: {OSC: {bandwidth_hz: 70e6}}}

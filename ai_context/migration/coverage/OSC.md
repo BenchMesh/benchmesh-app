@@ -11,8 +11,8 @@ and the Siglent EN11x guides: Keysight printed = PDF; Siglent printed = PDF − 
 What the DSL can do today (relevant to scopes): text SCPI over serial and USBTMC, `reply: block`
 (IEEE 488.2 definite block, **the reply must start with `#`**), `{samples: u8|i8|u16le|i16le|u16be|i16be}`
 on a block payload, `fields`/`split`/`regex`/`map`/`bits` on text, per-channel `before:` steps,
-`requires`, computed params (`from:` CEL), CEL status expressions. `link.tcp` is declared but
-**not implemented** (no LAN-only scope can be used yet).
+`requires`, computed params (`from:` CEL), CEL status expressions. `link.tcp` (raw SCPI socket) is
+implemented since 2026-10-18; every scope definition with a LAN socket offers it.
 
 ---
 

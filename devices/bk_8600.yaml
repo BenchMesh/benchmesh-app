@@ -33,6 +33,7 @@ link:
   # flow control (none / RTS-CTS / XON-XOFF) selected in the System menu; the factory baud
   # rate is not stated (9600 assumed). Commands end in NL, responses in LF (BP p.21, p.24).
   serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+  # GPIB (BP p.5-6, address 0-30) is the third interface: not supported. No LAN.
 state:
   remote: {type: enum, initial: "OFF", description: "Not queryable (no SYST:REM?); tracks our own SYST:REM / SYST:LOC"}
 session:

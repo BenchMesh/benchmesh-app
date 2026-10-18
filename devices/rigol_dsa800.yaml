@@ -10,7 +10,7 @@ family: DSA800 series spectrum analyzer
 version: 0.1.0
 sources:
   - {doc: "DSA800 Programming Guide (DSA800_ProgrammingGuide_EN.pdf, Aug 2016)", pages: "PDF p38-55 CALCulate:MARKer, p70 DISPlay RLEVel/PDIVision, p86 FORMat, p94 *IDN?, p97-98 INITiate, p110 OUTPut, p128-129 BANDwidth, p143 DETector, p148-153 FREQuency, p160 POWer:ATTenuation, p170 SWEep, p180 SOURce, p185 STATus:OPERation, p210-217 TRACe"}
-  - {note: "Raw SCPI socket 5555 (p224); USBTMC PID not documented — matched by vendor id + *IDN?"}
+  - {note: "Raw SCPI socket 5555 (p224); GPIB only through the USB-GPIB converter (p10, not supported); USBTMC PID not documented — matched by vendor id + *IDN?"}
 models:
   - {name: DSA815, match: "(?i)^Rigol Technologies,DSA815,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}}
   - {name: DSA815-TG, match: "(?i)^Rigol Technologies,DSA815-TG,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}, tg: {min: -40, max: 0}}}}

@@ -18,6 +18,10 @@ models:
   - {"name": "4050B", "match": "^(\\*IDN )?BK Precision,\\s*4050B\\s*,", "note": "Identify reply names the series only (manual example); limits of the exact model unknown"}
 link:
   usbtmc: {}
+  # LAN (user manual p85): on by default, and must be switched off for USBTMC to answer. GPIB only
+  # through the AK40G USB-GPIB adapter (not supported). No socket port in the manuals: 5025 is the
+  # raw SCPI port of the Siglent SDG firmware this OEM unit runs (SDG PG p7), unconfirmed on B&K.
+  tcp: {port: 5025}
 commands:
   idn: {source: "PM p4: *IDN BK Precision,4050B,00-00-00-13-22,1.01.01.10R1,20.234.3."}
   outp_q: {source: "PM p9: C1: OUTP ON, LOAD, HZ, PLRT, NOR"}

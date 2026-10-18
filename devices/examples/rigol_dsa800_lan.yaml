@@ -1,0 +1,36 @@
+# LAN (raw socket) check: the replies of rigol_dsa800.yaml, framed as the socket delivers them
+# (every reply, blocks included, ends with a line feed). Replies as the DSA800 programming guide
+# shows them (trace shortened to 7 points; the guide's example is 601 points with the same header
+# and ", " separators). Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dsa800
+transport: tcpip
+model: DSA875-TG
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DSA875-TG,DSA8A134400008,00.00.00.00.03", source: "PG p94 (2-72), -TG suffix as on the -TG models"}
+  - {send: ':SENSe:FREQuency:CENTer\?', reply: "433920000", source: "PG p148 (integer Hz)"}
+  - {send: ':SENSe:FREQuency:SPAN\?', reply: "10000000", source: "PG p151"}
+  - {send: ':SENSe:FREQuency:STARt\?', reply: "428920000", source: "PG p152"}
+  - {send: ':SENSe:FREQuency:STOP\?', reply: "438920000", source: "PG p153"}
+  - {send: ':SENSe:BANDwidth:RESolution\?', reply: "100000", source: "PG p128"}
+  - {send: ':SENSe:BANDwidth:RESolution:AUTO\?', reply: "1", source: "PG p128"}
+  - {send: ':SENSe:BANDwidth:VIDeo\?', reply: "100000", source: "PG p129"}
+  - {send: ':SENSe:BANDwidth:VIDeo:AUTO\?', reply: "1", source: "PG p129"}
+  - {send: ':DISPlay:WINdow:TRACe:Y:SCALe:RLEVel\?', reply: "-1.000000E+01", source: "PG p70"}
+  - {send: ':DISPlay:WINdow:TRACe:Y:SCALe:PDIVision\?', reply: "1.000000E+01", source: "PG p70"}
+  - {send: ':SENSe:POWer:RF:ATTenuation\?', reply: "10", source: "PG p160"}
+  - {send: ':SENSe:POWer:RF:ATTenuation:AUTO\?', reply: "1", source: "PG p160"}
+  - {send: ':SENSe:DETector:FUNCtion\?', reply: "POS", source: "PG p143"}
+  - {send: ':SENSe:SWEep:TIME\?', reply: "1.000000E-01", source: "PG p170"}
+  - {send: ':SENSe:SWEep:POINts\?', reply: "601", source: "PG p170"}
+  - {send: ':INITiate:CONTinuous\?', reply: "1", source: "PG p97 (2-75)"}
+  - {send: ':STATus:OPERation:CONDition\?', reply: "8", source: "PG p185 (bit 3 SWEeping)"}
+  - {send: ':TRACe:DATA\? TRACE1', reply: "#9000000104 -1.390530e+01, -7.108871e+01, -7.089631e+01, -6.954130e+01, -4.231000e+01, -7.012345e+01, -7.140021e+01", source: "PG p210-211 (2-188), shortened"}
+  - {send: ':TRACe1:MODE\?', reply: "WRIT", source: "PG p217"}
+  - {send: ':CALCulate:MARKer1:STATe\?', reply: "1", source: "PG p45"}
+  - {send: ':CALCulate:MARKer1:X\?', reply: "433920000", source: "PG p48 (2-26)"}
+  - {send: ':CALCulate:MARKer1:Y\?', reply: "-4.231000E+01", source: "PG p55 (2-33)"}
+  - {send: ':OUTPut:STATe\?', reply: "0", source: "PG p110"}
+  - {send: ':SOURce:POWer:LEVel:IMMediate:AMPLitude\?', reply: "-1.000000E+01", source: "PG p180"}
+expect:
+  SAL:
+    1: {CENTER: 433920000, SPAN: 10000000, RBW: 100000, REF_LEVEL: -10, SWEEP_MODE: CONT, SWEEPING: true, POINTS: 601, DETECTOR: POS, TRACE_MODE: WRITE, MARKER: "ON", MARKER_FREQ: 433920000, MARKER_LEVEL: -42.31, TG_OUTPUT: "OFF"}

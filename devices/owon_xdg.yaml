@@ -1,7 +1,8 @@
 # OWON XDG2000 / XDG3000 series arbitrary waveform generators (Tek-AFG SCPI dialect).
 # Written from the SCPI protocol and user manuals before anyone tested it on hardware.
 # Research: ai_context/migration/coverage/AWG.md §2.6. Pages are the printed page numbers.
-# Utility → I/O → USBDEV must be set to USBTMC (factory default: PC).
+# Utility → I/O → USBDEV must be set to USBTMC (the factory tables, XDG2000 p65 / XDG3000 p57, list
+# USBTMC; the Waveform Editor needs PC, so a used unit may be on PC).
 schema: benchmesh.device/v1
 id: owon_xdg
 extends: tek_afg
@@ -12,7 +13,7 @@ sources:
   - {doc: "XDG Waveform Generator SCPI Protocol (2018)", pages: "10 (*IDN?), 12 (OUTPut:IMPedance), 13 (OUTPut:STATe), 30 (FREQuency), 39 (FUNCtion:SHAPe, RAMP:SYMMetry), 45 (PHASe), 60 (VOLTage, OFFSet)"}
   - {doc: "XDG2000 Series User Manual", pages: "70-71 (frequency/amplitude specifications), 66 (USB/LAN)"}
   - {doc: "XDG Arbitrary Waveform Generator User Manual (XDG3000)", pages: "67-68 (specifications)"}
-  - {note: "USB id assumed equal to the OWON DGE (5345:1235), not documented. The LAN port is user-set (1-4000) with no documented default, so no tcp link is offered yet."}
+  - {note: "USB id assumed equal to the OWON DGE (5345:1235), not documented. LAN: tcp link on the factory port 3000 (the port is user-set, 1-4000; config `port` must follow it). XDG2000 also has an optional COM (RS-232) port, baud undocumented: not offered."}
 models:
   - {"name": "XDG2035", "match": "^OWON,XDG2035,", "features": {"AWG": {"max_freq_hz": {"SIN": 35e6, "SQU": 15e6, "PUL": 15e6, "RAMP": 3e6}}}}
   - {"name": "XDG2060", "match": "^OWON,XDG2060,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 30e6, "PUL": 25e6, "RAMP": 3e6}}}}
@@ -25,6 +26,16 @@ models:
   - {"name": "XDG3252", "match": "^OWON,XDG3252,", "features": {"AWG": {"max_freq_hz": {"SIN": 250e6, "SQU": 50e6, "PUL": 25e6, "RAMP": 5e6}}}}
 link:
   usbtmc: {vid: "5345", pid: "1235"}
+  # LAN (XDG2000 manual p66, XDG3000 manual p63): fixed IP only (no DHCP), port 1-4000 set under
+  # Utility → I/O Setup → Network, factory port 3000 (factory tables XDG2000 p65, XDG3000 p57);
+  # restart after changing it. Raw SCPI socket with line feeds both ways per the Multicomp
+  # MP750290 (XDG rebrand) script in owon-xdg-python-tools (community, `TCPIP0::<ip>::3000::SOCKET`).
+  tcp:
+    port: 3000
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
 commands:
   outp_q: {source: "SCPI p13; reply <NR1>"}
   outp_set: {source: "SCPI p13"}

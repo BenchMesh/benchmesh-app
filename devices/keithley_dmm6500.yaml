@@ -11,7 +11,7 @@ family: DMM6500 digital multimeter (SCPI)
 version: 0.1.0
 sources:
   - {doc: "DMM6500 Reference Manual DMM6500-901-01 Rev. C (April 2026)", pages: "12-11 (:READ?), 12-109..12-111 (:RANGe, :RANGe:AUTO, ranges table, overflow 9.9e+37), NPLCycles, 12-129 (TCouple:TYPE), 12-133 (TRANsducer), 12-134 (UNIT), 12-145 (FUNCtion), *IDN? and *LANG (PDF p.1242, 1254-1255)"}
-  - {note: "USB 0x05E6:0x6500 and LAN port 5025 per the report (PDF p.50, 55). FUNC? reply form not printed; mapped for short and long forms"}
+  - {note: "USB 0x05E6:0x6500 and LAN raw socket 5025 per the report (PDF p.50, 55; VXI-11 1024, telnet 23). RS-232 and GPIB need the KTTI-RS232 / KTTI-GPIB accessory cards: RS-232 settings are in the card's documentation (not here), so not offered. FUNC? reply form not printed; mapped for short and long forms"}
 models:
   - name: DMM6500
     match: "(?i)^KEITHLEY INSTRUMENTS[^,]*,MODEL DMM6500,"

@@ -15,6 +15,7 @@ sources:
 models:
   - name: GDM8342
     match: "(?i)^GW ?Instek,GDM-?8342,"
+    note: "USB virtual COM only (p.103); the optional GPIB card is not supported"
   - name: GDM8341
     match: "(?i)^GW ?Instek,GDM-?8341,"
     note: "No temperature function (manual p.62); USB virtual COM only"

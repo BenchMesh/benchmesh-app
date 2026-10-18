@@ -11,7 +11,7 @@ sources:
   - {doc: "SDM3065X Remote Manual RC06036-E01A", pages: "37-48, 54-61, 77-84 (printed)"}
   - {doc: "SDM3055 Remote Manual RC06035-E01A", pages: "36-47, 60, 83 (printed)"}
   - {doc: "SDM3045X Programming Manual", pages: "37-48, 61, 83 (printed)"}
-  - {note: "USB 0xF4EC:0xEE38 from the sigrok udev rules (SDM3055; shared with other Siglent products, the IDN decides). *IDN? reply format not printed in the manuals; LAN raw socket port 5025 unverified"}
+  - {note: "USB 0xF4EC:0xEE38 from the sigrok udev rules (SDM3055; shared with other Siglent products, the IDN decides). *IDN? reply format not printed in the manuals; LAN raw socket port 5025 confirmed on hardware by a community tool (djacobow/sdm3055); Siglent's socket app note names 5024 (give host:port in the config if 5025 fails)"}
 models:
   - name: SDM3055
     match: "(?i)^siglent[^,]*,SDM3055"

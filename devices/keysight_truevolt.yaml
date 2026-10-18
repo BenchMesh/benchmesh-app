@@ -16,7 +16,7 @@ models:
     match: "(?i)^(keysight|agilent) technologies,34461A,"
   - name: 34460A
     match: "(?i)^(keysight|agilent) technologies,34460A,"
-    note: "No 10 A input; DCI/ACI to 3 A"
+    note: "No 10 A input; DCI/ACI to 3 A. LAN (socket 5025) only with the 3446LANU licence (Operating and Service Guide PDF p.26 options table, p.28)"
     features:
       DMM:
         RANGe:

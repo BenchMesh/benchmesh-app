@@ -16,6 +16,7 @@ link:
   serial: {baud: 9600, format: 8N1, flow: xon_xoff}
   # LAN: raw socket 9221; commands need no terminator there (LF is accepted and ignored).
   tcp: {port: 9221}
+  # GPIB is an option (IEEE 488.1/488.2): not supported.
 framing:
   # Commands end with LF; responses end with CR LF.
   tx: {terminator: "\n"}

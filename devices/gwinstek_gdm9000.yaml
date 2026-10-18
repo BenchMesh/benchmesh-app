@@ -9,7 +9,7 @@ family: GDM-906X digital multimeter
 version: 0.1.0
 sources:
   - {doc: "GDM-906X User Manual EN Ver G (2024-03-18)", pages: "216 RS-232, 224 terminators, 239-246 LAN (TCP port 3001), 246 *IDN?, 274 READ?, 282-285 CONFigure, 294-317 SENSe, 299 NPLC (printed)"}
-  - {note: "*IDN? can be changed by the user (SYSTem:IDNStr, p.329): a customised unit is not recognised. USB vid 0x2184 (GW Instek), pid unknown. Remote overload form not printed: treated like 9.9E37"}
+  - {note: "*IDN? can be changed by the user (SYSTem:IDNStr, p.329): a customised unit is not recognised. USB vid 0x2184 (GW Instek), pid 0x0059 for GDM-9061 USBTMC per libsigrok (community). GPIB option not supported. Remote overload form not printed: treated like 9.9E37"}
 models:
   - name: GDM9061
     match: "(?i)^GW ?Instek,GDM-?9061,"
@@ -19,7 +19,9 @@ models:
 link:
   # RS-232 9600-115200, default 115200 (p.216, p.374); CDC/RS-232 reply terminator selectable, default CRLF
   serial: {baud: 115200, format: 8N1, flow: none}
-  usbtmc: {vid: "2184"}
+  # pid 0059: GDM-9061 in USBTMC mode per the libsigrok udev rules (community; CDC mode is 0058,
+  # a serial port); GDM-9060 assumed the same
+  usbtmc: {vid: "2184", pid: "0059"}
   # raw TCP socket, default port 3001 (telnet 3000)
   tcp: {port: 3001}
 commands:

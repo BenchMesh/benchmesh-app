@@ -16,7 +16,11 @@ models:
   - {"name": "SDG2082X", "match": "^Siglent Technologies,\\s*SDG2082X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
   - {"name": "SDG2042X", "match": "^Siglent Technologies,\\s*SDG2042X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 40e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
 link:
+  # USBTMC on Linux is unreliable: an SDG2122X (fw 2.01.01) replies with the previous request's bTag,
+  # so the kernel usbtmc driver rejects it, and replies may lag one query (sdg2122-cli
+  # docs/validation.md, LIBRARIES.md §3.4). Prefer the LAN link (`transport: tcpip`).
   usbtmc: {vid: "f4ec"}
+  # raw SCPI socket 5025 (PG p7); telnet 5024 and VXI-11 also offered; GPIB via USB-GPIB adapter only
   tcp: {port: 5025}
 commands:
   freq_set:

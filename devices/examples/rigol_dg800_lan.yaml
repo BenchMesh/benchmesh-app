@@ -1,0 +1,20 @@
+# LAN check of rigol_dg800 (raw SCPI socket 5555, USB-LAN adapter): the replies of
+# devices/examples/rigol_dg800.yaml, framed as a socket delivers them (line feed after every reply).
+# Spec: ai_context/migration/coverage/README.md.
+definition: rigol_dg800
+transport: tcpip
+model: DG832
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DG832,DG80000000001,00.01.05.00.03", source: "DG800 p37"}
+  - {send: ':OUTP[12]\?', reply: "OFF", source: "DG800 p58"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "SQU", source: "DG800 p101"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "1.000000E+03", source: "DG800 p84"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "DG800 p155"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "5.000000E+00", source: "DG800 p152"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "1.000000E+00", source: "DG800 p154"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "1.000000E+01", source: "DG800 p137"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "5.000000E+01", source: "DG800 p95"}
+  - {send: ':OUTP[12]:LOAD\?', reply: "1.000000E+02", source: "DG800 p57"}
+expect:
+  AWG:
+    1: {OUTPUT: "OFF", SHAPE: "SQU", FREQ: 1000.0, AMPL: 5.0, OFFS: 1.0, PHASE: 10.0, SYMM: 50.0, LOAD: "100"}

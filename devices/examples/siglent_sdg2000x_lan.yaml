@@ -1,0 +1,13 @@
+# LAN check of siglent_sdg2000x (raw SCPI socket 5025): the replies of
+# devices/examples/siglent_sdg2000x.yaml, framed as a socket delivers them (line feed after every
+# reply). Spec: ai_context/migration/coverage/README.md.
+definition: siglent_sdg2000x
+transport: tcpip
+model: SDG2042X
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDG2042X,SDG2XCA0000000,2.01.01.23R3", source: "format of PG p12 (printed; model/serial substituted)"}
+  - {send: 'C[12]:OUTP\?', reply: "C1:OUTP ON,LOAD,HZ,PLRT,NOR", source: "PG p15-16, p17-19 (printed)"}
+  - {send: 'C[12]:BSWV\?', reply: "C1:BSWV WVTP,SINE,FRQ,100HZ,PERI,0.01S,AMP,2V,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0", source: "PG p15-16, p17-19 (printed)"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 100.0, AMPL: 2.0, OFFS: 0.0, PHASE: 0.0, LOAD: "HIGHZ"}

@@ -1,0 +1,20 @@
+# LAN check of keysight_33500b (raw SCPI socket 5025): the replies of
+# devices/examples/keysight_33500b.yaml, framed as a socket delivers them (line feed after every
+# reply). Spec: ai_context/migration/coverage/README.md.
+definition: keysight_33500b
+transport: tcpip
+model: 33522B
+replies:
+  - {send: '\*IDN\?', reply: "Agilent Technologies,33522B,MY52400000,3.03-1.19-2.00-52-00", source: "Trueform IDN form (EDU p149)"}
+  - {send: ':OUTP[12]\?', reply: "1", source: "Trueform OUTP? 0/1"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "RAMP", source: "Trueform FUNC?"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "+1.00000000000000E+03", source: "Trueform"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "Trueform"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "+1.00000000000000E-01", source: "Trueform"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "+0.00000000000000E+00", source: "Trueform"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "+9.00000000000000E+01", source: "Trueform"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "+5.00000000000000E+01", source: "Trueform"}
+  - {send: ':OUTP[12]:LOAD\?', reply: "+9.90000000000000E+37", source: "Trueform High-Z"}
+expect:
+  AWG:
+    2: {OUTPUT: "ON", SHAPE: "RAMP", FREQ: 1000.0, AMPL: 0.1, PHASE: 90.0, SYMM: 50.0, LOAD: "HIGHZ"}

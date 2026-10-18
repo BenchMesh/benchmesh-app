@@ -16,6 +16,8 @@ models:
     match: "(?i)^UNI-T,? *UT8806"
 link:
   serial: {baud: 9600, format: 8N1, flow: none}
+  # LAN is VXI-11 only (UT8806E UM: RJ45 "supports VXI-11 protocol"; PM VISA example TCPIP0::<ip>::inst0::INSTR): not supported, so the base's raw socket is removed
+  tcp: null
 commands:
   func:
     parse:

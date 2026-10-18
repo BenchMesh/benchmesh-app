@@ -16,6 +16,10 @@ models:
   - {"name": "4062B", "match": "^(\\*IDN )?(BK Precision|BK),\\s*4062B\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 40e6, "SQU": 25e6}}}}
 link:
   usbtmc: {}
+  # LAN (PM p50-51, SYST:COMM:LAN); GPIB only through a USB-GPIB adapter (not supported). No
+  # socket port in the manual: 5025 is the raw SCPI port of the Siglent SDG2000X firmware this OEM
+  # unit runs (same 2.01.01.35R3B2 IDN; SDG PG p7), unconfirmed on B&K.
+  tcp: {port: 5025}
 commands:
   idn: {source: "PM p8: BK,4063B,*********,2.01.01.35R3B2"}
   outp_q: {source: "PM p9: C1:OUTP OFF,LOAD,75,PLRT,NOR"}

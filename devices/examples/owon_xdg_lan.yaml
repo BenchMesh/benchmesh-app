@@ -1,0 +1,19 @@
+# LAN check of owon_xdg (raw SCPI socket on the factory port 3000): the replies of
+# devices/examples/owon_xdg.yaml, framed as a socket delivers them (line feed after every reply).
+# Spec: ai_context/migration/coverage/README.md.
+definition: owon_xdg
+transport: tcpip
+model: XDG3202
+replies:
+  - {send: '\*IDN\?', reply: "OWON,XDG3202,1837001,SCPI:99.0 FV:V1.2.0", source: "p10"}
+  - {send: 'OUTPut[12]:STATe\?', reply: "1", source: "p13 (<NR1>)"}
+  - {send: 'SOURce[12]:FUNCtion:SHAPe\?', reply: "SIN", source: "p39"}
+  - {send: 'SOURce[12]:FREQuency\?', reply: "5.000000E+05", source: "p30 (500 kHz example)"}
+  - {send: 'SOURce[12]:VOLTage\?', reply: "1.000E+00", source: "p60 (1 Vpp example)"}
+  - {send: 'SOURce[12]:VOLTage:OFFSet\?', reply: "0.000E+00", source: "p60"}
+  - {send: 'SOURce[12]:PHASe\?', reply: "3.141593E+00", source: "p45 (radians)"}
+  - {send: 'SOURce[12]:FUNCtion:RAMP:SYMMetry\?', reply: "80.5", source: "p39 (80.5 % example)"}
+  - {send: 'OUTPut[12]:IMPedance\?', reply: "9.9E+37", source: "p12 (INFinity)"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 500000.0, AMPL: 1.0, OFFS: 0.0, SYMM: 80.5, LOAD: "HIGHZ"}

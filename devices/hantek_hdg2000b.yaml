@@ -11,7 +11,7 @@ version: 0.1.0
 sources:
   - {doc: "HDG2000B SCPI protocol (HDG2000B_SCPI_protocol_EN.pdf)", pages: "17 (FREQ), 19-20 (FUNC, SQU/RAMP), 26 (OUTPut, PHASe), 40 (VOLTage, OFFSet), 22-23 (*IDN?)"}
   - {doc: "HDG2000B User Manual V1.2", pages: "11 (model table), 38-43 (carrier limits 5.1.3), 92 (USB id USB0::0x049F::0x505B)"}
-  - {note: "IDN form undocumented: models match the model number anywhere in the reply"}
+  - {note: "IDN form undocumented: models match the model number anywhere in the reply. LAN: 10/100M Ethernet, LXI Class C, web control (user manual p2-3, SYST:COMM:LAN in the SCPI protocol), but no SCPI socket port documented (LXI C implies VXI-11, not supported), so no tcp link"}
 models:
   - {"name": "HDG2032B", "match": "HDG2032B", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
   - {"name": "HDG2062B", "match": "HDG2062B", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6}}}}

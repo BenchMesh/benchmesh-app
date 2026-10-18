@@ -1,0 +1,16 @@
+# USBTMC check of owon_xdm3000 (5345:1234, community source): the replies of owon_xdm3000.yaml
+# (XDM Series programming manual formats), delivered as USBTMC messages with a CRLF ending.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: owon_xdm3000
+transport: usbtmc
+model: XDM3051
+replies:
+  - {send: '\*IDN\?', reply: "OWON,XDM3051,1546011,V2.0.2.0,2\r\n", source: "PM p.6 *IDN? example"}
+  - {send: 'FUNC\?', reply: "\"VOLT AC\"\r\n", source: "PM p.9 FUNCtion? return values"}
+  - {send: 'MEAS1\?', reply: "1.2345E+00\r\n", source: "PM p.41 MEAS1? (scientific notation)"}
+  - {send: 'VOLT:AC:RANG\?', reply: "2.000000E+00\r\n", source: "PM p.10 RANGe? (scientific notation)"}
+  - {send: 'VOLT:AC:RANG:AUTO\?', reply: "1\r\n", source: "PM p.11 0 (OFF) or 1 (ON)"}
+  - {send: 'RATE\?', reply: "M\r\n", source: "PM p.40 RATE? → F|M|L"}
+expect:
+  DMM:
+    1: {MEAS: 1.2345, MODE: VOLT_AC, RANGE: AUTO, OVERLOAD: false}

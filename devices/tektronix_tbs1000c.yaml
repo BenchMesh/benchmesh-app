@@ -13,7 +13,7 @@ family: TBS1000C series digital oscilloscope
 version: 0.1.0
 sources:
   - {doc: "TBS1000C Series Digital Oscilloscopes Programmer Manual 077-1691-02 (TBS1000C-Programmer-Manual-077169102.pdf)", pages: "p17 concatenation/EOM, p23-30 ACQuire/AUTOSet, p37-44 CH<x>, p55 CURVe, p58-60 DATa, p87 HEADer, p94-98 HORizontal, p100-101 *IDN?, p111-115 MEASUrement:IMMed, p139-140 SELect, p147-160 TRIGger, p170-177 WFMOutpre"}
-  - {note: "USB vendor id 0699 (Tektronix); product id per model not confirmed. No LAN on the TBS1000C"}
+  - {note: "USB vendor id 0699 (Tektronix); product id per model not confirmed. No LAN on the TBS1000C; GPIB only through the TEK-USB-488 adapter (p14, not supported)"}
 models:
   - {name: TBS1052C, match: "^TEKTRONIX,TBS ?1052C,", features: {OSC: {bandwidth_hz: 50e6}}}
   - {name: TBS1072C, match: "^TEKTRONIX,TBS ?1072C,", features: {OSC: {bandwidth_hz: 70e6}}}

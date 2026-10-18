@@ -13,7 +13,7 @@ version: 0.1.0
 sources:
   - {doc: "GSP-9300 Programming Manual (201501_PM_GSP-9300_VB_E.pdf)", pages: "printed p34 RS-232 (8N1, 300-115200 baud), p74 *IDN?, p100 CALC:MARK:PEAK, p103-106 MARKer SET/STATe/X/Y?, p125 DISP:TRAC:MODE, p128 RLEVel/PDIVision, p131 INITiate, p132 INPut:ATTenuation, p142 OUTPut, p152-153 BANDwidth, p159 DETector, p161-163 FREQuency, p189 SWEep:TIME, p192 SOURce:POWer, p202 STATus:OPERation:CONDition?, p217 TRACe:DATA?"}
   - {doc: "GSP-9300B / GSP-9330 programming manuals (201701_PM_GSP-9300B_VA_E.pdf, 201707_PM_GSP-9330_VD_E.pdf)", pages: "same command set"}
-  - {note: "USBTMC vid:pid not documented; RS-232 flow control RTS/CTS per the report (SAL.md §2.8, p37); baud set on the instrument (System > RmtInterface Config)"}
+  - {note: "USBTMC vid:pid not documented; RS-232 flow control RTS/CTS per the report (SAL.md §2.8, p37); baud set on the instrument (System > RmtInterface Config). LAN is LXI class C (VXI-11/HiSLIP, p31, printed) with no raw socket port, and GPIB is an option: neither is supported"}
 models:
   - {name: GSP-9300, match: "(?i)^GW ?INSTEK,GSP-?9300,", features: {SAL: {freq_range: {min: 9e3, max: 3e9}}}}
   - {name: GSP-9300B, match: "(?i)^GW ?INSTEK,GSP-?9300B,", features: {SAL: {freq_range: {min: 9e3, max: 3e9}}}}
