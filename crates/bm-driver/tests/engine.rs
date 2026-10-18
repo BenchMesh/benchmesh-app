@@ -519,3 +519,39 @@ fn dge_reports_shapes_under_the_setter_names() {
     assert_eq!(e.get("AWG", "shape", 1).unwrap().value(), json!("PUL"));
     assert_eq!(e.get("AWG", "shape", 2).unwrap().value(), json!("RAMP"));
 }
+
+#[test]
+fn a_setter_step_with_only_runs_for_those_values() {
+    let d: DeviceDef = bm_devicedef::from_yaml(
+        r#"
+schema: benchmesh.device/v1
+id: lcr_ab
+vendor: Test
+family: A/B LCR
+version: 1.0.0
+models: [{name: LCR1, match: "^LCR1"}]
+identify: idn
+link: {serial: {baud: 9600}}
+framing: {tx: {terminator: "\n"}, rx: {mode: terminator, terminator: "\n", timeout_ms: 100}}
+commands:
+  idn: {send: "*IDN?"}
+  imp_a: {send: "FUNC:IMP:A {f}", params: {f: {type: enum, values: {CSD: C, RX: R}}}, reply: none}
+  equ: {send: "FUNC:IMP:EQU {f}", params: {f: {type: enum, values: {CSD: SER}}}, reply: none}
+classes:
+  LCR:
+    ui_component: x
+    poll: []
+    status: {}
+    operations:
+      function:
+        set: [{cmd: imp_a, args: {f: "{value}"}}, {cmd: equ, args: {f: "{value}"}, only: [CSD]}]
+"#,
+    )
+    .unwrap();
+    let (t, log) = sim(|w| (w == b"*IDN?\n").then(|| b"LCR1\n".to_vec()));
+    let mut e = Engine::open(Arc::new(d), t).unwrap();
+    e.set("LCR", "function", 1, "RX").unwrap();
+    e.set("LCR", "function", 1, "CSD").unwrap();
+    let sent: Vec<String> = log.lock().unwrap().texts().into_iter().skip(1).collect();
+    assert_eq!(sent, ["FUNC:IMP:A R\n", "FUNC:IMP:A C\n", "FUNC:IMP:EQU SER\n"], "R-X has no circuit step");
+}

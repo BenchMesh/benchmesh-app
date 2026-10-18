@@ -587,7 +587,7 @@ pub enum SampleFormat {
     I16be,
 }
 
-/// A command invocation: `cmd_name` or `{cmd: name, args: {param: value}}`.
+/// A command invocation: `cmd_name` or `{cmd: name, args: {param: value}, only: [values]}`.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Step {
@@ -596,6 +596,10 @@ pub enum Step {
         cmd: String,
         #[serde(default)]
         args: BTreeMap<String, String>,
+        /// Run this step of a setter only for these caller values (others skip it), e.g. a
+        /// series/parallel command that exists only for some LCR parameter pairs.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        only: Option<Vec<String>>,
     },
 }
 

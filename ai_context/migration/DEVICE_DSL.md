@@ -122,7 +122,7 @@ oscilloscope's `reply: block` waveform). A `block` reply without parse steps is 
 | `channels`, `ui_component`, `features` | registry/UI metadata (features = the UI dictionary served by `GET /instruments/{class}/{id}`). The bench UI uses one panel per class and ignores `ui_component` |
 | `poll` | list of groups `{every_ms, read: [query commands]}`; slower groups' values persist between refreshes; per channel when the command or one of its `before` steps uses `{ch}` (e.g. `:WAV:DATA?` after `:WAV:SOUR CHAN{ch}`). A successful set makes all of the class's groups due at once, so slow groups can be slow without delaying feedback |
 | `status.<KEY>` | CEL expression over poll results (by command name), `state`, `ch`. Shorthand string = raw value; `{expr, as: si}` = SI value dict |
-| `operations.<op>` | `{get: cmd \| [steps], set: cmd \| [steps], as: raw\|si\|bytes}`; POST value binds to the single caller param (or `{value}` in step args). `GET .../methods` reports each setter's value spec (type, min/max, format, unit, enum values) and `energizes` |
+| `operations.<op>` | `{get: cmd \| [steps], set: cmd \| [steps], as: raw\|si\|bytes}`; POST value binds to the single caller param (or `{value}` in step args). A step `{cmd, args, only: [values]}` runs only for those caller values (e.g. an LCR's series/parallel command, absent for R-X). `GET .../methods` reports each setter's value spec (type, min/max, format, unit, enum values) and `energizes` |
 
 Class contracts (`devices/classes/*.yaml`) type status keys and operations with `number`, `integer`,
 `bool`, `string`, `enum`, `si`, `bytes` (files) or `list` (numeric arrays, e.g. waveform samples).

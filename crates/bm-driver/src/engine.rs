@@ -289,7 +289,12 @@ impl Engine {
                     _ => return Err(Error::BadArgument(format!("`{}` needs a value", step.command()))),
                 }
             }
-            Step::Call { args: a, .. } => {
+            Step::Call { args: a, only, .. } => {
+                if let (Some(only), Some(v)) = (only, value) {
+                    if !only.iter().any(|o| o == v) {
+                        return Ok(Output::Value(Value::Null));
+                    }
+                }
                 for (k, v) in a {
                     let v = match (v.contains("{value}"), value) {
                         (false, _) => v.clone(),

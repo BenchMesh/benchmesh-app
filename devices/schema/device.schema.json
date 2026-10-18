@@ -1060,6 +1060,16 @@
             },
             "cmd": {
               "type": "string"
+            },
+            "only": {
+              "description": "Run this step of a setter only for these caller values (others skip it), e.g. a\nseries/parallel command that exists only for some LCR parameter pairs.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           "required": [
@@ -1068,7 +1078,7 @@
           "type": "object"
         }
       ],
-      "description": "A command invocation: `cmd_name` or `{cmd: name, args: {param: value}}`."
+      "description": "A command invocation: `cmd_name` or `{cmd: name, args: {param: value}, only: [values]}`."
     },
     "Support": {
       "description": "Verification status of a model. The community status will come from the online service;\na definition carries the status known when it was written.",
