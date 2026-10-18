@@ -12,7 +12,7 @@ export function EllPanel({ status, profile, api, online }: {
 }) {
   const mode = typeof status.MODE === 'string' ? status.MODE : profile.modes[0]?.key
   const m = profile.modes.find((x) => x.key === mode)
-  const [setpoint, commit] = useSetpoint(api, m?.op ?? null, parseNum)
+  const [setpoint, commit] = useSetpoint(api, m?.op ?? null, parseNum, online)
   const [error, run] = useAction()
   const [sense, setSense] = useState(false)
   const editor = useRef<DigitEditorHandle>(null)

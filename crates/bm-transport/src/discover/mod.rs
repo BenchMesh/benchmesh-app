@@ -65,35 +65,71 @@ pub fn ports() -> Vec<Port> {
     out
 }
 
-/// USBTMC instruments on Windows / macOS (Linux: kernel nodes, listed by `linux.rs`). On Windows
-/// an instrument whose driver belongs to an installed VISA is reached through that VISA.
+/// USBTMC instruments on Windows / macOS (Linux: kernel nodes, listed by `linux.rs`), each with
+/// why it cannot be opened (`None`: it can). On Windows an instrument whose driver belongs to an
+/// installed VISA is reached through that VISA.
+#[cfg(not(target_os = "linux"))]
+fn usbtmc_ports_noted() -> Vec<(Port, Option<String>)> {
+    #[cfg(windows)]
+    {
+        windows_usbtmc()
+    }
+    #[cfg(not(windows))]
+    {
+        crate::usbtmc_nusb::ports().into_iter().map(|(p, _)| (p, None)).collect()
+    }
+}
+
 #[cfg(not(target_os = "linux"))]
 fn usbtmc_ports() -> Vec<Port> {
-    #[cfg(windows)]
+    usbtmc_ports_noted().into_iter().map(|(p, _)| p).collect()
+}
+
+/// The Windows device tree lists every USBTMC instrument (also ones without a driver); `nusb`
+/// supplies the descriptor strings of those it can see, a VISA resource replaces the path of
+/// those its driver owns.
+#[cfg(windows)]
+fn windows_usbtmc() -> Vec<(Port, Option<String>)> {
     let visa: Vec<(String, crate::visa::UsbId)> =
         crate::visa::resources().into_iter().filter_map(|r| Some((r.clone(), crate::visa::parse_usb_resource(&r)?))).collect();
-    crate::usbtmc_nusb::ports()
+    let seen: Vec<Port> = crate::usbtmc_nusb::ports().into_iter().map(|(p, _)| p).collect();
+    windows::usbtmc_ports()
         .into_iter()
-        .map(|(p, d)| {
-            #[cfg(windows)]
-            let p = through_visa(p, &d, &visa);
-            #[cfg(not(windows))]
-            let _ = d;
-            p
+        .map(|(port, service)| {
+            let same_usb = |u: &UsbInfo| {
+                u.vendor_id == port.usb.vendor_id && u.product_id == port.usb.product_id && same_serial(u.serial.as_deref(), port.usb.serial.as_deref())
+            };
+            let mut p = seen.iter().find(|n| same_usb(&n.usb)).cloned().unwrap_or(port);
+            if crate::usbtmc_nusb::usable_service(&service) {
+                return (p, None);
+            }
+            let via_visa = visa.iter().find(|(_, (v, pid, s))| {
+                p.usb.vendor_id == Some(format!("{v:04x}")) && p.usb.product_id == Some(format!("{pid:04x}")) && same_serial(s.as_deref(), p.usb.serial.as_deref())
+            });
+            match via_visa {
+                Some((resource, _)) => {
+                    p.path = resource.clone();
+                    (p, None)
+                }
+                None => (p, Some(crate::usbtmc_nusb::driver_problem(&service))),
+            }
         })
         .collect()
 }
 
-/// An instrument whose Windows driver is not WinUSB is opened through the VISA that owns it.
+/// `usb:` path and Windows service (driver; `""`: none) of each attached USBTMC instrument.
 #[cfg(windows)]
-fn through_visa(mut p: Port, d: &nusb::DeviceInfo, visa: &[(String, crate::visa::UsbId)]) -> Port {
-    if crate::usbtmc_nusb::unusable_driver(d).is_some() {
-        let same = |(v, pid, s): &crate::visa::UsbId| *v == d.vendor_id() && *pid == d.product_id() && s.as_deref() == d.serial_number();
-        if let Some((resource, _)) = visa.iter().find(|(_, id)| same(id)) {
-            p.path = resource.clone();
-        }
+pub(crate) fn windows_usbtmc_services() -> Vec<(String, String)> {
+    windows::usbtmc_ports().into_iter().map(|(p, service)| (p.path, service)).collect()
+}
+
+/// Windows reports serial numbers in instance ids without their original case.
+#[cfg(windows)]
+fn same_serial(a: Option<&str>, b: Option<&str>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => a.eq_ignore_ascii_case(b),
+        (a, b) => a.is_none() && b.is_none(),
     }
-    p
 }
 
 /// `0x1A86`, `1a86`, `6790` (decimal from some APIs is converted by the caller) → `1a86`.
@@ -120,6 +156,8 @@ pub struct UsbTmcInfo {
     pub device: String,
     pub name: String,
     pub usb: UsbInfo,
+    /// Why the instrument cannot be opened (e.g. Windows has no usable driver for it).
+    pub note: Option<String>,
 }
 
 #[cfg(target_os = "linux")]
@@ -151,12 +189,18 @@ pub fn serial_ports() -> Vec<SerialPortInfo> {
     out
 }
 
-/// USBTMC instruments (Linux kernel device nodes `/dev/usbtmcN`; other OSes: none yet).
+/// USBTMC instruments: Linux kernel device nodes `/dev/usbtmcN`; Windows / macOS `usb:` paths
+/// (or VISA resources).
 pub fn usbtmc_devices() -> Vec<UsbTmcInfo> {
-    ports()
+    #[cfg(target_os = "linux")]
+    let noted: Vec<(Port, Option<String>)> = ports().into_iter().filter(|p| p.kind == PortKind::Usbtmc).map(|p| (p, None)).collect();
+    #[cfg(not(target_os = "linux"))]
+    let mut noted = usbtmc_ports_noted();
+    #[cfg(not(target_os = "linux"))]
+    noted.sort_by(|a, b| a.0.path.cmp(&b.0.path));
+    noted
         .into_iter()
-        .filter(|p| p.kind == PortKind::Usbtmc)
-        .map(|p| UsbTmcInfo { name: p.path.rsplit('/').next().unwrap_or_default().to_string(), device: p.path, usb: p.usb })
+        .map(|(p, note)| UsbTmcInfo { name: p.path.rsplit('/').next().unwrap_or_default().to_string(), device: p.path, usb: p.usb, note })
         .collect()
 }
 

@@ -119,8 +119,12 @@ clippy-checked for both targets, built and run natively in CI, not yet run with 
 | macOS | own USBTMC protocol over `nusb` | `usb:…` | none |
 
 Discovery picks the right path per instrument (on Windows: WinUSB-bound → `usb:`, else the VISA
-resource with the same vid/pid/serial). Identity matching is the same for all paths. If Windows
-has no usable driver, opening fails with the instructions above, and Detect shows them.
+resource with the same vid/pid/serial). Identity matching is the same for all paths. On Windows
+USBTMC instruments are listed from the device tree (compatible id `USB\Class_FE&SubClass_03`), so
+an instrument **without any driver** is listed too (`nusb` cannot see those): `/usbtmc-devices`
+gives it a `note` with the instructions above, opening it fails with them, and Detect shows them.
+(First Windows test, 2026-10-18: neither the Rigol DHO800 nor the OWON DGE2070 was listed —
+most likely because neither had a driver; not yet confirmed.)
 
 The USBTMC protocol (`usbtmc_proto.rs`) discards replies whose bTag belongs to an earlier
 request (a late answer after a timeout) and sends INITIATE_ABORT_BULK_IN after a timeout, so a

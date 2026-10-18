@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { renderHook } from '@testing-library/react'
-import { useHistory } from '../api'
+import { describe, it, expect, vi } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { useHistory, useSetpoint, ChannelApi } from '../api'
 import { useStats } from '../panels/DmmPanel'
 
 describe('useHistory', () => {
@@ -35,5 +35,27 @@ describe('useStats', () => {
     expect(result.current).toEqual({ min: 2, max: 4, sum: 6, n: 2 })
     rerender({ v: 10, t: {}, k: 'RES' })
     expect(result.current).toEqual({ min: 10, max: 10, sum: 10, n: 1 })
+  })
+})
+
+describe('useSetpoint', () => {
+  const parse = (v: unknown) => (typeof v === 'number' ? v : null)
+
+  it('reads the setpoint only once the instrument is online, and again after every reconnect', async () => {
+    let reply = 5
+    const api: ChannelApi = { get: vi.fn(async () => reply), set: vi.fn(async () => {}) }
+    const { result, rerender } = renderHook(({ online }) => useSetpoint(api, 'voltage', parse, online), { initialProps: { online: false } })
+    expect(api.get).not.toHaveBeenCalled()
+    expect(result.current[0]).toBeNull()
+
+    rerender({ online: true })
+    await waitFor(() => expect(result.current[0]).toBe(5))
+
+    reply = 7 // changed on the instrument's front panel while it was disconnected
+    rerender({ online: false })
+    expect(result.current[0]).toBe(5) // last value kept while offline
+    rerender({ online: true })
+    await waitFor(() => expect(result.current[0]).toBe(7))
+    expect(api.get).toHaveBeenCalledTimes(2)
   })
 })

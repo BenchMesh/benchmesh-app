@@ -4,19 +4,24 @@
 //! USB device node (CDC-ACM interface `USB\..&MI_00\..`, FTDI `FTDIBUS\..` are skipped over) →
 //! vid/pid/revision from its hardware id, serial from its instance id, strings and location from
 //! its properties. Ports without a USB ancestor (COM1, Bluetooth) are left out.
+//!
+//! USBTMC instruments: every present USB node whose compatible ids name the USBTMC class (the
+//! device itself or, for a composite device, its interface), with the driver Windows bound to
+//! it. Listed also when no driver is installed (such devices are invisible to `nusb`).
 
 use std::ptr;
 
 use windows_sys::Win32::Devices::DeviceAndDriverInstallation::{
     CM_Get_DevNode_PropertyW, CM_Get_DevNode_Registry_PropertyW, CM_Get_Device_IDW, CM_Get_Parent, SetupDiDestroyDeviceInfoList, SetupDiEnumDeviceInfo,
-    SetupDiGetClassDevsW, SetupDiOpenDevRegKey, CM_DRP_DEVICEDESC, CM_DRP_HARDWAREID, CM_DRP_LOCATION_INFORMATION, CM_DRP_LOCATION_PATHS, CM_DRP_MFG,
-    CR_SUCCESS, DICS_FLAG_GLOBAL, DIGCF_PRESENT, DIREG_DEV, GUID_DEVCLASS_PORTS, MAX_DEVICE_ID_LEN, SP_DEVINFO_DATA,
+    SetupDiGetClassDevsW, SetupDiOpenDevRegKey, CM_DRP_COMPATIBLEIDS, CM_DRP_DEVICEDESC, CM_DRP_HARDWAREID, CM_DRP_LOCATION_INFORMATION, CM_DRP_LOCATION_PATHS,
+    CM_DRP_MFG, CM_DRP_SERVICE, CR_SUCCESS, DICS_FLAG_GLOBAL, DIGCF_ALLCLASSES, DIGCF_PRESENT, DIREG_DEV, GUID_DEVCLASS_PORTS, MAX_DEVICE_ID_LEN,
+    SP_DEVINFO_DATA,
 };
 use windows_sys::Win32::Devices::Properties::{DEVPKEY_Device_BusReportedDeviceDesc, DEVPROPKEY, DEVPROP_TYPE_STRING};
 use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 use windows_sys::Win32::System::Registry::{RegCloseKey, RegQueryValueExW, KEY_READ, REG_SZ};
 
-use super::ids::{win_hardware_id, win_instance_serial, win_is_usb_device};
+use super::ids::{win_hardware_id, win_instance_serial, win_is_usb_device, win_is_usbtmc_compatible_id};
 use super::{text, Port, PortKind, UsbInfo};
 
 /// Device-tree levels walked up from the COM port (port → interface/FTDIBUS → USB device).
@@ -46,20 +51,30 @@ fn parent(devinst: u32) -> Option<u32> {
     (r == CR_SUCCESS).then_some(p)
 }
 
+/// UTF-16 multi-sz → its non-empty entries.
+fn all_strings(buf: &[u16]) -> Vec<String> {
+    buf.split(|&c| c == 0).map(String::from_utf16_lossy).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+}
+
 /// A string (first entry of a multi-sz) registry property of a device node.
 fn registry_property(devinst: u32, prop: u32) -> Option<String> {
+    registry_strings(devinst, prop).into_iter().next()
+}
+
+/// All entries of a multi-sz (or the one string) registry property of a device node.
+fn registry_strings(devinst: u32, prop: u32) -> Vec<String> {
     let mut ty = 0u32;
     let mut len = 0u32;
     // SAFETY: a null buffer with length 0 only asks for the required size (CR_BUFFER_SMALL).
     unsafe { CM_Get_DevNode_Registry_PropertyW(devinst, prop, &mut ty, ptr::null_mut(), &mut len, 0) };
     if len == 0 {
-        return None;
+        return Vec::new();
     }
     let mut buf = vec![0u16; (len as usize).div_ceil(2) + 1];
     let mut len = (buf.len() * 2) as u32;
     // SAFETY: `buf` is valid for `len` bytes.
     let r = unsafe { CM_Get_DevNode_Registry_PropertyW(devinst, prop, &mut ty, buf.as_mut_ptr().cast(), &mut len, 0) };
-    (r == CR_SUCCESS).then(|| first_string(&buf)).flatten()
+    if r == CR_SUCCESS { all_strings(&buf) } else { Vec::new() }
 }
 
 /// A string device property (DEVPKEY) of a device node.
@@ -142,6 +157,45 @@ pub fn ports() -> Vec<Port> {
         if let Some(usb) = usb_info(info.DevInst) {
             out.push(Port { kind: PortKind::Serial, path, usb });
         }
+    }
+    // SAFETY: `set` came from SetupDiGetClassDevsW and is destroyed exactly once.
+    unsafe { SetupDiDestroyDeviceInfoList(set) };
+    out
+}
+
+/// USBTMC instruments attached, each with the service (driver) Windows bound to its USBTMC
+/// interface (`""` when none is installed). The path is the `usb:` path of `usbtmc_nusb`.
+pub fn usbtmc_ports() -> Vec<(Port, String)> {
+    let usb = wide("USB");
+    // SAFETY: no class GUID (all classes), a valid enumerator string, no window.
+    let set = unsafe { SetupDiGetClassDevsW(ptr::null(), usb.as_ptr(), 0, DIGCF_ALLCLASSES | DIGCF_PRESENT) };
+    if set == INVALID_HANDLE_VALUE {
+        return Vec::new();
+    }
+    let mut out: Vec<(Port, String)> = Vec::new();
+    let mut seen: Vec<u32> = Vec::new();
+    for index in 0.. {
+        // SAFETY: SP_DEVINFO_DATA is plain data; all-zero is valid before setting cbSize.
+        let mut info: SP_DEVINFO_DATA = unsafe { std::mem::zeroed() };
+        info.cbSize = std::mem::size_of::<SP_DEVINFO_DATA>() as u32;
+        // SAFETY: `set` is live and `info` has its cbSize set.
+        if unsafe { SetupDiEnumDeviceInfo(set, index, &mut info) } == 0 {
+            break;
+        }
+        if !registry_strings(info.DevInst, CM_DRP_COMPATIBLEIDS).iter().any(|id| win_is_usbtmc_compatible_id(id)) {
+            continue;
+        }
+        let Some((node, _)) = usb_device(info.DevInst) else { continue };
+        let Some(usb) = usb_info(node) else { continue };
+        if seen.contains(&node) {
+            continue;
+        }
+        seen.push(node);
+        let id = |h: &Option<String>| h.as_deref().and_then(|h| u16::from_str_radix(h, 16).ok());
+        let (Some(vid), Some(pid)) = (id(&usb.vendor_id), id(&usb.product_id)) else { continue };
+        let path = crate::usbtmc_nusb::path_of(vid, pid, usb.serial.as_deref(), usb.location.as_deref().unwrap_or_default());
+        let service = registry_property(info.DevInst, CM_DRP_SERVICE).unwrap_or_default();
+        out.push((Port { kind: PortKind::Usbtmc, path, usb }, service));
     }
     // SAFETY: `set` came from SetupDiGetClassDevsW and is destroyed exactly once.
     unsafe { SetupDiDestroyDeviceInfoList(set) };

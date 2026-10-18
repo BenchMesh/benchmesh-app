@@ -58,6 +58,8 @@ interface UsbTmcDeviceInfo {
   manufacturer?: string;
   product?: string;
   serial?: string;
+  // Why it cannot be opened (Windows: no usable driver installed)
+  note?: string | null;
 }
 
 interface InstrumentConfigViewProps {
@@ -310,6 +312,17 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
     return filtered;
   }
 
+  /** Default path for a new / switched entry: the first port the OS lists, never a guessed one. */
+  function firstFreePort(): string {
+    const used = devices.map((d) => d.port);
+    return availablePorts.find((p) => !used.includes(p.device))?.device ?? '';
+  }
+
+  function firstFreeUsbTmcDevice(): string {
+    const used = devices.map((d) => d.device);
+    return availableUsbTmcDevices.find((d) => !used.includes(d.device))?.device ?? '';
+  }
+
   function sanitizeDeviceForSave(device: Device): any {
     // Keep every field of the entry (also ones this form does not know, e.g. `match`),
     // ensure the required ones and drop the UI-only _uuid
@@ -353,8 +366,8 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
     const d = devices[index];
     const usbtmc = (d.transport || 'serial') === 'usbtmc';
     updateDeviceMultiple(index, usbtmc
-      ? { match: undefined, device: d.device || '/dev/usbtmc0' }
-      : { match: undefined, port: d.port || '/dev/ttyUSB0' });
+      ? { match: undefined, device: d.device || firstFreeUsbTmcDevice() }
+      : { match: undefined, port: d.port || firstFreePort() });
   }
 
   function renderIdentity(device: Device, index: number) {
@@ -482,8 +495,8 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
   }
 
   function addDevice() {
-    // Generate temporary ID for new device
-    const newId = `new-instrument-${Date.now()}`;
+    // Generated ID; the user usually replaces it
+    const newId = `${Date.now()}`;
     // Generate deterministic UUID based on the temp ID
     const uuid = generateDeterministicUuid(newId);
     const newDevice: Device = {
@@ -491,7 +504,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
       name: 'New Instrument',
       driver: '',
       transport: 'serial', // Default to serial transport
-      port: '/dev/ttyUSB0',
+      port: firstFreePort(),
       baud: 115200,
       serial: '8N1',
       model: '',
@@ -591,7 +604,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                 updateDeviceMultiple(index, {
                   transport: newTransport,
                   device: undefined,
-                  port: device.port || '/dev/ttyUSB0',
+                  port: device.port || firstFreePort(),
                   baud: device.baud || 115200,
                   serial: device.serial || '8N1',
                 });
@@ -601,7 +614,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                   port: undefined,
                   baud: undefined,
                   serial: undefined,
-                  device: device.device || '/dev/usbtmc0',
+                  device: device.device || firstFreeUsbTmcDevice(),
                 });
               }
             }}
@@ -722,6 +735,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                   <option key={dev.device} value={dev.device}>
                     {dev.device} - {dev.product || 'USB TMC Device'}
                     {dev.manufacturer ? ` (${dev.manufacturer})` : ''}
+                    {dev.note ? ' — needs a driver' : ''}
                   </option>
                 ))}
                 <option value="__custom__">Manual entry...</option>
@@ -741,11 +755,18 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                 type="text"
                 value={device.device || ''}
                 onChange={(e) => updateDevice(index, 'device', e.target.value)}
-                placeholder="/dev/usbtmc0 or /dev/tmcDGE2070"
+                placeholder="/dev/usbtmc0, usb:5345:1235:SERIAL or USB0::…::INSTR"
                 style={{ marginTop: '4px' }}
               />
             )}
-            <span className="instrument-config__hint">USB TMC device path</span>
+            {availableUsbTmcDevices.find((d) => d.device === device.device)?.note && (
+              <div className="instrument-config__inline-error" data-testid="usbtmc-note">
+                {availableUsbTmcDevices.find((d) => d.device === device.device)?.note}
+              </div>
+            )}
+            <span className="instrument-config__hint">
+              {availableUsbTmcDevices.length === 0 && !loadingUsbTmc ? 'No USB TMC instrument found — plug it in and refresh' : 'USB TMC device'}
+            </span>
           </div>
         ))}
 

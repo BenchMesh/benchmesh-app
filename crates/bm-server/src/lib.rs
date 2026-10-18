@@ -524,7 +524,7 @@ async fn usbtmc_devices(Query(q): Query<std::collections::HashMap<String, String
         .into_iter()
         .filter(|d| !ex.contains(&d.device))
         .map(|d| json!({"device": d.device, "name": d.name, "vendor_id": d.usb.vendor_id, "product_id": d.usb.product_id,
-                        "manufacturer": d.usb.manufacturer, "product": d.usb.product, "serial": d.usb.serial}))
+                        "manufacturer": d.usb.manufacturer, "product": d.usb.product, "serial": d.usb.serial, "note": d.note}))
         .collect::<Vec<_>>()))
 }
 

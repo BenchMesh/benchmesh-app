@@ -20,6 +20,13 @@ pub(crate) fn win_is_usb_device(instance_id: &str) -> bool {
     upper.starts_with("USB\\VID_") && !upper.contains("&MI_")
 }
 
+/// A Windows compatible id of a USBTMC interface: `USB\Class_FE&SubClass_03&Prot_01` (any
+/// protocol). Reported by the USB bus for every device, whether a driver is installed or not.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn win_is_usbtmc_compatible_id(id: &str) -> bool {
+    id.to_ascii_uppercase().starts_with("USB\\CLASS_FE&SUBCLASS_03")
+}
+
 /// The USB serial number from a USB device instance id (`USB\VID_0416&PID_5011\A02014090305` →
 /// `A02014090305`). Ids whose last segment contains `&` (`5&2A3B4C5D&0&4`) are synthesized by
 /// Windows for devices without a serial number → `None`.
@@ -66,6 +73,15 @@ mod tests {
         assert!(!win_is_usb_device(r"FTDIBUS\VID_0403+PID_6001+AL036DJTA\0000"));
         assert!(!win_is_usb_device(r"USB\ROOT_HUB30\4&1A2B3C4D&0&0"));
         assert!(!win_is_usb_device(r"ACPI\PNP0501\0"));
+    }
+
+    #[test]
+    fn detects_usbtmc_compatible_ids() {
+        assert!(win_is_usbtmc_compatible_id(r"USB\Class_FE&SubClass_03&Prot_01"));
+        assert!(win_is_usbtmc_compatible_id(r"USB\CLASS_FE&SUBCLASS_03"));
+        assert!(!win_is_usbtmc_compatible_id(r"USB\Class_FE&SubClass_01&Prot_01"));
+        assert!(!win_is_usbtmc_compatible_id(r"USB\Class_02&SubClass_02&Prot_01"));
+        assert!(!win_is_usbtmc_compatible_id(r"USB\COMPOSITE"));
     }
 
     #[test]

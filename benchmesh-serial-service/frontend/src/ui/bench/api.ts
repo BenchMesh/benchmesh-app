@@ -77,17 +77,20 @@ export function useHistory(value: number | null, tick: unknown, capacity = 150, 
   return h.data
 }
 
-/** A setpoint read from the instrument when `op` changes (and set locally after every commit). */
-export function useSetpoint(api: ChannelApi, op: string | null, parse: (v: unknown) => number | null) {
+/**
+ * A setpoint read from the instrument whenever it comes online (added, app start, reconnect) or
+ * `op` changes, and read back after every commit. The last value is kept while offline.
+ */
+export function useSetpoint(api: ChannelApi, op: string | null, parse: (v: unknown) => number | null, online: boolean) {
   const [entry, setEntry] = useState<{ op: string | null; value: number | null }>({ op: null, value: null })
   const parseRef = useRef(parse)
   useLayoutEffect(() => { parseRef.current = parse })
   useEffect(() => {
-    if (!op) return
+    if (!op || !online) return
     let cancelled = false
     api.get(op).then((v) => { if (!cancelled) setEntry({ op, value: parseRef.current(v) }) }).catch(() => {})
     return () => { cancelled = true }
-  }, [api, op])
+  }, [api, op, online])
   // after a set, read the setpoint back: the editor waits until the instrument reports it
   const commit = useCallback(async (v: number) => {
     if (!op) return

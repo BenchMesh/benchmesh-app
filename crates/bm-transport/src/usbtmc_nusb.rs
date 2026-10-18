@@ -57,14 +57,10 @@ fn devices() -> Vec<DeviceInfo> {
     nusb::list_devices().wait().map(|it| it.filter(|d| d.interfaces().any(|i| is_usbtmc(i.class(), i.subclass()))).collect()).unwrap_or_default()
 }
 
-/// The Windows driver bound to the device, if it is not one nusb can use.
+/// A Windows service (driver) nusb can open a USBTMC interface through.
 #[cfg(windows)]
-pub fn unusable_driver(d: &DeviceInfo) -> Option<String> {
-    match d.driver() {
-        Some(drv) if drv.eq_ignore_ascii_case("winusb") => None,
-        Some(drv) => Some(drv.to_string()),
-        None => Some(String::new()),
-    }
+pub fn usable_service(service: &str) -> bool {
+    service.eq_ignore_ascii_case("winusb")
 }
 
 /// USBTMC instruments visible to `nusb`, with the driver note (Windows) for each.
@@ -86,27 +82,27 @@ pub fn ports() -> Vec<(Port, DeviceInfo)> {
         .collect()
 }
 
+/// What to do about an instrument whose Windows `service` (driver; `""`: none) is not usable.
 #[cfg(windows)]
-fn driver_help(what: &str) -> io::Error {
-    io::Error::new(
-        io::ErrorKind::PermissionDenied,
-        format!(
-            "{what}. Either install a VISA (NI-VISA, Keysight IO Libraries or Rigol UltraSigma) — BenchMesh then uses it — \
-             or give the instrument the generic WinUSB driver once (Zadig: select the instrument, WinUSB, Replace Driver)"
-        ),
+pub fn driver_problem(service: &str) -> String {
+    let what = if service.is_empty() { "Windows has no driver for this instrument".to_string() } else { format!("the instrument uses the Windows driver \"{service}\", not WinUSB") };
+    format!(
+        "{what}. Either install a VISA (NI-VISA, Keysight IO Libraries or Rigol UltraSigma) — BenchMesh then uses it — \
+         or give the instrument the generic WinUSB driver once (Zadig: select the instrument, WinUSB, Replace Driver)"
     )
 }
 
 pub fn open(path: &str) -> io::Result<Session<NusbPipe>> {
+    #[cfg(windows)]
+    if let Some((_, service)) = crate::discover::windows_usbtmc_services().into_iter().find(|(p, _)| p.eq_ignore_ascii_case(path)) {
+        if !usable_service(&service) {
+            return Err(io::Error::new(io::ErrorKind::PermissionDenied, driver_problem(&service)));
+        }
+    }
     let info = devices()
         .into_iter()
-        .find(|d| self::path(d) == path)
+        .find(|d| self::path(d).eq_ignore_ascii_case(path))
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("{path}: no such USBTMC device attached")))?;
-    #[cfg(windows)]
-    if let Some(drv) = unusable_driver(&info) {
-        let what = if drv.is_empty() { "Windows has no driver for this instrument".to_string() } else { format!("the instrument uses the Windows driver \"{drv}\", not WinUSB") };
-        return Err(driver_help(&what));
-    }
     let number = info
         .interfaces()
         .find(|i| is_usbtmc(i.class(), i.subclass()))

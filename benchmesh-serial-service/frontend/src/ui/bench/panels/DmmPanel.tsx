@@ -70,10 +70,11 @@ export function DmmPanel({ status, profile, api, online }: {
     setRange('AUTO')
   }
   const stats = useStats(holdOn ? null : shown, status, mode)
+  // read whenever the meter comes online (added, app start, reconnect)
   useEffect(() => {
-    if (!profile.rates.length) return
+    if (!profile.rates.length || !online) return
     api.get('rate').then((v) => typeof v === 'string' && setRate(v.trim().toUpperCase())).catch(() => {})
-  }, [api, profile.rates.length])
+  }, [api, profile.rates.length, online])
 
   const unit = info?.unit ?? ''
   const isTemp = mode.toUpperCase().startsWith('TEMP')

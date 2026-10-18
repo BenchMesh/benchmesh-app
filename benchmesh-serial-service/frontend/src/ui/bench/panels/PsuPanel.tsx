@@ -19,10 +19,10 @@ export function PsuPanel({ status, profile, api, online }: {
   const pout = siNumber(status.POUT) ?? (vout != null && iout != null ? vout * iout : null)
   const vHist = useHistory(vout, status)
   const iHist = useHistory(iout, status)
-  const [vset, commitV] = useSetpoint(api, profile.voltage ? 'voltage' : null, siNumber)
-  const [iset, commitI] = useSetpoint(api, profile.current ? 'current' : null, siNumber)
-  const [ovpLevel, commitOvp] = useSetpoint(api, profile.voltageLimit ? 'voltage_limit' : null, siNumber)
-  const [ocpLevel, commitOcp] = useSetpoint(api, profile.currentLimit ? 'current_limit' : null, siNumber)
+  const [vset, commitV] = useSetpoint(api, profile.voltage ? 'voltage' : null, siNumber, online)
+  const [iset, commitI] = useSetpoint(api, profile.current ? 'current' : null, siNumber, online)
+  const [ovpLevel, commitOvp] = useSetpoint(api, profile.voltageLimit ? 'voltage_limit' : null, siNumber, online)
+  const [ocpLevel, commitOcp] = useSetpoint(api, profile.currentLimit ? 'current_limit' : null, siNumber, online)
   const [protect, setProtect] = useState<Record<string, boolean>>({})
 
   const vDig = profile.voltage ?? { intDigits: 2, decimals: 2 }
