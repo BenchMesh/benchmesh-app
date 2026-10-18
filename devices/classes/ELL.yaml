@@ -9,14 +9,14 @@ status:
   PIN:    {type: si, required: true, description: "Measured input power (W)"}
   INPUT:  {type: enum, values: [ON, OFF], required: true}
   MODE:   {type: string, required: true, description: "Active mode (features.modes key, e.g. CURR)"}
-  REMOTE: {type: enum, values: [ON, OFF], required: true}
+  REMOTE: {type: enum, values: [ON, OFF], description: "Front panel locked by remote control (only loads that have a remote mode)"}
   OVP:    {type: bool, description: "Over-voltage protection tripped"}
   OCP:    {type: bool, description: "Over-current protection tripped"}
   OPP:    {type: bool, description: "Over-power protection tripped"}
 operations:
   mode:   {set: true, value: string, required: [set]}
   input:  {get: true, set: true, value: enum, values: [ON, OFF], required: [get, set]}
-  remote: {get: true, set: true, value: enum, values: [ON, OFF], required: [get, set]}
+  remote: {get: true, set: true, value: enum, values: [ON, OFF], description: "Only loads with a remote/local mode (e.g. OWON OEL)"}
   curr:   {get: true, set: true, value: number, description: "CC setpoint (A)"}
   volt:   {get: true, set: true, value: number, description: "CV setpoint (V)"}
   res:    {get: true, set: true, value: number, description: "CR setpoint (ohm)"}

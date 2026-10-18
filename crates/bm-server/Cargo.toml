@@ -24,6 +24,8 @@ serde_json.workspace = true
 serde_yaml_ng.workspace = true
 
 [dev-dependencies]
+regex.workspace = true
+serde = { workspace = true, features = ["derive"] }
 bm-store = { path = "../bm-store" }
 tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.30"

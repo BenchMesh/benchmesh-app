@@ -1,0 +1,15 @@
+# Replies as the Korad/Tenma protocol sheet shows them (and as captured from the 72-2540):
+# checks the definition through the real engine without hardware.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: tenma_72
+model: 72-2540
+replies:
+  - {send: '\*IDN\?', reply: "TENMA 72-2540 V2.1", source: "protocol p.2 #10"}
+  - {send: 'VOUT1\?', reply: "05.00", source: "protocol p.1 #6"}
+  - {send: 'IOUT1\?', reply: "0.120", source: "protocol p.1 #5"}
+  - {send: 'VSET1\?', reply: "05.00", source: "protocol p.1 #4"}
+  - {send: 'ISET1\?', reply: "0.500 ", source: "protocol p.1 #2"}
+  - {send: 'STATUS\?', reply: "\x51", source: "protocol p.2 #9 (CV, beep, output on)"}
+expect:
+  PSU:
+    1: {VOUT: 5.0, IOUT: 0.12, OUTPUT: "ON"}

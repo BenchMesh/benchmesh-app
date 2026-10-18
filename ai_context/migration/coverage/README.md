@@ -29,3 +29,25 @@ reports cite them by that path and page.
 3. Shared command baselines across families (input for `extends`).
 4. For classes without a contract yet: proposed status keys, operations, features and the panel
    (displays and controls as on the instruments' front panels).
+
+## Manual examples (testing without hardware)
+
+Every definition whose models are all *Awaiting confirmation* needs `devices/examples/<id>.yaml`:
+replies quoted from its manual (page cited), which `crates/bm-server/tests/manual_examples.rs`
+feeds through the real engine — identify must select the model, one poll of every class must
+fill every required status key with the contract's type, every readable operation must answer
+and every setter must accept a valid value. Optional `expect` pins decoded values.
+
+```yaml
+definition: rigol_dp800
+transport: usbtmc            # optional: which link (and its framing) to use
+model: DP832                 # the model the identify reply must select
+replies:                     # regex over the whole command (no tx terminator) -> reply
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DP832,DP8A000000,00.01.16", source: "PG p.2-81"}
+  - {send: ':MEAS:VOLT\? CH1', reply: "5.0000", source: "PG p.2-60"}
+expect:
+  PSU: {1: {VOUT: 5.0, OUTPUT: "ON"}}
+```
+
+Replies are text (YAML escapes such as `"\x51"` for binary bytes); in `terminator` framing the rx
+terminator is appended when missing. Commands that are not matched get no reply (setters).
