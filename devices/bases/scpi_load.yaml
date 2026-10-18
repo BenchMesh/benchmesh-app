@@ -1,0 +1,125 @@
+# SCPI baseline for DC electronic loads (partial definition, see
+# ai_context/migration/DEVICE_DSL.md "extends"). Common subset of Rigol DL3000, Siglent
+# SDL1000X, ITECH IT8500+ (SCPI) and B&K 8600 (ITECH IT8800 OEM); OWON OEL follows the same
+# tree but is a stand-alone, bench-tested definition. Derived definitions add identity, links,
+# limits, the protection-status bit layout, and override or remove (`null`) what their dialect
+# lacks. Source: ai_context/migration/coverage/ELL.md §3.
+#
+# Short forms: the manuals write `[:SOURce]:INPut[:STATe]`, `[:SOURce]:CURRent[:LEVel][:IMMediate]`
+# etc.; bracketed nodes are optional in SCPI, so `INP?` and `CURR 1.000` are the same commands.
+#
+# Setpoints are gated on the active mode (`requires`), as in owon_oel: a setpoint for another
+# mode is refused instead of being silently stored (or, on some loads, switching the mode).
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 10, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  meas_v: {send: "MEAS:VOLT?", parse: [trim, number]}
+  meas_i: {send: "MEAS:CURR?", parse: [trim, number]}
+  meas_p: {send: "MEAS:POW?", parse: [trim, number]}
+  inp_q:
+    send: "INP?"
+    parse: [trim, upper, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+  # One map for every dialect: Rigol `CC|CV|CR|CP`, Siglent `CURRENT|VOLTAGE|...`, ITECH/BK
+  # `CURRent|VOLTage|...` (short or long). Modes without a setpoint here (dynamic, LED,
+  # impedance, battery, list) become their own key or OTHER.
+  func_q:
+    send: "FUNC?"
+    parse:
+      - trim
+      - lower
+      - {regex: {pattern: "^(cc|cv|cr|cp|cw|curr|volt|res|pow|dyn|led|imp)?", group: 1}}
+      - {map: {cc: CURR, curr: CURR, cv: VOLT, volt: VOLT, cr: RES, res: RES, cp: POW, cw: POW, pow: POW, dyn: DYN, led: LED, imp: IMP, _: OTHER}}
+  # Questionable condition register (decimal). Bit layout of Rigol DL3000 and B&K 8600
+  # (N3300 heritage): 1 OC, 3 OP, 12 OV, 13 PS (protection shutdown). ITECH IT8500+ overrides.
+  ques_q:
+    send: "STAT:QUES:COND?"
+    parse: [trim, number, {bits: {oc: "1", op: "3", ov: "12", ps: "13"}}]
+  curr_q: {send: "CURR?", parse: [trim, number]}
+  volt_q: {send: "VOLT?", parse: [trim, number]}
+  res_q: {send: "RES?", parse: [trim, number]}
+  pow_q: {send: "POW?", parse: [trim, number]}
+  short_q:
+    send: "INP:SHOR?"
+    parse: [trim, upper, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+  mode_set:
+    send: "FUNC {mode}"
+    params: {mode: {type: enum, values: {CURR: CURR, VOLT: VOLT, RES: RES, POW: POW}}}
+    reply: none
+    safety: configure
+  curr_set:
+    send: "CURR {a}"
+    params: {a: {type: number, min: 0, max: 60, format: "%.4f", unit: A}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "CURR"', message: "CC setpoint requires MODE=CURR (POST mode/CURR first)"}
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0, max: 150, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "VOLT"', message: "CV setpoint requires MODE=VOLT (POST mode/VOLT first)"}
+  res_set:
+    send: "RES {r}"
+    params: {r: {type: number, min: 0.05, max: 15000, format: "%.3f", unit: ohm}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "RES"', message: "CR setpoint requires MODE=RES (POST mode/RES first)"}
+  pow_set:
+    send: "POW {p}"
+    params: {p: {type: number, min: 0, max: 350, format: "%.3f", unit: W}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "POW"', message: "CP setpoint requires MODE=POW (POST mode/POW first)"}
+  input_set:
+    send: "INP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  short_set:
+    send: "INP:SHOR {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  sense_set:
+    send: "SYST:SENS {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+classes:
+  ELL:
+    channels: 1
+    ui_component: ScpiLoadELL
+    features:
+      remote_sense: true
+      modes:
+        CURR: {ui_name: "Constant Current", setpoint: {unit: "A", symbol: "I", min: 0.0, step: 0.001}}
+        VOLT: {ui_name: "Constant Voltage", setpoint: {unit: "V", symbol: "U", min: 0.0, step: 0.001}}
+        RES: {ui_name: "Constant Resistance", setpoint: {unit: "Ω", symbol: "R", step: 0.001}}
+        POW: {ui_name: "Constant Power", setpoint: {unit: "W", symbol: "P", min: 0.0, step: 0.001}}
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, meas_p, inp_q, func_q, ques_q]
+    status:
+      VIN: {expr: "meas_v", as: si}
+      IIN: {expr: "meas_i", as: si}
+      PIN: {expr: "meas_p", as: si}
+      INPUT: inp_q
+      MODE: func_q
+      OVP: "ques_q.ov"
+      OCP: "ques_q.oc"
+      OPP: "ques_q.op"
+    operations:
+      mode: {set: mode_set}
+      input: {get: inp_q, set: input_set}
+      curr: {get: curr_q, set: curr_set}
+      volt: {get: volt_q, set: volt_set}
+      res: {get: res_q, set: res_set}
+      pow: {get: pow_q, set: pow_set}
+      short: {get: short_q, set: short_set}
+      remote_compensation: {set: sense_set}

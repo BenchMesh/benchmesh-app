@@ -1,0 +1,21 @@
+# Korad KEL10x replies as Korad's command table (CC, KEL10x_Communication_Commands_with_Computer.pdf)
+# and the community spec (KP, kelctl KEL103-protocol.md) show them; the CC examples prefix
+# replies with ">" as a display convention, not on the wire.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: korad_kel10x
+model: KEL103
+replies:
+  - {send: '\*IDN\?', reply: "RND 320-KEL103 V2.60 SN:01234567", source: "KP"}
+  - {send: ':MEAS:VOLT\?', reply: "1.4999V", source: "CC p.4 #18"}
+  - {send: ':MEAS:CURR\?', reply: "0.789A", source: "CC p.4 #17"}
+  - {send: ':MEAS:POW\?', reply: "1.1968W", source: "CC p.4 #19"}
+  - {send: ':INP\?', reply: "ON", source: "KP"}
+  - {send: ':FUNC\?', reply: "CC", source: "KP (kelenums.py)"}
+  - {send: ':SYST:LOCK\?', reply: "OFF", source: "KP"}
+  - {send: ':CURR\?', reply: "2A", source: "CC p.2 #10"}
+  - {send: ':VOLT\?', reply: "20V", source: "CC p.2 #8"}
+  - {send: ':RES\?', reply: "20OHM", source: "CC p.3 #12"}
+  - {send: ':POW\?', reply: "20W", source: "CC p.3 #14"}
+expect:
+  ELL:
+    1: {VIN: 1.4999, IIN: 0.789, PIN: 1.1968, INPUT: "ON", MODE: "CURR", REMOTE: "OFF"}

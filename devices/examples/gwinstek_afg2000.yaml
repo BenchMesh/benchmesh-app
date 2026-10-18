@@ -1,0 +1,17 @@
+# Replies as the AFG-2000 user manual (EF1) shows them (printed pages; the manual's ">" is the
+# terminal prompt): checks the definition through the real engine without hardware.
+definition: gwinstek_afg2000
+model: AFG-2025
+replies:
+  - {send: '\*IDN\?', reply: "GW INSTEK,AFG-2025,SN:XXXXXXXX,Vm.mm", source: "p96"}
+  - {send: 'OUTP\?', reply: "1", source: "p110"}
+  - {send: 'SOUR1:FUNC\?', reply: "SIN", source: "p104"}
+  - {send: 'SOUR1:FREQ\?', reply: "+1.0000000000000E+03", source: "p106"}
+  - {send: 'SOUR1:VOLT:UNIT\?', reply: "VPP", source: "p112"}
+  - {send: 'SOUR1:AMPL\?', reply: "+5.0000E+00", source: "p107"}
+  - {send: 'SOUR1:DCO\?', reply: "+3.0000E+00", source: "p108"}
+  - {send: 'SOUR1:RAMP:SYMM\?', reply: "+1.0000E+02", source: "p109"}
+  - {send: 'OUTP:LOAD\?', reply: "DEF", source: "p111"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 1000.0, AMPL: 5.0, OFFS: 3.0, SYMM: 100.0, LOAD: "50"}

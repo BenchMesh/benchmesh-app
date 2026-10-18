@@ -1,0 +1,17 @@
+# Replies as the HDG2000B SCPI protocol shows them ("Typical Return", PDF pages): checks the
+# definition through the real engine without hardware. The *IDN? reply form is not documented:
+# the one below is assumed (serial number from the user manual's VISA example, p92).
+definition: hantek_hdg2000b
+model: HDG2102B
+replies:
+  - {send: '\*IDN\?', reply: "Hantek,HDG2102B,CN1826003000125,1.0.0", source: "assumed; serial from user manual p92"}
+  - {send: 'OUTPut[12]\?', reply: "ON", source: "PDF p26"}
+  - {send: 'SOURce[12]:FUNCtion\?', reply: "SINusoid", source: "PDF p19"}
+  - {send: 'SOURce[12]:FREQuency\?', reply: "+1.000000000000000E+03", source: "PDF p17"}
+  - {send: 'SOURce[12]:VOLTage\?', reply: "+10.0000000000000E+00", source: "PDF p40"}
+  - {send: 'SOURce[12]:VOLTage:OFFSet\?', reply: "+1.0000000000000E-01", source: "PDF p40"}
+  - {send: 'SOURce[12]:PHASe\?', reply: "+9.0000000000000E+01", source: "PDF p26"}
+  - {send: 'SOURce[12]:FUNCtion:RAMP:SYMMetry\?', reply: "+3.000000000000000E+01", source: "PDF p20"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 1000.0, AMPL: 10.0, OFFS: 0.1, PHASE: 90.0, SYMM: 30.0}

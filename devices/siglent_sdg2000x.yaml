@@ -1,0 +1,26 @@
+# Siglent SDG2000X function/arbitrary waveform generators (SDG2042X/SDG2082X/SDG2122X).
+# Written from the programming guide and datasheet before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.2. PG pages are printed pages (PDF = +12).
+schema: benchmesh.device/v1
+id: siglent_sdg2000x
+extends: siglent_sdg
+vendor: Siglent
+family: SDG2000X series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "SDG Series Programming Guide PG02-E05C (SDG_Programming_Guide_PG02-E05C.pdf)", pages: "12 (*IDN?), 13 (command sync), 15-16 (OUTPut), 17-19 (BSWV), 175 (VISA USB0::0xF4EC::0x1101)"}
+  - {doc: "SDG2000X datasheet (ds_SDG2000X.pdf)", pages: "2-4 (models, sine/square/pulse/ramp limits)"}
+  - {note: "USB product id not documented per model: vendor id only, identify decides"}
+models:
+  - {"name": "SDG2122X", "match": "^Siglent Technologies,\\s*SDG2122X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 120e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
+  - {"name": "SDG2082X", "match": "^Siglent Technologies,\\s*SDG2082X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
+  - {"name": "SDG2042X", "match": "^Siglent Technologies,\\s*SDG2042X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 40e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
+link:
+  usbtmc: {vid: "f4ec"}
+  tcp: {port: 5025}
+commands:
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 120000000, format: "%.6f", unit: Hz}}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 120e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}

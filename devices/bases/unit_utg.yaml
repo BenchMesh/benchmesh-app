@@ -1,0 +1,111 @@
+# UNI-T UTG function/arbitrary generator baseline (`:CHANnel<n>:BASE:*` dialect): UTG900E,
+# UTG1000X, UTG2000B, UTG4000A. Research: ai_context/migration/coverage/AWG.md §2.5, §3.4.
+# A definition `extends: unit_utg` and adds identity, models, per-model features and limits.
+#
+# - Short forms only: the UTG2000B manual spells `BASe` (short form BAS, long form BASE), the
+#   others `BASE`; `:CHAN{ch}:BASE:…` is valid for all.
+# - Replies are mixed case (`SINe`): `upper` + map. Numbers in scientific notation of varying
+#   format (`2e+3`, `5.000000e+01`, `50e+0`): `number` handles all.
+# - LOAD: 1…10000 Ω where 10000 means High-Z (UTG2000B: up to 1 MΩ, 1000000 = High-Z).
+# - AMPL in Vpp: null while the front panel has the amplitude unit at Vrms/dBm (the amplitude
+#   setter is refused then rather than switching the unit behind the user's back).
+# - Setters never answer; USB vid:pid not documented (first contact: `cargo run -p bm-transport
+#   --example ports`).
+schema: benchmesh.device/v1
+identify: idn
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 2000}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+link:
+  usbtmc: {}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "PM p5"}
+  outp_q:
+    send: ":CHAN{ch}:OUTP?"
+    parse: [trim, upper, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    source: "PM p9; reply 1/0"
+  outp_set:
+    send: ":CHAN{ch}:OUTP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: "PM p9"
+  shape_q:
+    send: ":CHAN{ch}:BASE:WAV?"
+    parse:
+      - trim
+      - upper
+      - map: {SIN: SIN, SINE: SIN, SQU: SQU, SQUARE: SQU, PULS: PUL, PULSE: PUL, RAMP: RAMP,
+              NOIS: PRN, NOISE: PRN, DC: DC, _: ARB}
+    description: "Mixed-case long form, e.g. SINe; ARB/HARMonic/EXP read as ARB"
+  shape_set:
+    send: ":CHAN{ch}:BASE:WAV {shape}"
+    params: {shape: {type: enum, values: {SIN: SIN, SQU: SQU, RAMP: RAMP, PUL: PULS, PRN: NOIS, DC: DC}}}
+    reply: none
+    safety: configure
+  freq_q: {send: ":CHAN{ch}:BASE:FREQ?", parse: [trim, number]}
+  freq_set:
+    send: ":CHAN{ch}:BASE:FREQ {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+  unit_q:
+    send: ":CHAN{ch}:AMPL:UNIT?"
+    parse: [trim, upper]
+    cache_ms: 1000
+    description: "Amplitude unit chosen on the front panel: VPP, VRMS or DBM"
+  ampl_q: {send: ":CHAN{ch}:BASE:AMPL?", parse: [trim, number], description: "Amplitude in the current unit (AMPL:UNIT)"}
+  ampl_set:
+    send: ":CHAN{ch}:BASE:AMPL {vpp}"
+    # max at the present load = load·20/(50+load): 10 Vpp into 50 Ω, ~20 Vpp High-Z
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    requires: {expr: "unit_q == 'VPP'", message: "the amplitude unit is set to Vrms or dBm on the instrument; switch it to Vpp"}
+    reply: none
+    safety: configure
+  offs_q: {send: ":CHAN{ch}:BASE:OFFS?", parse: [trim, number]}
+  offs_set:
+    send: ":CHAN{ch}:BASE:OFFS {v}"
+    # max DC at the present load = load·10/(50+load) − Vpp/2
+    params: {v: {type: number, min: -10, max: 10, format: "%.4f", unit: V}}
+    reply: none
+    safety: configure
+  phase_q: {send: ":CHAN{ch}:BASE:PHAS?", parse: [trim, number], description: "Degrees"}
+  phase_set:
+    send: ":CHAN{ch}:BASE:PHAS {deg}"
+    params: {deg: {type: number, min: -360, max: 360, format: "%.2f", unit: deg}}
+    reply: none
+    safety: configure
+  symm_q: {send: ":CHAN{ch}:RAMP:SYMM?", parse: [trim, number]}
+  symm_set:
+    send: ":CHAN{ch}:RAMP:SYMM {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+  load_q: {send: ":CHAN{ch}:LOAD?", parse: [trim, number], description: "Ohms; 10000 = High-Z"}
+classes:
+  AWG:
+    channels: 2
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700", "2": "#00BFFF"}}
+    # one group: ~9 short exchanges per channel
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, unit_q, ampl_q, offs_q, phase_q, symm_q, load_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: "unit_q == 'VPP' ? ampl_q : null", as: si}
+      OFFS: {expr: offs_q, as: si}
+      PHASE: phase_q
+      SYMM: symm_q
+      LOAD: "load_q >= 10000.0 ? 'HIGHZ' : string(int(load_q))"
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      offset: {get: offs_q, set: offs_set, as: si}
+      phase: {get: phase_q, set: phase_set}
+      symmetry: {get: symm_q, set: symm_set}

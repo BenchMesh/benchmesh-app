@@ -1,0 +1,37 @@
+# Keysight (Agilent) Trueform 33500B / 33600A series waveform generators.
+# Written from the Trueform command set before anyone tested it on hardware: the 33500B
+# programming guide needs a Keysight login, so commands follow the EDU33210 guide (same Trueform
+# firmware family) and pymeasure `agilent33500.py`. Research: ai_context/migration/coverage/AWG.md §2.7.
+schema: benchmesh.device/v1
+id: keysight_33500b
+extends: scpi_awg
+vendor: Keysight
+family: 33500B/33600A Trueform waveform generator
+version: 0.1.0
+sources:
+  - {doc: "EDU33210 Series User's Guide EDU33212-90002 Ed4 (Trueform command forms)", pages: "83-93"}
+  - {note: "33500B/33600A guide (asset 9018-03714) not obtained (login). USB ids from memory: 33500B 0957:2C07, 33600A 0957:5707 — the link names the vendor only. Model limits from datasheets; confidence medium."}
+models:
+  - {"name": "33509B", "match": "^(Agilent|Keysight) Technologies,33509B,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "33510B", "match": "^(Agilent|Keysight) Technologies,33510B,", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "33511B", "match": "^(Agilent|Keysight) Technologies,33511B,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "33512B", "match": "^(Agilent|Keysight) Technologies,33512B,", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "33519B", "match": "^(Agilent|Keysight) Technologies,33519B,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
+  - {"name": "33520B", "match": "^(Agilent|Keysight) Technologies,33520B,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
+  - {"name": "33521B", "match": "^(Agilent|Keysight) Technologies,33521B,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
+  - {"name": "33522B", "match": "^(Agilent|Keysight) Technologies,33522B,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
+  - {"name": "33611A", "match": "^(Agilent|Keysight) Technologies,33611A,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
+  - {"name": "33612A", "match": "^(Agilent|Keysight) Technologies,33612A,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
+  - {"name": "33621A", "match": "^(Agilent|Keysight) Technologies,33621A,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 120e6}}}}
+  - {"name": "33622A", "match": "^(Agilent|Keysight) Technologies,33622A,", "features": {"AWG": {"max_freq_hz": {"SIN": 120e6}}}}
+link:
+  usbtmc: {vid: "0957"}
+  tcp: {port: 5025}
+commands:
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 120000000, format: "%.6f", unit: Hz}}
+  phase_set:
+    params: {deg: {type: number, min: -360, max: 360, format: "%.3f", unit: deg}}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 120e6}, "channel_colors": {"1": "#FFD700", "2": "#32CD32"}}

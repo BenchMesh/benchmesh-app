@@ -1,0 +1,95 @@
+# Tektronix-AFG SCPI dialect baseline (`SOURce<n>:FUNCtion:SHAPe`, `OUTPut<n>:STATe`, phase in
+# radians): OWON XDG2000/XDG3000 and Tektronix AFG1000 (an OWON OEM unit). Copied from the body
+# of the bench-tested `owon_dge.yaml` (which stays standalone, tx "\r"); members here use LF.
+# Research: ai_context/migration/coverage/AWG.md §2.6, §3.2.
+#
+# API values: SHAPE / shape SIN SQU RAMP PUL PRN DC; built-in arbitrary waves read as ARB.
+# PHASE in degrees (the instrument answers radians). LOAD "1" … "10000" or "HIGHZ" (9.9E+37).
+# Setters never answer; on the DGE a read right after a setter desynced the link, hence the gap.
+schema: benchmesh.device/v1
+identify: idn
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 1000}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+link:
+  usbtmc: {}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  outp_q:
+    send: "OUTPut{ch}:STATe?"
+    parse: [trim, upper, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+  outp_set:
+    send: "OUTPut{ch}:STATe {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  shape_q:
+    send: "SOURce{ch}:FUNCtion:SHAPe?"
+    # SIN SQU PULS RAMP PRN; built-in waves answer their (case-sensitive) name
+    parse: [trim, upper, {map: {SIN: SIN, SQU: SQU, RAMP: RAMP, PULS: PUL, PUL: PUL, PRN: PRN, DC: DC, _: ARB}}]
+  shape_set:
+    send: "SOURce{ch}:FUNCtion:SHAPe {shape}"
+    params: {shape: {type: enum, values: {SIN: SINusoid, SQU: SQUare, PUL: PULSe, RAMP: RAMP, PRN: PRNoise, DC: DC}}}
+    reply: none
+    safety: configure
+  freq_q: {send: "SOURce{ch}:FREQuency?", parse: [trim, number]}
+  freq_set:
+    send: "SOURce{ch}:FREQuency {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 25000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+  ampl_q: {send: "SOURce{ch}:VOLTage?", parse: [trim, number], description: "Vpp"}
+  ampl_set:
+    send: "SOURce{ch}:VOLTage {vpp}"
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    reply: none
+    safety: configure
+  offs_q: {send: "SOURce{ch}:VOLTage:OFFSet?", parse: [trim, number]}
+  offs_set:
+    send: "SOURce{ch}:VOLTage:OFFSet {v}"
+    params: {v: {type: number, min: -10, max: 10, format: "%.4f", unit: V}}
+    reply: none
+    safety: configure
+  phase_q: {send: "SOURce{ch}:PHASe?", parse: [trim, number], description: "Radians"}
+  phase_set:
+    send: "SOURce{ch}:PHASe {deg}DEG"
+    params: {deg: {type: number, min: 0, max: 360, format: "%.2f", unit: deg}}
+    reply: none
+    safety: configure
+  symm_q: {send: "SOURce{ch}:FUNCtion:RAMP:SYMMetry?", parse: [trim, number]}
+  symm_set:
+    send: "SOURce{ch}:FUNCtion:RAMP:SYMMetry {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+  load_q:
+    send: "OUTPut{ch}:IMPedance?"
+    parse: [trim, number]
+    description: "Ohms; INFinity (High-Z) answers 9.9E+37"
+classes:
+  AWG:
+    channels: 2
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700", "2": "#4169E1"}}
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, ampl_q, offs_q, phase_q, symm_q, load_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: ampl_q, as: si}
+      OFFS: {expr: offs_q, as: si}
+      PHASE: "phase_q * 180.0 / 3.141592653589793"
+      SYMM: symm_q
+      LOAD: "load_q >= 9.0e37 ? 'HIGHZ' : string(int(load_q))"
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      offset: {get: offs_q, set: offs_set, as: si}
+      # the query answers radians; the setter takes degrees
+      phase: {set: phase_set}
+      symmetry: {get: symm_q, set: symm_set}

@@ -1,0 +1,37 @@
+# GW Instek AFG-3000 series arbitrary function generators (AFG-3051, AFG-3081; single channel).
+# RS-232 (DB-9 null-modem, factory 115200 8N1) or USB CDC; GPIB not supported here.
+# Written from the user manual before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.8. Pages are printed page numbers.
+schema: benchmesh.device/v1
+id: gwinstek_afg3000
+extends: gw_afg
+vendor: GW Instek
+family: AFG-3000 series arbitrary function generator
+version: 0.1.0
+sources:
+  - {doc: "AFG-3000 Series User Manual vF", pages: "183-185 (USB, RS-232 9600-115200, 8N1/7O1/7E1), 203 (SYST:LOC/REM), 211 (FUNCtion), 212-213 (FREQuency), 214 (AMPlitude), 215 (DCOffset), 217 (RAMP:SYMMetry), 218 (OUTPut, OUTPut:LOAD), 219 (VOLTage:UNIT)"}
+  - {note: "Limits: sine/square/ramp 1 µHz-80 MHz (AFG-3081) / 50 MHz (AFG-3051), pulse 50 MHz (p212); 10 mVpp-10 Vpp into 50 Ω (20 Vpp High-Z), offset ±5 V / ±10 V. No phase command for continuous waves (only BURSt:PHASe)."}
+models:
+  - {"name": "AFG-3051", "match": "^GW INSTEK, ?AFG-3051,", "features": {"AWG": {"max_freq_hz": {"SIN": 50e6, "SQU": 50e6, "PUL": 50e6, "RAMP": 50e6}}}}
+  - {"name": "AFG-3081", "match": "^GW INSTEK, ?AFG-3081,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6, "SQU": 80e6, "PUL": 50e6, "RAMP": 80e6}}}}
+commands:
+  outp_q: {source: "p218; reply 1/0"}
+  outp_set: {source: "p218"}
+  shape_q: {source: "p211; SIN, SQU, RAMP, PULS, NOIS, DC, TRI, USER"}
+  shape_set:
+    params: {shape: {type: enum, values: {SIN: SIN, SQU: SQU, RAMP: RAMP, PUL: PULS, PRN: NOIS, DC: DC}}}
+    source: "p211"
+  freq_q: {source: "p213"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 80000000, format: "%.6f", unit: Hz}}
+    source: "p212"
+  unit_q: {source: "p219"}
+  ampl_q: {source: "p214"}
+  ampl_set:
+    params: {vpp: {type: number, min: 0.01, max: 20, format: "%.4f", unit: Vpp}}
+    source: "p214"
+  offs_q: {source: "p215"}
+  offs_set: {source: "p215"}
+  symm_q: {source: "p217"}
+  symm_set: {source: "p217"}
+  load_q: {source: "p218; DEF / INF"}

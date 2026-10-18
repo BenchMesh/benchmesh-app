@@ -1,0 +1,14 @@
+# Replies as the GDM-8342 user manual prints them. Spec: ai_context/migration/coverage/README.md.
+definition: gwinstek_gdm8300
+transport: serial
+model: GDM8342
+replies:
+  - {send: '\*IDN\?', reply: "GWInstek,GDM8342,00000000,1.0", source: "8342 p.141 *IDN?"}
+  - {send: 'VAL1\?', reply: "+0.333E-4,V DC", source: "8342 p.135 VAL1?"}
+  - {send: 'CONF:FUNC\?', reply: "RES", source: "8342 p.119 CONFigure:FUNCtion?"}
+  - {send: 'CONF:RANG\?', reply: "50E+1", source: "8342 p.120 CONFigure:RANGe? (500 Ω)"}
+  - {send: 'CONF:AUTO\?', reply: "0", source: "8342 p.120 CONFigure:AUTO?"}
+  - {send: 'SENS:DET:RATE\?', reply: "MID", source: "8342 p.128 DETector:RATE?"}
+expect:
+  DMM:
+    1: {MEAS: 0.333e-4, MODE: RES, RANGE: "500", OVERLOAD: false}

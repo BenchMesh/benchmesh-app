@@ -1,0 +1,30 @@
+# Replies as the SDS Series Programming Guide EN11G shows them (PDF pages): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: siglent_sds2000xhd
+transport: usbtmc
+model: SDS2354X HD
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDS2354X HD,SDS2XHDX5R0160,1.2.0.2", source: "EN11G p31 format (example shows SDS5104X)"}
+  - {send: ':CHANnel[1-4]:SWITch\?', reply: "ON", source: "p61"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "5.00E-02", source: "p59"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "-3.8E+00", source: "p57"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "AC", source: "p52"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "1.00E+02", source: "p58"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "20M", source: "p51"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "ON", source: "p54"}
+  - {send: ':TIMebase:SCALe\?', reply: "1.00E-07", source: "p477"}
+  - {send: ':TIMebase:DELay\?', reply: "1.00E-05", source: "p474"}
+  - {send: ':TRIGger:MODE\?', reply: "SINGle", source: "p483"}
+  - {send: ':TRIGger:STATus\?', reply: "Stop", source: "p484"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "C1", source: "p496"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "RISing", source: "p495"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "5.00E-01", source: "p493"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVERage,16", source: "p48"}
+  - {send: ':ACQuire:SRATe\?', reply: "5.00E+09", source: "p47"}
+  - {send: ':ACQuire:POINts\?', reply: "1.25E+08", source: "p43"}
+  - {send: ':MEASure:SIMPle:VALue\? (PKPK|MEAN|RMS)', reply: "2.000E+00", source: "p369"}
+  - {send: ':MEASure:SIMPle:VALue\? FREQ', reply: "****", source: "invalid value (community, not in the guide)"}
+  - {send: ':WAVeform:DATA\?', reply: " #9000000008\x00\xf5\x00\x00\x00\x1e\x00\xe2\n\n", source: "p758: block headed ' #N', ends 0A 0A"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 0.05, OFFSET: -3.8, COUPLING: "AC", PROBE: 100, BWLIMIT: "20M", INVERT: "ON", TIMEBASE: 1.0e-7, TIMEOFFSET: 1.0e-5, TRIG_SWEEP: "SING", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "POS", TRIG_LEVEL: 0.5, ACQ_TYPE: "AVER", SRATE: 5.0e9, WAVE_Y0: -583680.0, WAVE_DY: 6.510416666666667e-06, WAVE_X0: 9.5e-6, WAVE_DX: 2.5e-5, WAVE: [-2816, 0, 7680, -7680], TRIG_STATUS: "STOP", VPP: 2.0, VAVG: 2.0, VRMS: 2.0, FREQ: null}

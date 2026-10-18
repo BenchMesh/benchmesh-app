@@ -1,0 +1,136 @@
+# RIGOL DP700/DP800 power supply SCPI dialect (partial definition, see
+# ai_context/migration/DEVICE_DSL.md "extends"). Always the explicit channel forms
+# (`CH{ch}` argument, `:SOUR{ch}`): without them a command acts on the `:INST:NSEL` selection.
+# Page numbers: DP800 Programming Guide 2015 (PG800) and DP700 Programming Guide (PG700),
+# chapter-page. Derived definitions add identity, models, links, limits.
+# Source: ai_context/migration/coverage/PSU.md §2.5, §2.9, §3 "rigol_dp".
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+# RS232: commands end in "\r\n" on the DP800 (PG800 p.1-2), "\n" on the DP700 (PG700 p.1-1);
+# replies end in "\n".
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable; tracks our own :SYST:REM / :SYST:LOC"}
+commands:
+  idn:
+    send: "*IDN?"
+    parse: [trim]
+    description: "RIGOL TECHNOLOGIES,<model>,<serial>,<version>"
+    source: "PG800 p.2-24; PG700 p.2-4"
+  meas_all:
+    send: ":MEAS:ALL? CH{ch}"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p]}}]
+    description: "Measured voltage, current, power, e.g. 2.0000,0.0500,0.100"
+    source: "PG800 p.2-34; PG700 p.2-9"
+  meas_v: {send: ":MEAS? CH{ch}", parse: [trim, number], source: "PG800 p.2-36; PG700 p.2-9"}
+  meas_i: {send: ":MEAS:CURR? CH{ch}", parse: [trim, number], source: "PG800 p.2-35; PG700 p.2-9"}
+  meas_p: {send: ":MEAS:POWE? CH{ch}", parse: [trim, number], source: "PG800 p.2-35; PG700 p.2-9"}
+  volt_q: {send: ":SOUR{ch}:VOLT?", parse: [trim, number], source: "PG800 p.2-90; PG700 p.2-25"}
+  curr_q: {send: ":SOUR{ch}:CURR?", parse: [trim, number], source: "PG800 p.2-83; PG700 p.2-22"}
+  outp_q:
+    send: ":OUTP? CH{ch}"
+    parse: [trim, {map: {"ON": "ON", "OFF": "OFF"}}]
+    source: "PG800 p.2-63; PG700 p.2-21"
+  cvcc:
+    send: ":OUTP:CVCC? CH{ch}"
+    parse: [trim, {map: {"CV": "CV", "CC": "CC", "UR": "UR"}}]
+    description: "CV, CC or UR (unregulated)"
+    source: "PG800 p.2-53; PG700 p.2-14"
+  ovp_ques:
+    send: ":OUTP:OVP:QUES? CH{ch}"
+    parse: [trim, {map: {"YES": "YES", "NO": "NO"}}]
+    description: "YES while an over-voltage trip is latched (cleared by :OUTP:OVP:CLEAR)"
+    source: "PG800 p.2-58; PG700 p.2-18"
+  ocp_ques:
+    send: ":OUTP:OCP:QUES? CH{ch}"
+    parse: [trim, {map: {"YES": "YES", "NO": "NO"}}]
+    source: "PG800 p.2-54; PG700 p.2-15"
+  ovp_val_q: {send: ":OUTP:OVP:VAL? CH{ch}", parse: [trim, number], source: "PG800 p.2-61; PG700 p.2-20"}
+  ocp_val_q: {send: ":OUTP:OCP:VAL? CH{ch}", parse: [trim, number], source: "PG800 p.2-57; PG700 p.2-17"}
+  volt_set:
+    send: ":SOUR{ch}:VOLT {v}"
+    params: {v: {type: number, min: 0, max: 63, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-90 (Table 2-1 p.2-8); PG700 p.2-25"
+  curr_set:
+    send: ":SOUR{ch}:CURR {a}"
+    params: {a: {type: number, min: 0, max: 10.5, format: "%.4f", unit: A}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-83 (Table 2-1 p.2-8); PG700 p.2-22"
+  outp_set:
+    send: ":OUTP CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: "PG800 p.2-63; PG700 p.2-21"
+  ovp_val_set:
+    send: ":OUTP:OVP:VAL CH{ch},{v}"
+    params: {v: {type: number, min: 0.001, max: 66, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-61 (Table 2-2 p.2-52); PG700 p.2-20"
+  ocp_val_set:
+    send: ":OUTP:OCP:VAL CH{ch},{a}"
+    params: {a: {type: number, min: 0.0001, max: 11, format: "%.4f", unit: A}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-57 (Table 2-2 p.2-52); PG700 p.2-17"
+  ovp_set:
+    send: ":OUTP:OVP CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-60; PG700 p.2-19"
+  ocp_set:
+    send: ":OUTP:OCP CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "PG800 p.2-56; PG700 p.2-16"
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": ":SYST:REM", "OFF": ":SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+    description: "The manual prints ':SYSTem: REMote' with a stray space; sent without it"
+    source: "PG800 p.2-121, 2-123; PG700 p.2-35, 2-37"
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    poll:
+      - every_ms: 500
+        read: [meas_all, outp_q, cvcc]
+      - every_ms: 2000
+        read: [ovp_ques, ocp_ques]
+    status:
+      VOUT: {expr: "num(meas_all.v)", as: si}
+      IOUT: {expr: "num(meas_all.i)", as: si}
+      POUT: {expr: "num(meas_all.p)", as: si}
+      OUTPUT: outp_q
+      REMOTE: state.remote
+      CV: 'outp_q == "ON" && cvcc == "CV"'
+      CC: 'outp_q == "ON" && cvcc == "CC"'
+      SBY: 'outp_q == "OFF"'
+      OVP: 'ovp_ques == "YES"'
+      OCP: 'ocp_ques == "YES"'
+      FAIL: 'ovp_ques == "YES" || ocp_ques == "YES"'
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: remote_set}
+      voltage_limit: {get: ovp_val_q, set: ovp_val_set, as: si}
+      current_limit: {get: ocp_val_q, set: ocp_val_set, as: si}
+      ovp: {set: ovp_set}
+      ocp: {set: ocp_set}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}

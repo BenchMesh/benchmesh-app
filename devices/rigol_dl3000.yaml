@@ -1,0 +1,93 @@
+# RIGOL DL3000 series DC electronic loads (DL3021, DL3021A, DL3031, DL3031A).
+# Written from the programming guide before anyone tested it on hardware (all models
+# awaiting confirmation). Coverage report: ai_context/migration/coverage/ELL.md §2.2.
+# Pages are PDF pages of DL3000_ProgrammingGuide_EN_2019.pdf (PG).
+schema: benchmesh.device/v1
+id: rigol_dl3000
+extends: scpi_load
+vendor: RIGOL
+family: DL3000 series DC electronic load
+version: 0.1.0
+sources:
+  - {doc: "DL3000 Programming Guide (Apr 2019, DL3000_ProgrammingGuide_EN_2019.pdf)", pages: "10, 15, 22, 27, 31-33, 38-40, 47-50, 67, 80, 95"}
+  - {note: "Ratings (150 V; 40 A / 200 W DL3021(A); 60 A / 350 W DL3031(A)) from the datasheet; CC ranges 4 A/40 A and 6 A/60 A, CV 15 V/150 V, CR 15 ohm/15 kohm"}
+models:
+  - name: DL3021
+    match: "^RIGOL TECHNOLOGIES,DL3021,"
+    features: {ELL: {absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 40.0}, power: {unit: W, max: 200.0}}, modes: {CURR: {setpoint: {max: 40.0}}, POW: {setpoint: {max: 200.0}}}}}
+  - name: DL3021A
+    match: "^RIGOL TECHNOLOGIES,DL3021A,"
+    features: {ELL: {absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 40.0}, power: {unit: W, max: 200.0}}, modes: {CURR: {setpoint: {max: 40.0}}, POW: {setpoint: {max: 200.0}}}}}
+  - name: DL3031
+    match: "^RIGOL TECHNOLOGIES,DL3031,"
+  - name: DL3031A
+    match: "^RIGOL TECHNOLOGIES,DL3031A,"
+link:
+  # PG p.80: USB0::0x1AB1::0x0E11::DL3000A000001::INSTR
+  usbtmc:
+    vid: "1ab1"
+    pid: "0e11"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+  # PG p.95: factory default 9600 8N1, no flow control; PG p.10: RS232 commands end with "\r\n".
+  serial:
+    baud: 9600
+    format: 8N1
+    flow: none
+    framing:
+      tx: {terminator: "\r\n"}
+      rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+      timing: {min_gap_ms: 10, gap_after_write_ms: 50}
+  # LAN (standard on the A models, an option otherwise). Raw-socket port not stated in the PG;
+  # 5555 is RIGOL's usual socket port, verify on the instrument.
+  tcp:
+    port: 5555
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+commands:
+  idn: {source: "PG p.22, example reply p.80"}
+  meas_v: {source: "PG p.31 :MEASure:VOLTage[:DC]?"}
+  meas_i: {source: "PG p.32 :MEASure:CURRent[:DC]?"}
+  meas_p: {source: "PG p.33 :MEASure:POWer[:DC]?"}
+  inp_q: {source: "PG p.38 [:SOURce]:INPut[:STATe]? returns 0|1"}
+  func_q: {source: "PG p.38 [:SOURce]:FUNCtion? returns CC, CV, CR or CP"}
+  ques_q: {source: "PG p.15 Table 1-1 (1 OC, 3 OP, 12 OV, 13 PS), p.27"}
+  curr_q: {source: "PG p.39-40"}
+  volt_q: {source: "PG p.47"}
+  res_q: {source: "PG p.48-49"}
+  pow_q: {source: "PG p.50"}
+  mode_set: {source: "PG p.38 [:SOURce]:FUNCtion {CURRent|RESistance|VOLTage|POWer}"}
+  curr_set:
+    params: {a: {max: 60}}
+    source: "PG p.39-40"
+    description: >-
+      CC setpoint. The CC range (PG p.40 [:SOURce]:CURRent:RANGe) defaults to the low range
+      (4 A / 6 A); whether a larger setpoint switches the range by itself is not documented
+      (verify; until then select the high range on the panel for > 4 A / 6 A)
+  volt_set: {params: {v: {max: 150}}, source: "PG p.47"}
+  res_set: {params: {r: {max: 15000}}, source: "PG p.48-49 (CR ranges 15 ohm / 15 kohm)"}
+  pow_set: {params: {p: {max: 350}}, source: "PG p.50"}
+  input_set: {source: "PG p.38 [:SOURce]:INPut[:STATe] {0|1|ON|OFF}"}
+  # PG p.68: SHORT exists only as a simulated key press (:SYST:KEY 33), no SCPI state
+  short_q: null
+  short_set: null
+  sense_set:
+    send: ":SOUR:SENS {on}"
+    source: "PG p.67 [:SOURce]:SENSe {0|1|ON|OFF}"
+classes:
+  ELL:
+    ui_component: RigolDL3000ELL
+    features:
+      remote_sense: true
+      absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 350.0}}
+      modes:
+        CURR: {setpoint: {max: 60.0}}
+        VOLT: {setpoint: {max: 150.0}}
+        RES: {setpoint: {max: 15000.0, step: 0.001}}
+        POW: {setpoint: {max: 350.0}}
+    operations:
+      short: null

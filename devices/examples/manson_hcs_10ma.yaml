@@ -1,0 +1,14 @@
+# Replies as the Manson HCS USB protocol sheet shows them (Conrad 000513911, pp.1-2); its
+# examples use 0.01 A current resolution. GMAX selects the HCS-3204 (B&K 1685B, 60 V / 5.00 A;
+# the sheet's own GMAX example 180200 matches no model of this definition).
+definition: manson_hcs_10ma
+model: HCS-3204/1685B
+replies:
+  - {send: 'GMAX', reply: "600500\r", source: "derived: BK PM p.13 format, 1685B ratings (user manual p.28)"}
+  - {send: 'GETD', reply: "150016001\r", source: "MANSON p.1 (15.00 V, 1.60 A, CC)"}
+  - {send: 'GETS', reply: "150180\r", source: "MANSON p.1 (15.0 V, 1.80 A)"}
+  - {send: 'GOVP', reply: "111\r", source: "MANSON p.2 (11.1 V)"}
+  - {send: 'GOCP', reply: "110\r", source: "MANSON p.2 (1.10 A)"}
+  - {send: '(VOLT|CURR|SOVP|SOCP)\d{3}|SOUT[01]', reply: "", source: "MANSON pp.1-2 (OK)"}
+expect:
+  PSU: {1: {VOUT: 15.0, IOUT: 1.6, OUTPUT: "OFF"}}

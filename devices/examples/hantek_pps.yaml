@@ -1,0 +1,17 @@
+# Replies as the Hantek protocol sheet shows them (pp.1-2).
+definition: hantek_pps
+model: PPS2320A
+replies:
+  - {send: 'a', reply: "3203", source: "p.1"}
+  - {send: 'rv', reply: "1200", source: "p.2 format (12.00 V)"}
+  - {send: 'ra', reply: "0020", source: "p.2 (0.020 A)"}
+  - {send: 'rh', reply: "0200", source: "p.2 (2.00 V)"}
+  - {send: 'rj', reply: "0000", source: "p.2 format"}
+  - {send: 'ru|rk', reply: "1200", source: "p.2 format (XX.XX V)"}
+  - {send: 'ri|rq', reply: "2500", source: "p.2 format (X.XXX A)"}
+  - {send: 'rs', reply: "01", source: "p.2 (CH1 CV)"}
+  - {send: 'rp', reply: "00", source: "p.2 (CH2 no output)"}
+  - {send: 'rl', reply: "00", source: "p.2 (no lock)"}
+  - {send: 's[uiad]\d{4}|o[01]', reply: "OK", source: "p.1"}
+expect:
+  PSU: {1: {VOUT: 12.0, IOUT: 0.02, OUTPUT: "ON", CV: true}, 2: {VOUT: 2.0, OUTPUT: "OFF", SBY: true}}

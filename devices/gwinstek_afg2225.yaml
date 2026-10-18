@@ -1,0 +1,49 @@
+# GW Instek AFG-2225 dual-channel function generator. Written from the user manual before anyone
+# tested it on hardware. Research: ai_context/migration/coverage/AWG.md §2.8. Pages are printed
+# page numbers. The front panel is locked in remote except F5.
+schema: benchmesh.device/v1
+id: gwinstek_afg2225
+extends: gw_afg
+vendor: GW Instek
+family: AFG-2225 dual-channel function generator
+version: 0.1.0
+sources:
+  - {doc: "AFG-2225 Series User Manual (farnell 2344129)", pages: "180-182 (USB CDC, *idn?), 206 (FUNCtion), 207-208 (FREQuency), 209 (AMPlitude), 210 (DCOffset), 212 (RAMP:SYMMetry), 213 (OUTPut), 213-214 (OUTPut:LOAD), 214 (VOLTage:UNIT), 267 (PHASe)"}
+  - {note: "Limits: sine/square 1 µHz-25 MHz, ramp 1 MHz, pulse 500 µHz-25 MHz (p207); 1 mVpp-10 Vpp into 50 Ω / 2 mVpp-20 Vpp High-Z, offset ±5 V / ±10 V (specifications)"}
+models:
+  - {"name": "AFG-2225", "match": "^GW INSTEK, ?AFG-2225,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
+commands:
+  outp_q: {send: "OUTP{ch}?", source: "p213; reply 1/0"}
+  outp_set: {send: "OUTP{ch} {on}", source: "p213"}
+  shape_q: {send: "SOUR{ch}:FUNC?", source: "p206; SIN, SQU, RAMP, PULS, NOIS, USER"}
+  shape_set:
+    send: "SOUR{ch}:FUNC {shape}"
+    params: {shape: {type: enum, values: {SIN: SIN, SQU: SQU, RAMP: RAMP, PUL: PULS, PRN: NOIS}}}
+    source: "p206"
+  freq_q: {send: "SOUR{ch}:FREQ?", source: "p208"}
+  freq_set: {send: "SOUR{ch}:FREQ {hz}", source: "p207"}
+  unit_q: {send: "SOUR{ch}:VOLT:UNIT?", source: "p214"}
+  ampl_q: {send: "SOUR{ch}:AMPL?", source: "p209"}
+  ampl_set: {send: "SOUR{ch}:AMPL {vpp}", source: "p209"}
+  offs_q: {send: "SOUR{ch}:DCO?", source: "p210"}
+  offs_set: {send: "SOUR{ch}:DCO {v}", source: "p210"}
+  symm_q: {send: "SOUR{ch}:RAMP:SYMM?", source: "p212"}
+  symm_set: {send: "SOUR{ch}:RAMP:SYMM {pct}", source: "p212"}
+  load_q: {send: "OUTP{ch}:LOAD?", source: "p213-214; DEF / INF"}
+  phase_q: {send: "SOUR{ch}:PHAS?", parse: [trim, number], description: "Degrees", source: "p267; reply e.g. 26"}
+  phase_set:
+    send: "SOUR{ch}:PHAS {deg}"
+    params: {deg: {type: number, min: -180, max: 180, format: "%.2f", unit: deg}}
+    reply: none
+    safety: configure
+    source: "p267"
+classes:
+  AWG:
+    channels: 2
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, unit_q, ampl_q, offs_q, phase_q, symm_q, load_q]
+    status:
+      PHASE: phase_q
+    operations:
+      phase: {get: phase_q, set: phase_set}

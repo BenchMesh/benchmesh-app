@@ -1,0 +1,87 @@
+# ITECH IT8500+ series DC electronic loads in SCPI mode (IT8511+ ... IT8516C+). The same loads
+# also speak ITECH's 26-byte binary frame protocol (B&K 8500 clone), which today's DSL cannot
+# express; this definition covers the SCPI protocol only. Written from the SCPI programming
+# guide before anyone tested it on hardware (all models awaiting confirmation).
+# Coverage report: ai_context/migration/coverage/ELL.md §2.7.
+# Pages are PDF pages of ITECH_IT8500plus_Programming-Guide_SCPI.pdf (IS).
+schema: benchmesh.device/v1
+id: itech_it8500plus
+extends: scpi_load
+vendor: ITECH
+family: IT8500+ series DC electronic load (SCPI)
+version: 0.1.0
+sources:
+  - {doc: "ITECH IT8500+ Series Programming Guide, SCPI (Rev V1.3)", pages: "13, 20-22, 25-27, 31-32, 41-45, 53-54, 71"}
+  - {note: "Ratings are not in the SCPI guide; per-model limits are ITECH datasheet figures (verify). How SCPI mode is selected on the TTL-port models (vs. the binary frame protocol) is unverified"}
+models:
+  - {name: IT8511+, match: "^ITECH Ltd, ?IT8511\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 150.0}}, modes: {CURR: {setpoint: {max: 30.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 150.0}}}}}}
+  - {name: IT8511A+, match: "^ITECH Ltd, ?IT8511A\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 150.0}}, modes: {CURR: {setpoint: {max: 30.0}}, VOLT: {setpoint: {max: 150.0}}, POW: {setpoint: {max: 150.0}}}}}}
+  - {name: IT8512+, match: "^ITECH Ltd, ?IT8512\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 300.0}}, modes: {CURR: {setpoint: {max: 30.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 300.0}}}}}}
+  - {name: IT8512A+, match: "^ITECH Ltd, ?IT8512A\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 300.0}}, modes: {CURR: {setpoint: {max: 30.0}}, VOLT: {setpoint: {max: 150.0}}, POW: {setpoint: {max: 300.0}}}}}}
+  - {name: IT8512B+, match: "^ITECH Ltd, ?IT8512B\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, current: {unit: A, max: 15.0}, power: {unit: W, max: 300.0}}, modes: {CURR: {setpoint: {max: 15.0}}, VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 300.0}}}}}}
+  - {name: IT8512C+, match: "^ITECH Ltd, ?IT8512C\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 300.0}}, modes: {CURR: {setpoint: {max: 60.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 300.0}}}}}}
+  - {name: IT8512H+, match: "^ITECH Ltd, ?IT8512H\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 800.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 300.0}}, modes: {CURR: {setpoint: {max: 5.0}}, VOLT: {setpoint: {max: 800.0}}, POW: {setpoint: {max: 300.0}}}}}}
+  - {name: IT8513A+, match: "^ITECH Ltd, ?IT8513A\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 400.0}}, modes: {CURR: {setpoint: {max: 60.0}}, VOLT: {setpoint: {max: 150.0}}, POW: {setpoint: {max: 400.0}}}}}}
+  - {name: IT8513B+, match: "^ITECH Ltd, ?IT8513B\\+?,", note: "Built-in RS232 + USB (PL2303), IS p.20-21; rated current not confirmed", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, power: {unit: W, max: 600.0}}, modes: {VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 600.0}}}}}}
+  - {name: IT8513C+, match: "^ITECH Ltd, ?IT8513C\\+?,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 120.0}, power: {unit: W, max: 600.0}}, modes: {CURR: {setpoint: {max: 120.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 600.0}}}}}}
+  - {name: IT8514B+, match: "^ITECH Ltd, ?IT8514B\\+?,", note: "Built-in RS232 + USB (PL2303), IS p.20-21", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 1500.0}}, modes: {CURR: {setpoint: {max: 60.0}}, VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 1500.0}}}}}}
+  - {name: IT8514C+, match: "^ITECH Ltd, ?IT8514C\\+?,", note: "Built-in RS232 + USB (PL2303), IS p.20-21", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 240.0}, power: {unit: W, max: 1500.0}}, modes: {CURR: {setpoint: {max: 240.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 1500.0}}}}}}
+  - {name: IT8516C+, match: "^ITECH Ltd, ?IT8516C\\+?,", note: "Built-in RS232 + USB (PL2303), IS p.20-21", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 240.0}, power: {unit: W, max: 3000.0}}, modes: {CURR: {setpoint: {max: 240.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 3000.0}}}}}}
+  - {name: IT85xx, match: "^ITECH Ltd, ?IT85", note: "Fallback for an IT85xx identify reply not listed above (IS p.71 shows the placeholder IT85XX); limits are the class defaults"}
+link:
+  # IS p.20-21: 9600 (4800/9600/19200/38400) 8N1, address 0. TTL-level DB9 on most models
+  # (IT-E121/E122 adapter, PL2303); built-in RS232 + USB on B+/C+ models. DTR/RTS asserted for
+  # the ITECH adapter cables (B&K 8500 manual p.46, same adapters).
+  serial: {baud: 9600, format: 8N1, flow: none, dtr: high, rts: high, settle_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable (no SYST:REM?); tracks our own SYST:REM / SYST:LOC"}
+session:
+  # IS p.25-26: in RS232 operation the load takes commands in remote mode; give the panel back
+  # on disconnect.
+  on_connect: [{cmd: remote_set, args: {on: "ON"}}]
+  on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
+commands:
+  idn: {source: "IS p.71 (ITECH Ltd, IT85XX, XXXXXXXXXXXXXXXXXX, 1.21-1.28)"}
+  meas_v: {source: "IS p.53 MEASure[:SCALar]:VOLTage[:DC]? <NR2>"}
+  meas_i: {source: "IS p.54 MEASure[:SCALar]:CURRent[:DC]? <NR2>"}
+  meas_p: {source: "IS p.55 MEASure[:SCALar]:POWer[:DC]? <NR2>"}
+  inp_q: {source: "IS p.31 INPut[:STATe]? returns 0|1"}
+  func_q: {source: "IS p.41 [SOURce:]FUNCtion? returns CURRent|VOLTage|POWer|RESistance|DYNamic|LED|IMPedance"}
+  ques_q:
+    parse: [trim, number, {bits: {oc: "1", op: "3", ot: "4", ov: "13"}}]
+    source: "IS p.22 (ITECH layout: 1 OC, 3 OP, 4 OT, 13 OV), p.27"
+  curr_q: {source: "IS p.42 <NR2>"}
+  volt_q: {source: "IS p.43 <NR2>"}
+  pow_q: {source: "IS p.44 <NR2>"}
+  res_q: {source: "IS p.45 <NR2>"}
+  short_q: {source: "IS p.32 INPut:SHORt? returns 0|1"}
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYST:REM", "OFF": "SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+    source: "IS p.25-26 SYSTem:REMote / SYSTem:LOCal"
+  mode_set: {source: "IS p.41 [SOURce:]FUNCtion CURRent|VOLTage|POWer|RESistance|..."}
+  curr_set: {params: {a: {max: 240}}, source: "IS p.42 CURR <NRf+>"}
+  volt_set: {params: {v: {max: 800}}, source: "IS p.43 VOLT <NRf+>"}
+  pow_set: {params: {p: {max: 3000}}, source: "IS p.44 POW <NRf+>"}
+  res_set: {source: "IS p.45 RES <NRf+>"}
+  input_set: {source: "IS p.31 [SOURce:]INPut 0|1|OFF|ON"}
+  short_set: {source: "IS p.31-32 [SOURce:]INPut:SHORt 0|1|OFF|ON"}
+  sense_set: {source: "IS p.24-25 SYSTem:SENSe[:STATe] 0|1|OFF|ON"}
+classes:
+  ELL:
+    ui_component: ItechIT8500ELL
+    features:
+      remote_sense: true
+      absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 150.0}}
+      modes:
+        CURR: {setpoint: {max: 30.0}}
+        VOLT: {setpoint: {max: 120.0}}
+        POW: {setpoint: {max: 150.0}}
+        DYN: {ui_name: "Dynamic"}
+    status:
+      REMOTE: state.remote
+    operations:
+      remote: {set: remote_set}

@@ -1,0 +1,32 @@
+# Replies as the Digital Oscilloscope Series Programming Guide EN02E shows them (PDF pages),
+# with the header and unit removed as CHDR OFF does (p24): checks the definition through the
+# real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: siglent_sds1000xe
+transport: usbtmc
+model: SDS1104X-E
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDS1104X-E,SDS1EBAX1R0000,8.2.6.1.37R9", source: "*IDN? format (community example; OSC.md §2.4)"}
+  - {send: 'C[1-4]:TRA\?', reply: "ON", source: "p47 (C1:TRA ON)"}
+  - {send: 'C[1-4]:VDIV\?', reply: "5.00E-01", source: "p249 (C1:VDIV 5.00E-01V)"}
+  - {send: 'C[1-4]:OFST\?', reply: "-5.00E-01", source: "p249 (C1:OFST -5.00E-01V)"}
+  - {send: 'C[1-4]:CPL\?', reply: "D1M", source: "p44"}
+  - {send: 'C[1-4]:ATTN\?', reply: "1.00E+01", source: "p42"}
+  - {send: 'BWL\?', reply: "C1,ON,C2,OFF,C3,OFF,C4,OFF", source: "p43"}
+  - {send: 'C[1-4]:INVS\?', reply: "ON", source: "p50"}
+  - {send: 'TDIV\?', reply: "5.00E-09", source: "p249 (TDIV 5.00E-09S)"}
+  - {send: 'TRDL\?', reply: "1.00E-04", source: "p174 (1.00E-04 s)"}
+  - {send: 'SAST\?', reply: "Trig'd", source: "p34 (SAST Trig'd)"}
+  - {send: 'TRMD\?', reply: "NORM", source: "p187 (TRMD NORM)"}
+  - {send: 'TRSE\?', reply: "EDGE,SR,C1,HT,TI,HV,1.43uS", source: "p190"}
+  - {send: 'C1:TRSL\?', reply: "NEG", source: "p194 (C2:TRSL NEG)"}
+  - {send: 'C1:TRLV\?', reply: "5.20E-02", source: "p185 (C3:TRLV 52mV)"}
+  - {send: 'ACQW\?', reply: "AVERAGE,16", source: "p30"}
+  - {send: 'SARA\?', reply: "1.00E+09", source: "p249 (SARA 1.00E+09Sa/s)"}
+  - {send: 'SANU\?', reply: "7.00E+05pts", source: "p36 (unit kept on purpose: the numeric regex strips it)"}
+  - {send: 'C[1-4]:PAVA\? (PKPK|MEAN|RMS)', reply: "PKPK,3.16E+00", source: "p118 format"}
+  - {send: 'C[1-4]:PAVA\? FREQ', reply: "FREQ,****", source: "**** = not measurable (community)"}
+  - {send: 'C[1-4]:WF\? DAT2', reply: "DAT2,#9000000004\x02\xfc\x19\xe7\n\n", source: "p248-249 (0x02 = 2, 0xFC = -4)"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 0.5, OFFSET: -0.5, COUPLING: "DC", PROBE: 10, BWLIMIT: "20M", INVERT: "ON", TIMEBASE: 5.0e-9, TIMEOFFSET: 1.0e-4, TRIG_STATUS: "TD", TRIG_SWEEP: "NORM", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.052, ACQ_TYPE: "AVER", SRATE: 1.0e9, WAVE: [2, -4, 25, -25], WAVE_Y0: -25.0, WAVE_DY: 0.02, WAVE_X0: 0.000099965, WAVE_DX: 5.0e-7, VPP: 3.16, FREQ: null}
+    2: {BWLIMIT: "OFF"}

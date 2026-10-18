@@ -1,0 +1,15 @@
+# Replies as the JT-DPM86XX communication protocol shows them (PDF pp.3-4).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: juntek_dpm86xx
+model: DPM8624
+replies:
+  - {send: ':01r01=0,', reply: ":01r01=24000,", source: "p.3 #01 (DPM-8624)"}
+  - {send: ':01r10=0,', reply: ":01r10:1234,", source: "p.3 #10 (12.34 V, printed with ':')"}
+  - {send: ':01r11=0,', reply: ":01r11:12345,", source: "p.3 #11 (12.345 A)"}
+  - {send: ':01r12=0,', reply: ":01r12=1,", source: "p.3 #12 (on)"}
+  - {send: ':01r30=0,', reply: ":01r30=2345,", source: "p.3 #30 (23.45 V)"}
+  - {send: ':01r31=0,', reply: ":01r31=12345,", source: "p.3 #31 (12.345 A)"}
+  - {send: ':01r32=0,', reply: ":01r32=1,", source: "p.3 #32 (CC)"}
+  - {send: ':01w1[012]=\d+,', reply: ":01ok", source: "community drivers (not in the document)"}
+expect:
+  PSU: {1: {VOUT: 23.45, IOUT: 12.345, OUTPUT: "ON", CC: true}}

@@ -1,0 +1,38 @@
+# GW Instek GPD-2303S / 3303S / 4303S (GPD-x303S). Written from the user manual; see
+# ai_context/migration/coverage/PSU.md §2.8. Shared commands: devices/bases/gwinstek_gpd.yaml.
+schema: benchmesh.device/v1
+extends: gwinstek_gpd
+id: gwinstek_gpd
+vendor: GW Instek
+family: GPD-x303S multi-output linear DC power supply
+version: 0.1.0
+sources:
+  - {doc: "GPD-X303S Series User Manual (GPD-X303S_User_Manual.pdf)", pages: "13 (outputs), 43-52 (remote control)"}
+  - {note: "Reply formats ('12.000V', '2.234A'), the CR vs CR LF reply terminator and the 'Invalid Character.' reply to a first *IDN? are from sigrok gwinstek-gpd and PyGPD3303S, not the manual"}
+  - {note: "STATUS? layout here (bit 5 output, bits 6-7 baud) differs from the GPD-3303D manual (bit 6 output): see gwinstek_gpd3303d. Firmware older than 2.0 answers STATUS? in another format (3 lines) and is not supported"}
+models:
+  - {"name": "GPD-2303S", "match": "^GW ?INSTEK, ?GPD-2303S"}
+  - {"name": "GPD-3303S", "match": "^GW ?INSTEK, ?GPD-3303S", "note": "CH3 (2.5/3.3/5 V, 3 A) is panel-only"}
+  - {"name": "GPD-4303S", "match": "^GW ?INSTEK, ?GPD-4303S", "channels": {"PSU": 4}, "note": "CH3 5 V/1 A, CH4 5 V/3 A (or 10 V/1 A): settable remotely, limits per channel enforced by the instrument; CV/CC only reported for CH1/CH2", "features": {"PSU": {"channel_limits": {"1": {"voltage": 32.0, "current": 3.2}, "2": {"voltage": 32.0, "current": 3.2}, "3": {"voltage": 5.0, "current": 1.0}, "4": {"voltage": 10.0, "current": 3.0}}}}}
+link:
+  # FTDI USB virtual COM; baud 9600 (default), 57600 or 115200 set by BAUD<n> (p.43, p.51)
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+commands:
+  idn: {source: "p.50-51"}
+  vout: {source: "p.49"}
+  iout: {source: "p.49"}
+  vset_q: {source: "p.49"}
+  iset_q: {source: "p.48"}
+  status: {source: "p.50 (bit0 CH1 CV, bit1 CH2 CV, bits2-3 tracking, bit4 beep, bit5 output, bits6-7 baud)"}
+  vset: {source: "p.48 (range 0-32.000 V, example VSET1:20.345)"}
+  iset: {source: "p.48 (range 0-3.200 A, example ISET1:2.234)"}
+  output: {source: "p.50"}
+  remote_set: {source: "p.48 (REMOTE), p.51 (LOCAL)"}
+classes:
+  PSU:
+    status:
+      # output = character 6 (bit 5)
+      OUTPUT: 'int(status / 100.0) % 10 == 1 ? "ON" : "OFF"'
+      SBY: "int(status / 100.0) % 10 == 0"
+      CV: "int(status / 100.0) % 10 == 1 && ch <= 2 && int(status / (ch == 1 ? 10000000.0 : 1000000.0)) % 10 == 1"
+      CC: "int(status / 100.0) % 10 == 1 && ch <= 2 && int(status / (ch == 1 ? 10000000.0 : 1000000.0)) % 10 == 0"

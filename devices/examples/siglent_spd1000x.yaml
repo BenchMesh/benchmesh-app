@@ -1,0 +1,18 @@
+# Replies as the SPD1000X programming guide shows them (printed pages); checks the definition
+# through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: siglent_spd1000x
+transport: usbtmc
+model: SPD1168X
+replies:
+  - {send: '\*IDN\?', reply: "Siglent, SPD1168X, SPD1XDAD1R0001, 2.01.01.06, V1.0", source: "p.54"}
+  - {send: 'MEAS:VOLT\? CH1', reply: "16.000", source: "p.55"}
+  - {send: 'MEAS:CURR\? CH1', reply: "3.000", source: "p.55"}
+  - {send: 'MEAS:POWE\? CH1', reply: "90.000", source: "p.56"}
+  - {send: 'CH1:VOLT\?', reply: "15.000", source: "p.56"}
+  - {send: 'CH1:CURR\?', reply: "0.500", source: "p.56"}
+  - {send: 'OVP\?', reply: "16.000", source: "p.56"}
+  - {send: 'OCP\?', reply: "5.000", source: "p.57"}
+  - {send: 'SYST:STAT\?', reply: "0x0224", source: "p.59 (CV, output off, 4-wire)"}
+expect:
+  PSU:
+    1: {VOUT: 16.0, IOUT: 3.0, POUT: 90.0, OUTPUT: "OFF", SBY: true}

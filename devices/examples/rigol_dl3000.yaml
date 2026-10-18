@@ -1,0 +1,22 @@
+# RIGOL DL3000 replies as the programming guide (PG, DL3000_ProgrammingGuide_EN_2019.pdf)
+# documents them. The PG gives return formats ("a real number", "0 or 1", "CC, CV, CR, or CP")
+# rather than captured values; the numbers below follow those formats.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dl3000
+transport: usbtmc
+model: DL3031A
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DL3031A,LS000001,00.01.00.04.05", source: "PG p.80"}
+  - {send: 'MEAS:VOLT\?', reply: "12.0034", source: "PG p.31 (real number)"}
+  - {send: 'MEAS:CURR\?', reply: "3.0002", source: "PG p.32 (real number)"}
+  - {send: 'MEAS:POW\?', reply: "36.0126", source: "PG p.33 (real number)"}
+  - {send: 'INP\?', reply: "1", source: "PG p.38 (0 or 1)"}
+  - {send: 'FUNC\?', reply: "CC", source: "PG p.38 (CC, CV, CR or CP)"}
+  - {send: 'STAT:QUES:COND\?', reply: "4096", source: "PG p.15/p.27 (decimal; bit 12 OV)"}
+  - {send: 'CURR\?', reply: "3.000", source: "PG p.40 (real number; example :SOUR:CURR:LEV:IMM 3)"}
+  - {send: 'VOLT\?', reply: "5.000", source: "PG p.47 (example :SOUR:VOLT:LEV:IMM 5)"}
+  - {send: 'RES\?', reply: "10.000", source: "PG p.48-49 (real number)"}
+  - {send: 'POW\?', reply: "5.000", source: "PG p.50 (example :SOUR:POW:LEV:IMM 5)"}
+expect:
+  ELL:
+    1: {VIN: 12.0034, IIN: 3.0002, PIN: 36.0126, INPUT: "ON", MODE: "CURR", OVP: true, OCP: false, OPP: false}

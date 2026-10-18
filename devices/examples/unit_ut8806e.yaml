@@ -1,0 +1,14 @@
+# Replies from the UT8806E SCPI manual. Spec: ai_context/migration/coverage/README.md.
+definition: unit_ut8806e
+transport: serial
+model: UT8806E
+replies:
+  - {send: '\*IDN\?', reply: "UNI-T UT8806E, UT1A13460051200, V0.01.0000", source: "PM p.6 (printed with UT8805A)"}
+  - {send: 'READ\?', reply: "+8.21650028E-03", source: "PM READ? typical"}
+  - {send: 'FUNC\?', reply: "VOLT", source: "PM p.26 (short form)"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+2.00000000E+01", source: "PM p.27 VOLT:DC:RANGe?"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1", source: "PM p.29 VOLT:DC:RANGe:AUTO? → 1"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+0.20000000E+00", source: "PM p.35 VOLT:DC:NPLC?"}
+expect:
+  DMM:
+    1: {MEAS: 8.21650028e-3, MODE: VOLT, RANGE: "AUTO", OVERLOAD: false}

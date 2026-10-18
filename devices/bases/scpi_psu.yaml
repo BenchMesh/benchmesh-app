@@ -1,0 +1,92 @@
+# SCPI-99 baseline for single-output programmable DC power supplies (partial definition, see
+# ai_context/migration/DEVICE_DSL.md "extends"). Derived definitions add identity (vendor,
+# family, models), links and limits, and override or remove (`null`) what their dialect lacks.
+# Source: ai_context/migration/coverage/PSU.md §3 "scpi_psu".
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable; tracks our own SYST:REM / SYST:LOC"}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  meas_v: {send: "MEAS:VOLT?", parse: [trim, number]}
+  meas_i: {send: "MEAS:CURR?", parse: [trim, number]}
+  meas_p: {send: "MEAS:POW?", parse: [trim, number]}
+  volt_q: {send: "VOLT?", parse: [trim, number]}
+  curr_q: {send: "CURR?", parse: [trim, number]}
+  outp_q:
+    send: "OUTP?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+  ovp_lvl_q: {send: "VOLT:PROT?", parse: [trim, number]}
+  ocp_lvl_q: {send: "CURR:PROT?", parse: [trim, number]}
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0, max: 30, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+  curr_set:
+    send: "CURR {a}"
+    params: {a: {type: number, min: 0, max: 5, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+  outp_set:
+    send: "OUTP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  ovp_lvl_set:
+    send: "VOLT:PROT {v}"
+    params: {v: {type: number, min: 0, max: 33, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+  ocp_lvl_set:
+    send: "CURR:PROT {a}"
+    params: {a: {type: number, min: 0, max: 5.5, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+  ovp_set:
+    send: "VOLT:PROT:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  ocp_set:
+    send: "CURR:PROT:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYST:REM", "OFF": "SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, outp_q]
+    status:
+      VOUT: {expr: meas_v, as: si}
+      IOUT: {expr: meas_i, as: si}
+      POUT: {expr: "meas_v * meas_i", as: si}
+      OUTPUT: outp_q
+      REMOTE: state.remote
+      SBY: 'outp_q == "OFF"'
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: remote_set}
+      voltage_limit: {get: ovp_lvl_q, set: ovp_lvl_set, as: si}
+      current_limit: {get: ocp_lvl_q, set: ocp_lvl_set, as: si}
+      ovp: {set: ovp_set}
+      ocp: {set: ocp_set}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}

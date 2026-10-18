@@ -1,0 +1,16 @@
+# Replies for the GPD-3303D (GPD-3303 user manual pp.39-42; number formats as for the GPD-x303S).
+definition: gwinstek_gpd3303d
+model: GPD-3303D
+replies:
+  - {send: '\*IDN\?', reply: "GW INSTEK,GPD-3303D,SN:EN123456,V1.10", source: "p.42 (format 'GW INSTEK,GPD-3303x,SN: xxxxxxxx, Vx.xx')"}
+  - {send: 'VOUT1\?', reply: "12.00V\r", source: "p.40"}
+  - {send: 'IOUT1\?', reply: "2.23A\r", source: "p.40 (value from the ISET1:2.23 example)"}
+  - {send: 'VOUT2\?', reply: "00.00V\r", source: "p.40"}
+  - {send: 'IOUT2\?', reply: "0.00A\r", source: "p.40"}
+  - {send: 'VSET1\?', reply: "12.00V\r", source: "p.40"}
+  - {send: 'ISET1\?', reply: "2.23A\r", source: "p.39-40"}
+  - {send: 'STATUS\?', reply: "01010010\r", source: "p.41-42 (CH1 CC, CH2 CV, independent, beep off, output on)"}
+expect:
+  PSU:
+    1: {VOUT: 12.0, IOUT: 2.23, OUTPUT: "ON", CV: false, CC: true}
+    2: {OUTPUT: "ON", CV: true}

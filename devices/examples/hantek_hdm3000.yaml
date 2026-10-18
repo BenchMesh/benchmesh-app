@@ -1,0 +1,15 @@
+# Replies as the HDM3000 SCPI programming reference prints them (PDF pages), stray spaces kept.
+# The *IDN? reply is not documented: a plausible one.
+definition: hantek_hdm3000
+transport: usbtmc
+model: HDM3065
+replies:
+  - {send: '\*IDN\?', reply: "Hantek,HDM3065B,CN0000000000,V1.03", source: "not documented"}
+  - {send: 'READ\?', reply: "-1.33748741E-01", source: "PR p.51 READ? typical response (first reading)"}
+  - {send: 'FUNC\?', reply: '"VOLT"', source: "PR p.19 FUNCtion? quoted short form"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+ 1.00000000 E+01", source: "PR p.23 RANGe? typical return"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1", source: "PR p.23 0 (OFF) or 1 (ON)"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+ 1.00000000 E+01", source: "PR p.25 NPLC? typical return"}
+expect:
+  DMM:
+    1: {MEAS: -0.133748741, MODE: VOLT, RANGE: "AUTO", OVERLOAD: false}

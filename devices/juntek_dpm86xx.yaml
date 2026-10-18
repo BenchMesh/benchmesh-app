@@ -1,0 +1,99 @@
+# Juntek (JUNCE) DPM86xx programmable buck supplies, also sold as Joy-IT JT-DPM86xx, in the
+# "simple communication protocol" (menu / fn 15 = 0; the Modbus mode is not covered). Written
+# from the Joy-IT protocol document, not yet seen live. Address 01 (factory default) is fixed
+# in the command texts. Values are implied-decimal integers: V x0.01, I x0.001.
+schema: benchmesh.device/v1
+id: juntek_dpm86xx
+vendor: Juntek
+family: DPM86xx programmable DC supply (Joy-IT JT-DPM86xx), simple ASCII protocol
+version: 0.1.0
+sources:
+  - {doc: "JT-DPM86XX Communication protocol 2025-07-22 (DOC/juntek_dpm86xx/doc/JT-DPM86XX_Communication-protocol_2025-07-22.pdf)", pages: "2-5 (PDF pages)"}
+  - {note: "Write replies (`:01ok`) are not shown in the document (p.2 only says the result is returned); taken from community drivers"}
+models:
+  - {"name": "DPM8605", "match": "^:01r01[=:]5000,?$", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 5.0}}}}}
+  - {"name": "DPM8608", "match": "^:01r01[=:]8000,?$", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 8.0}}}}, "note": "max-current reply inferred from the naming scheme (not in the document)"}
+  - {"name": "DPM8616", "match": "^:01r01[=:]16000,?$", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 16.0}}}}, "note": "max-current reply inferred from the naming scheme (not in the document)"}
+  - {"name": "DPM8624", "match": "^:01r01[=:]24000,?$", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 24.0}}}}}
+  - {"name": "DPM8650", "match": "^:01r01[=:]50000,?$", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 50.0}}}}}
+identify: imax
+link:
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  tx: {terminator: "\r\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  imax:
+    send: ":01r01=0,"
+    parse: [trim]
+    description: "Maximum output current; selects the model (:01r01=5000, = DPM8605)"
+    source: "p.3 #01"
+  vset_q:
+    send: ":01r10=0,"
+    parse: [trim, {regex: {pattern: "r10[=:](\\d+)", group: 1}}, number, {scale: 0.01}]
+    description: "Voltage setting, :01r10=1234, = 12.34 V (the document prints ':' instead of '=')"
+    source: "p.3 #10"
+  iset_q:
+    send: ":01r11=0,"
+    parse: [trim, {regex: {pattern: "r11[=:](\\d+)", group: 1}}, number, {scale: 0.001}]
+    source: "p.3 #11"
+  out_q:
+    send: ":01r12=0,"
+    parse: [trim, {regex: {pattern: "r12[=:](\\d)", group: 1}}, {map: {"0": "OFF", "1": "ON"}}]
+    source: "p.3 #12"
+  vout:
+    send: ":01r30=0,"
+    parse: [trim, {regex: {pattern: "r30[=:](\\d+)", group: 1}}, number, {scale: 0.01}]
+    source: "p.3 #30"
+  iout:
+    send: ":01r31=0,"
+    parse: [trim, {regex: {pattern: "r31[=:](\\d+)", group: 1}}, number, {scale: 0.001}]
+    source: "p.3 #31"
+  cvcc:
+    send: ":01r32=0,"
+    parse: [trim, {regex: {pattern: "r32[=:](\\d)", group: 1}}, {map: {"0": "CV", "1": "CC"}}]
+    source: "p.3 #32"
+  vset:
+    send: ":01w10={v},"
+    params: {v: {type: number, min: 0, max: 60, scale: 100, format: "%d", unit: V}}
+    on_empty: "null"
+    safety: configure
+    description: ":01w10=1234, = 12.34 V; the reply is read and ignored"
+    source: "p.4 #10"
+  iset:
+    send: ":01w11={a},"
+    params: {a: {type: number, min: 0, max: 50, scale: 1000, format: "%d", unit: A}}
+    on_empty: "null"
+    safety: configure
+    description: ":01w11=12345, = 12.345 A"
+    source: "p.4 #11"
+  out_set:
+    send: ":01w12={on},"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    on_empty: "null"
+    safety: energize
+    source: "p.4 #12"
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    features: {"lock": false, "compulsory_lock": false, "memory_banks": 10, "memory_storage": ["V", "A"], "absolute_limits": {"voltage": {"unit": "V", "max": 60.0}}, "modes": {"CV": {"setpoint": {"step": 0.01}}, "CC": {"setpoint": {"step": 0.001}}}}
+    poll:
+      - every_ms: 500
+        read: [vout, iout, out_q, cvcc]
+    status:
+      VOUT: {expr: vout, as: si}
+      IOUT: {expr: iout, as: si}
+      POUT: {expr: "vout * iout", as: si}
+      OUTPUT: out_q
+      REMOTE: '"OFF"'  # no lock / remote command in the simple protocol
+      CV: 'out_q == "ON" && cvcc == "CV"'
+      CC: 'out_q == "ON" && cvcc == "CC"'
+      SBY: 'out_q == "OFF"'
+    operations:
+      voltage: {get: vset_q, set: vset, as: si}
+      current: {get: iset_q, set: iset, as: si}
+      output: {get: out_q, set: out_set}
+      output_voltage: {get: vout, as: si}
+      output_current: {get: iout, as: si}

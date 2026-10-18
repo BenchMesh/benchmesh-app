@@ -1,0 +1,119 @@
+# UNI-T MSO2000CS / UPO2000CS digital phosphor oscilloscopes (UPO2102CS, UPO2104CS, MSO2104CS …).
+# Written from the programming manual, not yet seen live (models are "awaiting confirmation").
+# A Rigol-style SCPI tree (base scpi_osc); differences: `:TIMebase:SCALe/OFFSet`, `:TRIGger:SOURce`
+# and `:TRIGger:LEVel` without EDGE, long-form query replies (CHANnel1, POSitive, AVERage),
+# probe ratios with an X suffix, `:MEASure:<item>? CHANnel<n>` with `*` for "no value", `:AUTO`,
+# no sample-rate query. Screen trace: 1400 BYTE points over 14 divisions, 25 codes/div.
+# UPO2000E/UPO3000E (separate manual) lack `:TRIGger:STATus?` and are not covered here.
+# Coverage report: ai_context/migration/coverage/OSC.md §2.8.
+schema: benchmesh.device/v1
+id: unit_upo2000
+extends: scpi_osc
+vendor: UNI-T
+family: MSO/UPO2000CS series digital phosphor oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "MSO/UPO2000 Series Programming Manual V1.0 (MSOUPO2000_Programming_Manual_V1.0.pdf)", pages: "PDF p4 data return (* = invalid), p5 *IDN?, p6 RUN/STOP/AUTO, p14-16 CHANnel, p17-18 TIMebase, p34-37 MEASure, p41-44 TRIGger, p75-76 ACQuire, p79 DISPlay:CLEar, p79-84 WAVeform"}
+  - {note: "USB vendor id 5656 (Uni-Trend) from the coverage research, not in the manual; the manual documents LAN only through VISA/VXI-11 (no raw socket port), so no tcp link"}
+models:
+  - {name: UPO2072CS, match: "^UNI-T Technologies, ?UPO2072CS,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: UPO2102CS, match: "^UNI-T Technologies, ?UPO2102CS,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: UPO2104CS, match: "^UNI-T Technologies, ?UPO2104CS,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: MSO2102CS, match: "^UNI-T Technologies, ?MSO2102CS,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: MSO2104CS, match: "^UNI-T Technologies, ?MSO2104CS,", features: {OSC: {bandwidth_hz: 100e6}}}
+identify: idn
+link:
+  usbtmc: {vid: "5656"}
+  tcp: null
+commands:
+  disp_q: {source: "CHANnel<n>:DISPlay p14; 1 or 0"}
+  scale_q: {source: "CHANnel<n>:SCALe p16; 2.000e001"}
+  offset_q: {source: "CHANnel<n>:OFFSet p15-16"}
+  coup_q: {source: "CHANnel<n>:COUPling p14; AC, DC or GND"}
+  probe_q: {source: "CHANnel<n>:PROBe p15; 1.000000e+01"}
+  inv_q: {source: "CHANnel<n>:INVert p15"}
+  bwl_q:
+    parse: [trim, {map: {"1": "20M", "0": "OFF"}}]
+    source: "CHANnel<n>:BWLimit p14; 1 = 20 MHz limit on"
+  bwl_set:
+    params: {b: {values: {"20M": "ON", "OFF": "OFF"}}}
+    source: "CHANnel<n>:BWLimit p14"
+  probe_set:
+    params: {r: {values: {"0.001": "0.001X", "0.01": "0.01X", "0.1": "0.1X", "1": "1X", "10": "10X", "100": "100X", "1000": "1000X"}}}
+    source: "CHANnel<n>:PROBe p15"
+  tb_q: {send: ":TIMebase:SCALe?", source: "TIMebase:SCALe p18; 2.000e000"}
+  tb_set: {send: ":TIMebase:SCALe {v}", source: "TIMebase:SCALe p18"}
+  tbofs_q: {send: ":TIMebase:OFFSet?", source: "TIMebase:OFFSet p17-18"}
+  tbofs_set: {send: ":TIMebase:OFFSet {v}", source: "TIMebase:OFFSet p17-18"}
+  trig_stat_q:
+    parse: [trim, upper, {map: {"STOP": "STOP", "ARMED": "WAIT", "READY": "WAIT", "WAIT": "WAIT", "TRIGED": "TD", "AUTO": "AUTO", "SCAN": "RUN", "RESET": "RUN", "REPLAY": "STOP"}}]
+    source: "TRIGger:STATus? p42; STOP/ARMED/READY/TRIGED/AUTO/SCAN/RESET/REPLAY/WAIT"
+  sweep_q:
+    parse: [trim, upper, {map: {"AUTO": "AUTO", "NORMAL": "NORM", "NORM": "NORM", "SINGLE": "SING", "SING": "SING"}}]
+    source: "TRIGger:SWEep p41; AUTO, NORMal or SINGle"
+  tsrc_q:
+    send: ":TRIGger:SOURce?"
+    parse: [trim, upper, {map: {"CHANNEL1": "CHAN1", "CHANNEL2": "CHAN2", "CHANNEL3": "CHAN3", "CHANNEL4": "CHAN4", "CHAN1": "CHAN1", "CHAN2": "CHAN2", "CHAN3": "CHAN3", "CHAN4": "CHAN4", "EXT": "EXT", "EXT5": "EXT5", "ACLINE": "AC"}}]
+    source: "TRIGger:SOURce p43; CHANnel1..4, EXT, EXT5 or ACLINE"
+  tsrc_set:
+    send: ":TRIGger:SOURce {s}"
+    params: {s: {values: {"EXT": "EXT", "AC": "ACLINE"}}}
+    source: "TRIGger:SOURce p43"
+  slope_q:
+    parse: [trim, upper, {map: {"POSITIVE": "POS", "POS": "POS", "NEGATIVE": "NEG", "NEG": "NEG", "ALTERNATION": "RFAL", "ALT": "RFAL"}}]
+    source: "TRIGger:EDGE:SLOPe p44; POSitive, NEGative or ALTernation"
+  slope_set:
+    params: {s: {values: {"RFAL": "ALTernation"}}}
+    source: "TRIGger:EDGE:SLOPe p44"
+  tlev_q: {send: ":TRIGger:LEVel?", source: "TRIGger:LEVel p42; 2.000e000"}
+  tlev_set: {send: ":TRIGger:LEVel {v}", source: "TRIGger:LEVel p42"}
+  acq_q:
+    parse: [trim, upper, {map: {"NORMAL": "NORM", "NORM": "NORM", "AVERAGE": "AVER", "AVER": "AVER", "PEAKDETECT": "PEAK", "PEAK": "PEAK", "ENVELOPE": "ENV", "ENV": "ENV", "HRESOLUTION": "HRES", "HRES": "HRES"}}]
+    source: "ACQuire:TYPE p75-76"
+  acq_set:
+    params: {t: {values: {"NORM": "NORMal", "PEAK": "PEAKdetect", "AVER": "AVERage", "HRES": "HRESolution"}}}
+    source: "ACQuire:TYPE p75"
+  srate_q: null
+  run_set:
+    params: {a: {values: {"SINGLE": ":TRIGger:SWEep SINGle", "AUTO": ":AUTO", "CLEAR": ":DISPlay:CLEar"}}}
+    source: ":RUN :STOP :AUTO p6, TRIGger:SWEep SINGle p41, DISPlay:CLEar p79 (no :SINGle command)"
+  wav_pre: {source: "WAVeform:PREamble? p83; volts = (code - yref - yorig) * yinc"}
+  wav_data: {source: "WAVeform:DATA? p82; NORMal mode, BYTE format, 1400 points (p80)"}
+  vpp_q:
+    send: ":MEASure:VPP? CHANnel{ch}"
+    parse: [trim, {null_if: ["*"]}, number]
+    source: "MEASure:VPP? p34; 3.120e000, * when invalid (p4)"
+  vavg_q:
+    send: ":MEASure:VAVerage? DISPlay,CHANnel{ch}"
+    parse: [trim, {null_if: ["*"]}, number]
+    source: "MEASure:VAVerage? p35"
+  vrms_q:
+    send: ":MEASure:VRMS? DISPlay,CHANnel{ch}"
+    parse: [trim, {null_if: ["*"]}, number]
+    source: "MEASure:VRMS? p36"
+  freq_q:
+    send: ":MEASure:FREQuency? CHANnel{ch}"
+    parse: [trim, {null_if: ["*"]}, number]
+    source: "MEASure:FREQuency? p37"
+classes:
+  OSC:
+    features:
+      divisions: {horizontal: 14, vertical: 8}
+      bandwidth_hz: 100e6
+      probe: ["0.001", "0.01", "0.1", "1", "10", "100", "1000"]
+    poll:
+      - every_ms: 250
+        read: [trig_stat_q, wav_pre, wav_data]
+      - every_ms: 1000
+        read: [disp_q, vpp_q, vavg_q, vrms_q, freq_q]
+      - every_ms: 3000
+        read: [scale_q, offset_q, coup_q, probe_q, bwl_q, inv_q, tb_q, tbofs_q, sweep_q, tsrc_q, slope_q, tlev_q, acq_q]
+    status:
+      SRATE: null
+      # 9.9E37 is a Rigol convention; UNI-T reports "*" (already null)
+      VPP: vpp_q
+      VAVG: vavg_q
+      VRMS: vrms_q
+      FREQ: freq_q
+    operations:
+      sample_rate: null

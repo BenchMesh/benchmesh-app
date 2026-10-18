@@ -1,0 +1,44 @@
+schema: benchmesh.class/v1
+class: LCR
+description: >
+  LCR / impedance meter. A measurement is a parameter pair (primary, secondary) of the DUT at the
+  test frequency and level. FUNC values are keys of the definition's `features.functions`, using
+  the canonical tokens of the E4980/Tonghui dialect (CPD, CPQ, CPG, CPRP, CSD, CSQ, CSRS, LPD, LPQ,
+  LPG, LPRP, LSD, LSQ, LSRS, RX, ZTD, ZTR, GB, YTD, YTR, DCR) plus vendor extras (RPQ, RSQ, ZQ, ZD,
+  CSESR, ...). Each entry describes the pair:
+  `{primary: Cp, secondary: D, circuit: PAR|SER (absent when it does not apply), units: [F, ""], ui_name}`.
+  Other features: frequency `{list: [Hz...]}` or `{min, max, presets}`, level `{list | min/max}` (V rms),
+  speeds / ranges `[{value, display}]`, trigger_sources, bias `{min, max, unit}`, counts (display digits).
+  Read-only meters bind only the status; every setter is optional and the panel shows a control
+  only where the definition offers its operation (`/methods`).
+status:
+  PRIMARY:   {type: si, required: true, description: "Primary reading in the base unit (F, H, ohm, S); null while settling, without data or on overload"}
+  SECONDARY: {type: si, required: true, description: "Secondary reading (D and Q unitless, theta in deg or rad, Rs/Rp/ESR/X ohm, G/B S); null for DCR"}
+  FUNC:      {type: string, required: true, description: "Active parameter pair (a features.functions key)"}
+  FREQ:      {type: si, required: true, description: "Test frequency (Hz); null for DCR"}
+  LEVEL:     {type: si, description: "Test signal level (V rms)"}
+  CIRCUIT:   {type: enum, values: [SER, PAR], description: "Equivalent circuit; null where it does not apply (Z-theta, R-X, DCR)"}
+  SPEED:     {type: string, description: "Measurement speed (a features.speeds value, canonical FAST, MED, SLOW)"}
+  RANGE:     {type: string, description: "AUTO, HOLD or a features.ranges value"}
+  OVERLOAD:  {type: bool, description: "Out of range / bridge unbalanced / no data (OL, FETC status not 0, 9.9E37)"}
+  BIN:       {type: string, description: "Comparator result (BIN1..BIN9, AUX, OUT, PASS, FAIL); null when the comparator is off"}
+  BIAS:      {type: si, description: "DC bias level (V)"}
+  BIAS_ON:   {type: enum, values: [ON, OFF], description: "DC bias applied to the DUT"}
+  REMOTE:    {type: enum, values: [ON, OFF], description: "Front panel locked by remote control"}
+operations:
+  function:         {get: true, set: true, value: string, description: "Select the parameter pair (features.functions key); A/B instruments bind it to several setter steps (`only`)"}
+  frequency:        {get: true, set: true, value: si, description: "Test frequency (Hz): a features.frequency.list value or within min..max"}
+  level:            {get: true, set: true, value: si, description: "Test level (V rms)"}
+  speed:            {get: true, set: true, value: string, description: "Measurement speed (features.speeds value)"}
+  range:            {get: true, set: true, value: string, description: "AUTO, HOLD or a features.ranges value (ohm)"}
+  circuit:          {get: true, set: true, value: enum, values: [SER, PAR], description: "Only where the circuit is separate from the function (A/B instruments)"}
+  measurement:      {get: true, value: si, description: "Fresh primary reading"}
+  secondary:        {get: true, value: si, description: "Fresh secondary reading"}
+  trigger_source:   {get: true, set: true, value: string, description: "features.trigger_sources value (INT, BUS, MAN, EXT, HOLD)"}
+  trigger:          {set: true, value: enum, values: [ONCE], description: "Trigger one measurement (BUS/MAN source)"}
+  correction:       {set: true, value: enum, values: [OPEN, SHORT, AUTO], description: "Run open or short correction (seconds to minutes; the fixture must be opened / shorted first). AUTO: the instrument decides from the fixture state (East Tester)"}
+  open_correction:  {set: true, value: enum, values: [ON, OFF], description: "Apply the stored open correction"}
+  short_correction: {set: true, value: enum, values: [ON, OFF], description: "Apply the stored short correction"}
+  bias:             {get: true, set: true, value: si, description: "DC bias level (V)"}
+  bias_output:      {get: true, set: true, value: enum, values: [ON, OFF], description: "Apply the DC bias to the DUT (safety: energize)"}
+  remote:           {set: true, value: enum, values: [ON, OFF]}

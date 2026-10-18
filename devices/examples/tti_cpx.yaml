@@ -1,0 +1,20 @@
+# Replies in the formats of the CPX400D/DP manual's command list (pp.27-29): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: tti_cpx
+model: CPX400DP
+replies:
+  - {send: '\*IDN\?', reply: "THURLBY THANDAR,CPX400DP,279730,1.00 - 1.00", source: "p.18 (en dash replaced by '-')"}
+  - {send: 'V1O\?', reply: "12.003V", source: "p.27 <NR2>V"}
+  - {send: 'I1O\?', reply: "0.512A", source: "p.27 <NR2>A"}
+  - {send: 'V2O\?', reply: "0.000V", source: "p.27"}
+  - {send: 'I2O\?', reply: "0.000A", source: "p.27"}
+  - {send: 'OP1\?', reply: "1", source: "p.27 1 = ON"}
+  - {send: 'OP2\?', reply: "0", source: "p.27 0 = OFF"}
+  - {send: 'V1\?', reply: "V1 12.00", source: "p.27 V<N> <NR2>"}
+  - {send: 'I1\?', reply: "I1 1.000", source: "p.27 I<N> <NR2>"}
+  - {send: 'OVP1\?', reply: "VP1 66.00", source: "p.27 VP<N> <NR2>"}
+  - {send: 'OCP1\?', reply: "CP1 22.00", source: "p.27 CP<N> <NR2>"}
+expect:
+  PSU:
+    1: {VOUT: 12.003, IOUT: 0.512, OUTPUT: "ON", REMOTE: "ON"}
+    2: {VOUT: 0.0, OUTPUT: "OFF", SBY: true}

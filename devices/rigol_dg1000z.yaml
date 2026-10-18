@@ -1,0 +1,45 @@
+# RIGOL DG1000Z series function/arbitrary waveform generators (DG1022Z/DG1032Z/DG1062Z).
+# Written from the programming guide before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.1. Pages are PDF pages (printed 2-n = PDF − 12).
+schema: benchmesh.device/v1
+id: rigol_dg1000z
+extends: scpi_awg
+vendor: RIGOL
+family: DG1000Z series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "DG1000Z Programming Guide PGB09106-1110 (DG1000Z_ProgrammingGuide_EN.pdf)", pages: "42 (*IDN?), 68-70 (OUTPut), 109 (FREQ), 120-122 (FUNC), 167 (PHAS), 194-199 (VOLT), 203 (LAN socket 5555), 209/228 (USB id)"}
+  - {note: "Limits per model: DG1000Z Programming Guide Table 2-1 (PDF p79); amplitude/offset at High-Z (2× the 50 Ω values)"}
+models:
+  - {"name": "DG1022Z", "match": "^Rigol Technologies,DG1022Z,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 25e6, "PUL": 15e6, "RAMP": 0.5e6}}}}
+  - {"name": "DG1032Z", "match": "^Rigol Technologies,DG1032Z,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6, "SQU": 25e6, "PUL": 15e6, "RAMP": 0.5e6}}}}
+  - {"name": "DG1062Z", "match": "^Rigol Technologies,DG1062Z,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}}}
+link:
+  usbtmc: {vid: "1ab1", pid: "0642"}
+  # raw SCPI socket (:SYST:COMM:LAN:CONT? answers 5555)
+  tcp: {port: 5555}
+commands:
+  outp_q: {source: "PDF p70; reply ON/OFF"}
+  outp_set: {source: "PDF p70"}
+  shape_q: {source: "PDF p121"}
+  shape_set: {source: "PDF p121"}
+  freq_q: {source: "PDF p109; reply 1.000000E+03"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+    source: "PDF p109"
+  unit_q: {source: "PDF p199"}
+  ampl_q: {source: "PDF p194"}
+  ampl_set:
+    params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
+    description: "2 mVpp minimum; 20 Vpp at High-Z ≤10 MHz (10 Vpp into 50 Ω), less above — the instrument clamps"
+    source: "PDF p194"
+  offs_q: {source: "PDF p195"}
+  offs_set: {source: "PDF p195; ±10 V at High-Z (±5 V into 50 Ω), |offset| + Vpp/2 bounded"}
+  phase_q: {source: "PDF p167"}
+  phase_set: {source: "PDF p167"}
+  symm_q: {source: "PDF p120"}
+  symm_set: {source: "PDF p120"}
+  load_q: {source: "PDF p68; 5.000000E+01, High-Z 9.900000E+37"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 60e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 1e6}}

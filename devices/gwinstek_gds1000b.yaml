@@ -1,0 +1,262 @@
+# GW Instek GDS-1000B digital oscilloscopes (GDS-1054B, GDS-1072B, GDS-1074B, GDS-1102B, GDS-1104B).
+# Written from the programming manual, not yet seen live (models are "awaiting confirmation").
+# The USB device port is a CDC-ACM virtual COM port (p5, p16), so the link is `serial` (the baud
+# rate is not used by CDC). The LAN socket server has a user-chosen port (1024-65535, off by
+# default, p10), so no tcp link is offered.
+# Waveform: `:ACQuire<n>:MEMory?` returns the whole record (1e3 … 1e7 points) as signed 16-bit
+# big-endian codes, volts = code / 25 * vertical scale (p36-38). The trace is only polled while the
+# record length is at most 10 000 points (a 10 Mpts read would block the link for minutes).
+# Coverage report: ai_context/migration/coverage/OSC.md §2.9.
+schema: benchmesh.device/v1
+id: gwinstek_gds1000b
+vendor: GW Instek
+family: GDS-1000B series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "GDS-1000B Programming Manual (GDS-1000B_Programming_Manual.pdf); printed page = PDF page", pages: "p5-7 USB CDC, p10 socket server, p16-17 syntax, p29 *IDN?, p36-41 ACQuire/HEADer, p42 AUTOSet, p43-48 CHANnel, p77-93 MEASure, p112 RUN/STOP/SINGle, p114-115 TIMebase, p119-122 TRIGger, p131-132 TRIGger:STATe?"}
+  - {note: "Model list from GW Instek's GDS-1000B range (the manual names GDS-1074B/1102B/1104B in examples). Horizontal divisions (10) and the time origin (position - 5 div) are not stated in the manual"}
+models:
+  - {name: GDS-1054B, match: "^GW,GDS-1054B,", features: {OSC: {bandwidth_hz: 50e6}}}
+  - {name: GDS-1072B, match: "^GW,GDS-1072B,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: GDS-1074B, match: "^GW,GDS-1074B,", features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: GDS-1102B, match: "^GW,GDS-1102B,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: GDS-1104B, match: "^GW,GDS-1104B,", features: {OSC: {bandwidth_hz: 100e6}}}
+identify: idn
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 2000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 0}
+session:
+  # without this the memory query puts a ~600-byte settings string before the block (p41)
+  on_connect: [header_off]
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "*IDN? p29; GW,GDS-1074B,PXXXXXX,V1.XX"}
+  header_off: {send: ":HEADer OFF", reply: none, safety: configure, source: "HEADer p41"}
+
+  # --- vertical (per channel) ----------------------------------------------------------
+  disp_q:
+    send: ":CHANnel{ch}:DISPlay?"
+    parse: [trim, upper, {map: {"ON": "ON", "OFF": "OFF", "1": "ON", "0": "OFF"}}]
+    cache_ms: 500
+    source: "CHANnel<X>:DISPlay p44-45; ON or OFF"
+  scale_q: {send: ":CHANnel{ch}:SCALe?", parse: [trim, number], source: "CHANnel<X>:SCALe p47-48"}
+  offset_q: {send: ":CHANnel{ch}:POSition?", parse: [trim, number], source: "CHANnel<X>:POSition p46; volts, 2.4E-3"}
+  coup_q: {send: ":CHANnel{ch}:COUPling?", parse: [trim, upper], source: "CHANnel<X>:COUPling p44; AC, DC or GND"}
+  probe_q: {send: ":CHANnel{ch}:PROBe:RATio?", parse: [trim, number], source: "CHANnel<X>:PROBe:RATio p47"}
+  bwl_q:
+    send: ":CHANnel{ch}:BWLimit?"
+    parse: [trim, upper, {map: {"FULL": "OFF", "_": "20M"}}]
+    source: "CHANnel<X>:BWLimit p43; FULL or the limit as NR3 (2.000E+07)"
+  inv_q:
+    send: ":CHANnel{ch}:INVert?"
+    parse: [trim, upper, {map: {"ON": "ON", "OFF": "OFF", "1": "ON", "0": "OFF"}}]
+    source: "CHANnel<X>:INVert p46"
+  disp_set:
+    send: ":CHANnel{ch}:DISPlay {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    invalidates: [disp_q]
+  scale_set:
+    send: ":CHANnel{ch}:SCALe {v}"
+    params: {v: {type: number, min: 0.002, max: 10000, format: "%g", unit: "V/div"}}
+    reply: none
+    safety: configure
+    description: "2 mV/div to 10 V/div at probe 1X (p48), scaled by the probe ratio; set the probe first"
+  offset_set:
+    send: ":CHANnel{ch}:POSition {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    description: "Range depends on the vertical scale; the scope takes the closest allowed value (p46)"
+  coup_set:
+    send: ":CHANnel{ch}:COUPling {c}"
+    params: {c: {type: enum, values: {"DC": "DC", "AC": "AC", "GND": "GND"}}}
+    reply: none
+    safety: configure
+  probe_set:
+    send: ":CHANnel{ch}:PROBe:RATio {r}"
+    params: {r: {type: enum, values: {"0.1": "1.00E-1", "1": "1.00E+0", "10": "1.00E+1", "100": "1.00E+2", "1000": "1.00E+3"}}}
+    reply: none
+    safety: configure
+  bwl_set:
+    send: ":CHANnel{ch}:BWLimit {b}"
+    params: {b: {type: enum, values: {"20M": "2.000E+07", "OFF": "FULL"}}}
+    reply: none
+    safety: configure
+  inv_set:
+    send: ":CHANnel{ch}:INVert {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+
+  # --- horizontal, trigger, acquisition (global) ----------------------------------------
+  tb_q: {send: ":TIMebase:SCALe?", parse: [trim, number], source: "TIMebase:SCALe p114-115"}
+  tbofs_q: {send: ":TIMebase:POSition?", parse: [trim, number], source: "TIMebase:POSition p114"}
+  reclen_q: {send: ":ACQuire:RECOrdlength?", parse: [trim, number], source: "ACQuire:RECOrdlength p40-41; 1e+3 … 1e+7"}
+  trig_stat_q:
+    send: ":TRIGger:STATe?"
+    parse: [trim, {replace: {from: "*", to: ""}}, upper, {map: {"ARMED": "WAIT", "READY": "WAIT", "AUTO": "AUTO", "TRIGGER": "TD", "SAVE": "STOP"}}]
+    source: "TRIGger:STATe? p131-132; *ARMED, *AUTO, *READY, *SAVE, *TRIGGER"
+  sweep_q:
+    send: ":TRIGger:MODe?"
+    parse: [trim, upper, {map: {"AUTO": "AUTO", "NORMAL": "NORM", "NORM": "NORM"}}]
+    source: "TRIGger:MODe p120; AUTo or NORMal (single shot = :SINGle)"
+  tsrc_q:
+    send: ":TRIGger:SOURce?"
+    parse: [trim, upper, {map: {"CH1": "CHAN1", "CH2": "CHAN2", "CH3": "CHAN3", "CH4": "CHAN4", "EXT": "EXT", "LINE": "AC", "LIN": "AC"}}]
+    source: "TRIGger:SOURce p119; CH1-CH4, EXT, LINe"
+  slope_q:
+    send: ":TRIGger:EDGe:SLOP?"
+    parse: [trim, upper, {map: {"RISE": "POS", "RIS": "POS", "FALL": "NEG", "EITHER": "RFAL", "EIT": "RFAL"}}]
+    source: "TRIGger:EDGe:SLOP p122; RISe, FALL, EITher"
+  tlev_q: {send: ":TRIGger:LEVel?", parse: [trim, number], source: "TRIGger:LEVel p120-121"}
+  acq_q:
+    send: ":ACQuire:MODe?"
+    parse: [trim, upper, {map: {"SAMPLE": "NORM", "SAMP": "NORM", "PDETECT": "PEAK", "PDET": "PEAK", "AVERAGE": "AVER", "AVER": "AVER"}}]
+    source: "ACQuire:MODe p36; SAMPle, PDETect, AVERage"
+  tb_set:
+    send: ":TIMebase:SCALe {v}"
+    params: {v: {type: number, min: 1e-9, max: 100, format: "%g", unit: "s/div"}}
+    reply: none
+    safety: configure
+  tbofs_set:
+    send: ":TIMebase:POSition {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+  sweep_set:
+    send: ":TRIGger:MODe {s}"
+    params: {s: {type: enum, values: {"AUTO": "AUTo", "NORM": "NORMal"}}}
+    reply: none
+    safety: configure
+  tsrc_set:
+    send: ":TRIGger:SOURce {s}"
+    params: {s: {type: enum, values: {"CHAN1": "CH1", "CHAN2": "CH2", "CHAN3": "CH3", "CHAN4": "CH4", "EXT": "EXT", "AC": "LINe"}}}
+    reply: none
+    safety: configure
+  slope_set:
+    send: ":TRIGger:EDGe:SLOP {s}"
+    params: {s: {type: enum, values: {"POS": "RISe", "NEG": "FALL", "RFAL": "EITher"}}}
+    reply: none
+    safety: configure
+  tlev_set:
+    send: ":TRIGger:LEVel {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+  acq_set:
+    send: ":ACQuire:MODe {t}"
+    params: {t: {type: enum, values: {"NORM": "SAMPle", "PEAK": "PDETect", "AVER": "AVERage"}}}
+    reply: none
+    safety: configure
+  run_set:
+    send: "{a}"
+    params: {a: {type: enum, values: {"RUN": ":RUN", "STOP": ":STOP", "SINGLE": ":SINGle", "AUTO": ":AUTOSet"}}}
+    reply: none
+    safety: configure
+    description: "Run/stop acquisition, single shot, autoset (changes all settings)"
+    source: ":RUN :STOP :SINGle p112, :AUTOSet p42"
+
+  # --- waveform and measurements --------------------------------------------------------
+  wav_data:
+    send: ":ACQuire{ch}:MEMory?"
+    requires: {expr: "disp_q == 'ON' && reclen_q != null && reclen_q <= 10000.0", message: "channel is not displayed, or the record length is over 10 000 points"}
+    reply: block
+    parse: [{samples: i16be}]
+    timeout_ms: 5000
+    source: "ACQuire<X>:MEMory? p36-38; with HEADer OFF a #<n><len> block of signed 16-bit big-endian codes"
+  meas_src: {send: ":MEASure:SOURce1 CH{ch}", reply: none, safety: configure, source: "MEASure:SOURce<X> p77-78"}
+  vpp_q:
+    send: ":MEASure:PK2Pk?"
+    before: [meas_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {null_if: ["Chan Off"]}, {replace: {from: ">", to: ""}}, {replace: {from: "<", to: ""}}, number]
+    source: "MEASure:PK2Pk p92; 2.04E-1 or Chan Off"
+  vavg_q:
+    send: ":MEASure:MEAN?"
+    before: [meas_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {null_if: ["Chan Off"]}, {replace: {from: ">", to: ""}}, {replace: {from: "<", to: ""}}, number]
+    source: "MEASure:MEAN p88-89"
+  vrms_q:
+    send: ":MEASure:RMS?"
+    before: [meas_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {null_if: ["Chan Off"]}, {replace: {from: ">", to: ""}}, {replace: {from: "<", to: ""}}, number]
+    source: "MEASure:RMS p92-93"
+  freq_q:
+    send: ":MEASure:FREQuency?"
+    before: [meas_src]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {null_if: ["Chan Off"]}, {replace: {from: ">", to: ""}}, {replace: {from: "<", to: ""}}, number]
+    source: "MEASure:FREQuency p81-82; >1.0E+3 (the '>' is dropped)"
+
+classes:
+  OSC:
+    channels: 4
+    ui_component: GenericOSC
+    features:
+      lock: false
+      compulsory_lock: false
+      channel_colors: {"1": "#FFD700", "2": "#00CED1", "3": "#FF69B4", "4": "#4169E1"}
+      divisions: {horizontal: 10, vertical: 8}
+      bandwidth_hz: 100e6
+      scale: {min: 2e-3, max: 10, note: "V/div at probe 1X (p48); multiplied by the probe ratio"}
+      probe: ["0.1", "1", "10", "100", "1000"]
+      measurements: [VPP, VAVG, VRMS, FREQ]
+    # Trace fast, measurements medium (each selects the measurement source, visible on the
+    # scope), settings slow; a set re-polls everything at once.
+    poll:
+      - every_ms: 250
+        read: [trig_stat_q, wav_data]
+      - every_ms: 1000
+        read: [disp_q, vpp_q, vavg_q, vrms_q, freq_q]
+      - every_ms: 3000
+        read: [scale_q, offset_q, coup_q, probe_q, bwl_q, inv_q, tb_q, tbofs_q, reclen_q, sweep_q, tsrc_q, slope_q, tlev_q, acq_q]
+    status:
+      DISPLAY: disp_q
+      SCALE: {expr: scale_q, as: si}
+      OFFSET: {expr: offset_q, as: si}
+      COUPLING: coup_q
+      PROBE: probe_q
+      BWLIMIT: bwl_q
+      INVERT: inv_q
+      TIMEBASE: {expr: tb_q, as: si}
+      TIMEOFFSET: {expr: tbofs_q, as: si}
+      TRIG_STATUS: trig_stat_q
+      TRIG_SWEEP: sweep_q
+      TRIG_SOURCE: tsrc_q
+      TRIG_SLOPE: slope_q
+      TRIG_LEVEL: {expr: tlev_q, as: si}
+      ACQ_TYPE: acq_q
+      # volts = code / 25 * scale (p37-38): Y0 = 0, DY = scale / 25; the record spans the screen
+      WAVE: wav_data
+      WAVE_Y0: "wav_data == null ? null : 0.0"
+      WAVE_DY: "scale_q == null ? null : scale_q / 25.0"
+      WAVE_X0: "tb_q == null || tbofs_q == null ? null : tbofs_q - 5.0 * tb_q"
+      WAVE_DX: "tb_q == null || reclen_q == null || reclen_q <= 0.0 ? null : 10.0 * tb_q / reclen_q"
+      VPP: vpp_q
+      VAVG: vavg_q
+      VRMS: vrms_q
+      FREQ: freq_q
+    operations:
+      display: {get: disp_q, set: disp_set}
+      scale: {get: scale_q, set: scale_set, as: si}
+      offset: {get: offset_q, set: offset_set, as: si}
+      coupling: {get: coup_q, set: coup_set}
+      probe: {get: probe_q, set: probe_set}
+      bwlimit: {get: bwl_q, set: bwl_set}
+      invert: {get: inv_q, set: inv_set}
+      timebase: {get: tb_q, set: tb_set, as: si}
+      timebase_offset: {get: tbofs_q, set: tbofs_set, as: si}
+      trigger_status: {get: trig_stat_q}
+      trigger_sweep: {get: sweep_q, set: sweep_set}
+      trigger_source: {get: tsrc_q, set: tsrc_set}
+      trigger_slope: {get: slope_q, set: slope_set}
+      trigger_level: {get: tlev_q, set: tlev_set, as: si}
+      acquire_type: {get: acq_q, set: acq_set}
+      run: {set: run_set}
+      waveform: {get: wav_data}

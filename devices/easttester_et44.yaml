@@ -1,0 +1,226 @@
+# East Tester ET44 / ET45 benchtop LCR meters (also sold as RuoShui / Victor 4090/4091, Mustool
+# ET4410). Primary and secondary parameter and the equivalent circuit are set separately (A/B
+# instrument): the class `function` runs three setter steps, each only for the pairs it applies to.
+# Every command answers a line: `exec success`, `cmd err` (unknown) or `execu err` (failed).
+# See ai_context/migration/coverage/LCR.md §2.2 and §4.4.
+schema: benchmesh.device/v1
+id: easttester_et44
+vendor: East Tester
+family: ET44/ET45 LCR meter
+version: 0.1.0
+sources:
+  - {doc: "ET44_ET45_SCPI_20230306.pdf (BenchMeshDOC/easttester_et44)", pages: "2 (serial), 3-11 (commands)"}
+  - {note: "Reply lines of setters, `FREQ`/`VOLT` short forms and `SERIAL`/`PALLEL` circuit replies from the ET44.py driver (tested by its author on an ET4410), quoted in LCR.md §2.2"}
+  - {note: "ET44 THR secondary is taken as Z-θ in degrees (the SCPI PDF says 'radian'): confirm on first contact"}
+models:
+  - name: ET4401
+    match: '^[^,]*,\s*ET4401\b'
+    features: {LCR: {frequency: {list: [100, 120, 200, 400, 800, 1000, 2000, 4000, 8000, 10000]}, level: {list: [0.1, 0.3, 0.6, 1.0, 1.5, 2.0]}}}
+  - name: ET4402
+    match: '^[^,]*,\s*ET4402\b'
+    features: {LCR: {frequency: {list: [100, 120, 200, 400, 800, 1000, 2000, 4000, 8000, 10000, 15000, 20000]}, level: {list: [0.1, 0.3, 0.6, 1.0, 1.5, 2.0]}}}
+  - name: ET4410
+    match: '^[^,]*,\s*ET4410\b'
+    features: {LCR: {frequency: {list: [100, 120, 200, 400, 800, 1000, 2000, 4000, 8000, 10000, 15000, 20000, 40000, 50000, 80000, 100000]}, level: {list: [0.1, 0.3, 0.6, 1.0, 1.5, 2.0]}}}
+  - name: ET4501
+    match: '^[^,]*,\s*ET4501\b'
+    features: {LCR: {frequency: {min: 10, max: 10000, presets: [100, 120, 1000, 10000]}, level: {min: 0.01, max: 2}}}
+  - name: ET4502
+    match: '^[^,]*,\s*ET4502\b'
+    features: {LCR: {frequency: {min: 10, max: 20000, presets: [100, 120, 1000, 10000]}, level: {min: 0.01, max: 2}}}
+  - name: ET4510
+    match: '^[^,]*,\s*ET4510\b'
+    features: {LCR: {frequency: {min: 10, max: 100000, presets: [100, 120, 1000, 10000, 100000]}, level: {min: 0.01, max: 2}}}
+identify: idn
+link:
+  serial: {baud: 9600, format: 8N1}
+framing:
+  tx: {terminator: "\r\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 20}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "PM p.3 (<manufacturer>,<model>,<firmware>,<hardware>,<SN>)"}
+  fetch: {send: "FETC?", parse: [trim, {fields: {sep: ",", names: [a, b]}}], source: "PM p.8 (<NR3>,<NR3>)"}
+  fetch_a: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 0}}, trim, number], source: "PM p.8"}
+  fetch_b: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 1}}, trim, number], source: "PM p.8"}
+  imp_a_q: {send: "FUNC:IMP:A?", parse: [trim, upper], cache_ms: 2500, source: "PM p.6"}
+  imp_b_q: {send: "FUNC:IMP:B?", parse: [trim, upper], cache_ms: 2500, source: "PM p.6"}
+  equ_q:
+    send: "FUNC:IMP:EQU?"
+    parse: [trim, upper, {map: {SERIAL: SER, SER: SER, PALLEL: PAR, PAL: PAR, PARALLEL: PAR}}]
+    cache_ms: 2500
+    source: "PM p.6 ({SERial|PALlel}); ET44.py replies SERIAL / PALLEL"
+  freq_q: {send: "FREQ?", parse: [trim, number], cache_ms: 2500, source: "PM p.5 (<NR3> Hz)"}
+  volt_q: {send: "VOLT?", parse: [trim, number, {scale: 0.001}], cache_ms: 2500, source: "PM p.5 (<NR3> mV)"}
+  bias_q: {send: "BIAS:VOLT:LEV?", parse: [trim, number, {scale: 0.001}], cache_ms: 2500, source: "PM p.4 (<NR3> mV)"}
+  aper_q:
+    send: "APER?"
+    parse: [trim, upper, {map: {FAST: FAST, MED: MED, MEDIUM: MED, SLOW: SLOW}}]
+    cache_ms: 2500
+    source: "PM p.4 ({FAST|MEDium|SLOW})"
+  rang_auto_q:
+    send: "FUNC:IMP:RANG:AUTO?"
+    parse: [trim, {map: {"1": AUTO, "0": HOLD, "ON": AUTO, "OFF": HOLD}}]
+    cache_ms: 2500
+    source: "PM p.7 (<NR1>)"
+  trig_sour_q: {send: "SYST:SOUR?", parse: [trim, upper], cache_ms: 2500, source: "PM p.11"}
+
+  # --- setters: every one answers `exec success` (anything else is an error) -----------
+  imp_a_set:
+    send: "FUNC:IMP:A {f}"
+    params:
+      f: {type: enum, values: {CSD: C, CPD: C, CSQ: C, CPQ: C, CSESR: C, LSD: L, LPD: L, LSQ: L, LPQ: L, RX: R, ZTD: Z, DCR: DCR}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [imp_a_q, imp_b_q, equ_q]
+    source: "PM p.6"
+  imp_b_set:
+    send: "FUNC:IMP:B {f}"
+    params:
+      f: {type: enum, values: {CSD: D, CPD: D, CSQ: Q, CPQ: Q, CSESR: ESR, LSD: D, LPD: D, LSQ: Q, LPQ: Q, RX: X, ZTD: THR}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [imp_b_q]
+    source: "PM p.6"
+  equ_set:
+    send: "FUNC:IMP:EQU {f}"
+    params:
+      f: {type: enum, values: {CPD: PAL, CPQ: PAL, LPD: PAL, LPQ: PAL, CSD: SER, CSQ: SER, CSESR: SER, LSD: SER, LSQ: SER}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [equ_q]
+    source: "PM p.6"
+  circuit_set:
+    send: "FUNC:IMP:EQU {c}"
+    params: {c: {type: enum, values: {SER: SER, PAR: PAL}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [equ_q]
+    requires: {expr: 'imp_a_q in ["C", "L"]', message: "series/parallel applies to C and L only"}
+    source: "PM p.6"
+  freq_set:
+    send: "FREQ {f}"
+    params: {f: {type: number, min: 10, max: 100000, format: "%g", unit: Hz}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [freq_q]
+    description: "ET44: one of the model's frequency points (features.frequency.list); ET45: any integer"
+    source: "PM p.5"
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0.01, max: 2, scale: 1000, format: "%.0f", unit: V}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [volt_q]
+    description: "Sent in mV. ET44: 0.1, 0.3, 0.6, 1, 1.5, 2 V; ET45: 10-2000 mV"
+    source: "PM p.5"
+  bias_set:
+    send: "BIAS:VOLT {v}"
+    params: {v: {type: number, min: 0, max: 1.5, scale: 1000, format: "%.0f", unit: V}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: energize
+    invalidates: [bias_q]
+    description: "DC bias in mV, applied at once (0 = off), hence energize"
+    source: "PM p.4"
+  aper_set:
+    send: "APER {s}"
+    params: {s: {type: enum, values: {FAST: FAST, MED: MEDium, SLOW: SLOW}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [aper_q]
+    source: "PM p.3-4"
+  # no manual range: OFF holds the current range
+  rang_set:
+    send: "FUNC:IMP:RANG:AUTO {r}"
+    params: {r: {type: enum, values: {AUTO: "ON", HOLD: "OFF"}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [rang_auto_q]
+    source: "PM p.7"
+  trig_sour_set:
+    send: "SYST:SOUR {s}"
+    params: {s: {type: enum, values: {INT: INT, MAN: MAN, EXT: EXT}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    invalidates: [trig_sour_q]
+    source: "PM p.11"
+  trig:
+    send: "{t}"
+    params: {t: {type: enum, values: {ONCE: "*TRG"}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    source: "PM p.3"
+  # open or short is decided by the hardware (fixture state); a countdown runs on screen
+  corr_set:
+    send: "{c}"
+    params: {c: {type: enum, values: {AUTO: "CORR:EXEC"}}}
+    parse: [trim]
+    on_empty: "null"
+    timeout_ms: 30000
+    safety: configure
+    source: "PM p.7"
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYST:REM", "OFF": "SYST:LOC"}}}
+    parse: [trim, {map: {"exec success": OK}}]
+    safety: configure
+    source: "PM p.11"
+classes:
+  LCR:
+    channels: 1
+    ui_component: GenericLCR
+    features:
+      counts: 5
+      functions:
+        CSD:   {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs–D"}
+        CPD:   {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp–D"}
+        CSQ:   {primary: Cs, secondary: Q,   circuit: SER, units: [F, ""],  ui_name: "Cs–Q"}
+        CPQ:   {primary: Cp, secondary: Q,   circuit: PAR, units: [F, ""],  ui_name: "Cp–Q"}
+        CSESR: {primary: Cs, secondary: ESR, circuit: SER, units: [F, "Ω"], ui_name: "Cs–ESR"}
+        LSD:   {primary: Ls, secondary: D,   circuit: SER, units: [H, ""],  ui_name: "Ls–D"}
+        LPD:   {primary: Lp, secondary: D,   circuit: PAR, units: [H, ""],  ui_name: "Lp–D"}
+        LSQ:   {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls–Q"}
+        LPQ:   {primary: Lp, secondary: Q,   circuit: PAR, units: [H, ""],  ui_name: "Lp–Q"}
+        RX:    {primary: R,  secondary: X,   units: ["Ω", "Ω"], ui_name: "R–X"}
+        ZTD:   {primary: Z,  secondary: θ,   units: ["Ω", "°"], ui_name: "Z–θ"}
+        DCR:   {primary: DCR, units: ["Ω"], ui_name: "DCR"}
+      speeds: [{value: FAST, display: fast}, {value: MED, display: medium}, {value: SLOW, display: slow}]
+      ranges: [{value: AUTO, display: AUTO}, {value: HOLD, display: HOLD}]
+      trigger_sources: [INT, MAN, EXT]
+      bias: {min: 0, max: 1.5, unit: V}
+      correction: [AUTO]
+    poll:
+      - every_ms: 400
+        read: [fetch, imp_a_q, imp_b_q, equ_q, freq_q, volt_q, bias_q, aper_q, rang_auto_q]
+    status:
+      PRIMARY: {expr: 'fetch == null ? null : num(fetch.a)', as: si}
+      SECONDARY: {expr: 'fetch == null || imp_a_q == "DCR" ? null : num(fetch.b)', as: si}
+      OVERLOAD: 'fetch != null && num(fetch.a) == null'
+      FUNC: >-
+        imp_a_q == "DCR" ? "DCR" :
+        {"CDSER": "CSD", "CDPAR": "CPD", "CQSER": "CSQ", "CQPAR": "CPQ", "CESRSER": "CSESR",
+         "LDSER": "LSD", "LDPAR": "LPD", "LQSER": "LSQ", "LQPAR": "LPQ", "RX": "RX", "ZTHR": "ZTD"}[imp_a_q + imp_b_q + (imp_a_q in ["C", "L"] ? equ_q : "")]
+      CIRCUIT: 'imp_a_q in ["C", "L"] ? equ_q : null'
+      FREQ: {expr: 'imp_a_q == "DCR" ? null : freq_q', as: si}
+      LEVEL: {expr: volt_q, as: si}
+      BIAS: {expr: bias_q, as: si}
+      SPEED: aper_q
+      RANGE: rang_auto_q
+    operations:
+      function:
+        set:
+          - {cmd: imp_a_set, args: {f: "{value}"}}
+          - {cmd: imp_b_set, args: {f: "{value}"}, only: [CSD, CPD, CSQ, CPQ, CSESR, LSD, LPD, LSQ, LPQ, RX, ZTD]}
+          - {cmd: equ_set, args: {f: "{value}"}, only: [CPD, CPQ, LPD, LPQ, CSD, CSQ, CSESR, LSD, LSQ]}
+      circuit: {get: equ_q, set: circuit_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      level: {get: volt_q, set: volt_set, as: si}
+      bias: {get: bias_q, set: bias_set, as: si}
+      speed: {get: aper_q, set: aper_set}
+      range: {get: rang_auto_q, set: rang_set}
+      measurement: {get: fetch_a, as: si}
+      secondary: {get: fetch_b, as: si}
+      trigger_source: {get: trig_sour_q, set: trig_sour_set}
+      trigger: {set: trig}
+      correction: {set: corr_set}
+      remote: {set: remote_set}

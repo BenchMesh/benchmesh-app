@@ -1,0 +1,14 @@
+# Replies as the U3606B Programmer's Reference prints them (PDF pages).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keysight_u3606
+transport: usbtmc
+model: U3606B
+replies:
+  - {send: '\*IDN\?', reply: "Agilent Technologies,U3606B,KS08080027,00.12-00.42-00.20", source: "p.350 *IDN? example"}
+  - {send: 'READ\?', reply: "+9.985308E+00", source: "p.95 INIT/FETC? example reply"}
+  - {send: 'FUNC\?', reply: "VOLT:AC", source: "p.184 FUNC? example (unquoted)"}
+  - {send: 'VOLT:AC:RANG\?', reply: "+1.000000E+01", source: "p.185 RANGe? (10 V range)"}
+  - {send: 'VOLT:AC:RANG:AUTO\?', reply: "1", source: "p.187 RANGe:AUTO? → 0|1"}
+expect:
+  DMM:
+    1: {MEAS: 9.985308, MODE: VOLT_AC, RANGE: AUTO, OVERLOAD: false}

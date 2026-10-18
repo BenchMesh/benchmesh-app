@@ -1,0 +1,91 @@
+# B&K Precision 8600 series DC electronic loads (8600, 8601, 8602, 8610, 8612, 8614, 8616;
+# ITECH IT8800 OEM). Written from the programming manual before anyone tested it on hardware
+# (all models awaiting confirmation). Coverage report: ai_context/migration/coverage/ELL.md §2.8.
+# Pages are PDF pages of 8600_Series_Programming_Manual.pdf (BP).
+schema: benchmesh.device/v1
+id: bk_8600
+extends: scpi_load
+vendor: B&K Precision
+family: 8600 series DC electronic load
+version: 0.1.0
+sources:
+  - {doc: "8600 Series Programming Manual (8600_Series_Programming_Manual.pdf)", pages: "6-10, 21, 24, 29, 37, 44-47, 65-66"}
+  - {note: "Ratings from the B&K datasheet (medium confidence): 8600 120 V/30 A/150 W, 8601 120 V/60 A/250 W, 8602 500 V/15 A/200 W, 8610 120 V/120 A/750 W, 8612 500 V/30 A/750 W, 8614 120 V/240 A/1500 W, 8616 500 V/60 A/1200 W"}
+  - {note: "ITECH-branded IT8800 units are the same instrument; their identify reply is unknown, so they are not listed as models yet"}
+models:
+  - {name: "8600", match: "^B&K PRECISION, ?8600,"}
+  - {name: "8601", match: "^B&K PRECISION, ?8601,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 250.0}}, modes: {CURR: {setpoint: {max: 60.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 250.0}}}}}}
+  - {name: "8602", match: "^B&K PRECISION, ?8602,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, current: {unit: A, max: 15.0}, power: {unit: W, max: 200.0}}, modes: {CURR: {setpoint: {max: 15.0}}, VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 200.0}}}}}}
+  - {name: "8610", match: "^B&K PRECISION, ?8610,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 120.0}, power: {unit: W, max: 750.0}}, modes: {CURR: {setpoint: {max: 120.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 750.0}}}}}}
+  - {name: "8612", match: "^B&K PRECISION, ?8612,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 750.0}}, modes: {CURR: {setpoint: {max: 30.0}}, VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 750.0}}}}}}
+  - {name: "8614", match: "^B&K PRECISION, ?8614,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 240.0}, power: {unit: W, max: 1500.0}}, modes: {CURR: {setpoint: {max: 240.0}}, VOLT: {setpoint: {max: 120.0}}, POW: {setpoint: {max: 1500.0}}}}}}
+  - {name: "8616", match: "^B&K PRECISION, ?8616,", features: {ELL: {absolute_limits: {voltage: {unit: V, max: 500.0}, current: {unit: A, max: 60.0}, power: {unit: W, max: 1200.0}}, modes: {CURR: {setpoint: {max: 60.0}}, VOLT: {setpoint: {max: 500.0}}, POW: {setpoint: {max: 1200.0}}}}}}
+link:
+  # BP p.8: USB488 (USBTMC). Vendor id 2ec7 (ITECH, the OEM) as commonly reported; product id
+  # unknown (discovery by vid + identify). Verify.
+  usbtmc:
+    vid: "2ec7"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+  # BP p.6-8: RS-232 via null-modem cable, 8N1 (1 start, 1 stop fixed), baud 4800-115200 and
+  # flow control (none / RTS-CTS / XON-XOFF) selected in the System menu; the factory baud
+  # rate is not stated (9600 assumed). Commands end in NL, responses in LF (BP p.21, p.24).
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable (no SYST:REM?); tracks our own SYST:REM / SYST:LOC"}
+session:
+  # BP p.37: SYST:REM / SYST:LOC switch remote mode "during RS-232 operation" (USBTMC uses
+  # REN); return the panel on disconnect.
+  on_connect: [{cmd: remote_set, args: {on: "ON"}}]
+  on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
+commands:
+  idn: {source: "BP p.29 (B&K PRECISION, 8600, 600150010677510002, 1.32-1.37)"}
+  meas_v: {source: "BP p.66 :MEASure:VOLTage[:DC]?"}
+  meas_i: {source: "BP p.66 :MEASure:CURRent[:DC]?"}
+  # BP p.65-66 documents :MEASure only for VOLTage/CURRent; power is read with :FETCh:POWer?
+  meas_p:
+    send: "FETC:POW?"
+    source: "BP p.66 :FETCh:POWer[:DC]? (latest reading; no :MEASure:POWer? documented)"
+  inp_q: {source: "BP p.44 INPut[:STATe]? returns 0|1"}
+  func_q: {source: "BP p.44-45 [SOURce:]FUNCtion? <CRD>"}
+  ques_q: {source: "BP p.9-10 (1 OC, 3 OP, 12 OV, 13 PS)"}
+  curr_q: {source: "BP p.46 <NR3>"}
+  volt_q: {source: "BP p.51"}
+  res_q: {source: "BP p.54"}
+  pow_q: {source: "BP p.58"}
+  short_q:
+    send: "INP:SHOR:STAT?"
+    source: "BP p.44 INPut:SHORt:STATe? returns 0|1"
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "SYST:REM", "OFF": "SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+    source: "BP p.37 SYSTem:REMote / SYSTem:LOCal"
+  mode_set: {source: "BP p.44-45 [SOURce:]FUNCtion CURRent|RESistance|VOLTage|POWer"}
+  curr_set: {params: {a: {max: 240}}, source: "BP p.46 CURR <NRf+> (0 through max rated current)"}
+  volt_set: {params: {v: {max: 500}}, source: "BP p.51 [SOURce:]VOLTage[:LEVel][:IMMediate]"}
+  res_set: {source: "BP p.54 [SOURce:]RESistance[:LEVel][:IMMediate]"}
+  pow_set: {params: {p: {max: 1500}}, source: "BP p.58 [SOURce:]POWer[:LEVel][:IMMediate]"}
+  input_set: {source: "BP p.44 [SOURce:]INPut[:STATe] 0|1|OFF|ON"}
+  short_set: {source: "BP p.44 [SOURce:]INPut:SHORt[:STATe] 0|1|OFF|ON"}
+  sense_set:
+    send: "REM:SENS {on}"
+    source: "BP p.44 [SOURce:]REMote:SENSe[:STATe] 0|1|OFF|ON"
+classes:
+  ELL:
+    ui_component: BK8600ELL
+    features:
+      remote_sense: true
+      absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 150.0}}
+      modes:
+        CURR: {setpoint: {max: 30.0}}
+        VOLT: {setpoint: {max: 120.0}}
+        POW: {setpoint: {max: 150.0}}
+    status:
+      REMOTE: state.remote
+    operations:
+      remote: {set: remote_set}

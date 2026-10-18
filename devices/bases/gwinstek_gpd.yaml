@@ -1,0 +1,78 @@
+# GW Instek GPD linear multi-output supplies: Korad-like command names with line terminators,
+# unit-suffixed replies and an ASCII STATUS? string (partial definition, see DEVICE_DSL.md
+# "extends"). Users: gwinstek_gpd (GPD-x303S), gwinstek_gpd3303d (GPD-3303D).
+# Source: ai_context/migration/coverage/PSU.md §2.8.
+schema: benchmesh.device/v1
+identify: idn
+framing:
+  # Commands end with LF (CR LF also accepted), at most 15 characters. Replies end with CR on
+  # old firmware and CR LF on new: frame on CR and drop the LF that starts the next reply.
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\r", skip_leading: "\n", timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 10, gap_after_write_ms: 50}
+state:
+  remote: {type: enum, initial: "ON", description: "Opening the USB link enters remote mode (panel locked); tracks our own REMOTE / LOCAL"}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  vout:
+    send: "VOUT{ch}?"
+    parse: [trim, {regex: {pattern: "[-+]?[0-9]*\\.?[0-9]+", group: 0}}, number]
+    description: "e.g. 12.000V"
+  iout:
+    send: "IOUT{ch}?"
+    parse: [trim, {regex: {pattern: "[-+]?[0-9]*\\.?[0-9]+", group: 0}}, number]
+    description: "e.g. 0.000A"
+  vset_q:
+    send: "VSET{ch}?"
+    parse: [trim, {regex: {pattern: "[-+]?[0-9]*\\.?[0-9]+", group: 0}}, number]
+  iset_q:
+    send: "ISET{ch}?"
+    parse: [trim, {regex: {pattern: "[-+]?[0-9]*\\.?[0-9]+", group: 0}}, number]
+  status:
+    send: "STATUS?"
+    parse: [trim, {regex: {pattern: "^[01]{8}$", group: 0}}, number]
+    description: >-
+      8 characters '0'/'1', first = bit 0. Parsed as a decimal number (leading zeros vanish):
+      character p (1-8) is int(status / 10^(8-p)) % 10
+  vset:
+    send: "VSET{ch}:{v}"
+    params: {v: {type: number, min: 0, max: 32, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+  iset:
+    send: "ISET{ch}:{i}"
+    params: {i: {type: number, min: 0, max: 3.2, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+  output:
+    send: "OUT{on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: energize
+    description: Global (all channels)
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "REMOTE", "OFF": "LOCAL"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+classes:
+  PSU:
+    channels: 2
+    ui_component: GenericPSU
+    features: {"lock": true, "auto_lock": true, "compulsory_lock": false, "memory_banks": 4, "memory_storage": ["V", "A"], "absolute_limits": {"voltage": {"unit": "V", "max": 30.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}
+    poll:
+      - every_ms: 500
+        read: [vout, iout, status]
+    status:
+      VOUT: {expr: vout, as: si}
+      IOUT: {expr: iout, as: si}
+      POUT: {expr: "vout * iout", as: si}
+      REMOTE: state.remote
+    operations:
+      voltage: {get: vset_q, set: vset, as: si}
+      current: {get: iset_q, set: iset, as: si}
+      output: {set: output}
+      remote: {set: remote_set}
+      output_voltage: {get: vout, as: si}
+      output_current: {get: iout, as: si}

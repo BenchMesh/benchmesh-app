@@ -328,6 +328,7 @@
 .kit-wave { height: 64px; }
 /* oscilloscope screen: 10 × 8 divisions plus marker margins, scales with its panel */
 .kit-scope { aspect-ratio: 10 / 8.4; height: auto; max-height: 70vh; }
+.kit-spectrum { aspect-ratio: 10 / 7.5; height: auto; max-height: 70vh; cursor: crosshair; }
 
 /* stepper: ◀ value ▶ for 1-2-5 settings */
 .kit-stepper {
@@ -367,11 +368,13 @@ button:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 2px
   background: var(--kit-warn); animation: kit-await 1.1s ease-in-out infinite;
 }
 .kit-stepper[data-confirm="waiting"] .kit-stepper__val,
-.kit-digits[data-confirm="waiting"] .kit-digits__d { animation: kit-await 1.1s ease-in-out infinite; }
+.kit-digits[data-confirm="waiting"] .kit-digits__d, .kit-action[data-confirm="waiting"] { animation: kit-await 1.1s ease-in-out infinite; }
 .kit-arm[data-confirm="unconfirmed"], .kit-micro[data-confirm="unconfirmed"], .kit-stepper[data-confirm="unconfirmed"],
-.kit-digits[data-confirm="unconfirmed"], .kit-seg button[data-confirm="unconfirmed"], .kit-chips button[data-confirm="unconfirmed"] { position: relative; }
+.kit-digits[data-confirm="unconfirmed"], .kit-seg button[data-confirm="unconfirmed"], .kit-chips button[data-confirm="unconfirmed"],
+.kit-action[data-confirm="unconfirmed"] { position: relative; }
 .kit-arm[data-confirm="unconfirmed"]::after, .kit-micro[data-confirm="unconfirmed"]::after, .kit-stepper[data-confirm="unconfirmed"]::after,
-.kit-digits[data-confirm="unconfirmed"]::after, .kit-seg button[data-confirm="unconfirmed"]::after, .kit-chips button[data-confirm="unconfirmed"]::after {
+.kit-digits[data-confirm="unconfirmed"]::after, .kit-seg button[data-confirm="unconfirmed"]::after, .kit-chips button[data-confirm="unconfirmed"]::after,
+.kit-action[data-confirm="unconfirmed"]::after {
   content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--kit-alert);
 }
 

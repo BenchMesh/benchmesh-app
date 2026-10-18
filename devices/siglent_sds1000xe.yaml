@@ -1,0 +1,319 @@
+# Siglent SDS1000X-E digital oscilloscopes (SDS1104X-E, SDS1202X-E …): the legacy Siglent
+# command set (`C1:VDIV`, `TDIV`, `C1:WF? DAT2`), written from the "Digital Oscilloscope Series
+# Programming Guide" EN02E, not yet seen live (models are "awaiting confirmation").
+# Coverage report: ai_context/migration/coverage/OSC.md §2.4.
+#
+# `CHDR OFF` (p24) drops the reply header and units, so replies are plain values; numbers still
+# pass a numeric regex in case a firmware keeps a unit. Trigger level/slope are addressed by
+# the trigger source (`C2:TRLV?`, p185/p194): a computed parameter takes it from `TRSE?` (p190).
+# Screen trace: `C<n>:WF? DAT2` (p247) returns `DAT2,#9…` (text prefix, skipped by the framer),
+# signed bytes (p249), the whole memory unless `WFSU SP,k,NP,1400,FP,0` (p255) thins it to
+# ~1400 points (k from `SANU?`, p36). volts = code * VDIV / 25 - OFST (p248-249); time of the
+# first point = TRDL - TDIV * 14 / 2 (p249 with the delay of p174; sign to confirm), step k/SARA.
+schema: benchmesh.device/v1
+id: siglent_sds1000xe
+vendor: Siglent
+family: SDS1000X-E series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "Digital Oscilloscope Series Programming Guide EN02E (Oscilloscope_ProgrammingGuide_legacy.pdf)", pages: "PDF p16 LAN 5025, p24 CHDR, p28-36 ARM/STOP/ACQW/SARA/SANU, p34 SAST, p40 ASET, p42-50 channel, p118 PAVA, p173-174 TDIV/TRDL, p185-194 TRLV/TRMD/TRSE/TRSL, p247-256 WF/WFSU, p309 USB id F4EC:EE38"}
+  - {note: "Some SDS1000X-E units enumerate as f4ed:ee3a (sigrok udev rules): matched on the vendor id when the product id differs"}
+models:
+  - {name: SDS1104X-E, match: "^Siglent Technologies,SDS1104X-E,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS1204X-E, match: "^Siglent Technologies,SDS1204X-E,", features: {OSC: {bandwidth_hz: 200e6}}}
+  - {name: SDS1052X-E, match: "^Siglent Technologies,SDS1052X-E,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}}
+  - {name: SDS1102X-E, match: "^Siglent Technologies,SDS1102X-E,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS1202X-E, match: "^Siglent Technologies,SDS1202X-E,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6}}}
+identify: idn
+link:
+  usbtmc:
+    vid: "f4ec"
+    pid: "ee38"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}
+  tcp:
+    port: 5025
+# LAN raw socket 5025 (p16): replies end with a line feed (the waveform with two, p248)
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", timeout_ms: 2000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 0}
+session:
+  on_connect: [chdr_off]
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  chdr_off: {send: "CHDR OFF", reply: none, safety: configure, source: "COMM_HEADER p24"}
+
+  # --- vertical (per channel) ----------------------------------------------------------
+  disp_q: {send: "C{ch}:TRA?", parse: [trim], cache_ms: 500, source: "TRACE p47; ON or OFF"}
+  scale_q:
+    send: "C{ch}:VDIV?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "VOLT_DIV p49"
+  offset_q:
+    send: "C{ch}:OFST?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "OFFSET p45"
+  coup_q:
+    send: "C{ch}:CPL?"
+    parse: [trim, {map: {"D1M": "DC", "A1M": "AC", "D50": "DC", "A50": "AC", "GND": "GND"}}]
+    source: "COUPLING p44; A1M, A50, D1M, D50 or GND"
+  probe_q:
+    send: "C{ch}:ATTN?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "ATTENUATION p42"
+  bwl_q: {send: "BWL?", parse: [trim], source: "BANDWIDTH_LIMIT p43; C1,ON,C2,OFF,… for all channels"}
+  inv_q: {send: "C{ch}:INVS?", parse: [trim], source: "INVERTSET p50; ON or OFF"}
+  disp_set:
+    send: "C{ch}:TRA {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    invalidates: [disp_q]
+    source: "p47"
+  scale_set:
+    send: "C{ch}:VDIV {v}"
+    params: {v: {type: number, min: 0.0005, max: 10000, format: "%g", unit: "V/div"}}
+    reply: none
+    safety: configure
+    description: "500 µV/div to 10 V/div at probe 1X (p49), times the probe ratio"
+  offset_set:
+    send: "C{ch}:OFST {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    source: "p45"
+  coup_set:
+    send: "C{ch}:CPL {c}"
+    params: {c: {type: enum, values: {"DC": "D1M", "AC": "A1M", "GND": "GND"}}}
+    reply: none
+    safety: configure
+    source: "p44; 50 Ω inputs are not available on the X-E"
+  probe_set:
+    send: "C{ch}:ATTN {r}"
+    params: {r: {type: enum, values: {"0.1": "0.1", "1": "1", "10": "10", "100": "100", "1000": "1000"}}}
+    reply: none
+    safety: configure
+    source: "p42"
+  bwl_set:
+    send: "BWL C{ch},{b}"
+    params: {b: {type: enum, values: {"20M": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p43; ON limits to 20 MHz"
+  inv_set:
+    send: "C{ch}:INVS {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p50"
+
+  # --- horizontal, trigger, acquisition (global) ----------------------------------------
+  tb_q:
+    send: "TDIV?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "TIME_DIV p173"
+  tbofs_q:
+    send: "TRDL?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "TRIG_DELAY p174; trigger to screen centre (s)"
+  trig_stat_q:
+    send: "SAST?"
+    parse: [trim, {map: {"Trig'd": "TD", "Ready": "WAIT", "Arm": "WAIT", "Auto": "AUTO", "Stop": "STOP", "Roll": "RUN"}}]
+    source: "SAMPLE_STATUS p34"
+  sweep_q:
+    send: "TRMD?"
+    parse: [trim, {map: {"AUTO": "AUTO", "NORM": "NORM", "SINGLE": "SING", "STOP": "STOP"}}]
+    source: "TRIG_MODE p187-188"
+  tsrc_q:
+    send: "TRSE?"
+    parse: [trim, {split: {sep: ",", index: 2}}, {map: {"C1": "CHAN1", "C2": "CHAN2", "C3": "CHAN3", "C4": "CHAN4", "EX": "EXT", "EX5": "EXT5", "LINE": "AC"}}]
+    cache_ms: 1000
+    source: "TRIG_SELECT p190; EDGE,SR,C1,HT,…"
+  slope_q:
+    send: "{src}:TRSL?"
+    params:
+      src: {type: enum, from: "tsrc_q", values: {"CHAN1": "C1", "CHAN2": "C2", "CHAN3": "C3", "CHAN4": "C4", "EXT": "EX", "EXT5": "EX5"}}
+    parse: [trim]
+    source: "TRIG_SLOPE p194; POS, NEG or WINDOW"
+  tlev_q:
+    send: "{src}:TRLV?"
+    params:
+      src: {type: enum, from: "tsrc_q", values: {"CHAN1": "C1", "CHAN2": "C2", "CHAN3": "C3", "CHAN4": "C4", "EXT": "EX", "EXT5": "EX5"}}
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "TRIG_LEVEL p185"
+  acq_q:
+    send: "ACQW?"
+    parse: [trim, {split: {sep: ",", index: 0}}, {map: {"SAMPLING": "NORM", "PEAK_DETECT": "PEAK", "AVERAGE": "AVER", "HIGH_RES": "HRES"}}]
+    source: "ACQUIRE_WAY p30; e.g. AVERAGE,16"
+  srate_q:
+    send: "SARA?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "SAMPLE_RATE p35"
+  sanu_q:
+    send: "SANU?"
+    parse: [trim, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    cache_ms: 1000
+    source: "SAMPLE_NUM p36; e.g. 7.00E+05pts"
+  tb_set:
+    send: "TDIV {v}"
+    params: {v: {type: number, min: 1e-9, max: 100, format: "%g", unit: "s/div"}}
+    reply: none
+    safety: configure
+    description: "1 ns/div to 100 s/div in 1-2-5 steps (p173)"
+  tbofs_set:
+    send: "TRDL {v}"
+    params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "p174"
+  sweep_set:
+    send: "TRMD {s}"
+    params: {s: {type: enum, values: {"AUTO": "AUTO", "NORM": "NORM", "SING": "SINGLE"}}}
+    reply: none
+    safety: configure
+    source: "p187"
+  tsrc_set:
+    send: "TRSE EDGE,SR,{s},HT,OFF"
+    params: {s: {type: enum, values: {"CHAN1": "C1", "CHAN2": "C2", "CHAN3": "C3", "CHAN4": "C4", "EXT": "EX", "AC": "LINE"}}}
+    reply: none
+    safety: configure
+    invalidates: [tsrc_q]
+    description: "Edge trigger on this source, holdoff off (p190)"
+  slope_set:
+    send: "{src}:TRSL {s}"
+    params:
+      src: {type: enum, from: "tsrc_q", values: {"CHAN1": "C1", "CHAN2": "C2", "CHAN3": "C3", "CHAN4": "C4", "EXT": "EX", "EXT5": "EX5"}}
+      s: {type: enum, values: {"POS": "POS", "NEG": "NEG"}}
+    reply: none
+    safety: configure
+    source: "p194"
+  tlev_set:
+    send: "{src}:TRLV {v}"
+    params:
+      src: {type: enum, from: "tsrc_q", values: {"CHAN1": "C1", "CHAN2": "C2", "CHAN3": "C3", "CHAN4": "C4", "EXT": "EX", "EXT5": "EX5"}}
+      v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}
+    reply: none
+    safety: configure
+    source: "p185; ±4.5 div around the centre"
+  acq_set:
+    send: "ACQW {t}"
+    params: {t: {type: enum, values: {"NORM": "SAMPLING", "PEAK": "PEAK_DETECT", "AVER": "AVERAGE", "HRES": "HIGH_RES"}}}
+    reply: none
+    safety: configure
+    source: "p30"
+  run_set:
+    send: "{a}"
+    params: {a: {type: enum, values: {"RUN": "ARM", "STOP": "STOP", "SINGLE": "TRMD SINGLE", "AUTO": "ASET"}}}
+    reply: none
+    safety: configure
+    description: "Run (arm), stop, single shot, autoset (changes all settings)"
+    source: "ARM p28, STOP p29, TRMD p187, ASET p40"
+
+  # --- waveform and measurements --------------------------------------------------------
+  wav_setup:
+    send: "WFSU SP,{k},NP,1400,FP,0"
+    params:
+      k: {type: integer, format: "%d", from: "sanu_q >= 2800.0 ? int(sanu_q / 1400.0) : 1"}
+    reply: none
+    safety: configure
+    source: "WAVEFORM_SETUP p255; every k-th point, at most 1400"
+  wav_data:
+    send: "C{ch}:WF? DAT2"
+    before: [wav_setup]
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    reply: block
+    parse: [{samples: i8}]
+    timeout_ms: 4000
+    max_bytes: 50000
+    source: "WAVEFORM p247-249; DAT2,#9<len><signed bytes> LF LF"
+  vpp_q:
+    send: "C{ch}:PAVA? PKPK"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {split: {sep: ",", index: 1}}, {null_if: ["****"]}, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "PARAMETER_VALUE p118; PKPK,<value>; **** = not measurable"
+  vavg_q:
+    send: "C{ch}:PAVA? MEAN"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {split: {sep: ",", index: 1}}, {null_if: ["****"]}, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "p118"
+  vrms_q:
+    send: "C{ch}:PAVA? RMS"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {split: {sep: ",", index: 1}}, {null_if: ["****"]}, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "p118"
+  freq_q:
+    send: "C{ch}:PAVA? FREQ"
+    requires: {expr: "disp_q == 'ON'", message: "channel is not displayed"}
+    parse: [trim, {split: {sep: ",", index: 1}}, {null_if: ["****"]}, {regex: {pattern: "^[-+]?[0-9.]+([eE][-+]?[0-9]+)?", group: 0}}, number]
+    source: "p118"
+
+classes:
+  OSC:
+    channels: 4
+    ui_component: GenericOSC
+    features:
+      lock: false
+      compulsory_lock: false
+      channel_colors: {"1": "#FFD700", "2": "#FF69B4", "3": "#00CED1", "4": "#32CD32"}
+      divisions: {horizontal: 14, vertical: 8}
+      bandwidth_hz: 100e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X; multiplied by the probe ratio"}
+      timebase: {min: 1e-9, max: 100}
+      probe: ["0.1", "1", "10", "100", "1000"]
+      measurements: [VPP, VAVG, VRMS, FREQ]
+    # traces fast, measurements medium, settings slow (a set re-polls everything at once)
+    poll:
+      - every_ms: 250
+        read: [trig_stat_q, wav_data]
+      - every_ms: 1000
+        read: [disp_q, vpp_q, vavg_q, vrms_q, freq_q]
+      - every_ms: 3000
+        read: [scale_q, offset_q, coup_q, probe_q, bwl_q, inv_q, tb_q, tbofs_q, sweep_q, tsrc_q, slope_q, tlev_q, acq_q, srate_q, sanu_q]
+    status:
+      DISPLAY: disp_q
+      SCALE: {expr: scale_q, as: si}
+      OFFSET: {expr: offset_q, as: si}
+      COUPLING: coup_q
+      PROBE: probe_q
+      BWLIMIT: "bwl_q == null ? null : (bwl_q.contains('C' + string(ch) + ',ON') ? '20M' : 'OFF')"
+      INVERT: inv_q
+      TIMEBASE: {expr: tb_q, as: si}
+      TIMEOFFSET: {expr: tbofs_q, as: si}
+      TRIG_STATUS: trig_stat_q
+      TRIG_SWEEP: sweep_q
+      TRIG_SOURCE: tsrc_q
+      TRIG_SLOPE: slope_q
+      TRIG_LEVEL: {expr: tlev_q, as: si}
+      ACQ_TYPE: acq_q
+      SRATE: srate_q
+      # volts = (code - WAVE_Y0) * WAVE_DY = code * VDIV / 25 - OFST
+      WAVE: wav_data
+      WAVE_Y0: "scale_q == null || offset_q == null || scale_q == 0.0 ? null : offset_q * 25.0 / scale_q"
+      WAVE_DY: "scale_q == null ? null : scale_q / 25.0"
+      WAVE_X0: "tb_q == null || tbofs_q == null ? null : tbofs_q - 7.0 * tb_q"
+      WAVE_DX: "srate_q == null || sanu_q == null || srate_q == 0.0 ? null : (sanu_q >= 2800.0 ? double(int(sanu_q / 1400.0)) : 1.0) / srate_q"
+      VPP: vpp_q
+      VAVG: vavg_q
+      VRMS: vrms_q
+      FREQ: freq_q
+    operations:
+      display: {get: disp_q, set: disp_set}
+      scale: {get: scale_q, set: scale_set, as: si}
+      offset: {get: offset_q, set: offset_set, as: si}
+      coupling: {get: coup_q, set: coup_set}
+      probe: {get: probe_q, set: probe_set}
+      bwlimit: {get: bwl_q, set: bwl_set}
+      invert: {get: inv_q, set: inv_set}
+      timebase: {get: tb_q, set: tb_set, as: si}
+      timebase_offset: {get: tbofs_q, set: tbofs_set, as: si}
+      trigger_status: {get: trig_stat_q}
+      trigger_sweep: {get: sweep_q, set: sweep_set}
+      trigger_source: {get: tsrc_q, set: tsrc_set}
+      trigger_slope: {get: slope_q, set: slope_set}
+      trigger_level: {get: tlev_q, set: tlev_set, as: si}
+      acquire_type: {get: acq_q, set: acq_set}
+      sample_rate: {get: srate_q}
+      run: {set: run_set}
+      waveform: {get: wav_data}

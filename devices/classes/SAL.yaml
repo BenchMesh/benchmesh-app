@@ -1,0 +1,68 @@
+schema: benchmesh.class/v1
+class: SAL
+description: >
+  Swept spectrum analyzer (bench, handheld, or USB "hobby" analyzer such as the tinySA). One status
+  block per instrument. Frequencies and times are SI values (Hz, s); levels are plain numbers in dBm
+  (dB for scale and attenuation). The screen trace is a list of levels in TRACE_UNIT (normally dBm),
+  one per sweep point, equally spaced from START to STOP (f_i = START + i*(STOP-START)/(len-1)).
+  Features describe the model: freq_range {min, max} (Hz), rbw / vbw (list of Hz), ref_level
+  {min, max} (dBm), attenuation {min, max, step} (dB), points {min, max} or a number, divisions
+  {horizontal: 10, vertical: 10}, tg {min, max} (dBm) when a tracking generator / generator exists,
+  preamp: bool. Setter vocabularies: sweep CONT|SINGLE|HOLD|RESTART, trace_mode
+  WRITE|MAXHOLD|MINHOLD|AVERAGE|VIEW, detector POS|NEG|NORM|SAMP|RMS|AVER|QPE, peak_search
+  PEAK|NEXT|LEFT|RIGHT|MKR_CF.
+status:
+  CENTER:       {type: si, required: true, description: "Center frequency (Hz)"}
+  SPAN:         {type: si, required: true, description: "Frequency span (Hz); 0 = zero span"}
+  START:        {type: si, required: true, description: "Start frequency (Hz)"}
+  STOP:         {type: si, required: true, description: "Stop frequency (Hz)"}
+  RBW:          {type: si, required: true, description: "Resolution bandwidth (Hz), actual value"}
+  RBW_AUTO:     {type: enum, values: [ON, OFF]}
+  VBW:          {type: si, description: "Video bandwidth (Hz)"}
+  VBW_AUTO:     {type: enum, values: [ON, OFF]}
+  REF_LEVEL:    {type: number, required: true, description: "Reference level (top graticule line), dBm"}
+  SCALE:        {type: number, description: "Vertical scale, dB/div"}
+  ATTEN:        {type: number, description: "Input attenuation (dB)"}
+  ATTEN_AUTO:   {type: enum, values: [ON, OFF]}
+  PREAMP:       {type: enum, values: [ON, OFF]}
+  DETECTOR:     {type: string, description: "POS, NEG, NORM, SAMP, RMS, AVER, QPE"}
+  SWEEP_TIME:   {type: si, description: "Sweep time (s)"}
+  SWEEP_MODE:   {type: string, description: "CONT, SINGLE or HOLD"}
+  SWEEPING:     {type: bool, description: "A sweep is in progress (single sweep not yet complete)"}
+  POINTS:       {type: integer, description: "Sweep points"}
+  TRACE:        {type: list, description: "Trace levels in TRACE_UNIT, START..STOP; null when unavailable"}
+  TRACE_MODE:   {type: string, description: "WRITE, MAXHOLD, MINHOLD, AVERAGE, VIEW"}
+  TRACE_UNIT:   {type: string, description: "dBm (default), dBmV, dBuV, V, W"}
+  MARKER:       {type: enum, values: [ON, OFF], description: "Marker 1 shown"}
+  MARKER_FREQ:  {type: si, description: "Marker 1 frequency (Hz)"}
+  MARKER_LEVEL: {type: number, description: "Marker 1 level (TRACE_UNIT)"}
+  TG_OUTPUT:    {type: enum, values: [ON, OFF], description: "Tracking generator / generator output"}
+  TG_LEVEL:     {type: number, description: "Tracking generator level (dBm)"}
+operations:
+  center:       {get: true, set: true, value: si, required: [set], description: "Center frequency (Hz); read it from status CENTER (the tinySA reports only start/stop)"}
+  span:         {get: true, set: true, value: si, required: [set], description: "Span (Hz); 0 = zero span"}
+  start:        {get: true, set: true, value: si, required: [get, set], description: "Start frequency (Hz)"}
+  stop:         {get: true, set: true, value: si, required: [get, set], description: "Stop frequency (Hz)"}
+  full_span:    {set: true, value: string, description: "Any value: set the full frequency range"}
+  rbw:          {get: true, set: true, value: si, required: [get, set], description: "Resolution bandwidth (Hz)"}
+  rbw_auto:     {get: true, set: true, value: enum, values: [ON, OFF]}
+  vbw:          {get: true, set: true, value: si, description: "Video bandwidth (Hz)"}
+  vbw_auto:     {get: true, set: true, value: enum, values: [ON, OFF]}
+  ref_level:    {get: true, set: true, value: number, required: [get, set], description: "Reference level (dBm)"}
+  scale:        {get: true, set: true, value: number, description: "dB/div"}
+  attenuation:  {get: true, set: true, value: number, description: "Input attenuation (dB)"}
+  atten_auto:   {get: true, set: true, value: enum, values: [ON, OFF]}
+  preamp:       {get: true, set: true, value: enum, values: [ON, OFF]}
+  detector:     {get: true, set: true, value: string, description: "POS, NEG, NORM, SAMP, RMS, AVER, QPE"}
+  sweep_time:   {get: true, set: true, value: si, description: "Sweep time (s)"}
+  points:       {get: true, set: true, value: integer}
+  sweep:        {set: true, value: string, required: [set], description: "CONT, SINGLE, HOLD (pause) or RESTART"}
+  trace:        {get: true, value: list, description: "Trace levels (see TRACE)"}
+  trace_mode:   {get: true, set: true, value: string, description: "WRITE, MAXHOLD, MINHOLD, AVERAGE, VIEW"}
+  marker:       {get: true, set: true, value: enum, values: [ON, OFF]}
+  marker_freq:  {get: true, set: true, value: si, description: "Place marker 1 (Hz)"}
+  marker_level: {get: true, value: number}
+  peak_search:  {set: true, value: string, description: "PEAK, NEXT, LEFT, RIGHT; MKR_CF = marker frequency to center"}
+  tg_output:    {get: true, set: true, value: enum, values: [ON, OFF], description: "Generator output (safety: energize)"}
+  tg_level:     {get: true, set: true, value: number, description: "Generator level (dBm)"}
+  screenshot:   {get: true, value: bytes}

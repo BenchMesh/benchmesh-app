@@ -17,7 +17,7 @@ models:
   - {"name": "DHO924", "match": "^RIGOL TECHNOLOGIES,DHO924S?,", "features": {"OSC": {"bandwidth_hz": 250e6, "scale": {"min": 200e-6, "max": 10}}}}
 identify: idn
 link:
-  usbtmc: {vid: "1ab1"}
+  usbtmc: {vid: "1ab1", pid: "044d"}
 framing:
   tx: {terminator: "\n"}
   rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}

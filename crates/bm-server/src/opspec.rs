@@ -31,7 +31,14 @@ pub fn value_spec(p: &Param) -> Value {
             v.insert(k.into(), json!(x));
         }
     }
-    for (k, x) in [("format", &p.format), ("unit", &p.unit)] {
+    // A scaled param's wire format is for the scaled integer (`%03d` of tenths); callers see the
+    // API value, whose resolution is 1/scale (scale 10 → `%.1f`).
+    let format = match p.scale {
+        Some(k) if k > 1.0 => Some(format!("%.{}f", (k.log10().ceil() as usize).min(6))),
+        Some(_) => None,
+        None => p.format.clone(),
+    };
+    for (k, x) in [("format", &format), ("unit", &p.unit)] {
         if let Some(x) = x {
             v.insert(k.into(), json!(x));
         }
@@ -39,7 +46,23 @@ pub fn value_spec(p: &Param) -> Value {
     Value::Object(v)
 }
 
+
 /// Value spec and energise flag of an operation's setter (None: the operation has no setter).
 pub fn setter(def: &DeviceDef, op: &Operation) -> Option<(Option<Value>, bool)> {
     set_param(def, op).map(|(p, energizes)| (p.map(value_spec), energizes))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_scaled_param_reports_the_api_resolution_not_the_wire_format() {
+        let p: Param = bm_devicedef::from_yaml("{type: number, min: 1, max: 36, scale: 10, format: '%03d', unit: V}").unwrap();
+        let v = value_spec(&p);
+        assert_eq!(v["format"], "%.1f");
+        assert_eq!(v["max"], 36.0);
+        let p: Param = bm_devicedef::from_yaml("{type: number, scale: 100, format: '%04d'}").unwrap();
+        assert_eq!(value_spec(&p)["format"], "%.2f");
+    }
 }

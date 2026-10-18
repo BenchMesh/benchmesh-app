@@ -1,0 +1,15 @@
+# Replies as the B&K Precision 880 manual documents them (UM p.48-52).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: bk_880
+model: "880"
+replies:
+  - {send: '\*IDN\?', reply: "880,V1.00,123A45678", source: "UM p.49 (<model>,<firmware>,<serial number>)"}
+  - {send: 'FETC\?', reply: "+1.00230E-05,+2.10000E-02,0", source: "UM p.52 (<NR3>,<NR3>,<NR1>); NR3 format UM p.48"}
+  - {send: 'FUNC:impa\?', reply: "C", source: "UM p.50"}
+  - {send: 'FUNC:impb\?', reply: "D", source: "UM p.50"}
+  - {send: 'FUNC:EQU\?', reply: "SER", source: "UM p.50"}
+  - {send: 'FREQ\?', reply: "1kHz", source: "UM p.49"}
+  - {send: 'VOLT\?', reply: "0.6V", source: "UM p.50"}
+expect:
+  LCR:
+    1: {PRIMARY: 1.0023e-5, SECONDARY: 0.021, FUNC: CSD, CIRCUIT: SER, FREQ: 1000, LEVEL: 0.6, OVERLOAD: false}

@@ -1,0 +1,44 @@
+# Tektronix AFG1000 series arbitrary/function generators (AFG1022, AFG1062), an OWON OEM unit
+# in the Tek-AFG SCPI dialect. Written from the programmer manual before anyone tested it on
+# hardware. Research: ai_context/migration/coverage/AWG.md §2.6. Pages are printed page numbers.
+schema: benchmesh.device/v1
+id: tek_afg1000
+extends: tek_afg
+vendor: Tektronix
+family: AFG1000 series arbitrary/function generator
+version: 0.1.0
+sources:
+  - {doc: "AFG1000 Series Programmer Manual 077-1129-02", pages: "15 (*IDN?), 17-18 (OUTPut:IMPedance, OUTPut:STATe), 36 (FREQuency), 43 (FUNCtion:SHAPe), 44-45 (PHASe), 60-61 (VOLTage, OFFSet)"}
+  - {note: "USB vendor 0699 (Tektronix); product id not documented. No ramp symmetry command in the manual. Limits: AFG1022 25 MHz / AFG1062 60 MHz sine (model names); per-shape limits not in the programmer manual."}
+models:
+  - {"name": "AFG1022", "match": "^TEKTRONIX,AFG1022,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6}}}}
+  - {"name": "AFG1062", "match": "^TEKTRONIX,AFG1062,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6}}}}
+link:
+  usbtmc: {vid: "0699"}
+commands:
+  outp_q: {source: "p18; reply <NR1>"}
+  outp_set: {source: "p18"}
+  shape_q: {source: "p43"}
+  shape_set: {source: "p43 (DC is a built-in wave)"}
+  freq_q: {source: "p36"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+    source: "p36"
+  ampl_q: {source: "p61"}
+  ampl_set: {source: "p61; the instrument clamps to the model/frequency limit"}
+  offs_q: {source: "p60"}
+  offs_set: {source: "p60"}
+  phase_q: {source: "p44-45; query answers RAD"}
+  phase_set: {source: "p45; DEG unit suffix"}
+  symm_q: null
+  symm_set: null
+  load_q: {source: "p17; INFinity answers 9.9E+37"}
+classes:
+  AWG:
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, ampl_q, offs_q, phase_q, load_q]
+    status:
+      SYMM: null
+    operations:
+      symmetry: null

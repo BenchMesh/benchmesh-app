@@ -1,0 +1,28 @@
+# Replies as the TBS1000C Programmer Manual shows them (PDF pages), with HEADer OFF (no
+# response headers). Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: tektronix_tbs1000c
+model: TBS1072C
+replies:
+  - {send: '\*IDN\?', reply: "TEKTRONIX,TBS 1072C,CU10100,CF:91.1CT FV:v2015-12-10_01-00-59rootfs; FPGA:v1.21;", source: "p101"}
+  - {send: 'SELect:CH[1-2]\?', reply: "1", source: "p140"}
+  - {send: 'CH[1-2]:SCAle\?', reply: "1.0000", source: "p44"}
+  - {send: 'CH[1-2]:OFFSet\?', reply: "1.0000E-03", source: "p40"}
+  - {send: 'CH[1-2]:COUPling\?', reply: "DC", source: "p38"}
+  - {send: 'CH[1-2]:PRObe:GAIN\?', reply: "0.1000E+00", source: "p42"}
+  - {send: 'CH[1-2]:BANdwidth\?', reply: "FULl", source: "p37"}
+  - {send: 'CH[1-2]:INVert\?', reply: "0", source: "p39"}
+  - {send: 'HORizontal:MAIn:SCAle\?', reply: "2.0000E-06", source: "p96"}
+  - {send: 'HORizontal:MAIn:DELay:TIMe\?', reply: "0.0E+0", source: "p95 (NR3)"}
+  - {send: 'TRIGger:STATE\?', reply: "ARMED", source: "p160"}
+  - {send: 'TRIGger:A:MODe\?', reply: "NORMAL", source: "p152"}
+  - {send: 'TRIGger:A:EDGE:SOUrce\?', reply: "CH1", source: "p149"}
+  - {send: 'TRIGger:A:EDGE:SLOpe\?', reply: "FALL", source: "p148"}
+  - {send: 'TRIGger:A:LEVel\?', reply: "1.2000E-01", source: "p150 (NR3)"}
+  - {send: 'ACQuire:MODe\?', reply: "AVERAGE", source: "p23"}
+  - {send: 'HORizontal:MAIn:SAMPLERate\?', reply: "2.0000E+9", source: "p96"}
+  - {send: 'WFMOutpre\?', reply: "1;8;BINARY;RI;MSB;\"Ch1, DC coupling, 100.0mV/div, 4.000us/div, 2000 points, Sample mode\";2000;Y;\"s\";4.0000E-9;-20.0000E-6;0;\"V\";4.0000E-3;0.0E+0;0.0000", source: "p170 example, 8-bit values"}
+  - {send: 'CURVe\?', reply: "#18\x00\x10\x20\x7f\x80\xf0\x00\x01\n", source: "p55 (#<x><yyy><data>, RI)"}
+  - {send: 'MEASUrement:IMMed:VALue\?', reply: "28.75E6", source: "p115"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 1.0, OFFSET: 0.001, COUPLING: "DC", PROBE: 10, BWLIMIT: "OFF", INVERT: "OFF", TIMEBASE: 2.0e-6, TRIG_SWEEP: "NORM", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.12, ACQ_TYPE: "AVER", SRATE: 2.0e9, TRIG_STATUS: "WAIT", WAVE: [0, 16, 32, 127, -128, -16, 0, 1], WAVE_Y0: 0.0, WAVE_DY: 4.0e-3, WAVE_X0: -2.0e-5, WAVE_DX: 4.0e-9, VPP: 28.75e6, FREQ: 28.75e6}

@@ -1,0 +1,91 @@
+# Tektronix DMM4040 / DMM4050 6½-digit bench multimeters (Fluke 8845A/8846A rebadges), SCPI
+# command set over RS-232 or LAN. Written from the Programmer Manual (ai_context/migration/
+# coverage/DMM.md §3.17) before anyone tested it. The DMM4020 (Fluke-45 style with prompt
+# lines) needs a prompt framing the DSL does not have: not covered.
+schema: benchmesh.device/v1
+id: tektronix_dmm4000
+extends: scpi_dmm
+vendor: Tektronix
+family: DMM4040/DMM4050 digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "DMM4040 and DMM4050 Programmer Manual 077-0363-00", pages: "20-22 (RS-232), 29 (LAN socket 3490), 32 (*IDN?), 42-47 (CONFigure, SENSe, NPLC), 81 (SYSTem:REMote)"}
+  - {note: "Set the meter's RS-232 port to COMPUTER mode with the SCPI command set (TERMINAL mode echoes and prompts) and EOL to LF or CR LF. The range lists follow the Fluke 8845A/8846A data sheet (the programmer manual has no range table): verify on first contact. CAP and TEMP are DMM4050 only"}
+models:
+  - name: DMM4050
+    match: "(?i)^tektronix, ?DMM4050,"
+  - name: DMM4040
+    match: "(?i)^tektronix, ?DMM4040,"
+    features:
+      DMM:
+        modes: {CAP: null, TEMP: null}
+link:
+  usbtmc: null
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 100}
+  tcp: {port: 3490}
+session:
+  on_connect: [remote_on]
+  on_disconnect: [remote_off]
+commands:
+  remote_on: {send: "SYST:REM", reply: none, safety: configure, source: "p.81 SYSTem:REMote (RS-232)"}
+  remote_off: {send: "SYST:LOC", reply: none, safety: configure, source: "p.81 SYSTem:LOCal"}
+  func:
+    parse:
+      - trim
+      - unquote
+      - upper
+      # parse lists replace the base's: the whole map again
+      - map: {"VOLT": VOLT, "VOLT:DC": VOLT, "VOLT:AC": VOLT_AC, "CURR": CURR, "CURR:DC": CURR,
+              "CURR:AC": CURR_AC, "RES": RES, "FRES": FRES, "CAP": CAP, "FREQ": FREQ, "PER": PER,
+              "CONT": CONT, "DIOD": DIOD, "TEMP": TEMP, "TEMP:RTD": TEMP, "TEMP:FRTD": TEMP}
+    source: "p.45 FUNCtion? (quoted short form assumed, as Fluke 8846A)"
+  meas: {source: "p.44 READ?; overload 9.90000000E+37"}
+  mode_set:
+    params:
+      mode:
+        type: enum
+        values: {VOLT: "CONF:VOLT:DC", VOLT_AC: "CONF:VOLT:AC", CURR: "CONF:CURR:DC", CURR_AC: "CONF:CURR:AC",
+                 RES: "CONF:RES", FRES: "CONF:FRES", CAP: "CONF:CAP", FREQ: "CONF:FREQ", PER: "CONF:PER",
+                 CONT: "CONF:CONT", DIOD: "CONF:DIOD", TEMP: "CONF:TEMP:FRTD"}
+    source: "p.42 CONFigure[:SCALar]:<function> [{range}[,{resolution}]] (no argument = autorange)"
+  rng_q: {source: "p.45 <fn>:RANGe?"}
+  auto_q: {source: "p.45 <fn>:RANGe:AUTO?"}
+  nplc_q: {source: "p.46 <fn>:NPLCycles {0.02|0.2|1|10|100}"}
+  rate_set: {source: "p.46 <fn>:NPLCycles {0.02|0.2|1|10|100}"}
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000001": " 1E-9", "0.00000001": " 10E-9", "0.0000001": " 100E-9", "0.000001": " 1E-6",
+                 "0.00001": " 10E-6", "0.0001": " 100E-6", "0.001": " 1E-3", "0.01": " 10E-3", "0.1": " 0.1",
+                 "0.4": " 0.4", "1": " 1", "3": " 3", "10": " 10", "100": " 100", "750": " 750", "1000": " 1000",
+                 "10000": " 10E3", "100000": " 100E3", "1000000": " 1E6", "10000000": " 10E6", "100000000": " 100E6"}
+    source: "p.45 <fn>:RANGe {<range>|MIN|MAX} / :RANGe:AUTO ON"
+  temp_sensor_set:
+    send: "{sensor}"
+    params:
+      sensor: {type: enum, values: {FRTD: "CONF:TEMP:FRTD", RTD: "CONF:TEMP:RTD"}}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    source: "p.42 CONFigure:TEMPerature:{FRTD|RTD} (DMM4050)"
+  temp_scale_set: {source: "UNIT:TEMP {C|F|K} (SCPI; verify)"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.02", display: "0.02 PLC (fast)"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC (default)"}, {value: "100", display: "100 PLC (slow)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "0.4", display: "400mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "0.4", display: "400mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000001", display: "1nF"}, {value: "0.00000001", display: "10nF"}, {value: "0.0000001", display: "100nF"}, {value: "0.000001", display: "1µF"}, {value: "0.00001", display: "10µF"}, {value: "0.0001", display: "100µF"}]
+        TEMP:
+          Sensor: [{value: FRTD, display: "RTD 4-wire"}, {value: RTD, display: "RTD 2-wire"}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      temp_sensor: {set: temp_sensor_set}

@@ -1,0 +1,17 @@
+# Replies as the Korad KA3000 remote syntax shows them (KA3300 manual V3.12; widths as the
+# TENMA rebrand answers). Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: korad_ka
+model: KA3305P
+replies:
+  - {send: '\*IDN\?', reply: "KORAD KA3305P V2.0", source: "KA33 p.11 #9"}
+  - {send: 'VOUT1\?', reply: "20.50", source: "KA33 p.10 #6 (value from the VSET1:20.50 example)"}
+  - {send: 'IOUT1\?', reply: "2.225", source: "KA33 p.10 #5 (value from the ISET1:2.225 example)"}
+  - {send: 'VOUT2\?', reply: "05.00", source: "KA33 p.10 #6"}
+  - {send: 'IOUT2\?', reply: "0.000", source: "KA33 p.10 #5"}
+  - {send: 'VSET1\?', reply: "20.50", source: "KA33 p.10 #4"}
+  - {send: 'ISET1\?', reply: "2.225 ", source: "KA33 p.10 #2 (6th byte as on TENMA firmware)"}
+  - {send: 'STATUS\?', reply: "\x42", source: "KA33 p.11 #8 (CH1 CC, CH2 CV, output on)"}
+expect:
+  PSU:
+    1: {VOUT: 20.5, IOUT: 2.225, OUTPUT: "ON", CV: false, CC: true}
+    2: {VOUT: 5.0, OUTPUT: "ON", CV: true, CC: false}

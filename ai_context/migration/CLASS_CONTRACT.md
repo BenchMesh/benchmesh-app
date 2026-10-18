@@ -71,8 +71,33 @@ There is no class-level schema in the Python code; this document is the first on
 ## OSC — `GenericOSC` (rigol_dho800)
 - **Status read:** `SCALE`,`OFFSET`,`TIMEBASE` (SI), `COUPLING` (raw, unstripped). 💤 `CHANNEL` (int). 4 channels. No ops from UI.
 
-## LCR / SAL
-- No drivers/manifests. UI components are static placeholders.
+## LCR / SAL (contracts 2026-10-18: `devices/classes/LCR.yaml`, `SAL.yaml`)
+Written from the coverage reports (`coverage/LCR.md` §4, `coverage/SAL.md` §4); panels `LcrPanel`, `SalPanel`.
+
+**LCR** — status PRIMARY, SECONDARY (si), FUNC (string), FREQ (si) required; LEVEL, CIRCUIT, SPEED, RANGE,
+OVERLOAD, BIN, BIAS, BIAS_ON, REMOTE optional. **No setter is required** (read-only meters bind only the
+status; the panel hides controls whose operation is missing from `/methods`). Conventions:
+- `FUNC` / `function` values are canonical E4980 tokens (CPD, CSRS, LSQ, RX, ZTD, DCR, …). `features.functions`
+  maps each to `{primary, secondary, circuit: SER|PAR (omitted when n/a), units: [primary, secondary], ui_name}`;
+  the UI also knows the canonical tokens, so entries may omit fields. The `function` setter's first command
+  lists every key (it is the `/methods` value spec). A/B meters (East Tester) bind `function` to several
+  steps with `only: [...]`.
+- `frequency` / `level`: an enum setter (keys = Hz / V as strings) → chips; a number setter → digit editor
+  plus `features.frequency.presets` (or `.list`) chips.
+- `speed` FAST|MED|SLOW (+ `features.speeds` displays), `range` AUTO|HOLD|<ohms> (+ `features.ranges`),
+  `correction` OPEN|SHORT (AUTO where the meter decides), `trigger` ONCE, `bias_output` `safety: energize`.
+- `features.counts`: display digits (or a count such as 20000).
+
+**SAL** — required status CENTER, SPAN, START, STOP, RBW (si) and REF_LEVEL (number, dBm); required operations
+start/stop/rbw/ref_level (get+set), center/span (set; the tinySA reports only start/stop, so its CENTER/SPAN status is computed in CEL) and sweep (set). The generator control appears only with `features.tg` (definitions bind `tg_output` family-wide). Frequencies/times are si; levels plain
+numbers (dBm, dB). TRACE is a `list` of levels from START to STOP. Setter vocabularies: sweep
+CONT|SINGLE|HOLD|RESTART, trace_mode WRITE|MAXHOLD|MINHOLD|AVERAGE|VIEW, detector POS|NEG|NORM|SAMP|RMS|AVER|QPE,
+peak_search PEAK|NEXT|LEFT|RIGHT|MKR_CF, `full_span` without a parameter, `tg_output` `safety: energize`.
+Features: freq_range, rbw/vbw lists (else 1-3-10 over the setter limits), ref_level, attenuation {min,max,step},
+divisions, tg {min,max}, preamp.
+
+Momentary actions (peak search, full span, restart, trigger, correction) use the kit `ActionButton`: it waits
+until a reported value shows the effect (marker moved / at the peak, span changed, a new trace or reading).
 
 ## Cross-cutting mismatches
 - Recording stores raw `query_*` return values; `LiveChart`/`RecordingDetails` parseFloat them → SI-dict values record as NaN/null.

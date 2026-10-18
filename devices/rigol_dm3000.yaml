@@ -1,0 +1,184 @@
+# Rigol DM3058 / DM3058E / DM3068 bench multimeters in the default RIGOL command set
+# (CMDSET RIGOL). Written from the programming guides (ai_context/migration/coverage/DMM.md §3.4)
+# before anyone tested it: every model awaits confirmation. Not the scpi_dmm dialect: ranges
+# are indices (0 = lowest), the reading is :MEASure:<fn>?, and autorange is :MEASure AUTO.
+# Pages "PG" = DM3058 programming guide (printed), "CHM" = DM3068 help topic.
+schema: benchmesh.device/v1
+id: rigol_dm3000
+vendor: RIGOL
+family: DM3000 series digital multimeter (DM3058/DM3058E/DM3068)
+version: 0.1.0
+sources:
+  - {doc: "Programming Guide for DM3058/DM3058E (2021-11)", pages: "2-4..2-5 (*IDN?), 3-14..3-20 (:FUNCtion), 3-29..3-48 (:MEASure), 3-49..3-53 (:RATE)"}
+  - {doc: "DM3068 Programming Guide (CHM)", pages: "IDN, :FUNCtion?, :MEASure, :MEASure:<fn>, :RATE:VOLTage:DC, Overview (RS-232 commands end \\r\\n)"}
+  - {doc: "DM3058 User's Guide", pages: "RS-232 menu (1200-115200 baud, parity None/Odd/Even); one of GPIB/USB/RS-232 active at a time"}
+  - {note: "USB PIDs unverified (DM3068 0x0C94 per its user guide, DM3058 reportedly 0x09C4), so only the Rigol vid is given. The remote overload value is undocumented (screen OVER LOAD); ±9.9E37 is assumed. LAN on DM3058/DM3068 is VXI-11 only per the guides (no raw socket documented)"}
+models:
+  - name: DM3058
+    match: "(?i)^rigol technologies,DM3058,"
+  - name: DM3058E
+    match: "(?i)^rigol technologies,DM3058E,"
+  - name: DM3068
+    match: "(?i)^rigol technologies,DM3068,"
+    features:
+      DMM:
+        rate: [{value: F, display: "fast (0.02 NPLC)"}, {value: M, display: "medium (0.2 NPLC)"}, {value: S, display: "slow (100 NPLC)"}]
+        RANGe:
+          CURR_AC: [{value: AUTO, display: AUTO}, {value: "0", display: "200µA"}, {value: "1", display: "2mA"}, {value: "2", display: "20mA"}, {value: "3", display: "200mA"}, {value: "4", display: "2A"}, {value: "5", display: "10A"}]
+          CAP: [{value: AUTO, display: AUTO}, {value: "0", display: "2nF"}, {value: "1", display: "20nF"}, {value: "2", display: "200nF"}, {value: "3", display: "2µF"}, {value: "4", display: "20µF"}, {value: "5", display: "200µF"}, {value: "6", display: "2mF"}, {value: "7", display: "20mF"}, {value: "8", display: "100mF"}]
+identify: idn
+link:
+  # select RS-232 as the active interface on the front panel (Utility → I/O)
+  serial:
+    baud: 9600
+    format: 8N1
+    framing:
+      tx: {terminator: "\r\n"}
+      rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 3000, drain_idle_ms: 50}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+  usbtmc: {vid: "1ab1"}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 3000}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+state:
+  range: {type: string, initial: "", description: "No auto/manual query exists: AUTO or the range index we set; empty (unknown) after a function change"}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "CHM IDN: Rigol Technologies,<model>,<serial>,XX.XX.XX"}
+  func:
+    send: ":FUNCtion?"
+    parse:
+      - trim
+      - upper
+      # DM3058 PG lists both the short names (per command) and long names (summary)
+      - map: {DCV: VOLT, ACV: VOLT_AC, DCI: CURR, ACI: CURR_AC, 2WR: RES, RESISTANCE: RES, 4WR: FRES,
+              FRESISTANCE: FRES, FREQ: FREQ, FREQUENCY: FREQ, PERI: PER, PERIOD: PER, CONT: CONT,
+              CONTINUITY: CONT, DIODE: DIOD, CAP: CAP, CAPACITANCE: CAP}
+    cache_ms: 400
+    description: "SENSOR (DM3068 temperature, front panel only) is not mapped: MODE null"
+    source: "PG 3-15 :FUNCtion?; CHM :FUNCtion?"
+  meas:
+    send: ":MEASure{fn}?"
+    params:
+      fn:
+        type: enum
+        from: func
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance", FREQ: ":FREQuency", PER: ":PERiod",
+                 CONT: ":CONTinuity", DIOD: ":DIODe", CAP: ":CAPacitance"}
+    # DM3058 prints 8.492853e-05, the DM3068 help "8.492853 E -0 1": drop spaces
+    parse: [trim, {replace: {from: " ", to: ""}}, number]
+    timeout_ms: 5000
+    description: "Reading of the active function in base units; unavailable in dual-display mode"
+    source: "PG 3-31 :MEASure:VOLTage:DC? → 8.492853e-05; CHM :MEASure:VOLTage:DC?"
+  rng_q:
+    send: ":MEASure{fn}:RANGe?"
+    params:
+      fn:
+        type: enum
+        from: func
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance", CAP: ":CAPacitance"}
+    parse: [trim, number]
+    cache_ms: 2000
+    description: "Range index of the active function (PG tables 3-4..3-9)"
+    source: "PG 3-33 :MEASure:VOLTage:DC:RANGe? → 0..4"
+  rate_q:
+    send: ":RATE{fn}?"
+    params:
+      fn:
+        type: enum
+        from: func
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance"}
+    parse: [trim, upper, {map: {F: F, M: M, S: S, FAST: F, MEDIUM: M, SLOW: S}}]
+    source: "PG 3-49 :RATE:VOLTage:DC? → F|M|S; CHM: FAST|MEDIUM|SLOW"
+  mode_set:
+    send: ":FUNCtion{mode}"
+    params:
+      mode:
+        type: enum
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance", FREQ: ":FREQuency", PER: ":PERiod",
+                 CONT: ":CONTinuity", DIOD: ":DIODe", CAP: ":CAPacitance"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q]
+    effects: {range: ""}
+    gap_after_ms: 300
+    settle_ms: 1000
+    source: "PG 3-14..3-20 :FUNCtion:<function>"
+  range_set:
+    send: ":MEASure{fn} {range}"
+    params:
+      fn:
+        type: enum
+        from: func
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance", CAP: ":CAPacitance"}
+      # AUTO: `:MEASure AUTO` acts on the active function; sent as a second command of the message
+      range: {type: enum, values: {AUTO: "DEF;:MEASure AUTO", "0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8"}}
+    reply: none
+    safety: configure
+    invalidates: [rng_q]
+    effects: {range: "{range}"}
+    gap_after_ms: 200
+    settle_ms: 800
+    description: "Index per PG tables 3-4..3-9 (a fixed range switches to manual)"
+    source: "PG 3-30..3-48 :MEASure {AUTO|MANU}, :MEASure:<fn> <index>"
+  rate_set:
+    send: ":RATE{fn} {rate}"
+    params:
+      fn:
+        type: enum
+        from: func
+        values: {VOLT: ":VOLTage:DC", VOLT_AC: ":VOLTage:AC", CURR: ":CURRent:DC", CURR_AC: ":CURRent:AC",
+                 RES: ":RESistance", FRES: ":FRESistance"}
+      rate: {type: enum, values: {F: F, M: M, S: S}}
+    reply: none
+    safety: configure
+    requires:
+      expr: 'func in ["VOLT", "VOLT_AC", "CURR", "CURR_AC", "RES", "FRES"]'
+      message: "The rate applies to DCV, ACV, DCI, ACI and resistance only"
+    source: "PG 3-49..3-53 :RATE:<fn> {F|M|S}"
+classes:
+  DMM:
+    channels: 1
+    ui_component: GenericDMM
+    features:
+      modes:
+        VOLT: {unit: V, symbol: U, note: DC, techname: DCV, ui_name: "Voltage DC"}
+        VOLT_AC: {unit: V, symbol: U, note: AC, techname: ACV, ui_name: "Voltage AC"}
+        CURR: {unit: A, symbol: I, note: DC, techname: DCI, ui_name: "Current DC"}
+        CURR_AC: {unit: A, symbol: I, note: AC, techname: ACI, ui_name: "Current AC"}
+        RES: {unit: "Ω", symbol: R, techname: 2WR, ui_name: Resistance}
+        FRES: {unit: "Ω", symbol: R, note: 4W, techname: 4WR, ui_name: Resistance}
+        CAP: {unit: F, symbol: C, techname: CAP, ui_name: Capacitance}
+        FREQ: {unit: Hz, symbol: f, techname: FREQ, ui_name: Frequency}
+        PER: {unit: s, symbol: T, techname: PERI, ui_name: Period}
+        CONT: {unit: "Ω", symbol: R, note: buzzer, techname: CONT, ui_name: Continuity}
+        DIOD: {unit: V, symbol: D, techname: DIODE, ui_name: Diode}
+      rate: [{value: F, display: "fast (123 rdg/s)"}, {value: M, display: "medium (20 rdg/s)"}, {value: S, display: "slow (2.5 rdg/s)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0", display: "200mV"}, {value: "1", display: "2V"}, {value: "2", display: "20V"}, {value: "3", display: "200V"}, {value: "4", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0", display: "200mV"}, {value: "1", display: "2V"}, {value: "2", display: "20V"}, {value: "3", display: "200V"}, {value: "4", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0", display: "200µA"}, {value: "1", display: "2mA"}, {value: "2", display: "20mA"}, {value: "3", display: "200mA"}, {value: "4", display: "2A"}, {value: "5", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0", display: "20mA"}, {value: "1", display: "200mA"}, {value: "2", display: "2A"}, {value: "3", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "0", display: "200Ω"}, {value: "1", display: "2kΩ"}, {value: "2", display: "20kΩ"}, {value: "3", display: "200kΩ"}, {value: "4", display: "1MΩ"}, {value: "5", display: "10MΩ"}, {value: "6", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "0", display: "200Ω"}, {value: "1", display: "2kΩ"}, {value: "2", display: "20kΩ"}, {value: "3", display: "200kΩ"}, {value: "4", display: "1MΩ"}, {value: "5", display: "10MΩ"}, {value: "6", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0", display: "2nF"}, {value: "1", display: "20nF"}, {value: "2", display: "200nF"}, {value: "3", display: "2µF"}, {value: "4", display: "200µF"}, {value: "5", display: "10000µF"}]
+    poll:
+      - every_ms: 500
+        read: [meas, func, rng_q]
+    status:
+      MEAS: {expr: 'meas >= 9.9e37 || meas <= -9.9e37 ? null : meas', as: si}
+      MODE: func
+      # the range value is an index; AUTO is our own setting (no query exists)
+      RANGE: 'state.range == "AUTO" ? "AUTO" : (state.range == "" ? null : string(int(rng_q)))'
+      OVERLOAD: 'meas >= 9.9e37 || meas <= -9.9e37'
+    operations:
+      mode: {set: mode_set}
+      range: {set: range_set}
+      measurement: {get: meas, as: si}
+      function: {get: func}
+      rate: {get: rate_q, set: rate_set}

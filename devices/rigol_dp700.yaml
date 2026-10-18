@@ -1,0 +1,34 @@
+# RIGOL DP700 series (DP711, DP712) single-output DC power supplies, RS232 only, written from the
+# programming guide before anyone tested it on hardware (every model: Awaiting confirmation).
+# Commands: devices/bases/rigol_dp.yaml (the DP800 set; DP700 has no OTP/LAN).
+# Research: ai_context/migration/coverage/PSU.md §2.9.
+schema: benchmesh.device/v1
+extends: rigol_dp
+id: rigol_dp700
+vendor: RIGOL
+family: DP700 series programmable DC power supply (DP711, DP712)
+version: 0.1.0
+sources:
+  - {doc: "DP700 Programming Guide (DP700_ProgrammingGuide.pdf)", pages: "Preface (models), 1-1, 2-4, 2-9, 2-14..2-22, 2-25, 2-35, 2-37, 2-31 (baud), 4-1 (RS232 9600)"}
+  - {note: "Power limit = rated V x A (150 W both). The instrument is reached through an RS232 adapter; its vid:pid identifies the cable, not the supply"}
+models:
+  - name: DP711
+    match: "^RIGOL TECHNOLOGIES,DP711,"
+    note: "30 V/5 A (settable 32 V/5.3 A, OVP 33 V, OCP 5.5 A)"
+    features: {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 5.3}, "power": {"unit": "W", "max": 150.0}}}}
+  - name: DP712
+    match: "^RIGOL TECHNOLOGIES,DP712,"
+    note: "50 V/3 A (settable 53 V/3.2 A, OVP 55 V, OCP 3.3 A)"
+    features: {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 53.0}, "current": {"unit": "A", "max": 3.2}, "power": {"unit": "W", "max": 150.0}}}}
+link:
+  # RS232 only, straight cable, 9600 8N1 default (PG p.2-31, p.4-1); commands end in "\n" (PG p.1-1)
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+commands:
+  volt_set: {params: {v: {max: 53}}, source: "PG p.2-25 (DP711 0-32 V, DP712 0-53 V)"}
+  curr_set: {params: {a: {max: 5.3, format: "%.3f"}}, source: "PG p.2-22 (DP711 0-5.3 A, DP712 0-3.2 A)"}
+  ovp_val_set: {params: {v: {min: 0.01, max: 55}}, source: "PG p.2-20 (0.01 V to 33/55 V; 1 mV with the HIRES option)"}
+  ocp_val_set: {params: {a: {min: 0.01, max: 5.5, format: "%.3f"}}, source: "PG p.2-17 (0.01 A to 5.5/3.3 A; 1 mA with the HIRES option)"}
+classes:
+  PSU:
+    channels: 1
+    features: {"lock": true, "compulsory_lock": false, "absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 5.3}, "power": {"unit": "W", "max": 150.0}}, "protection": {"OVP": {"type": "boolean"}, "OCP": {"type": "boolean"}}}

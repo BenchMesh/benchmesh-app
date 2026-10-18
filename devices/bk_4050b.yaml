@@ -1,0 +1,42 @@
+# BK Precision 4050B series function/arbitrary waveform generators (4053B/4054B/4055B), Siglent
+# SDG dialect. Written from the programming manual and datasheet before anyone tested it.
+# Research: ai_context/migration/coverage/AWG.md §2.2. Pages are printed pages.
+schema: benchmesh.device/v1
+id: bk_4050b
+extends: siglent_sdg
+vendor: BK Precision
+family: 4050B series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "4050B Series Programming Manual (4050B_Series_programming_manual.pdf)", pages: "4 (*IDN?), 8 (CHDR), 9 (OUTPut), 10-11 (BSWV)"}
+  - {doc: "4050B Series datasheet", pages: "1-3 (models, sine/square/ramp/pulse limits, ±10 V offset open circuit)"}
+  - {note: "The manual's *IDN? example names the series (4050B), not the model, and carries a `*IDN ` header; replies show spaces after commas (`C1: OUTP ON, LOAD, HZ`). USB ids and LAN port not documented."}
+models:
+  - {"name": "4055B", "match": "^(\\*IDN )?BK Precision,\\s*4055B\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 60e6, "PUL": 12.5e6, "RAMP": 0.5e6}}}}
+  - {"name": "4054B", "match": "^(\\*IDN )?BK Precision,\\s*4054B\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6, "SQU": 30e6, "PUL": 12.5e6, "RAMP": 0.5e6}}}}
+  - {"name": "4053B", "match": "^(\\*IDN )?BK Precision,\\s*4053B\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 10e6, "SQU": 10e6, "PUL": 12.5e6, "RAMP": 0.5e6}}}}
+  - {"name": "4050B", "match": "^(\\*IDN )?BK Precision,\\s*4050B\\s*,", "note": "Identify reply names the series only (manual example); limits of the exact model unknown"}
+link:
+  usbtmc: {}
+commands:
+  idn: {source: "PM p4: *IDN BK Precision,4050B,00-00-00-13-22,1.01.01.10R1,20.234.3."}
+  outp_q: {source: "PM p9: C1: OUTP ON, LOAD, HZ, PLRT, NOR"}
+  load_q: {source: "PM p9"}
+  outp_set: {source: "PM p9"}
+  shape_q: {source: "PM p10-11"}
+  freq_q: {source: "PM p10-11"}
+  ampl_q: {source: "PM p10-11"}
+  offs_q: {source: "PM p10-11"}
+  phase_q: {source: "PM p10-11"}
+  symm_q: {source: "PM p10-11"}
+  shape_set: {source: "PM p10-11"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+    source: "PM p10-11"
+  ampl_set: {source: "PM p10-11"}
+  offs_set: {source: "PM p10-11"}
+  phase_set: {source: "PM p10-11"}
+  symm_set: {source: "PM p10-11"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 60e6, "SQU": 60e6, "PUL": 12.5e6, "RAMP": 0.5e6}}

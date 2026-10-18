@@ -1,0 +1,23 @@
+# Replies from the DP700 Programming Guide (return formats; the DP700 guide prints few literal
+# values, so numbers follow the DP800 guide's examples for the same commands).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dp700
+model: DP711
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DP711,DP7A000001,00.01.02", source: "PG p.2-4 (RIGOL TECHNOLOGIES,<model>,<serial>,<version>)"}
+  - {send: ':MEAS:ALL\? CH1', reply: "5.0000,1.0000,5.000", source: "PG p.2-9 (three reals: V,I,P)"}
+  - {send: ':MEAS\? CH1', reply: "5.0000", source: "PG p.2-9"}
+  - {send: ':MEAS:CURR\? CH1', reply: "1.0000", source: "PG p.2-9"}
+  - {send: ':MEAS:POWE\? CH1', reply: "5.000", source: "PG p.2-9"}
+  - {send: ':OUTP\? CH1', reply: "OFF", source: "PG p.2-21 (ON or OFF)"}
+  - {send: ':OUTP:CVCC\? CH1', reply: "CV", source: "PG p.2-14 (CV, CC or UR)"}
+  - {send: ':OUTP:OVP:QUES\? CH1', reply: "NO", source: "PG p.2-18 (YES or NO)"}
+  - {send: ':OUTP:OCP:QUES\? CH1', reply: "YES", source: "PG p.2-15 (YES or NO)"}
+  - {send: ':SOUR1:VOLT\?', reply: "5.00", source: "PG p.2-25 (a real number)"}
+  - {send: ':SOUR1:CURR\?', reply: "3.00", source: "PG p.2-22 (example :CURRent 3)"}
+  - {send: ':OUTP:OVP:VAL\? CH1', reply: "30.00", source: "PG p.2-20 (example :OUTPut:OVP:VALue 30)"}
+  - {send: ':OUTP:OCP:VAL\? CH1', reply: "5.00", source: "PG p.2-17 (example :OUTPut:OCP:VALue 5)"}
+# OVP/OCP trips come from the slow (2 s) poll group, which the check's first update does not include
+expect:
+  PSU:
+    1: {VOUT: 5.0, IOUT: 1.0, POUT: 5.0, OUTPUT: "OFF", SBY: true, CV: false}

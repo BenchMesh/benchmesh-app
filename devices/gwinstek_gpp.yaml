@@ -1,0 +1,139 @@
+# GW Instek GPP-1326/2323/3323/4323 multi-channel programmable DC power supply (SCPI with a
+# channel suffix: :MEAS2:VOLT?, :SOUR2:CURR, :OUTP2). Written from the user manual (remote
+# control chapter) before anyone tested it on hardware. The manual gives no reply examples:
+# numeric replies are assumed plain NR2/NR3. Coverage: ai_context/migration/coverage/PSU.md §2.19.
+schema: benchmesh.device/v1
+id: gwinstek_gpp
+vendor: GW Instek
+family: GPP series multi-channel programmable DC power supply (SCPI)
+version: 0.1.0
+sources:
+  - {doc: "GPP Series User Manual (GPP_Series_User_Manual.pdf)", pages: "100-114 (interfaces, syntax), 124-136, 183-188 (commands), 198-200 (specifications)"}
+models:
+  - {name: GPP-1326, match: "^GW INSTEK,GPP-1326,", channels: {PSU: 1},
+     features: {PSU: {absolute_limits: {voltage: {unit: V, max: 32.0}, current: {unit: A, max: 6.2}}}}}
+  - {name: GPP-2323, match: "^GW INSTEK,GPP-2323,", channels: {PSU: 2}}
+  - {name: GPP-3323, match: "^GW INSTEK,GPP-3323,", channels: {PSU: 2},
+     note: "CH3 (1.8/2.5/3.3/5 V fixed steps, 5 A) is not exposed: its readback returns the setpoint and zero current (p.124-125)"}
+  - {name: GPP-4323, match: "^GW INSTEK,GPP-4323,", channels: {PSU: 4},
+     features: {PSU: {channel_limits: {"1": {voltage: 32.0, current: 3.2}, "2": {voltage: 32.0, current: 3.2}, "3": {voltage: 5.0, current: 1.0}, "4": {voltage: 15.0, current: 1.0}}}}}
+identify: idn
+link:
+  # RS-232 or USB CDC, 115200 8N1 default (p.100, 185); only one interface is active at a time
+  serial: {baud: 115200, format: 8N1, flow: none}
+  # LAN raw socket port 1026 (p.107)
+  tcp: {port: 1026}
+framing:
+  # commands end with LF (or CR LF); replies end with 0x0A (p.114)
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 10, gap_after_write_ms: 50}
+state:
+  remote: {type: enum, initial: "OFF", description: "Not queryable; tracks our own :SYST:REM / :SYST:LOC"}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "p.188"}
+  meas_v: {send: ":MEAS{ch}:VOLT?", parse: [trim, number], source: "p.124"}
+  meas_i: {send: ":MEAS{ch}:CURR?", parse: [trim, number], source: "p.124"}
+  meas_p: {send: ":MEAS{ch}:POWE?", parse: [trim, number], source: "p.124"}
+  outp_q:
+    send: ":OUTP{ch}?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    description: "Reply format not shown in the manual (ON/OFF or 1/0 accepted)"
+    source: "p.128"
+  cc_q:
+    send: ":SOUR{ch}:CURR:STAT?"
+    parse: [trim, number]
+    description: "1 when the current limit is reached (CC), 0 otherwise; 0 with the output off or in load mode"
+    source: "p.133"
+  volt_q: {send: ":SOUR{ch}:VOLT?", parse: [trim, number], source: "p.134"}
+  curr_q: {send: ":SOUR{ch}:CURR?", parse: [trim, number], source: "p.132"}
+  ovp_lvl_q: {send: ":OUTP{ch}:OVP?", parse: [trim, number], source: "p.129"}
+  ocp_lvl_q: {send: ":OUTP{ch}:OCP?", parse: [trim, number], source: "p.130"}
+  volt_set:
+    send: ":SOUR{ch}:VOLT {v}"
+    params: {v: {type: number, min: 0, max: 32, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    description: "1 mV programming resolution (p.199); CH3/CH4 of the GPP-4323 up to 5 V / 15 V"
+    source: "p.133"
+  curr_set:
+    send: ":SOUR{ch}:CURR {a}"
+    params: {a: {type: number, min: 0, max: 6.2, format: "%.4f", unit: A}}
+    reply: none
+    safety: configure
+    description: "0-3.2 A (GPP-1326: 0-6.2 A), 0.1 mA resolution"
+    source: "p.132"
+  outp_set:
+    send: ":OUTP{ch} {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    description: Per channel
+    source: "p.128"
+  ovp_lvl_set:
+    send: ":OUTP{ch}:OVP {v}"
+    params: {v: {type: number, min: 0.5, max: 35, format: "%.1f", unit: V}}
+    reply: none
+    safety: configure
+    description: "0.5-35 V on CH1/CH2 (CH3 6 V, CH4 16.5 V on the 4323), 100 mV resolution (p.200)"
+    source: "p.129"
+  ocp_lvl_set:
+    send: ":OUTP{ch}:OCP {a}"
+    params: {a: {type: number, min: 0.05, max: 7, format: "%.2f", unit: A}}
+    reply: none
+    safety: configure
+    description: "0.05-3.5 A on CH1/CH2 (GPP-1326 7 A, 4323 CH3/CH4 1.2 A), 10 mA resolution (p.200)"
+    source: "p.130"
+  ovp_set:
+    send: ":OUTP{ch}:OVP:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p.129"
+  ocp_set:
+    send: ":OUTP{ch}:OCP:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p.130"
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": ":SYST:REM", "OFF": ":SYST:LOC"}}}
+    reply: none
+    safety: configure
+    effects: {remote: "{on}"}
+    source: "p.183-184"
+classes:
+  PSU:
+    channels: 2
+    ui_component: GenericPSU
+    features:
+      memory_banks: 10
+      absolute_limits:
+        voltage: {unit: V, max: 32.0}
+        current: {unit: A, max: 3.2}
+      protection: {OVP: {type: boolean}, OCP: {type: boolean}}
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, meas_p, outp_q, cc_q]
+    status:
+      VOUT: {expr: meas_v, as: si}
+      IOUT: {expr: meas_i, as: si}
+      POUT: {expr: meas_p, as: si}
+      OUTPUT: outp_q
+      REMOTE: state.remote
+      CV: 'outp_q == "ON" && cc_q == 0.0'
+      CC: 'outp_q == "ON" && cc_q == 1.0'
+      SBY: 'outp_q == "OFF"'
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: remote_set}
+      voltage_limit: {get: ovp_lvl_q, set: ovp_lvl_set, as: si}
+      current_limit: {get: ocp_lvl_q, set: ocp_lvl_set, as: si}
+      ovp: {set: ovp_set}
+      ocp: {set: ocp_set}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}

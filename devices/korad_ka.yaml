@@ -1,0 +1,133 @@
+# KORAD KA/KD series and rebrands (RND 320, Velleman PS3005D) — the Korad protocol that
+# devices/tenma_72.yaml implements for the TENMA 72-series (bench-tested there). Written from
+# the manuals before testing on a Korad-branded unit; see ai_context/migration/coverage/PSU.md §2.1.
+schema: benchmesh.device/v1
+id: korad_ka
+vendor: KORAD
+family: KA/KD series programmable DC power supply (Korad protocol; RND 320, Velleman PS3005D)
+version: 0.1.0
+sources:
+  - {doc: "KORAD KA3000-Series (KA3303P/KA3305P) User Manual V3.12 — KA3000 Series Remote Control Syntax V2.0", pages: "9-13 (printed)"}
+  - {doc: "KORAD KA3000/6000-Series User Manual V3.41", pages: "14 (COM setting, *IDN? reply)"}
+  - {doc: "TENMA Series Protocol V2.0 of Remote Control (same command set)", pages: "1-2"}
+  - {note: "Model limits from sigrok korad-kaxxxxp api.c and KA33 p.12; USB CDC 0416:5011 (Nuvoton); IDN variants and the 80 ms pacing from sigrok"}
+  - {note: "STATUS? bits 2-5/7 differ between manuals (KA33: N/A, TENMA: tracking/beep/lock); only bits 0, 1 (CV) and 6 (output) are mapped"}
+models:
+  - {"name": "KA3003P", "match": "^(KORAD ?|RND 320-)KA3003P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 30.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
+  - {"name": "KA3005P", "match": "^(KORAD ?|RND 320-)KA3005P"}
+  - {"name": "KD3005P", "match": "^(KORAD ?|RND 320-)KD3005P"}
+  - {"name": "KA3010P", "match": "^(KORAD ?|RND 320-)KA3010P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 30.0}, "current": {"unit": "A", "max": 10.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "KA6002P", "match": "^(KORAD ?|RND 320-)KA6002P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 2.0}, "power": {"unit": "W", "max": 120.0}}}}}
+  - {"name": "KA6003P", "match": "^(KORAD ?|RND 320-)KA6003P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 180.0}}}}}
+  - {"name": "KA6005P", "match": "^(KORAD ?|RND 320-)KA6005P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 5.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "KD6005P", "match": "^(KORAD ?|RND 320-)KD6005P", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 5.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "KA3303P", "match": "^(KORAD ?|RND 320-)KA3303P", "channels": {"PSU": 2}, "note": "2 programmable channels (+ fixed 5 V); output, OCP and OVP are global", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 30.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
+  - {"name": "KA3305P", "match": "^(KORAD ?|RND 320-)KA3305P", "channels": {"PSU": 2}, "note": "2 programmable channels (+ fixed 5 V); output, OCP and OVP are global"}
+  - {"name": "PS3005D", "match": "^VELLEMAN ?(LAB)?PS3005D", "note": "Velleman PS3005D/LABPS3005D (Korad KA3005P inside). sigrok needs ~450 ms extra per request on firmware V1.3; LABPS3005DN ('QJE3005P') speaks a different dialect"}
+identify: idn
+link:
+  # USB CDC "Nuvoton USB Virtual COM" 0416:5011 or the rear RS232 (only one is active).
+  serial: {baud: 9600, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+framing:
+  tx: {terminator: ""}
+  # No terminators. Replies end after 15 ms of silence (reply lengths vary by firmware: ISET?
+  # answers 5 or 6 bytes), so nothing depends on a fixed width except the 1-byte STATUS?.
+  rx: {mode: idle, idle_ms: 15, timeout_ms: 300, drain_idle_ms: 20}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  idn:
+    send: "*IDN?"
+    parse: [trim]
+    description: "e.g. 'KORAD KA3005P V5.8 SN:12345678', 'KORADKA3005PV2.0'; some firmware answers only the first *IDN? after power-up"
+    source: KA33 p.11 #9, KA30 p.14
+  vout:
+    send: "VOUT{ch}?"
+    parse: [trim, number]
+    description: Measured output voltage (V), 0 while the output is off
+    source: KA33 p.10 #6
+  iout:
+    send: "IOUT{ch}?"
+    parse: [trim, number]
+    source: KA33 p.10 #5
+  vset_q:
+    send: "VSET{ch}?"
+    parse: [trim, number]
+    source: KA33 p.10 #4
+  iset_q:
+    send: "ISET{ch}?"
+    parse: [trim, number]
+    description: 5 or 6 bytes depending on firmware (trailing byte trimmed)
+    source: KA33 p.10 #2
+  status:
+    send: "STATUS?"
+    reply: {bytes: 1}
+    parse:
+      - byte
+      - bits: {ch1_cv: "0", ch2_cv: "1", out: "6"}
+    description: "1 binary byte: bit0 CH1 CV(1)/CC(0), bit1 CH2, bit6 output"
+    source: KA33 p.11 #8
+  vset:
+    send: "VSET{ch}:{v}"
+    params:
+      v: {type: number, min: 0, max: 61, format: "%.2f", unit: V}
+    reply: none
+    safety: configure
+    description: 2 decimals (example VSET1:20.50); 3 decimals and exponent forms are ignored by TENMA firmware
+    source: KA33 p.10 #3
+  iset:
+    send: "ISET{ch}:{i}"
+    params:
+      i: {type: number, min: 0, max: 10.1, format: "%.3f", unit: A}
+    reply: none
+    safety: configure
+    description: "3 decimals (example ISET1:2.225); response time 50 ms"
+    source: KA33 p.10 #1
+  output:
+    send: "OUT{on}"
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+    reply: none
+    safety: energize
+    description: Global (both channels of the KA33xx)
+    source: KA33 p.11 #7
+  ocp:
+    send: "OCP{on}"
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+    reply: none
+    safety: configure
+    description: Global; the trip level is the current setpoint
+    source: KA33 p.11 #12
+  ovp:
+    send: "OVP{on}"
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+    reply: none
+    safety: configure
+    description: "Global; listed in the TENMA/KA30 protocol, not in the KA33 command list; the OVP level is set on the panel"
+    source: TENMA protocol p.2 #14
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    features: {"lock": true, "auto_lock": true, "compulsory_lock": false, "memory_banks": 5, "memory_storage": ["V", "A"], "absolute_limits": {"voltage": {"unit": "V", "max": 30.0}, "current": {"unit": "A", "max": 5.0}, "power": {"unit": "W", "max": 150.0}}, "protection": {"OCP": {"type": "boolean"}, "OVP": {"type": "boolean"}}}
+    poll:
+      - every_ms: 300
+        read: [vout, iout, status]
+    status:
+      VOUT: {expr: vout, as: si}
+      IOUT: {expr: iout, as: si}
+      POUT: {expr: "vout * iout", as: si}
+      OUTPUT: 'status.out ? "ON" : "OFF"'
+      REMOTE: '"ON"'  # opening the USB/RS232 link locks the panel (KA30 p.15); no command exists
+      CV: "status.out && (ch == 1 ? status.ch1_cv : status.ch2_cv)"
+      CC: "status.out && !(ch == 1 ? status.ch1_cv : status.ch2_cv)"
+      SBY: "!status.out"
+    operations:
+      voltage: {get: vset_q, set: vset, as: si}
+      current: {get: iset_q, set: iset, as: si}
+      output: {set: output}
+      ovp: {set: ovp}
+      ocp: {set: ocp}
+      output_voltage: {get: vout, as: si}
+      output_current: {get: iout, as: si}

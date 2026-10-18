@@ -1,0 +1,19 @@
+# Replies as the AFG-2225 user manual shows them (printed pages): checks the definition through
+# the real engine without hardware.
+definition: gwinstek_afg2225
+model: AFG-2225
+replies:
+  - {send: '\*IDN\?', reply: "GW INSTEK,AFG-2225,SN:XXXXXXXX,Vm.mm", source: "remote chapter *IDN? example"}
+  - {send: 'OUTP[12]\?', reply: "1", source: "p213"}
+  - {send: 'SOUR[12]:FUNC\?', reply: "SIN", source: "p206"}
+  - {send: 'SOUR[12]:FREQ\?', reply: "+1.0000000000000E+06", source: "p208"}
+  - {send: 'SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "p214"}
+  - {send: 'SOUR[12]:AMPL\?', reply: "+5.0000E+00", source: "p209"}
+  - {send: 'SOUR[12]:DCO\?', reply: "+3.0000E+00", source: "p210"}
+  - {send: 'SOUR[12]:PHAS\?', reply: "26", source: "p267"}
+  - {send: 'SOUR[12]:RAMP:SYMM\?', reply: "+1.0000E+02", source: "p212"}
+  - {send: 'OUTP[12]:LOAD\?', reply: "DEF", source: "p214"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 1000000.0, AMPL: 5.0, OFFS: 3.0, PHASE: 26.0, SYMM: 100.0, LOAD: "50"}
+    2: {OUTPUT: "ON", PHASE: 26.0}

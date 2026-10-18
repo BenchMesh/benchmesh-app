@@ -1,0 +1,155 @@
+# B&K Precision 880 handheld LCR meter (878B/879B expected to share the dialect: verify).
+# USB virtual COM, primary and secondary parameter and circuit set separately (A/B instrument);
+# setters never reply (errors only on the LCD, E10-E12). Any command switches the meter to remote
+# and stops auto-fetch streaming; the drain before identify discards a streamed result.
+# See ai_context/migration/coverage/LCR.md §2.4.
+schema: benchmesh.device/v1
+id: bk_880
+vendor: B&K Precision
+family: 878B/879B/880 handheld LCR meter
+version: 0.1.0
+sources:
+  - {doc: "880_manual.pdf (BenchMeshDOC/bk_880)", pages: "28-29 (functions), 45-48 (USB, 9600 8N1, replies), 49-53 (commands)"}
+models:
+  - name: "880"
+    match: '^[^,]*880[^,]*,'
+    features: {LCR: {frequency: {list: [100, 120, 1000, 10000, 100000]}}}
+  - name: 879B
+    match: '^[^,]*879B[^,]*,'
+    note: "Not documented here: the 880 dialect is assumed; frequencies to confirm"
+    features: {LCR: {frequency: {list: [100, 120, 1000, 10000]}}}
+  - name: 878B
+    match: '^[^,]*878B[^,]*,'
+    note: "Not documented here: the 880 dialect is assumed; frequencies to confirm"
+    features: {LCR: {frequency: {list: [100, 120, 1000, 10000]}}}
+identify: idn
+link:
+  serial: {baud: 9600, format: 8N1}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "UM p.49 (<model>,<firmware>,<serial number>)"}
+  # <A>,<B>,<bin> (L/C/R/Z) or <A>,<bin> (DCR) — UM p.52
+  fetch: {send: "FETC?", parse: [trim, {fields: {sep: ",", names: [a, b]}}], source: "UM p.52"}
+  fetch_a: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 0}}, trim, number], source: "UM p.52"}
+  fetch_b: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 1}}, trim, number], source: "UM p.52 (bin number for DCR)"}
+  impa_q: {send: "FUNC:impa?", parse: [trim, upper, {null_if: ["NULL"]}], cache_ms: 2500, source: "UM p.50"}
+  impb_q: {send: "FUNC:impb?", parse: [trim, upper, {null_if: ["NULL"]}], cache_ms: 2500, source: "UM p.50"}
+  equ_q:
+    send: "FUNC:EQU?"
+    parse: [trim, upper, {map: {SER: SER, PAL: PAR}}]
+    cache_ms: 2500
+    source: "UM p.50 (<SER, PAL>)"
+  freq_q:
+    send: "FREQ?"
+    parse: [trim, {map: {"100Hz": "100", "120Hz": "120", "1kHz": "1000", "10kHz": "10000", "100kHz": "100000"}}, number]
+    cache_ms: 2500
+    source: "UM p.49 (<100Hz|120Hz|1kHz|10kHz|100kHz>)"
+  volt_q:
+    send: "VOLT?"
+    parse: [trim, {map: {"0.3V": "0.3", "0.6V": "0.6", "1V": "1"}}, number]
+    cache_ms: 2500
+    source: "UM p.50 (<0.3V|0.6V|1V>)"
+
+  impa_set:
+    send: "FUNC:impa {f}"
+    params:
+      f: {type: enum, values: {CSD: C, CPD: C, CSQ: C, CPQ: C, CSESR: C, LSD: L, LPD: L, LSQ: L, LPQ: L, ZTD: Z, DCR: DCR}}
+    reply: none
+    safety: configure
+    invalidates: [impa_q, impb_q, equ_q]
+    source: "UM p.50"
+  impb_set:
+    send: "FUNC:impb {f}"
+    params:
+      f: {type: enum, values: {CSD: D, CPD: D, CSQ: Q, CPQ: Q, CSESR: ESR, LSD: D, LPD: D, LSQ: Q, LPQ: Q, ZTD: THETA}}
+    reply: none
+    safety: configure
+    invalidates: [impb_q]
+    source: "UM p.50"
+  equ_set:
+    send: "FUNC:EQU {f}"
+    params:
+      f: {type: enum, values: {CPD: PAL, CPQ: PAL, LPD: PAL, LPQ: PAL, CSD: SER, CSQ: SER, CSESR: SER, LSD: SER, LSQ: SER}}
+    reply: none
+    safety: configure
+    invalidates: [equ_q]
+    source: "UM p.50"
+  circuit_set:
+    send: "FUNC:EQU {c}"
+    params: {c: {type: enum, values: {SER: SER, PAR: PAL}}}
+    reply: none
+    safety: configure
+    invalidates: [equ_q]
+    requires: {expr: 'impa_q in ["C", "L"]', message: "series/parallel applies to C and L only"}
+    source: "UM p.50"
+  freq_set:
+    send: "FREQ {f}"
+    params: {f: {type: enum, values: {"100": "100", "120": "120", "1000": "1000", "10000": "10000", "100000": "100000"}}}
+    reply: none
+    safety: configure
+    invalidates: [freq_q]
+    source: "UM p.49"
+  volt_set:
+    send: "VOLT {v}"
+    params: {v: {type: enum, values: {"0.3": "0.3", "0.6": "0.6", "1": "1"}}}
+    reply: none
+    safety: configure
+    invalidates: [volt_q]
+    description: "Only effective in L, C, R, Z (not DCR)"
+    source: "UM p.50"
+  remote_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "*LLO", "OFF": "*GTL"}}}
+    reply: none
+    safety: configure
+    description: "ON locks the keys (local lockout); any command already puts the meter in remote"
+    source: "UM p.49"
+classes:
+  LCR:
+    channels: 1
+    ui_component: GenericLCR
+    features:
+      counts: 5
+      functions:
+        CSD:   {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs–D"}
+        CPD:   {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp–D"}
+        CSQ:   {primary: Cs, secondary: Q,   circuit: SER, units: [F, ""],  ui_name: "Cs–Q"}
+        CPQ:   {primary: Cp, secondary: Q,   circuit: PAR, units: [F, ""],  ui_name: "Cp–Q"}
+        CSESR: {primary: Cs, secondary: ESR, circuit: SER, units: [F, "Ω"], ui_name: "Cs–ESR"}
+        LSD:   {primary: Ls, secondary: D,   circuit: SER, units: [H, ""],  ui_name: "Ls–D"}
+        LPD:   {primary: Lp, secondary: D,   circuit: PAR, units: [H, ""],  ui_name: "Lp–D"}
+        LSQ:   {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls–Q"}
+        LPQ:   {primary: Lp, secondary: Q,   circuit: PAR, units: [H, ""],  ui_name: "Lp–Q"}
+        ZTD:   {primary: Z,  secondary: θ,   units: ["Ω", "°"], ui_name: "Z–θ"}
+        DCR:   {primary: DCR, units: ["Ω"], ui_name: "DCR"}
+      level: {list: [0.3, 0.6, 1.0]}
+    poll:
+      - every_ms: 500
+        read: [fetch, impa_q, impb_q, equ_q, freq_q, volt_q]
+    status:
+      PRIMARY: {expr: 'fetch == null ? null : num(fetch.a)', as: si}
+      SECONDARY: {expr: 'fetch == null || impa_q == "DCR" ? null : num(fetch.b)', as: si}
+      OVERLOAD: 'fetch != null && num(fetch.a) == null'
+      FUNC: >-
+        impa_q == "DCR" ? "DCR" :
+        {"CDSER": "CSD", "CDPAR": "CPD", "CQSER": "CSQ", "CQPAR": "CPQ", "CESRSER": "CSESR",
+         "LDSER": "LSD", "LDPAR": "LPD", "LQSER": "LSQ", "LQPAR": "LPQ", "ZTHETA": "ZTD"}[impa_q + impb_q + (impa_q in ["C", "L"] ? equ_q : "")]
+      CIRCUIT: 'impa_q in ["C", "L"] ? equ_q : null'
+      FREQ: {expr: 'impa_q == "DCR" ? null : freq_q', as: si}
+      LEVEL: {expr: 'impa_q == "DCR" ? null : volt_q', as: si}
+      REMOTE: '"ON"'
+    operations:
+      function:
+        set:
+          - {cmd: impa_set, args: {f: "{value}"}}
+          - {cmd: impb_set, args: {f: "{value}"}, only: [CSD, CPD, CSQ, CPQ, CSESR, LSD, LPD, LSQ, LPQ, ZTD]}
+          - {cmd: equ_set, args: {f: "{value}"}, only: [CPD, CPQ, LPD, LPQ, CSD, CSQ, CSESR, LSD, LSQ]}
+      circuit: {get: equ_q, set: circuit_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      level: {get: volt_q, set: volt_set, as: si}
+      measurement: {get: fetch_a, as: si}
+      secondary: {get: fetch_b, as: si}
+      remote: {set: remote_set}

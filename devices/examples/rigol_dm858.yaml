@@ -1,0 +1,14 @@
+# Replies as the DM858 programming guide prints them (printed pages).
+definition: rigol_dm858
+transport: usbtmc
+model: DM858
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DM858,DM8A000000000,00.01.00", source: "p.42 RIGOL TECHNOLOGIES,<model>,<serial>,<version>"}
+  - {send: 'READ\?', reply: "-4.98748741E-01", source: "p.11 READ? example (first reading)"}
+  - {send: 'FUNC\?', reply: '"VOLT"', source: "p.93 FUNCtion? return"}
+  - {send: 'VOLT:DC:RANG\?', reply: "1.00000000E+00", source: "p.109 RANGe? example"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "0", source: "p.110 RANGe:AUTO? 0|1"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "20", source: "p.110 NPLC? (default 20)"}
+expect:
+  DMM:
+    1: {MEAS: -0.498748741, MODE: VOLT, RANGE: "1", OVERLOAD: false}

@@ -1,0 +1,92 @@
+# Hantek HDM3055 / HDM3065 / HDM3075 bench multimeters (S/A/B/H/X suffixes). Written from the
+# SCPI programming reference (ai_context/migration/coverage/DMM.md §3.9) before anyone tested
+# it: every model awaits confirmation. Near-verbatim 34461A dialect → devices/bases/scpi_dmm.yaml.
+# Pages are PDF pages of the programming reference ("PR") / user guide ("UG").
+schema: benchmesh.device/v1
+id: hantek_hdm3000
+extends: scpi_dmm
+vendor: Hantek
+family: HDM3000 series digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "HDM3000 SCPI Programming Reference EN Ver1.03", pages: "14-19 (CONFigure, FUNCtion), 23-27 (VOLT/CURR ranges, NPLC), 43 (CAP), 48 (UNIT)"}
+  - {doc: "HDM3000 User Guide EN Ver2.6", pages: "22 (models/interfaces), 95-97 (USB TMC, LAN socket 5025)"}
+  - {note: "*IDN? example, USB vid:pid and RS-232/485 settings are not documented: matched leniently on the model, serial link not offered"}
+models:
+  - name: HDM3055
+    match: "(?i)HDM3055"
+  - name: HDM3065
+    match: "(?i)HDM3065"
+  - name: HDM3075
+    match: "(?i)HDM3075"
+    features:
+      DMM:
+        rate: [{value: "0.001", display: "0.001 PLC (fastest)"}, {value: "0.02", display: "0.02 PLC"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slowest)"}]
+        RANGe:
+          CURR: [{value: AUTO, display: AUTO}, {value: "0.000001", display: "1µA"}, {value: "0.00001", display: "10µA"}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}]
+link:
+  usbtmc: {}
+commands:
+  func: {source: "PR p.19 [SENSe:]FUNCtion? → \"CURR:AC\" (quoted short form)"}
+  meas:
+    # the reference prints numbers with stray spaces ("+ 1.00000000 E+01"): drop them
+    parse: [trim, {split: {sep: ",", index: 0}}, {replace: {from: " ", to: ""}}, number]
+    source: "PR p.51 READ?; overload 9.9E37 (p.14-27)"
+  rng_q:
+    parse: [trim, {replace: {from: " ", to: ""}}, number]
+    source: "PR p.23 [SENSe:]VOLTage:{AC|DC}:RANGe? → + 1.00000000 E+01"
+  auto_q: {source: "PR p.23 RANGe:AUTO? → 0 (OFF) or 1 (ON)"}
+  nplc_q:
+    parse: [trim, {replace: {from: " ", to: ""}}, number, {map: {"0.001": "0.001", "0.02": "0.02", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    source: "PR p.25 [SENSe:]VOLTage[:DC]:NPLC? {0.02|0.2|1|10|100}"
+  rate_set:
+    params:
+      plc: {type: enum, values: {"0.001": "0.001"}}
+    source: "PR p.25 NPLC 0.02, 0.2, 1, 10, 100 (0.001 HDM3075, PR p.14)"
+  mode_set:
+    params:
+      mode:
+        type: enum
+        values: {TEMP: "CONF:TEMP FRTD,85"}
+    source: "PR p.14-17 CONFigure:<function> [AUTO]"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000001": " 1E-9", "0.00000001": " 10E-9", "0.0000001": " 100E-9", "0.000001": " 1E-6",
+                 "0.00001": " 10E-6", "0.0001": " 100E-6", "0.001": " 1E-3", "0.01": " 10E-3", "0.1": " 0.1",
+                 "1": " 1", "3": " 3", "10": " 10", "100": " 100", "750": " 750", "1000": " 1000",
+                 "10000": " 10E3", "100000": " 100E3", "1000000": " 1E6", "10000000": " 10E6", "100000000": " 100E6"}
+    description: "The 10 A range needs the 10 A terminals (CURR:TERM 10), which this definition does not switch"
+    source: "PR p.23-27, 43 <fn>:RANGe / :RANGe:AUTO ON"
+  temp_sensor_set:
+    send: "CONF:TEMP {sensor}"
+    params:
+      sensor:
+        type: enum
+        values: {FRTD_85: "FRTD,85", RTD_85: "RTD,85", FTH_5000: "FTH,5000", THER_5000: "THER,5000",
+                 TC_K: "TC,K", TC_J: "TC,J", TC_T: "TC,T", TC_E: "TC,E", TC_N: "TC,N", TC_R: "TC,R"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    source: "PR p.17 CONFigure:TEMPerature {FRTD|RTD|FTHermistor|THERmistor},<type>; TC types E/J/K/N/R/T"
+  temp_scale_set: {source: "PR p.48 UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.02", display: "0.02 PLC (fast)"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slow)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000001", display: "1nF"}, {value: "0.00000001", display: "10nF"}, {value: "0.0000001", display: "100nF"}, {value: "0.000001", display: "1µF"}, {value: "0.00001", display: "10µF"}, {value: "0.0001", display: "100µF"}]
+        TEMP:
+          Sensor: [{value: FRTD_85, display: "RTD α385 (4-wire)"}, {value: RTD_85, display: "RTD α385 (2-wire)"}, {value: FTH_5000, display: "Thermistor 5 kΩ (4-wire)"}, {value: THER_5000, display: "Thermistor 5 kΩ (2-wire)"}, {value: TC_K, display: "K thermocouple"}, {value: TC_J, display: "J thermocouple"}, {value: TC_T, display: "T thermocouple"}, {value: TC_E, display: "E thermocouple"}, {value: TC_N, display: "N thermocouple"}, {value: TC_R, display: "R thermocouple"}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      temp_sensor: {set: temp_sensor_set}

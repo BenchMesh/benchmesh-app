@@ -1,0 +1,15 @@
+# Replies as the Model 2110 reference manual prints them (FUNC? form not printed: quoted short
+# form as on the 34401A it emulates). Spec: ai_context/migration/coverage/README.md.
+definition: keithley_2110
+transport: usbtmc
+model: "2110"
+replies:
+  - {send: '\*IDN\?', reply: "KEITHLEY INSTRUMENTS INC.,MODEL 2110,1311126,01.00-01-01", source: "RM p.5-6"}
+  - {send: 'READ\?', reply: "+9.98712300E+02", source: "RM p.5-14 :READ? (reading format as 9.90000000E+37 in error 540)"}
+  - {send: 'FUNC\?', reply: '"RES"', source: "RM p.5-45 FUNCtion? (quoted string)"}
+  - {send: 'RES:RANG\?', reply: "+1.00000000E+03", source: "RM p.5-26 :RANGe?"}
+  - {send: 'RES:RANG:AUTO\?', reply: "0", source: "RM p.5-26 :AUTO? 0 = OFF"}
+  - {send: 'RES:NPLC\?', reply: "+1.00000000E+01", source: "RM p.5-47 NPLCycles?"}
+expect:
+  DMM:
+    1: {MEAS: 998.7123, MODE: RES, RANGE: "1000", OVERLOAD: false}

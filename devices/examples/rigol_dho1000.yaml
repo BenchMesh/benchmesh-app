@@ -1,0 +1,29 @@
+# Replies as the DHO1000/DHO4000 Programming Guide shows them (PDF pages): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: rigol_dho1000
+transport: usbtmc
+model: DHO1204
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DHO1204,DHO1A000000001,00.01.02", source: "p144 format (serial/firmware illustrative)"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "p95"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "1E-1", source: "p99"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "1E-2", source: "p97"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "AC", source: "p95"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "10", source: "p102"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "20M", source: "p94"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "1", source: "p96"}
+  - {send: ':TIMebase:MAIN:SCALe\?', reply: "2.000000E-4", source: "p292"}
+  - {send: ':TIMebase:MAIN:OFFSet\?', reply: "2.000000E-4", source: "p292"}
+  - {send: ':TRIGger:STATus\?', reply: "WAIT", source: "p301"}
+  - {send: ':TRIGger:SWEep\?', reply: "NORM", source: "p303"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "CHAN1", source: "p305"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "NEG", source: "p306"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "1.600000E-1", source: "p307"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVER", source: "p41"}
+  - {send: ':ACQuire:SRATe\?', reply: "1.00000E+6", source: "p41"}
+  - {send: ':WAVeform:PREamble\?', reply: "0,0,1000,1,1.000000E-8,-5.000000E-6,0.000000E-12,4.000000E-03,0,128", source: "p441"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000006\x80\x90\xa0\x80\x70\x60\n", source: "p433 (#9 header + BYTE data)"}
+  - {send: ':MEASure:ITEM\? (VPP|VAVG|VRMS|FREQuency),CHANnel[1-4]', reply: "8.888889E-3", source: "p197 (format)"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 0.1, OFFSET: 0.01, COUPLING: "AC", BWLIMIT: "20M", INVERT: "ON", PROBE: 10, TIMEBASE: 2.0e-4, TRIG_SWEEP: "NORM", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.16, ACQ_TYPE: "AVER", SRATE: 1.0e6, TRIG_STATUS: "WAIT", WAVE: [128, 144, 160, 128, 112, 96], WAVE_Y0: 128, WAVE_DY: 0.004, WAVE_X0: -5.0e-6, WAVE_DX: 1.0e-8, VPP: 0.008888889}

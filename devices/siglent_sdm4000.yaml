@@ -1,0 +1,89 @@
+# Siglent SDM4055A / SDM4065A bench multimeters. Written from the SDM4000A remote manual
+# (ai_context/migration/coverage/DMM.md §3.3) before anyone tested it: every model awaits
+# confirmation. Same Keysight-style SCPI as the SDM3000 → devices/bases/scpi_dmm.yaml.
+# Pages are PDF pages of SDM4000A_RemoteManual.pdf.
+schema: benchmesh.device/v1
+id: siglent_sdm4000
+extends: scpi_dmm
+vendor: Siglent
+family: SDM4000A series digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "SDM4000A Digital Multimeter Remote Manual", pages: "33-38 (CONFigure), 51 (FUNCtion?), 59-70 (SENSe ranges, NPLC)"}
+  - {doc: "SDM4065A User Manual EN01A", pages: "interfaces"}
+  - {note: "USBTMC (Siglent vid 0xF4EC; PID not documented), LAN raw socket port 5025 unverified, no RS-232. *IDN? reply format not printed"}
+models:
+  - name: SDM4065A
+    match: "(?i)^siglent[^,]*,SDM4065A"
+  - name: SDM4055A
+    match: "(?i)^siglent[^,]*,SDM4055A"
+    features:
+      DMM:
+        rate: [{value: "0.01", display: "0.01 PLC (fast)"}, {value: "1", display: "1 PLC (medium)"}, {value: "10", display: "10 PLC (slow)"}]
+        RANGe:
+          CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+          RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+          FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+          CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.01", display: "10mF"}]
+link:
+  usbtmc: {vid: "f4ec"}
+commands:
+  func: {source: "p.51 [SENSe:]FUNCtion? (quoted short form)"}
+  meas: {source: "p.15 READ?; overload 9.9E37 p.33-38"}
+  nplc_q:
+    parse: [trim, number, {map: {"0.001": "0.001", "0.01": "0.01", "0.1": "0.1", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    source: "p.70 VOLTage[:DC]:NPLC? → +1.00000000E+01"
+  rate_set:
+    params:
+      plc: {type: enum, values: {"0.001": "0.001", "0.01": "0.01", "0.1": "0.1", "1": "1", "10": "10", "100": "100", "0.02": null, "0.2": null}}
+    source: "p.70 SDM4065A {100|10|1|0.1|0.01|0.001}; SDM4055A {10|1|0.01} = Slow|Medium|Fast"
+  mode_set:
+    params:
+      mode:
+        type: enum
+        values: {TEMP: "CONF:TEMP THER,KITS90"}
+    source: "p.33-38 CONFigure:<function> [AUTO]"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000002": " 2E-9", "0.00000002": " 20E-9", "0.0000002": " 200E-9", "0.000002": " 2E-6",
+                 "0.00002": " 20E-6", "0.0002": " 200E-6", "0.002": " 2E-3", "0.01": " 10E-3", "0.02": " 20E-3",
+                 "0.1": " 100E-3", "0.2": " 0.2", "2": " 2", "10": " 10", "20": " 20", "200": " 200", "750": " 750",
+                 "1000": " 1000", "2000": " 2E3", "20000": " 20E3", "200000": " 200E3", "1000000": " 1E6",
+                 "2000000": " 2E6", "10000000": " 10E6", "100000000": " 100E6"}
+    source: "p.59-70 <fn>:RANGe / :RANGe:AUTO ON"
+  rng_q: {source: "p.59-70 <fn>:RANGe? → +2.00000000E+00"}
+  auto_q: {source: "p.59-70 <fn>:RANGe:AUTO? → 0 (OFF) or 1 (ON)"}
+  temp_sensor_set:
+    send: "CONF:TEMP {sensor}"
+    params:
+      sensor:
+        type: enum
+        values: {KITS90: "THER,KITS90", JITS90: "THER,JITS90", TITS90: "THER,TITS90", EITS90: "THER,EITS90",
+                 NITS90: "THER,NITS90", RITS90: "THER,RITS90", SITS90: "THER,SITS90", BITS90: "THER,BITS90",
+                 PT100: "RTD,PT100"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    source: "p.36 CONFigure:TEMPerature {RTD|THER},<type>"
+  temp_scale_set: {source: "p.18 UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.001", display: "0.001 PLC (fastest)"}, {value: "0.01", display: "0.01 PLC"}, {value: "0.1", display: "0.1 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slowest)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.002", display: "2mF"}, {value: "0.02", display: "20mF"}, {value: "0.1", display: "100mF"}]
+        TEMP:
+          Sensor: [{value: KITS90, display: "K thermocouple"}, {value: JITS90, display: "J thermocouple"}, {value: TITS90, display: "T thermocouple"}, {value: EITS90, display: "E thermocouple"}, {value: NITS90, display: "N thermocouple"}, {value: RITS90, display: "R thermocouple"}, {value: SITS90, display: "S thermocouple"}, {value: BITS90, display: "B thermocouple"}, {value: PT100, display: "PT100 RTD"}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      temp_sensor: {set: temp_sensor_set}

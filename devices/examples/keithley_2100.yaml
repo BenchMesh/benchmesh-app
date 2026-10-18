@@ -1,0 +1,16 @@
+# Replies in the forms the Model 2100 manual describes (quoted function, 34401A reading format);
+# the IDN reply is not printed (Keithley vendor string assumed).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keithley_2100
+transport: usbtmc
+model: "2100"
+replies:
+  - {send: '\*IDN\?', reply: "KEITHLEY INSTRUMENTS INC.,MODEL 2100,1234567,01.08-01-01", source: "not printed; Keithley format (2110 p.113)"}
+  - {send: 'READ\?', reply: "+1.00012000E+03", source: "34401A reading format (2100 = 34401A-like)"}
+  - {send: 'FUNC\?', reply: '"RES"', source: "p.116 FUNCtion? returns a quoted string"}
+  - {send: 'RES:RANG\?', reply: "+1.00000000E+03", source: "p.116 RANGe?"}
+  - {send: 'RES:RANG:AUTO\?', reply: "0", source: "p.98 RANGe:AUTO?"}
+  - {send: 'RES:NPLC\?', reply: "+1.00000000E+01", source: "p.120 NPLCycles?"}
+expect:
+  DMM:
+    1: {MEAS: 1000.12, MODE: RES, RANGE: "1000", OVERLOAD: false}

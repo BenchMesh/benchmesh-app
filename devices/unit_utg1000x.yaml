@@ -1,0 +1,36 @@
+# UNI-T UTG1000X series function/arbitrary waveform generators (UTG1022X / UTG1022X-PA /
+# UTG1042X). Written from the programming manual before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.5. PM = UTG1000X Programming Manual 0424 (PDF pages).
+schema: benchmesh.device/v1
+id: unit_utg1000x
+extends: unit_utg
+vendor: UNI-T
+family: UTG1000X series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "UTG1000X Series Programming Manual (Uni-T_UTG1000X_Programming_Manual_0424.pdf, SW 3.07.000)", pages: "3 (<NL> terminator), 5 (*IDN?), 9 (OUTPut), 11 (AMPLitude:UNIT), 12 (LOAD), 13 (BASE:WAVe, FREQuency), 14-15 (PHASe, AMPLitude, OFFSet), 16 (RAMP:SYMMetry)"}
+  - {note: "Limits: AWG.md §2.5 (20/40 MHz sine; -PA has a separate 4 W amplifier output, :CHANnel<n>:PA:OUTPut, not bound). The *IDN? model field is the family (UTG1000X), so the nameplate model may not be identifiable. UTG1000A: no manual, assumed to share this dialect"}
+models:
+  - {"name": "UTG1022X", "match": "^UNI-T Technologies, ?UTG1022X(-PA)?,", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "UTG1042X", "match": "^UNI-T Technologies, ?UTG1042X,", "features": {"AWG": {"max_freq_hz": {"SIN": 40e6}}}}
+  - {"name": "UTG1000X", "match": "^UNI-T Technologies, ?UTG10[0-9]{2}[XA]", "note": "IDN reports the family (UTG1000X); limits of the largest model (UTG1042X)"}
+commands:
+  shape_q: {source: "PM p13; reply SINe"}
+  shape_set: {source: "PM p13"}
+  freq_q: {source: "PM p13; reply 2e+3"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 40000000, format: "%.6f", unit: Hz}}
+    source: "PM p13"
+  unit_q: {source: "PM p11; reply VPP"}
+  ampl_q: {source: "PM p14; reply 2e+0"}
+  ampl_set: {source: "PM p14; 1 mVpp to load·20/(50+load)"}
+  offs_q: {source: "PM p14-15; reply 2e+0"}
+  offs_set: {source: "PM p14-15"}
+  phase_q: {source: "PM p14; reply 20"}
+  phase_set: {source: "PM p14; -360…360°"}
+  symm_q: {source: "PM p16; reply 2.000000e+01"}
+  symm_set: {source: "PM p16"}
+  load_q: {source: "PM p12; 1…10000 Ω, 10000 = High-Z; reply 5.000000e+01"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 40e6}}

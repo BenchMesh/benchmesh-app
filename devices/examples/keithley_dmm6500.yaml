@@ -1,0 +1,15 @@
+# Replies as the DMM6500 reference manual prints them (FUNC? form not printed: long quoted form
+# as on the Keithley 2000 dialect). Spec: ai_context/migration/coverage/README.md.
+definition: keithley_dmm6500
+transport: usbtmc
+model: DMM6500
+replies:
+  - {send: '\*IDN\?', reply: "KEITHLEY INSTRUMENTS,MODEL DMM6500,04089762,1.6.3d", source: "RM *IDN? example (PDF p.1242)"}
+  - {send: 'READ\?', reply: "-1.234567E-02", source: "RM p.12-11 :READ? (READing element)"}
+  - {send: 'FUNC\?', reply: '"VOLT:DC"', source: "RM p.12-145 FUNCtion? (form not printed)"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+1.000000E-01", source: "RM p.12-110 :RANGe? full-scale value"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1", source: "RM p.12-109 :RANGe:AUTO? ON (1)"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.000000E+00", source: "RM :NPLCycles? default 1"}
+expect:
+  DMM:
+    1: {MEAS: -0.01234567, MODE: VOLT, RANGE: AUTO, OVERLOAD: false}

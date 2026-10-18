@@ -45,16 +45,22 @@ pub type Probe<'a> = dyn Fn(&Port, &DeviceDef) -> Result<(String, String), Miss>
 fn candidates<'a>(port: &Port, catalog: &'a Catalog) -> Vec<&'a DeviceDef> {
     let fits = |d: &&DeviceDef| d.enabled && d.link.all().iter().any(|l| port_kind(l) == Some(port.kind));
     let mut defs: Vec<&DeviceDef> = catalog.devices.values().map(|(_, d)| d).filter(fits).collect();
-    let declared = |d: &DeviceDef| match &d.link.usbtmc {
+    // 0: vendor and product id declared and matching, 1: vendor id only, 2: anything else
+    let rank = |d: &DeviceDef| match &d.link.usbtmc {
         Some(u) => {
             let eq = |want: &Option<String>, have: &Option<String>| {
                 want.as_deref().map(str::to_ascii_lowercase) == have.as_deref().map(str::to_ascii_lowercase)
             };
-            u.vid.is_some() && eq(&u.vid, &port.usb.vendor_id) && (u.pid.is_none() || eq(&u.pid, &port.usb.product_id))
+            match (u.vid.is_some() && eq(&u.vid, &port.usb.vendor_id), &u.pid) {
+                (true, Some(_)) if eq(&u.pid, &port.usb.product_id) => 0,
+                (true, Some(_)) => 2,
+                (true, None) => 1,
+                _ => 2,
+            }
         }
-        _ => false,
+        _ => 2,
     };
-    defs.sort_by_key(|d| !declared(d));
+    defs.sort_by_key(|d| rank(d));
     defs
 }
 
@@ -234,7 +240,7 @@ mod tests {
         assert_eq!(out[2]["match"]["usb"]["serial"], "DHO8A272907001");
         assert_eq!(out[2]["match"]["usb"].get("revision"), None, "a USB serial number makes the revision unnecessary");
         let scope_tries: Vec<&String> = tried.iter().filter(|(p, _)| p == "test-detect/usbtmc3").map(|(_, d)| d).collect();
-        assert_eq!(scope_tries[0], "rigol_dho800", "definition declaring the vendor id is tried first");
+        assert_eq!(scope_tries[0], "rigol_dho800", "the definition declaring the vendor and product id is tried first");
 
         assert_eq!(out[3]["instrument"], Value::Null);
         assert!(out[3]["error"].as_str().unwrap().starts_with("no definition answered"));

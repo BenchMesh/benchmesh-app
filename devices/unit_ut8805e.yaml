@@ -1,0 +1,74 @@
+# UNI-T UT8805E 5½-digit bench multimeter (SCPI). Written from the SCPI programming manual
+# (ai_context/migration/coverage/DMM.md §3.10) before anyone tested it: awaiting confirmation.
+# Keysight-style SCPI → devices/bases/scpi_dmm.yaml; speed is Slow|Medium|Fast, not NPLC numbers.
+schema: benchmesh.device/v1
+id: unit_ut8805e
+extends: scpi_dmm
+vendor: UNI-T
+family: UT8805E bench multimeter
+version: 0.1.0
+sources:
+  - {doc: "UT8805E SCPI Programming Manual (unitrend)", pages: "9-14 CONFigure, 28-44 SENSe (printed x/49)"}
+  - {doc: "UT8805E User Manual", pages: "14 speed, RS-232C setting (Uart menu)"}
+  - {doc: "UT8806E SCPI Programming Manual", pages: "6 *IDN?, 26 FUNC? (same vendor dialect)"}
+  - {note: "*IDN? and FUNC? replies are not printed in the UT8805E manual: taken from the UT8806E manual (which prints \"UNI-T UT8805A, …\"). USB vid/pid unknown. LAN is VXI-11 per the user manual; raw port 5025 unverified"}
+models:
+  - name: UT8805E
+    match: "(?i)^UNI-T,? *UT8805"
+link:
+  serial: {baud: 9600, format: 8N1, flow: none}
+commands:
+  func:
+    # UT8806E prints `VOLT: AC` (unquoted, space after the colon); quotes are removed as well
+    parse:
+      - trim
+      - unquote
+      - upper
+      - {replace: {from: " ", to: ""}}
+      - map: {"VOLT": VOLT, "VOLT:DC": VOLT, "VOLT:AC": VOLT_AC, "CURR": CURR, "CURR:DC": CURR,
+              "CURR:AC": CURR_AC, "RES": RES, "FRES": FRES, "CAP": CAP, "FREQ": FREQ, "PER": PER,
+              "CONT": CONT, "DIOD": DIOD, "TEMP": TEMP}
+    source: "PM p.28 [SENSe:]FUNCtion?; reply form from UT8806E PM p.26"
+  meas: {source: "PM p.10-12 READ?; overload +9.90000000E+37 p.20-23"}
+  mode_set: {source: "PM p.9-14 CONFigure:<function>"}
+  rng_q: {source: "PM p.31, 42 <fn>:RANGe?"}
+  auto_q: {source: "PM p.31, 42 <fn>:RANGe:AUTO? → 0|1"}
+  nplc_q:
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", VOLT_AC: "VOLT:AC", CURR: "CURR:DC", CURR_AC: "CURR:AC", RES: RES, FRES: FRES}}
+    parse: [trim, upper, {map: {"SLOW": S, "S": S, "MEDIUM": M, "MED": M, "M": M, "FAST": F, "F": F}}]
+    description: "Reply form not printed; SLOW/MEDIUM/FAST assumed"
+    source: "PM p.32, 36, 43 <fn>:NPLC?"
+  rate_set:
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", VOLT_AC: "VOLT:AC", CURR: "CURR:DC", CURR_AC: "CURR:AC", RES: RES, FRES: FRES}}
+      plc: {type: enum, values: {S: Slow, M: Medium, F: Fast, "0.02": null, "0.2": null, "1": null, "10": null, "100": null}}
+    requires:
+      expr: 'func in ["VOLT", "VOLT_AC", "CURR", "CURR_AC", "RES", "FRES"]'
+      message: "Speed applies to voltage, current and resistance"
+    source: "PM p.32, 36, 43 <fn>:NPLC {Slow|Medium|Fast} (2.5 / 10 / 5k rdg/s, UM p.14)"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000002": " 2E-9", "0.00000002": " 20E-9", "0.0000002": " 200E-9", "0.000002": " 2E-6",
+                 "0.00002": " 20E-6", "0.0002": " 200E-6", "0.002": " 2E-3", "0.02": " 20E-3", "0.2": " 0.2",
+                 "2": " 2", "10": " 10", "20": " 20", "200": " 200", "750": " 750", "1000": " 1000",
+                 "2000": " 2E3", "20000": " 20E3", "200000": " 200E3", "2000000": " 2E6", "10000000": " 10E6",
+                 "100000000": " 100E6"}
+    source: "PM p.31, 36, 41, 44 <fn>:RANGe <value> / :RANGe:AUTO ON"
+  temp_scale_set: {source: "PM p.13 UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: F, display: "fast (5k rdg/s)"}, {value: M, display: "medium (10 rdg/s)"}, {value: S, display: "slow (2.5 rdg/s)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.002", display: "2mF"}]
+        TEMP:
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]

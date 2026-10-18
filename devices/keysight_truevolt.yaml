@@ -1,0 +1,99 @@
+# Keysight (Agilent) Truevolt 34460A / 34461A / 34465A / 34470A bench multimeters. Written from
+# the Operating and Service Guide (ai_context/migration/coverage/DMM.md §3.7) before anyone
+# tested it: every model awaits confirmation. The reference dialect of devices/bases/scpi_dmm.yaml.
+schema: benchmesh.device/v1
+id: keysight_truevolt
+extends: scpi_dmm
+vendor: Keysight
+family: Truevolt 34460A/34461A/34465A/34470A digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "Keysight Truevolt Series DMM Operating and Service Guide (34460A/61A/65A/70A)", pages: "199, 246-253, 270, 314, 319, 331, 355, 384"}
+  - {doc: "Truevolt Series Data Sheet 5991-1983EN", pages: "ranges, NPLC"}
+  - {note: "USB vendor 0x2A8D (Keysight firmware; older Agilent firmware 0x0957); product ids unverified, the IDN decides. LAN SCPI socket 5025 (guide p.416). SYST:IDEN HP34401A makes a Truevolt answer as a 34401A"}
+models:
+  - name: 34461A
+    match: "(?i)^(keysight|agilent) technologies,34461A,"
+  - name: 34460A
+    match: "(?i)^(keysight|agilent) technologies,34460A,"
+    note: "No 10 A input; DCI/ACI to 3 A"
+    features:
+      DMM:
+        RANGe:
+          CURR: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}]
+          CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}]
+  - name: 34465A
+    match: "(?i)^(keysight|agilent) technologies,34465A,"
+    features: &tv_hi
+      DMM:
+        rate: [{value: "0.02", display: "0.02 PLC (fast)"}, {value: "0.06", display: "0.06 PLC"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC (default)"}, {value: "100", display: "100 PLC (slow)"}]
+        RANGe:
+          CURR: [{value: AUTO, display: AUTO}, {value: "0.000001", display: "1µA"}, {value: "0.00001", display: "10µA"}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}, {value: "10", display: "10A"}]
+          RES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}, {value: "1000000000", display: "1GΩ"}]
+          FRES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}, {value: "1000000000", display: "1GΩ"}]
+          TEMP:
+            Sensor: [{value: FRTD, display: "RTD 4-wire (PT100)"}, {value: RTD, display: "RTD 2-wire (PT100)"}, {value: FTH, display: "Thermistor 4-wire (5 kΩ)"}, {value: THER, display: "Thermistor 2-wire (5 kΩ)"}, {value: TC_K, display: "K thermocouple"}, {value: TC_J, display: "J thermocouple"}, {value: TC_T, display: "T thermocouple"}, {value: TC_E, display: "E thermocouple"}, {value: TC_N, display: "N thermocouple"}, {value: TC_R, display: "R thermocouple"}]
+            Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+  - name: 34470A
+    match: "(?i)^(keysight|agilent) technologies,34470A,"
+    note: "7½ digits"
+    features: *tv_hi
+link:
+  usbtmc: {vid: "2a8d"}
+commands:
+  func: {source: "guide p.314 FUNCtion? (quoted short form)"}
+  meas: {source: "guide p.199-200 READ?; overload 9.9E37 p.246-253"}
+  mode_set: {source: "guide p.246-253 CONFigure:<function> [AUTO]; CONF:TEMP default FRTD,85"}
+  rng_q: {source: "guide p.355, p.384 <fn>:RANGe?"}
+  auto_q: {source: "guide p.355 <fn>:RANGe:AUTO? → 0|1"}
+  nplc_q:
+    parse: [trim, number, {map: {"0.001": "0.001", "0.002": "0.002", "0.006": "0.006", "0.02": "0.02", "0.06": "0.06", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    source: "guide p.331 <fn>:NPLC? → +1.00000000E+00"
+  rate_set:
+    params:
+      plc: {type: enum, values: {"0.001": "0.001", "0.002": "0.002", "0.006": "0.006", "0.06": "0.06"}}
+    description: "34460A/61A: 0.02, 0.2, 1, 10, 100; 34465A/70A add 0.06 (0.001/0.002/0.006 with the DIG option)"
+    source: "guide p.331"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000001": " 1E-9", "0.00000001": " 10E-9", "0.0000001": " 100E-9", "0.000001": " 1E-6",
+                 "0.00001": " 10E-6", "0.0001": " 100E-6", "0.001": " 1E-3", "0.01": " 10E-3", "0.1": " 0.1",
+                 "1": " 1", "3": " 3", "10": " 10", "100": " 100", "750": " 750", "1000": " 1000",
+                 "10000": " 10E3", "100000": " 100E3", "1000000": " 1E6", "10000000": " 10E6",
+                 "100000000": " 100E6", "1000000000": " 1E9"}
+    description: "Choosing 10 A selects the 10 A terminals, 3 A or less the 3 A terminals (guide p.248)"
+    source: "guide p.319, 355, 384 <fn>:RANGe <value> / :RANGe:AUTO ON"
+  temp_sensor_set:
+    send: "CONF:TEMP {sensor}"
+    params:
+      sensor:
+        type: enum
+        values: {FRTD: "FRTD,85", RTD: "RTD,85", FTH: "FTH,5000", THER: "THER,5000", TC_K: "TC,K", TC_J: "TC,J",
+                 TC_T: "TC,T", TC_E: "TC,E", TC_N: "TC,N", TC_R: "TC,R"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    description: "Thermocouples (TC) on the 34465A/34470A only"
+    source: "guide p.252 CONFigure:TEMPerature {FRTD|RTD|FTH|THER|TC},{85|5000|E|J|K|N|R|T}"
+  temp_scale_set: {source: "guide p.199 UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.02", display: "0.02 PLC (fast)"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC (default)"}, {value: "100", display: "100 PLC (slow)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.1", display: "100mV"}, {value: "1", display: "1V"}, {value: "10", display: "10V"}, {value: "100", display: "100V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.0001", display: "100µA"}, {value: "0.001", display: "1mA"}, {value: "0.01", display: "10mA"}, {value: "0.1", display: "100mA"}, {value: "1", display: "1A"}, {value: "3", display: "3A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "100", display: "100Ω"}, {value: "1000", display: "1kΩ"}, {value: "10000", display: "10kΩ"}, {value: "100000", display: "100kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000001", display: "1nF"}, {value: "0.00000001", display: "10nF"}, {value: "0.0000001", display: "100nF"}, {value: "0.000001", display: "1µF"}, {value: "0.00001", display: "10µF"}, {value: "0.0001", display: "100µF"}]
+        TEMP:
+          Sensor: [{value: FRTD, display: "RTD 4-wire (PT100)"}, {value: RTD, display: "RTD 2-wire (PT100)"}, {value: FTH, display: "Thermistor 4-wire (5 kΩ)"}, {value: THER, display: "Thermistor 2-wire (5 kΩ)"}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      temp_sensor: {set: temp_sensor_set}

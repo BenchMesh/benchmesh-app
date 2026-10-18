@@ -1,0 +1,116 @@
+# FeelTech / FeelElec FY6900 two-channel DDS function generator (proprietary ASCII over a CH340
+# USB-serial port). Written from the vendor protocol and the tested open-source drivers before
+# anyone tested it on hardware. Research: ai_context/migration/coverage/AWG.md §2.3.
+#
+# CH1 ("main wave", WM*/RM*) only: CH2 uses other command letters (WF*/RF*), and the engine polls
+# a command per channel only when its text contains `{ch}`; a computed letter (`from: ch`) would
+# make CH2 repeat CH1's readings. Needs a DSL change (computed params referencing `ch` count as
+# per-channel) before CH2 can be offered.
+#
+# Scaling follows the open-source drivers (fygen, fy6x00), which disagree with the vendor PDF
+# (Rev 1.8): the PDF has WMF in µHz (14 digits), RMA ÷1000, RMP ÷10 and a "10000-offset" RMO;
+# the drivers, measured on FY6900 firmware, use WMF in Hz with 6 decimals, RMA ÷10000,
+# RMP ÷1000 and RMO in mV with negatives as 32-bit unsigned. First contact must check this.
+schema: benchmesh.device/v1
+id: feeltech_fy6900
+vendor: FeelTech
+family: FY6900 series DDS function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "FY6900 Serial communication protocol Rev 1.8", pages: "2 (115200, LF, 0x0a ack), 6 (WMW indices), 8-9 (WMF/WMA/WMO/WMP/WMN), 10 (RMW), 12-13 (RMF/RMA/RMO/RMP/RMN), 35 (UMO)"}
+  - {doc: "FY6900 User's Manual", pages: "6 (model number = sine limit), 22 (offset ±12 V <20 MHz, ±2.5 V above), 37 (specifications)"}
+  - {note: "github.com/mattwach/fygen fygen.py:276-365, 557-595 (8N2, scaling, Hz frequency); gitlab.com/adeuring/fy6x00; EEVblog FY6900 'Gotchas' msg5542089"}
+models:
+  - {"name": "FY6900-20M", "match": "^FY6900-20M", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
+  - {"name": "FY6900-30M", "match": "^FY6900-30M", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6}}}}
+  - {"name": "FY6900-40M", "match": "^FY6900-40M", "features": {"AWG": {"max_freq_hz": {"SIN": 40e6}}}}
+  - {"name": "FY6900-50M", "match": "^FY6900-50M", "features": {"AWG": {"max_freq_hz": {"SIN": 50e6}}}}
+  - {"name": "FY6900-60M", "match": "^FY6900-60M", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6}}}}
+  - {"name": "FY6900-100M", "match": "^FY6900-100M", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6}}}}
+identify: umo
+link:
+  # CH340 (1a86:7523); 2 stop bits per fygen ("important for FY6900"), harmless on 8N1 receivers
+  serial: {baud: 115200, format: 8N2, flow: none}
+framing:
+  # LF only (CR confuses the parser). Every setter answers a lone LF and queries may send 1-2
+  # empty lines first: both are skipped as leading noise of the next reply.
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 10, gap_after_write_ms: 100}
+commands:
+  umo: {send: "UMO", parse: [trim], source: "protocol p35; e.g. FY6900-60M"}
+  outp_q:
+    send: "RMN"
+    parse: [trim, {map: {"0": "OFF", _: "ON"}}]
+    source: "protocol p13; 0 off, 255 on"
+  outp_set:
+    send: "WMN{on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: energize
+    source: "protocol p9"
+  shape_q:
+    send: "RMW"
+    parse: [trim, {regex: {pattern: "^0*(\\d+)$", group: 1}}, {map: {"0": SIN, "1": SQU, "5": PUL, "6": DC, "8": RAMP, "32": PRN, _: ARB}}]
+    description: "Waveform index (zero-padded); other built-in waves and arbitrary slots read as ARB"
+    source: "protocol p10"
+  shape_set:
+    send: "WMW{shape}"
+    params: {shape: {type: enum, values: {SIN: "00", SQU: "01", PUL: "05", DC: "06", RAMP: "08", PRN: "32"}}}
+    reply: none
+    safety: configure
+    description: "CH1 indices: 5 Adj-Pulse, 8 Ramp, 32 AWGN (stable across firmware for the built-in waves)"
+    source: "protocol p6"
+  freq_q: {send: "RMF", parse: [trim, number], source: "protocol p12; Hz, e.g. 00010000.000000; last digits unreliable (fygen)"}
+  freq_set:
+    send: "WMF{hz}"
+    params: {hz: {type: number, min: 0.000001, max: 100000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+    source: "protocol p8 (PDF says µHz); Hz with 6 decimals per fygen"
+  ampl_q: {send: "RMA", parse: [trim, number, {scale: 0.0001}], source: "protocol p12; ÷10000 per fygen (the PDF example implies ÷1000)"}
+  ampl_set:
+    send: "WMA{vpp}"
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    reply: none
+    safety: configure
+    description: "≤20 Vpp (≤5 Vpp above 20 MHz)"
+    source: "protocol p8"
+  offs_q: {send: "RMO", parse: [trim, number], description: "mV; negative values arrive as 32-bit unsigned (4294963480 = −3.816 V)", source: "protocol p12; fygen"}
+  offs_set:
+    send: "WMO{v}"
+    params: {v: {type: number, min: -12, max: 12, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    description: "±12 V below 20 MHz, ±2.5 V above (user manual p22)"
+    source: "protocol p8"
+  phase_q: {send: "RMP", parse: [trim, number, {scale: 0.001}], source: "protocol p13; ÷1000 per fygen (the PDF example implies ÷10)"}
+  phase_set:
+    send: "WMP{deg}"
+    params: {deg: {type: number, min: 0, max: 359.999, format: "%.3f", unit: deg}}
+    reply: none
+    safety: configure
+    source: "protocol p9"
+classes:
+  AWG:
+    channels: 1
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700"}, "max_freq_hz": {"SIN": 100e6}}
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, ampl_q, offs_q, phase_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: ampl_q, as: si}
+      OFFS: {expr: "offs_q > 2147483648.0 ? (offs_q - 4294967296.0) / 1000.0 : offs_q / 1000.0", as: si}
+      PHASE: phase_q
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      # the raw RMO reply needs the CEL conversion above, so offset is read through the status only
+      offset: {set: offs_set}
+      phase: {get: phase_q, set: phase_set}

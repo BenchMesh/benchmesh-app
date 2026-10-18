@@ -1,0 +1,64 @@
+# Siglent SPD3303X / SPD3303X-E / SPD3303C, written from the manuals before any hardware test
+# (every model awaiting confirmation). Two programmable channels; CH3 (2.5/3.3/5 V by switch)
+# has output on/off only and is not in the status word, so it is not exposed.
+schema: benchmesh.device/v1
+extends: siglent_spd
+id: siglent_spd3303x
+vendor: Siglent
+family: SPD3303X / SPD3303X-E / SPD3303C dual-output programmable DC power supply (legacy SCPI)
+version: 0.1.0
+sources:
+  - {doc: "SPD3303X/X-E Quick Start (SPD3303X_QuickStart.pdf), printed pages", pages: "12 (ratings), 25-31 (remote control, commands, SYST:STAT? bits)"}
+  - {doc: "SPD3303C Quick Start / User Manual / Programming Guide, printed pages", pages: "23-27"}
+  - {note: "Pacing (>=100 ms between commands, CR breaks commands) from EEVblog 'SPD3303X-E SCPI Interface issues' and Kurokesu siglent_psu_api; USBTMC 0483:7540 and socket port 5025 from community reports, not in these manuals"}
+models:
+  - {name: SPD3303X, match: "^Siglent( Technologies)?, ?SPD3303X,", note: "1 mV / 1 mA resolution"}
+  - {name: SPD3303X-E, match: "^Siglent( Technologies)?, ?SPD3303X-E,", note: "10 mV / 10 mA resolution (setpoints are rounded by the instrument)"}
+  - name: SPD3303C
+    match: "^Siglent( Technologies)?, ?SPD3303C,"
+    note: "USB only; no MEAS:POWE? (power is V*I)"
+    features: {PSU: {absolute_limits: {voltage: {unit: V, max: 32.0}, current: {unit: A, max: 3.2}, power: {unit: W, max: 102.4}}}}
+link:
+  usbtmc:
+    vid: "0483"
+    pid: "7540"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 150, gap_after_write_ms: 300}
+  tcp: {port: 5025}
+commands:
+  idn: {source: "X QS p.27; C p.24 ('Siglent, SPD3303C, SPD00001130025, 1.01.01.02')"}
+  meas_v: {source: "X QS p.28 (MEASure:VOLTage? CH1 -> 30.000); C p.25"}
+  meas_i: {source: "X QS p.28 (MEASure:CURRent? CH1 -> 3.000); C p.25"}
+  volt_q: {source: "X QS p.29 (CH1:VOLTage? -> 25.000); C p.26"}
+  curr_q: {source: "X QS p.28 (CH1:CURRent? -> 0.500); C p.25"}
+  volt_set: {source: "X QS p.29 (CH1:VOLTage 25); C p.25"}
+  curr_set: {source: "X QS p.28 (CH1:CURRent 0.5); C p.25"}
+  outp_set: {source: "X QS p.29 (OUTPut CH1,ON); C p.26", description: "Per channel (CH1, CH2; CH3 not exposed)"}
+  lock_set: {source: "C p.27 (*LOCK / *UNLOCK); not listed in the X/X-E quick start"}
+  stat:
+    parse:
+      - trim
+      - bits: {ch1_cc: "0", ch2_cc: "1", track: "2..3", ch1_on: "4", ch2_on: "5"}
+    description: "bit0/1 CH1/CH2 CC(1)/CV(0); bits 2-3 01 independent, 10 parallel (C: 11 series); bit4/5 CH1/CH2 on"
+    source: "X QS p.30-31 (0x0224); C p.27"
+classes:
+  PSU:
+    channels: 2
+    features:
+      lock: true
+      absolute_limits: {voltage: {unit: V, max: 32.0}, current: {unit: A, max: 3.2}, power: {unit: W, max: 102.4}}
+      channel_limits: {"1": {voltage: 32.0, current: 3.2}, "2": {voltage: 32.0, current: 3.2}}
+    poll:
+      - every_ms: 1000
+        read: [meas_v, meas_i, stat]
+    status:
+      VOUT: {expr: meas_v, as: si}
+      IOUT: {expr: meas_i, as: si}
+      POUT: {expr: "meas_v * meas_i", as: si}
+      OUTPUT: '(ch == 1 ? stat.ch1_on : stat.ch2_on) ? "ON" : "OFF"'
+      REMOTE: state.locked
+      CV: '(ch == 1 ? stat.ch1_on && !stat.ch1_cc : stat.ch2_on && !stat.ch2_cc)'
+      CC: '(ch == 1 ? stat.ch1_on && stat.ch1_cc : stat.ch2_on && stat.ch2_cc)'
+      SBY: '!(ch == 1 ? stat.ch1_on : stat.ch2_on)'

@@ -1,0 +1,14 @@
+# Replies as the Model 2000 user manual prints them (FUNC? form from community use).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keithley_2000
+model: "2000"
+replies:
+  - {send: '\*IDN\?', reply: "KEITHLEY INSTRUMENTS INC.,MODEL 2000,0912345,A13/A02", source: "UM p.122 *IDN? format"}
+  - {send: ':FETC\?', reply: "+1.23456789E+00", source: "UM p.159 reading format (:FORM:ELEM READ)"}
+  - {send: 'FUNC\?', reply: '"VOLT:DC"', source: "UM p.141 :FUNCtion? (quoted)"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+1.000000E+01", source: "UM p.142 :RANGe?"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1", source: "UM p.142 :RANGe:AUTO?"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.000000E+00", source: "UM p.142 :NPLCycles? (default 1)"}
+expect:
+  DMM:
+    1: {MEAS: 1.23456789, MODE: VOLT, RANGE: AUTO, OVERLOAD: false}

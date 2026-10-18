@@ -1,0 +1,103 @@
+# Siglent SSA3000X, SSA3000X Plus, SSA3000X-R spectrum analyzers and SVA1000X (spectrum &
+# vector network analyzer, SA mode). Written from the programming guides, not yet seen live
+# ("awaiting confirmation"). Coverage report: ai_context/migration/coverage/SAL.md §2.3.
+# Dialect differences to the baseline: BWIDth, WINDow, POWer:ATTenuation (no RF node), detector
+# per trace, preamp, no sweep-point or operation-status commands, ASCII trace without a header
+# and with a trailing comma (`numbers` skips the empty field). The SVA1000X must be in SA mode.
+schema: benchmesh.device/v1
+id: siglent_ssa3000x
+extends: scpi_sa
+vendor: Siglent
+family: SSA3000X / SSA3000X Plus / SSA3000X-R / SVA1000X spectrum analyzer
+version: 0.1.0
+sources:
+  - {doc: "SSA3000X Programming Guide PG0703X_E04A", pages: "PDF p7 LAN, p14 *IDN?, p21-24 FREQuency, p27 POWer/RLEVel, p31-32 BWIDth, p33-34 TRACe/FORMat, p36 DETector, p38-39 SWEep, p41-49 CALCulate:MARKer, p68-69 TG"}
+  - {doc: "SSA3000X Plus / SVA1000X Programming Guide PG0703P_E02B", pages: "printed p13 *IDN?, p29-31 AMPLitude (RLEVel, ATTenuation 0-51 dB, GAIN, PDIVision), p35 SWEep:TIME, p37 INITiate:CONTinuous, p39 BWIDth, p42-44 TRACe:MODE / TRACe:DATA? / FORMat, p45 DETector, p47-53 MARKer, p85 OUTPut / SOURce:POWer (0 to -20 dBm)"}
+  - {note: "USBTMC vendor f4ec (PID not documented); LAN raw socket 5025"}
+models:
+  - {name: SSA3021X, match: "(?i)^Siglent[^,]*,SSA3021X?,", features: {SAL: {freq_range: {min: 9e3, max: 2.1e9}}}}
+  - {name: SSA3032X, match: "(?i)^Siglent[^,]*,SSA3032X?,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}}
+  - {name: SSA3015X Plus, match: "(?i)^Siglent[^,]*,SSA3015X ?(Plus|\\+),", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}}
+  - {name: SSA3021X Plus, match: "(?i)^Siglent[^,]*,SSA3021X ?(Plus|\\+),", features: {SAL: {freq_range: {min: 9e3, max: 2.1e9}}}}
+  - {name: SSA3032X Plus, match: "(?i)^Siglent[^,]*,SSA3032X ?(Plus|\\+),", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}}
+  - {name: SSA3050X Plus, match: "(?i)^Siglent[^,]*,SSA3050X ?(Plus|\\+),", features: {SAL: {freq_range: {min: 9e3, max: 5e9}}}}
+  - {name: SSA3075X Plus, match: "(?i)^Siglent[^,]*,SSA3075X ?(Plus|\\+),", features: {SAL: {freq_range: {min: 9e3, max: 7.5e9}}}}
+  - {name: SSA3050X-R, match: "(?i)^Siglent[^,]*,SSA3050X-R,", features: {SAL: {freq_range: {min: 9e3, max: 5e9}}}}
+  - {name: SSA3075X-R, match: "(?i)^Siglent[^,]*,SSA3075X-R,", features: {SAL: {freq_range: {min: 9e3, max: 7.5e9}}}}
+  - {name: SVA1015X, match: "(?i)^Siglent[^,]*,SVA1015X?,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}, note: "SA mode only (`:INST SA`); the VNA mode belongs to a future VNA class"}
+  - {name: SVA1032X, match: "(?i)^Siglent[^,]*,SVA1032X?,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}, note: "SA mode only"}
+link:
+  usbtmc: {vid: "f4ec"}
+  tcp: {port: 5025}
+commands:
+  form_asc: {send: ":FORMat ASCii", source: "E04A p34 (default REAL!), E02B p44"}
+  rbw_q: {send: ":SENSe:BWIDth:RESolution?"}
+  rbw_set: {send: ":SENSe:BWIDth:RESolution {f}", params: {f: {min: 1, max: 1e6}}, source: "E02B p39; 1 Hz (Plus) / 10 Hz – 1 MHz, 1-3-10"}
+  rbw_auto_q: {send: ":SENSe:BWIDth:RESolution:AUTO?"}
+  rbw_auto_set: {send: ":SENSe:BWIDth:RESolution:AUTO {on}"}
+  vbw_q: {send: ":SENSe:BWIDth:VIDeo?"}
+  vbw_set: {send: ":SENSe:BWIDth:VIDeo {f}", params: {f: {min: 1, max: 1e6}}}
+  vbw_auto_q: {send: ":SENSe:BWIDth:VIDeo:AUTO?"}
+  vbw_auto_set: {send: ":SENSe:BWIDth:VIDeo:AUTO {on}"}
+  rlev_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel?"}
+  rlev_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel {v}", params: {v: {min: -100, max: 30}}, source: "E02B p29"}
+  pdiv_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision?"}
+  pdiv_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision {v}", params: {v: {min: 1, max: 10, format: "%.0f"}}, source: "E02B p31 (integer dB/div)"}
+  att_q: {send: ":SENSe:POWer:ATTenuation?"}
+  att_set: {send: ":SENSe:POWer:ATTenuation {v}", params: {v: {min: 0, max: 51}}, source: "E02B p30; 0-50 dB on SSA3000X"}
+  att_auto_q: {send: ":SENSe:POWer:ATTenuation:AUTO?"}
+  att_auto_set: {send: ":SENSe:POWer:ATTenuation:AUTO {on}"}
+  gain_q: {send: ":SENSe:POWer:GAIN?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}], source: "E02B p30"}
+  gain_set:
+    send: ":SENSe:POWer:GAIN {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  det_q: {send: ":SENSe:DETector:TRACe1:FUNCtion?"}
+  det_set:
+    send: ":SENSe:DETector:TRACe1:FUNCtion {d}"
+    params: {d: {values: {NORM: NORMAL, AVER: AVERage, QPE: QUASi, RMS: null}}}
+    source: "E02B p45: NEGative|POSitive|SAMPle|AVERage|NORMAL|QUASi"
+  swt_set: {params: {s: {min: 0.000917, max: 1000}}, source: "E04A p38-39"}
+  poin_q: null
+  poin_set: null
+  oper_q: null
+  sweep_set:
+    params: {m: {values: {SINGLE: ":INITiate:CONTinuous OFF;:INITiate:IMMediate"}}}
+    source: "E02B p37; E04A p22"
+  trace_q: {send: ":TRACe:DATA? 1", reply: line, max_bytes: null, source: "E02B p43; comma list with a trailing comma, no header"}
+  tmode_set: {params: {m: {values: {AVERAGE: AVERage}}}, source: "E02B p42"}
+  peak_set:
+    params: {p: {values: {PEAK: ":CALCulate:MARKer1:MAXimum"}}}
+    source: "E02B p47-51 (MAXimum, :NEXT, :LEFT, :RIGHt, [:SET]:CENTer)"
+  tg_set: {source: "E02B p85; TG models"}
+  tglev_q: {send: ":SOURce:POWer?"}
+  tglev_set: {send: ":SOURce:POWer {v}", params: {v: {min: -20, max: 0}}, source: "E02B p85: 0 to -20 dBm"}
+classes:
+  SAL:
+    features:
+      freq_range: {min: 9e3, max: 3.2e9}
+      rbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000]
+      vbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000]
+      ref_level: {min: -100, max: 30}
+      attenuation: {min: 0, max: 51, step: 1}
+      points: 751
+      divisions: {horizontal: 10, vertical: 10}
+      preamp: true
+      tg: {min: -20, max: 0}
+    poll:
+      - every_ms: 2000
+        read: [cent_q, span_q, star_q, stop_q, rbw_q, rbw_auto_q, vbw_q, vbw_auto_q, rlev_q, pdiv_q, att_q, att_auto_q, gain_q, det_q, swt_q, cont_q, tmode_q]
+      - every_ms: 500
+        read: [mark_q, mkx_q, mky_q]
+      - every_ms: 500
+        read: [trace_q]
+      - every_ms: 5000
+        read: [tg_q, tglev_q]
+    status:
+      SWEEPING: null
+      PREAMP: gain_q
+      POINTS: 'trace_q == null ? null : size(trace_q)'
+    operations:
+      points: null
+      preamp: {get: gain_q, set: gain_set}

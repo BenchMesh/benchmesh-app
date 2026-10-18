@@ -1,0 +1,15 @@
+# Replies as the Truevolt Operating and Service Guide prints them.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keysight_truevolt
+transport: usbtmc
+model: 34465A
+replies:
+  - {send: '\*IDN\?', reply: "Keysight Technologies,34465A,MY54500000,A.02.14-02.40-02.14-00.49-03-01", source: "guide p.270 *IDN? format"}
+  - {send: 'READ\?', reply: "+6.27530000E-01", source: "guide p.331 typical response"}
+  - {send: 'FUNC\?', reply: '"CURR"', source: "guide p.314 FUNCtion? short form"}
+  - {send: 'CURR:DC:RANG\?', reply: "+1.00000000E+00", source: "guide p.248 1 A range"}
+  - {send: 'CURR:DC:RANG:AUTO\?', reply: "1", source: "guide autorange query 0|1"}
+  - {send: 'CURR:DC:NPLC\?', reply: "+1.00000000E+01", source: "guide p.331 NPLC?"}
+expect:
+  DMM:
+    1: {MEAS: 0.62753, MODE: CURR, RANGE: AUTO, OVERLOAD: false}

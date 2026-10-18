@@ -1,0 +1,21 @@
+# Replies as the ET44/ET45 SCPI protocol (2023-03-06) and the ET44.py driver describe them.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: easttester_et44
+model: ET4410
+replies:
+  - {send: '\*IDN\?', reply: "ELEC,ET4410         ,V6.00.2232.019,V1.12.2103.008,0000000000", source: "PM p.3; padded model field as reported on EEVblog"}
+  - {send: 'FETC\?', reply: "1e-3, 0.1025", source: "PM p.8 example"}
+  - {send: 'FUNC:IMP:A\?', reply: "C", source: "PM p.6"}
+  - {send: 'FUNC:IMP:B\?', reply: "D", source: "PM p.6"}
+  - {send: 'FUNC:IMP:EQU\?', reply: "PALLEL", source: "PM p.6; ET44.py"}
+  - {send: 'FREQ\?', reply: "1000", source: "PM p.5"}
+  - {send: 'VOLT\?', reply: "1000", source: "PM p.5 (mV)"}
+  - {send: 'BIAS:VOLT:LEV\?', reply: "0", source: "PM p.4 (mV)"}
+  - {send: 'APER\?', reply: "SLOW", source: "PM p.4"}
+  - {send: 'FUNC:IMP:RANG:AUTO\?', reply: "1", source: "PM p.7"}
+  - {send: 'SYST:SOUR\?', reply: "INT", source: "PM p.11"}
+  - {send: 'CORR:EXEC', reply: "exec success", source: "ET44.py write()"}
+  - {send: '(FUNC:IMP:(A|B|EQU)|FREQ|VOLT|BIAS:VOLT|APER|FUNC:IMP:RANG:AUTO|SYST:SOUR) .+|\*TRG|SYST:REM|SYST:LOC', reply: "exec success", source: "ET44.py write(): every setter answers"}
+expect:
+  LCR:
+    1: {PRIMARY: 0.001, SECONDARY: 0.1025, FUNC: CPD, CIRCUIT: PAR, FREQ: 1000, LEVEL: 1.0, BIAS: 0, SPEED: SLOW, RANGE: AUTO, OVERLOAD: false}

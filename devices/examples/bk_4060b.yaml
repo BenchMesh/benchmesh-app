@@ -1,0 +1,12 @@
+# Replies as the 4060B programming manual shows them: checks the definition through the real
+# engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: bk_4060b
+transport: usbtmc
+model: 4063B
+replies:
+  - {send: '\*IDN\?', reply: "BK,4063B,000000000,2.01.01.35R3B2", source: "PM p8 (serial masked as ********* in the manual)"}
+  - {send: 'C[12]:OUTP\?', reply: "C1:OUTP OFF,LOAD,75,PLRT,NOR", source: "PM p9"}
+  - {send: 'C[12]:BSWV\?', reply: "C1:BSWV WVTP,RAMP,FRQ,1000HZ,PERI,0.001S,AMP,1.9999V,AMPVRMS,0.706965Vrms,AMPDBM,9.99825dBm,MAX_OUTPUT_AMP,20V,OFST,0V,HLEV,0.99995V,LLEV,-0.99995V,PHSE,0", source: "PM Waveform Query (BSWV?), RAMP example; no SYM field in it"}
+expect:
+  AWG:
+    1: {OUTPUT: "OFF", SHAPE: "RAMP", FREQ: 1000.0, AMPL: 1.9999, OFFS: 0.0, PHASE: 0.0, LOAD: "75"}

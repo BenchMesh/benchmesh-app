@@ -1,0 +1,54 @@
+# RIGOL DG800 and DG900 series function/arbitrary waveform generators (one dialect, two guides).
+# Written from the programming guides before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.1. Pages are PDF pages:
+# DG800 guide (PGB11100, printed = PDF − 14) / DG900 guide (PGB10100, printed = PDF − 12).
+schema: benchmesh.device/v1
+id: rigol_dg800
+extends: scpi_awg
+vendor: RIGOL
+family: DG800/DG900 series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "DG800 Programming Guide PGB11100 (DG800_ProgrammingGuide_EN.pdf)", pages: "37 (*IDN?), 57-58 (OUTPut LOAD/STATe), 84 (FREQ), 95 (RAMP:SYMM), 101 (FUNC), 137 (PHAS), 152-155 (VOLT, OFFS, UNIT); Table 2-1 p64 (limits)"}
+  - {doc: "DG900 Programming Guide PGB10100 (DG900_ProgrammingGuide_EN.pdf)", pages: "35 (*IDN?), 52-53, 79, 90, 96, 132, 147-150; Table 2-1 p59"}
+  - {note: "USB: a real DG811 enumerates as 1AB1:0643 (pyvisa issue #521; the guides' 0642 is copied from DG1000Z); DG900 PID unverified, so the link names the vendor only and identify picks the model"}
+models:
+  - {"name": "DG811", "match": "^Rigol Technologies,DG811,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 10e6, "SQU": 5e6, "PUL": 5e6, "RAMP": 0.2e6}}}}
+  - {"name": "DG812", "match": "^Rigol Technologies,DG812,", "features": {"AWG": {"max_freq_hz": {"SIN": 10e6, "SQU": 5e6, "PUL": 5e6, "RAMP": 0.2e6}}}}
+  - {"name": "DG821", "match": "^Rigol Technologies,DG821,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 10e6, "PUL": 10e6, "RAMP": 0.5e6}}}}
+  - {"name": "DG822", "match": "^Rigol Technologies,DG822,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 10e6, "PUL": 10e6, "RAMP": 0.5e6}}}}
+  - {"name": "DG831", "match": "^Rigol Technologies,DG831,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 35e6, "SQU": 10e6, "PUL": 10e6, "RAMP": 1e6}}}}
+  - {"name": "DG832", "match": "^Rigol Technologies,DG832,", "features": {"AWG": {"max_freq_hz": {"SIN": 35e6, "SQU": 10e6, "PUL": 10e6, "RAMP": 1e6}}}}
+  - {"name": "DG952", "match": "^Rigol Technologies,DG952,", "features": {"AWG": {"max_freq_hz": {"SIN": 50e6, "SQU": 15e6, "PUL": 15e6, "RAMP": 1.5e6}}}}
+  - {"name": "DG972", "match": "^Rigol Technologies,DG972,", "features": {"AWG": {"max_freq_hz": {"SIN": 70e6, "SQU": 20e6, "PUL": 20e6, "RAMP": 1.5e6}}}}
+  - {"name": "DG992", "match": "^Rigol Technologies,DG992,", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 2e6}}}}
+link:
+  usbtmc: {vid: "1ab1"}
+  # raw SCPI socket through the optional USB-LAN adapter (:SYST:COMM:LAN:CONT? answers 5555)
+  tcp: {port: 5555}
+commands:
+  outp_q: {source: "DG800 p58 / DG900 p53; reply ON/OFF"}
+  outp_set: {source: "DG800 p58 / DG900 p53"}
+  shape_q: {source: "DG800 p101 / DG900 p96; reply e.g. SQU"}
+  shape_set: {source: "DG800 p101 / DG900 p96"}
+  freq_q: {source: "DG800 p84 / DG900 p79"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 100000000, format: "%.6f", unit: Hz}}
+    description: "Model limits in features.max_freq_hz; out-of-range values are clamped (DG800 p84)"
+    source: "DG800 p84 / DG900 p79"
+  unit_q: {source: "DG800 p155 / DG900 p150"}
+  ampl_q: {source: "DG800 p152 / DG900 p147"}
+  ampl_set:
+    params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
+    description: "2 mVpp minimum; 20 Vpp at High-Z ≤10 MHz (10 Vpp into 50 Ω), less above — the instrument clamps"
+    source: "DG800 p152 / DG900 p147"
+  offs_q: {source: "DG800 p154 / DG900 p149"}
+  offs_set: {source: "DG800 p154 / DG900 p149; ±10 V at High-Z (±5 V into 50 Ω)"}
+  phase_q: {source: "DG800 p137 / DG900 p132"}
+  phase_set: {source: "DG800 p137 / DG900 p132"}
+  symm_q: {source: "DG800 p95 / DG900 p90"}
+  symm_set: {source: "DG800 p95 / DG900 p90"}
+  load_q: {source: "DG800 p57 / DG900 p52; High-Z 9.900000E+37"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 100e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 2e6}}

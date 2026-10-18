@@ -1,0 +1,60 @@
+# RIGOL MSO5000 series digital oscilloscopes (MSO5072 … MSO5354).
+# Written from the programming guide, not yet seen live (models "awaiting confirmation").
+# Same command tree as the bench-tested DHO800 (base scpi_osc); differences: probe ratios
+# 0.0001…50000, extra bandwidth limits on MSO5204/5354 (20M/OFF offered, valid on every model),
+# HRESolution acquisition, YREFerence fixed 128. Coverage report: ai_context/migration/coverage/OSC.md §2.3.
+# Pages are PDF pages (printed 2-N = PDF N+16).
+schema: benchmesh.device/v1
+id: rigol_mso5000
+extends: scpi_osc
+vendor: RIGOL
+family: MSO5000 series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "MSO5000 Programming Guide PGA25105-1110 (MSO5000_ProgrammingGuide_EN.pdf)", pages: "PDF p4 models, p18-19 AUToscale/CLEar/RUN/STOP/SINGle, p21-22 ACQuire, p62-65 CHANnel, p136-137 MEASure:ITEM, p189-190 TIMebase, p194-198 TRIGger, p260-266 WAVeform, p269 USB id"}
+  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide)."}
+models:
+  - {name: MSO5072, match: "^RIGOL TECHNOLOGIES,MSO5072,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: MSO5074, match: "^RIGOL TECHNOLOGIES,MSO5074,", features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: MSO5102, match: "^RIGOL TECHNOLOGIES,MSO5102,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: MSO5104, match: "^RIGOL TECHNOLOGIES,MSO5104,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: MSO5204, match: "^RIGOL TECHNOLOGIES,MSO5204,", features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}
+  - {name: MSO5354, match: "^RIGOL TECHNOLOGIES,MSO5354,", features: {OSC: {bandwidth_hz: 350e6, timebase: {min: 1e-9, max: 1000}}}}
+identify: idn
+link:
+  usbtmc: {vid: "1ab1", pid: "0514"}
+  tcp: {port: 5555}
+commands:
+  disp_q: {source: "CHANnel<n>:DISPlay p63"}
+  scale_q: {source: "CHANnel<n>:SCALe p65"}
+  offset_q: {source: "CHANnel<n>:OFFSet p64"}
+  coup_q: {source: "CHANnel<n>:COUPling p63; AC, DC or GND"}
+  bwl_q: {source: "CHANnel<n>:BWLimit p62; 20M, 100M, 200M or OFF"}
+  bwl_set: {source: "CHANnel<n>:BWLimit p62 (100M/200M only on MSO5204/5354)"}
+  probe_q: {source: "CHANnel<n>:PROBe p65"}
+  probe_set:
+    params: {r: {values: {"0.0001": "0.0001", "0.0002": "0.0002", "0.0005": "0.0005", "0.001": "0.001", "0.002": "0.002", "0.005": "0.005", "0.01": "0.01", "0.02": "0.02", "0.05": "0.05", "0.2": "0.2", "0.5": "0.5", "2": "2", "5": "5", "20": "20", "50": "50", "200": "200", "500": "500", "2000": "2000", "5000": "5000", "10000": "10000", "20000": "20000", "50000": "50000"}}}
+    source: "CHANnel<n>:PROBe p65"
+  tb_q: {source: "TIMebase[:MAIN]:SCALe p190"}
+  tbofs_q: {source: "TIMebase[:MAIN]:OFFSet p189"}
+  trig_stat_q: {source: "TRIGger:STATus? p194; TD, WAIT, RUN, AUTO or STOP"}
+  sweep_q: {source: "TRIGger:SWEep p195; AUTO, NORM or SING"}
+  tsrc_q: {source: "TRIGger:EDGE:SOURce p197; D0..D15, CHAN1..CHAN4 or ACL"}
+  slope_q: {source: "TRIGger:EDGE:SLOPe p197; POS, NEG or RFAL"}
+  tlev_q: {source: "TRIGger:EDGE:LEVel p197-198"}
+  acq_q: {source: "ACQuire:TYPE p21; NORM, AVER, PEAK or HRES"}
+  acq_set:
+    params: {t: {values: {"HRES": "HRESolution"}}}
+    source: "ACQuire:TYPE p21"
+  srate_q: {source: "ACQuire:SRATe? p22"}
+  run_set: {source: ":AUToscale :CLEar :RUN :STOP :SINGle p18-19"}
+  wav_pre: {source: "WAVeform:PREamble? p266; YREFerence fixed 128 (p265)"}
+  wav_data: {source: "WAVeform:DATA? p262-263; 1000 screen points, BYTE"}
+  vpp_q: {source: "MEASure:ITEM? p136-137"}
+classes:
+  OSC:
+    features:
+      bandwidth_hz: 100e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X; multiplied by the probe ratio"}
+      timebase: {min: 5e-9, max: 1000}
+      probe: ["0.0001", "0.0002", "0.0005", "0.001", "0.002", "0.005", "0.01", "0.02", "0.05", "0.1", "0.2", "0.5", "1", "2", "5", "10", "20", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "20000", "50000"]

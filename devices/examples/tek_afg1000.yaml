@@ -1,0 +1,16 @@
+# Replies as the AFG1000 programmer manual shows them (printed pages): checks the definition
+# through the real engine without hardware.
+definition: tek_afg1000
+model: AFG1062
+replies:
+  - {send: '\*IDN\?', reply: "TEKTRONIX,AFG1062,1331030,SCPI:99.0 FV:2.0.0", source: "p15"}
+  - {send: 'OUTPut[12]:STATe\?', reply: "0", source: "p18 (<NR1>)"}
+  - {send: 'SOURce[12]:FUNCtion:SHAPe\?', reply: "SQU", source: "p43"}
+  - {send: 'SOURce[12]:FREQuency\?', reply: "1.000000E+03", source: "p36"}
+  - {send: 'SOURce[12]:VOLTage\?', reply: "1.000E+00", source: "p61"}
+  - {send: 'SOURce[12]:VOLTage:OFFSet\?', reply: "0.000E+00", source: "p60"}
+  - {send: 'SOURce[12]:PHASe\?', reply: "0.000000E+00", source: "p44-45 (radians)"}
+  - {send: 'OUTPut[12]:IMPedance\?', reply: "5.000000E+01", source: "p17 (default 50 Ω)"}
+expect:
+  AWG:
+    1: {OUTPUT: "OFF", SHAPE: "SQU", FREQ: 1000.0, AMPL: 1.0, OFFS: 0.0, PHASE: 0.0, LOAD: "50"}

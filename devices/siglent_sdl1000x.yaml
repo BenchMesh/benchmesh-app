@@ -1,0 +1,81 @@
+# Siglent SDL1000X / SDL1000X-E series DC electronic loads (SDL1020X, SDL1030X, SDL1020X-E,
+# SDL1030X-E). Written from the programming guide before anyone tested it on hardware (all
+# models awaiting confirmation). Coverage report: ai_context/migration/coverage/ELL.md §2.3.
+# Pages are PDF pages of SDL1000X_programming_guide_E02B.pdf (PG).
+schema: benchmesh.device/v1
+id: siglent_sdl1000x
+extends: scpi_load
+vendor: Siglent
+family: SDL1000X / SDL1000X-E series DC electronic load
+version: 0.1.0
+sources:
+  - {doc: "SDL1000X Programming Guide E02B (SDL1000X_programming_guide_E02B.pdf)", pages: "7, 14, 15, 17-20, 24, 27, 30-31, 53-54"}
+  - {note: "Ratings 150 V / 30 A, 200 W (SDL1020X*) or 300 W (SDL1030X*) from the datasheet / sigrok siglent-sdl10x0; current ranges 5 A / 30 A, voltage ranges 36 V / 150 V (PG p.14)"}
+  - {note: "No remote/local command and no protection-trip query (only *STB?/*ESR?) in the PG: REMOTE, OVP, OCP, OPP stay unbound"}
+models:
+  - {name: SDL1020X, match: "^Siglent Technologies,SDL1020X,", features: {ELL: {absolute_limits: {power: {unit: W, max: 200.0}}, modes: {POW: {setpoint: {max: 200.0}}}}}}
+  - {name: SDL1030X, match: "^Siglent Technologies,SDL1030X,"}
+  - {name: SDL1020X-E, match: "^Siglent Technologies,SDL1020X-E,", features: {ELL: {absolute_limits: {power: {unit: W, max: 200.0}}, modes: {POW: {setpoint: {max: 200.0}}}}}}
+  - {name: SDL1030X-E, match: "^Siglent Technologies,SDL1030X-E,"}
+link:
+  # Siglent's USB vendor id; the SDL product id is not documented (discovery by vid + identify).
+  usbtmc:
+    vid: "f4ec"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+  # PG p.7: VXI-11, sockets and telnet over LAN; the socket port is not stated in the PG
+  # (5025 is Siglent's usual raw-socket port, verify on the instrument).
+  tcp:
+    port: 5025
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+commands:
+  idn: {source: "PG p.15 (reply Siglent Technologies,SDL1020X,0123456789,1.01.01.15)"}
+  meas_v: {source: "PG p.17 MEASure:VOLTage[:DC]?"}
+  meas_i: {source: "PG p.17 MEASure:CURRent[:DC]?"}
+  meas_p: {source: "PG p.17 MEASure:POWer[:DC]?"}
+  inp_q: {source: "PG p.18 [:SOURce]:INPut[:STATe]? returns 1|0"}
+  func_q: {source: "PG p.19 [:SOURce]:FUNCtion? returns e.g. RESISTANCE (long form)"}
+  ques_q: null
+  curr_q: {source: "PG p.20"}
+  volt_q: {source: "PG p.24"}
+  res_q: {source: "PG p.30"}
+  pow_q: {source: "PG p.27"}
+  short_q:
+    send: ":SOUR:SHOR?"
+    source: "PG p.18 [:SOURce]:SHORt[:STATe]? returns 1|0"
+  mode_set: {source: "PG p.19 [:SOURce]:FUNCtion {CURRent|VOLTage|POWer|RESistance|LED}"}
+  curr_set:
+    params: {a: {max: 30}}
+    source: "PG p.19-20; PG p.14: the current range follows the value (> 5 A selects 30 A) when the range is set"
+  volt_set: {params: {v: {max: 150}}, source: "PG p.24"}
+  res_set: {params: {r: {min: 0.03, max: 10000}}, source: "PG p.30 (CR ranges LOW|MIDDLE|HIGH|UPPER p.31; limits from the datasheet, verify)"}
+  pow_set: {params: {p: {max: 300}}, source: "PG p.27"}
+  input_set: {source: "PG p.18 [:SOURce]:INPut[:STATe] {ON|OFF|0|1}"}
+  short_set:
+    send: ":SOUR:SHOR {on}"
+    source: "PG p.18 [:SOURce]:SHORt[:STATe] {ON|OFF|0|1}"
+  sense_set: {source: "PG p.53 SYSTem:SENSe[:STATe] {ON|OFF|0|1}"}
+classes:
+  ELL:
+    ui_component: SiglentSDL1000ELL
+    features:
+      remote_sense: true
+      absolute_limits: {voltage: {unit: V, max: 150.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 300.0}}
+      modes:
+        CURR: {setpoint: {max: 30.0}}
+        VOLT: {setpoint: {max: 150.0}}
+        RES: {setpoint: {min: 0.03, max: 10000.0}}
+        POW: {setpoint: {max: 300.0}}
+        LED: {ui_name: "LED"}
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, meas_p, inp_q, func_q]
+    status:
+      OVP: null
+      OCP: null
+      OPP: null

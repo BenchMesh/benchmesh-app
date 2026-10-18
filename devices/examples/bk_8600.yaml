@@ -1,0 +1,22 @@
+# B&K Precision 8600 replies as the programming manual (BP, 8600_Series_Programming_Manual.pdf)
+# documents them: identify quoted, numbers in the documented <NR3> / 0|1 / <CRD> formats.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: bk_8600
+transport: usbtmc
+model: "8600"
+replies:
+  - {send: '\*IDN\?', reply: "B&K PRECISION, 8600, 600150010677510002, 1.32-1.37", source: "BP p.29"}
+  - {send: 'MEAS:VOLT\?', reply: "1.200000E+01", source: "BP p.66"}
+  - {send: 'MEAS:CURR\?', reply: "5.000000E-01", source: "BP p.66"}
+  - {send: 'FETC:POW\?', reply: "6.000000E+00", source: "BP p.66"}
+  - {send: 'INP\?', reply: "0", source: "BP p.44 (0|1)"}
+  - {send: 'FUNC\?', reply: "RES", source: "BP p.44-45 (<CRD>; example FUNC RES)"}
+  - {send: 'STAT:QUES:COND\?', reply: "8202", source: "BP p.9-10 (OC + OP + PS)"}
+  - {send: 'CURR\?', reply: "5.000000E-01", source: "BP p.46 (<NR3>; example CURR:LEV 0.5)"}
+  - {send: 'VOLT\?', reply: "2.000000E+01", source: "BP p.51 (<NR3>)"}
+  - {send: 'RES\?', reply: "1.000000E+01", source: "BP p.54 (<NR3>)"}
+  - {send: 'POW\?', reply: "1.000000E+01", source: "BP p.58 (<NR3>)"}
+  - {send: 'INP:SHOR:STAT\?', reply: "0", source: "BP p.44 (0|1)"}
+expect:
+  ELL:
+    1: {VIN: 12.0, IIN: 0.5, PIN: 6.0, INPUT: "OFF", MODE: "RES", OVP: false, OCP: true, OPP: true}

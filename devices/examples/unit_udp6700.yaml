@@ -1,0 +1,21 @@
+# Replies per the UDP6720 programming manual REV 1.2 (the manual gives formats, few values);
+# checks the definition through the real engine without hardware.
+definition: unit_udp6700
+model: UDP6720
+replies:
+  - {send: '\*IDN\?', reply: "UNIT,UDP6720,UNLICENSED,REV1.21", source: "PM p.20 (example shows UDP6722; model swapped to a datasheet model)"}
+  - {send: 'MEAS:ALL\?', reply: "12.00,1.500,18.00", source: "PM p.12 <float>,<float>,<float>"}
+  - {send: 'MEAS:VOLT\?', reply: "12.00", source: "PM p.11"}
+  - {send: 'MEAS:CURR\?', reply: "1.500", source: "PM p.12"}
+  - {send: 'MEAS:POW\?', reply: "18.00", source: "PM p.12"}
+  - {send: 'OUTP\?', reply: "ON", source: "PM p.7"}
+  - {send: 'OUTP:CVCC\?', reply: "CC", source: "PM p.7"}
+  - {send: 'VOLT:PROT:TRIP\?', reply: "0", source: "PM p.10"}
+  - {send: 'CURR:PROT:TRIP\?', reply: "0", source: "PM p.9"}
+  - {send: 'VOLT\?', reply: "12.00", source: "PM p.9"}
+  - {send: 'CURR\?', reply: "1.500", source: "PM p.8"}
+  - {send: 'VOLT:PROT\?', reply: "61.00", source: "PM p.9"}
+  - {send: 'CURR:PROT\?', reply: "5.100", source: "PM p.8"}
+expect:
+  PSU:
+    1: {VOUT: 12.0, IOUT: 1.5, POUT: 18.0, OUTPUT: "ON", CC: true, CV: false, OVP: false}

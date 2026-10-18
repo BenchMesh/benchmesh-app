@@ -1,0 +1,104 @@
+# Siglent SDM3045X / SDM3055 / SDM3065X bench multimeters. Written from the remote manuals
+# (ai_context/migration/coverage/DMM.md §3.2) before anyone tested it: every model awaits
+# confirmation. Keysight-style SCPI → devices/bases/scpi_dmm.yaml.
+schema: benchmesh.device/v1
+id: siglent_sdm3000
+extends: scpi_dmm
+vendor: Siglent
+family: SDM3000 series digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "SDM3065X Remote Manual RC06036-E01A", pages: "37-48, 54-61, 77-84 (printed)"}
+  - {doc: "SDM3055 Remote Manual RC06035-E01A", pages: "36-47, 60, 83 (printed)"}
+  - {doc: "SDM3045X Programming Manual", pages: "37-48, 61, 83 (printed)"}
+  - {note: "USB 0xF4EC:0xEE38 from the sigrok udev rules (SDM3055; shared with other Siglent products, the IDN decides). *IDN? reply format not printed in the manuals; LAN raw socket port 5025 unverified"}
+models:
+  - name: SDM3055
+    match: "(?i)^siglent[^,]*,SDM3055"
+    note: "Also SDM3055X-E / SDM3055-SC"
+  - name: SDM3045X
+    match: "(?i)^siglent[^,]*,SDM3045X"
+    features:
+      DMM:
+        rate: [{value: "0.3", display: "0.3 PLC (fast)"}, {value: "1", display: "1 PLC (middle)"}, {value: "10", display: "10 PLC (slow)"}]
+        RANGe:
+          VOLT: [{value: AUTO, display: AUTO}, {value: "0.6", display: "600mV"}, {value: "6", display: "6V"}, {value: "60", display: "60V"}, {value: "600", display: "600V"}, {value: "1000", display: "1000V"}]
+          VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.6", display: "600mV"}, {value: "6", display: "6V"}, {value: "60", display: "60V"}, {value: "600", display: "600V"}, {value: "750", display: "750V"}]
+          CURR: [{value: AUTO, display: AUTO}, {value: "0.0006", display: "600µA"}, {value: "0.006", display: "6mA"}, {value: "0.06", display: "60mA"}, {value: "0.6", display: "600mA"}, {value: "6", display: "6A"}, {value: "10", display: "10A"}]
+          CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.06", display: "60mA"}, {value: "0.6", display: "600mA"}, {value: "6", display: "6A"}, {value: "10", display: "10A"}]
+          RES: [{value: AUTO, display: AUTO}, {value: "600", display: "600Ω"}, {value: "6000", display: "6kΩ"}, {value: "60000", display: "60kΩ"}, {value: "600000", display: "600kΩ"}, {value: "6000000", display: "6MΩ"}, {value: "60000000", display: "60MΩ"}, {value: "100000000", display: "100MΩ"}]
+          FRES: [{value: AUTO, display: AUTO}, {value: "600", display: "600Ω"}, {value: "6000", display: "6kΩ"}, {value: "60000", display: "60kΩ"}, {value: "600000", display: "600kΩ"}, {value: "6000000", display: "6MΩ"}, {value: "60000000", display: "60MΩ"}, {value: "100000000", display: "100MΩ"}]
+  - name: SDM3065X
+    match: "(?i)^siglent[^,]*,SDM3065X"
+    note: "Also SDM3065X-SC"
+    features:
+      DMM:
+        rate: [{value: "0.005", display: "0.005 PLC (fastest)"}, {value: "0.05", display: "0.05 PLC"}, {value: "0.5", display: "0.5 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slowest)"}]
+        RANGe:
+          RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+          FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "1000000", display: "1MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+          CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.002", display: "2mF"}, {value: "0.02", display: "20mF"}, {value: "0.1", display: "100mF"}]
+link:
+  usbtmc: {vid: "f4ec", pid: "ee38"}
+commands:
+  nplc_q:
+    parse: [trim, number, {map: {"0.005": "0.005", "0.006": "0.005", "0.05": "0.05", "0.3": "0.3", "0.5": "0.5", "0.6": "0.5", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    source: "SDM3065X p.84, SDM3055 p.83 [SENSe:]VOLTage[:DC]:NPLC?"
+  rate_set:
+    params:
+      plc: {type: enum, values: {"0.005": "0.005", "0.05": "0.05", "0.3": "0.3", "0.5": "0.5", "1": "1", "10": "10", "100": "100", "0.02": null, "0.2": null}}
+    source: "SDM3065X p.61/84 {100|10|1|0.5|0.05|0.005}; SDM3055/3045X p.60/83 {0.3|1|10}"
+  func: {source: "SDM3065X p.54 [SENSe:]FUNCtion? (quoted short form)"}
+  meas: {source: "SDM3065X p.46-48 READ?; overload 9.9E37 p.37-45"}
+  mode_set:
+    params:
+      mode:
+        type: enum
+        values: {TEMP: "CONF:TEMP THER,KITS90"}
+    source: "SDM3065X p.37-45 CONFigure:<function> [AUTO]"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000002": " 2E-9", "0.00000002": " 20E-9", "0.0000002": " 200E-9", "0.000002": " 2E-6",
+                 "0.00002": " 20E-6", "0.0002": " 200E-6", "0.0006": " 600E-6", "0.002": " 2E-3", "0.006": " 6E-3",
+                 "0.01": " 10E-3", "0.02": " 20E-3", "0.06": " 60E-3", "0.1": " 100E-3", "0.2": " 0.2", "0.6": " 0.6",
+                 "2": " 2", "6": " 6", "10": " 10", "20": " 20", "60": " 60", "200": " 200", "600": " 600", "750": " 750",
+                 "1000": " 1000", "2000": " 2E3", "6000": " 6E3", "20000": " 20E3", "60000": " 60E3", "200000": " 200E3",
+                 "600000": " 600E3", "1000000": " 1E6", "2000000": " 2E6", "6000000": " 6E6", "10000000": " 10E6",
+                 "60000000": " 60E6", "100000000": " 100E6"}
+    source: "SDM3065X p.61, 79-82 <fn>:RANGe / :RANGe:AUTO ON"
+  rng_q: {source: "SDM3065X p.79 VOLTage:{AC|DC}:RANGe? → +2.00000000E+00"}
+  auto_q: {source: "SDM3065X p.80 :RANGe:AUTO? → 0|1"}
+  temp_sensor_set:
+    send: "CONF:TEMP {sensor}"
+    params:
+      sensor:
+        type: enum
+        values: {KITS90: "THER,KITS90", JITS90: "THER,JITS90", TITS90: "THER,TITS90", EITS90: "THER,EITS90",
+                 NITS90: "THER,NITS90", RITS90: "THER,RITS90", SITS90: "THER,SITS90", BITS90: "THER,BITS90",
+                 PT100: "RTD,PT100"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    source: "SDM3065X p.41 CONFigure:TEMPerature {RTD|THER},<type>"
+  temp_scale_set: {source: "SDM3065X p.13 UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.3", display: "0.3 PLC (fast)"}, {value: "1", display: "1 PLC (middle)"}, {value: "10", display: "10 PLC (slow)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.01", display: "10mF"}]
+        TEMP:
+          Sensor: [{value: KITS90, display: "K thermocouple"}, {value: JITS90, display: "J thermocouple"}, {value: TITS90, display: "T thermocouple"}, {value: EITS90, display: "E thermocouple"}, {value: NITS90, display: "N thermocouple"}, {value: RITS90, display: "R thermocouple"}, {value: SITS90, display: "S thermocouple"}, {value: BITS90, display: "B thermocouple"}, {value: PT100, display: "PT100 RTD"}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      temp_sensor: {set: temp_sensor_set}

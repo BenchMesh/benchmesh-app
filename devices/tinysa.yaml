@@ -1,0 +1,235 @@
+# tinySA (ZS-304) and tinySA Ultra / Ultra+ (ZS-405, ZS-406, ZS-407) spectrum analyzers: the
+# ChibiOS text shell over USB CDC (0483:5740, shared with every ChibiOS VCP — identity comes from
+# `version`). Written from the firmware source and wiki, not yet seen live ("awaiting
+# confirmation"). Coverage report: ai_context/migration/coverage/SAL.md §2.1.
+#
+# Framing: a line ends on CR; every typed character is echoed, then the output lines (CRLF), then
+# the prompt `ch> `. A reply is therefore `<echo>\r\n<output>` up to the prompt; parses drop the
+# echo line. Every command — setters too — answers at least echo + prompt, so setters read their
+# reply (`reply: line`). The connect banner (`tinySA Shell\r\nch> `) is drained before identify.
+# Polling a sweep-thread command (data, sweep, rbw, …) restarts the running sweep: settings are
+# polled slowly. The generator mode (`mode low output`) turns the analyzer into a generator and
+# is not offered.
+schema: benchmesh.device/v1
+id: tinysa
+vendor: tinySA
+family: tinySA / tinySA Ultra spectrum analyzer
+version: 0.1.0
+sources:
+  - {doc: "tinySA firmware source erikkaashoek/tinySA (commit 2b4aa513b7a4)", pages: "main.c VNAShell_readLine ~l.3097-3120 (CR, echo), prompt l.50, cmd_data l.901, cmd_sweep l.2049-2084, cmd_trace l.2173-2236, cmd_marker l.2304-2360, cmd_version l.2553, pause/resume/status l.482-510; sa_cmd.c cmd_attenuate l.354, cmd_sweeptime l.386, cmd_rbw l.574"}
+  - {doc: "tinySA wiki, USB Interface (tinysa.org/wiki/pmwiki.php?n=Main.USBInterface)", pages: "command list, k/M/G suffixes"}
+models:
+  - name: tinySA Ultra+ ZS407
+    match: "(?s)^tinySA4_.*HW Version:V0\\.5"
+    features: {SAL: {freq_range: {min: 100e3, max: 7.3e9}}}
+    note: "Upper limit per model to confirm from the device menus at first contact"
+  - name: tinySA Ultra+ ZS406
+    match: "(?s)^tinySA4_.*HW Version:V0\\.4\\.6"
+    features: {SAL: {freq_range: {min: 100e3, max: 6e9}}}
+    note: "Upper limit per model to confirm from the device menus at first contact"
+  - name: tinySA Ultra ZS405
+    match: "^tinySA4_"
+  - name: tinySA ZS304
+    match: "^tinySA_"
+    features:
+      SAL:
+        freq_range: {min: 100e3, max: 960e6}
+        rbw: [3000, 10000, 30000, 100000, 300000, 600000]
+        points: 290
+        ref_level: {min: -120, max: 10}
+identify: version
+link:
+  # USB CDC: the baud rate is ignored
+  serial: {baud: 115200, format: 8N1}
+framing:
+  tx: {terminator: "\r"}
+  rx: {mode: terminator, terminator: "ch> ", timeout_ms: 2000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 0}
+session:
+  # trace values in dBm (the unit setting changes what `data` returns)
+  on_connect: [unit_dbm]
+commands:
+  version:
+    send: "version"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim]
+    source: "main.c cmd_version l.2553: tinySA4_v1.4-217-g… / HW Version:V0.4.5.1"
+  unit_dbm: {send: "trace dBm", safety: configure, source: "main.c cmd_trace l.2173"}
+
+  # --- queries -------------------------------------------------------------------------
+  sweep_q:
+    send: "sweep"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim, {fields: {sep: " ", names: [start, stop, points]}}]
+    source: "main.c l.2052: <start Hz> <stop Hz> <points>"
+  star_q:
+    send: "sweep"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim, {split: {sep: " ", index: 0}}, number]
+  stop_q:
+    send: "sweep"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim, {split: {sep: " ", index: 1}}, number]
+  poin_q:
+    send: "sweep"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim, {split: {sep: " ", index: 2}}, number]
+  rbw_q:
+    send: "rbw"
+    parse: [{regex: {pattern: "([0-9.]+[kM]?)Hz\\s*$", group: 1}}, {replace: {from: "k", to: "e3"}}, {replace: {from: "M", to: "e6"}}, number]
+    source: "sa_cmd.c l.574-582: usage line, then the actual RBW (3.0kHz)"
+  att_q:
+    send: "attenuate"
+    parse: [{regex: {pattern: "\\r\\n\\s*([0-9.]+)\\s*$", group: 1}}, number]
+    source: "sa_cmd.c l.354-357: usage line, then 10.00"
+  swt_q:
+    send: "sweeptime"
+    parse: [{regex: {pattern: "([0-9.]+)s\\s*$", group: 1}}, number]
+    source: "sa_cmd.c l.386-390: usage line, then 0.120s"
+  trace_q:
+    send: "trace"
+    parse: [{regex: {pattern: "(?m)^1:\\s*([^\\r\\n]*)", group: 1}}, trim, {fields: {sep: " ", names: [unit, ref, scale]}}]
+    source: "main.c l.2173-2236: `1: dBm -10.000000 10.000000` (unit, reference level, dB/div)"
+  rlev_q:
+    send: "trace"
+    parse: [{regex: {pattern: "(?m)^1:\\s*([^\\r\\n]*)", group: 1}}, trim, {split: {sep: " ", index: 1}}, number]
+  pdiv_q:
+    send: "trace"
+    parse: [{regex: {pattern: "(?m)^1:\\s*([^\\r\\n]*)", group: 1}}, trim, {split: {sep: " ", index: 2}}, number]
+  status_q:
+    send: "status"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, trim, {map: {Paused: HOLD, Resumed: CONT}}]
+    source: "main.c l.482-510"
+  data_q:
+    send: "data 2"
+    parse: [{regex: {pattern: "(?s)^[^\\r\\n]*\\r\\n(.*)$", group: 1}}, numbers]
+    timeout_ms: 3000
+    source: "main.c cmd_data l.901-916: one %e per line (measurement trace), current unit"
+  marker_q:
+    send: "marker"
+    parse: [{regex: {pattern: "(?m)^1 (\\d+ \\d+ \\S+)", group: 1}}, {fields: {sep: " ", names: [index, freq, level]}}]
+    source: "main.c l.2304-2360: `1 225 433920000 -4.23e+01` per enabled marker; none when marker 1 is off"
+  mkx_q:
+    send: "marker"
+    parse: [{regex: {pattern: "(?m)^1 \\d+ (\\d+)", group: 1}}, number]
+  mky_q:
+    send: "marker"
+    parse: [{regex: {pattern: "(?m)^1 \\d+ \\d+ (\\S+)", group: 1}}, number]
+
+  # --- setters (each answers echo + prompt) ------------------------------------------
+  cent_set:
+    send: "sweep center {f}"
+    params: {f: {type: number, min: 0, max: 7.3e9, format: "%.0f", unit: Hz}}
+    safety: configure
+    source: "main.c l.2071-2075"
+  span_set:
+    send: "sweep span {f}"
+    params: {f: {type: number, min: 0, max: 7.3e9, format: "%.0f", unit: Hz}}
+    safety: configure
+  star_set:
+    send: "sweep start {f}"
+    params: {f: {type: number, min: 0, max: 7.3e9, format: "%.0f", unit: Hz}}
+    safety: configure
+  stop_set:
+    send: "sweep stop {f}"
+    params: {f: {type: number, min: 0, max: 7.3e9, format: "%.0f", unit: Hz}}
+    safety: configure
+  rbw_set:
+    send: "rbw {f}"
+    params: {f: {type: number, min: 200, max: 850000, scale: 0.001, format: "%g", unit: Hz}}
+    safety: configure
+    description: "Sent in kHz (0.2..850 Ultra, 2..600 basic); the analyzer picks the nearest filter"
+    source: "sa_cmd.c l.574-582"
+  att_set:
+    send: "attenuate {v}"
+    params: {v: {type: number, min: 0, max: 31, format: "%.0f", unit: dB}}
+    safety: configure
+    source: "sa_cmd.c l.354"
+  swt_set:
+    send: "sweeptime {s}"
+    params: {s: {type: number, min: 0.003, max: 60, format: "%g", unit: s}}
+    safety: configure
+    source: "sa_cmd.c l.386"
+  rlev_set:
+    send: "trace reflevel {v}"
+    params: {v: {type: number, min: -150, max: 30, format: "%g", unit: dBm}}
+    safety: configure
+  pdiv_set:
+    send: "trace scale {v}"
+    params: {v: {type: number, min: 1, max: 20, format: "%g", unit: dB}}
+    safety: configure
+  sweep_set:
+    send: "{m}"
+    params: {m: {type: enum, values: {CONT: resume, HOLD: pause}}}
+    safety: configure
+    source: "main.c l.482-510"
+  mark_set:
+    send: "marker 1 {on}"
+    params: {on: {type: enum, values: {"ON": "on", "OFF": "off"}}}
+    safety: configure
+  mkx_set:
+    send: "marker 1 {f}"
+    params: {f: {type: number, min: 1000, max: 7.3e9, format: "%.0f", unit: Hz}}
+    safety: configure
+    description: "Values up to the point count are taken as an index: at least 1 kHz"
+  mkr_peak:
+    send: "marker 1 {p}"
+    params: {p: {type: enum, values: {PEAK: peak, MKR_CF: peak}}}
+    safety: configure
+    description: "PEAK: peak search; MKR_CF runs mkr_cf instead (see peak_search)"
+  mkr_cf:
+    send: "sweep center {f}"
+    params: {f: {type: number, from: "mkx_q", format: "%.0f"}}
+    safety: configure
+    description: "Marker frequency to center"
+classes:
+  SAL:
+    channels: 1
+    ui_component: GenericSAL
+    features:
+      freq_range: {min: 100e3, max: 5.3e9}
+      rbw: [200, 1000, 3000, 10000, 30000, 100000, 300000, 600000, 850000]
+      ref_level: {min: -150, max: 30}
+      attenuation: {min: 0, max: 31, step: 1}
+      points: 450
+      divisions: {horizontal: 10, vertical: 10}
+      preamp: false
+    poll:
+      - every_ms: 3000
+        read: [sweep_q, rbw_q, att_q, swt_q, trace_q, status_q]
+      - every_ms: 500
+        read: [marker_q]
+      - every_ms: 500
+        read: [data_q]
+    status:
+      START: {expr: "num(sweep_q.start)", as: si}
+      STOP: {expr: "num(sweep_q.stop)", as: si}
+      CENTER: {expr: "(num(sweep_q.start) + num(sweep_q.stop)) / 2.0", as: si}
+      SPAN: {expr: "num(sweep_q.stop) - num(sweep_q.start)", as: si}
+      POINTS: "int(num(sweep_q.points))"
+      RBW: {expr: rbw_q, as: si}
+      REF_LEVEL: "num(trace_q.ref)"
+      SCALE: "num(trace_q.scale)"
+      TRACE_UNIT: trace_q.unit
+      ATTEN: att_q
+      SWEEP_TIME: {expr: swt_q, as: si}
+      SWEEP_MODE: status_q
+      TRACE: data_q
+      MARKER: 'marker_q == null ? "OFF" : "ON"'
+      MARKER_FREQ: {expr: "num(marker_q.freq)", as: si}
+      MARKER_LEVEL: "num(marker_q.level)"
+    operations:
+      center: {set: cent_set}
+      span: {set: span_set}
+      start: {get: star_q, set: star_set, as: si}
+      stop: {get: stop_q, set: stop_set, as: si}
+      rbw: {get: rbw_q, set: rbw_set, as: si}
+      attenuation: {get: att_q, set: att_set}
+      sweep_time: {get: swt_q, set: swt_set, as: si}
+      ref_level: {get: rlev_q, set: rlev_set}
+      scale: {get: pdiv_q, set: pdiv_set}
+      points: {get: poin_q}
+      sweep: {set: sweep_set}
+      trace: {get: data_q}
+      marker: {set: mark_set}
+      marker_freq: {get: mkx_q, set: mkx_set, as: si}
+      marker_level: {get: mky_q}
+      peak_search:
+        set:
+          - {cmd: mkr_peak, args: {p: "{value}"}, only: [PEAK]}
+          - {cmd: mkr_cf, only: [MKR_CF]}

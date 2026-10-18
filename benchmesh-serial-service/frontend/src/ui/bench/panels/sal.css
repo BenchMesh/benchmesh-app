@@ -1,0 +1,26 @@
+/* Spectrum analyzer panel: screen + soft-key column side by side when wide, stacked when
+   narrow. Colours come from the kit tokens (all skins). */
+
+.bench-sal { display: grid; gap: 12px; min-width: 0; }
+@container panel (min-width: 820px) {
+  .bench-sal { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); align-items: start; }
+}
+.bench-sal__screen { display: grid; gap: 6px; min-width: 0; }
+.bench-sal__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.bench-sal__mkr {
+  display: inline-flex; gap: 10px; align-items: baseline; position: relative;
+  font: 700 .78rem/1.2 var(--kit-font-num); color: var(--kit-glass-ink); font-variant-numeric: tabular-nums;
+}
+.bench-sal__mkr b { color: var(--kit-accent); letter-spacing: .1em; }
+.bench-sal__mkr[data-confirm="waiting"] { animation: kit-await 1.1s ease-in-out infinite; }
+.bench-sal__mkr[data-confirm="unconfirmed"]::after {
+  content: ""; position: absolute; top: -2px; right: -8px; width: 6px; height: 6px; border-radius: 50%; background: var(--kit-alert);
+}
+.bench-sal__ann {
+  display: flex; flex-wrap: wrap; gap: 2px 14px;
+  font: 400 .7rem/1.3 var(--kit-font-num); color: var(--kit-glass-ink-2); font-variant-numeric: tabular-nums;
+}
+.bench-sal__ann b { color: var(--kit-glass-ink-3); font-weight: 700; letter-spacing: .1em; margin-right: 4px; }
+.bench-sal__keys { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.bench-sal__group { display: grid; gap: 10px; min-width: 0; }
+.bench-sal__groups button { font-size: .7rem; letter-spacing: .08em; }

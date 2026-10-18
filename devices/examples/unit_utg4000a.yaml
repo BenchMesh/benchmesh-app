@@ -1,0 +1,18 @@
+# Replies as the unit_utg4000a programming manual shows them (PDF pages): checks the definition through the
+# real engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: unit_utg4000a
+model: UTG4000A
+replies:
+  - {send: '\*IDN\?', reply: "UNI-T Technologies, UTG4000, 000000001, 00.00.01", source: "PM p5"}
+  - {send: ':CHAN[12]:OUTP\?', reply: "1", source: "PM p9"}
+  - {send: ':CHAN[12]:BASE:WAV\?', reply: "SINe", source: "PM p13"}
+  - {send: ':CHAN[12]:BASE:FREQ\?', reply: "2e+3", source: "PM p13"}
+  - {send: ':CHAN[12]:AMPL:UNIT\?', reply: "VPP", source: "PM p11"}
+  - {send: ':CHAN[12]:BASE:AMPL\?', reply: "2e+0", source: "PM p14"}
+  - {send: ':CHAN[12]:BASE:OFFS\?', reply: "2e+0", source: "PM p14"}
+  - {send: ':CHAN[12]:BASE:PHAS\?', reply: "2e1", source: "PM p14"}
+  - {send: ':CHAN[12]:RAMP:SYMM\?', reply: "20", source: "PM p16"}
+  - {send: ':CHAN[12]:LOAD\?', reply: "50e+0", source: "PM p11"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 2000.0, AMPL: 2.0, OFFS: 2.0, PHASE: 20.0, SYMM: 20.0, LOAD: "50"}

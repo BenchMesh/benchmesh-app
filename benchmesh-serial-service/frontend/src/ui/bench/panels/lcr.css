@@ -1,0 +1,13 @@
+/* LCR meter panel: display beside the controls when wide, stacked when narrow.
+   Colours come from the kit tokens (all skins). */
+
+.bench-lcr { display: grid; gap: 12px; min-width: 0; align-items: start; }
+.bench-lcr__glass { display: grid; gap: 8px; min-width: 0; }
+.bench-lcr__controls { display: grid; gap: 12px; align-content: start; min-width: 0; }
+@container panel (min-width: 600px) {
+  .bench-lcr { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+}
+.bench-lcr__prompt {
+  display: grid; gap: 8px; padding: 8px 10px; border: 1px dashed var(--kit-warn); border-radius: var(--kit-r-ctl);
+  font: 400 .74rem/1.35 var(--kit-font-num); color: var(--kit-ink);
+}

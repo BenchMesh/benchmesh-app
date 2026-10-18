@@ -1,0 +1,30 @@
+# Manson HCS-3xxx switching supplies whose current is set in 0.1 A steps (also B&K Precision 1687B/1688B).
+# Protocol in devices/bases/manson_hcs.yaml. Written from the manuals, not yet seen live.
+# Model ratings: B&K 1685B manual p.28 (1685B/1687B/1688B); Manson HCS ratings from sigrok
+# `manson-hcs-3xxx` (no Manson model table in the local documents). Models are selected by the
+# GMAX reply (maximum V x10, I x10).
+schema: benchmesh.device/v1
+extends: manson_hcs
+id: manson_hcs
+vendor: Manson
+family: HCS-3xxx (0.1 A current resolution) / B&K 1687B, 1688B
+version: 0.1.0
+sources:
+  - {doc: "Manson HCS USB protocol (Conrad 000513911 data sheet, DOC/manson_hcs/doc/conrad_000513911DS01_hcs_usb_protocol.pdf)", pages: "1-2"}
+  - {doc: "B&K Precision 1685B Series programming manual (DOC/bk_1680/doc/1685B_Series_programming_manual.pdf)", pages: "2, 11-13"}
+  - {doc: "B&K Precision 1685B Series user manual (DOC/bk_1680/doc/1685B_series_manual_bk.pdf)", pages: "28-30"}
+  - {note: "Model ratings of the Manson HCS units from sigrok src/hardware/manson-hcs-3xxx/api.c"}
+models:
+  - {"name": "HCS-3100", "match": "^180100$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 18.0}, "current": {"unit": "A", "max": 10.0}}}}}
+  - {"name": "HCS-3150", "match": "^180150$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 18.0}, "current": {"unit": "A", "max": 15.0}}}}}
+  - {"name": "HCS-3200/1688B", "match": "^180200$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 18.0}, "current": {"unit": "A", "max": 20.0}}}}, "note": "B&K 1688B is this model (BK PM p.13 GMAX example 180200)"}
+  - {"name": "HCS-3202/1687B", "match": "^360100$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 36.0}, "current": {"unit": "A", "max": 10.0}}}}, "note": "B&K 1687B is this model"}
+  - {"name": "HCS-3300", "match": "^160300$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 16.0}, "current": {"unit": "A", "max": 30.0}}}}}
+  - {"name": "HCS-3302", "match": "^320150$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 15.0}}}}}
+  - {"name": "HCS-3304", "match": "^600080$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 8.0}}}}}
+  - {"name": "HCS-3400", "match": "^160400$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 16.0}, "current": {"unit": "A", "max": 40.0}}}}}
+  - {"name": "HCS-3402", "match": "^320200$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 20.0}}}}}
+  - {"name": "HCS-3404", "match": "^600100$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 10.0}}}}}
+  - {"name": "HCS-3600", "match": "^160600$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 16.0}, "current": {"unit": "A", "max": 60.0}}}}}
+  - {"name": "HCS-3602", "match": "^320300$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 30.0}}}}}
+  - {"name": "HCS-3604", "match": "^600150$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 15.0}}}}}

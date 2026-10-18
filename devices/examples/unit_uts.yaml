@@ -1,0 +1,35 @@
+# Replies as the UNI-T UTS programming manual shows them (printed pages; trace shortened to 7
+# points, the first five quoted from the manual's example).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: unit_uts
+transport: usbtmc
+model: UTS3036B
+replies:
+  - {send: '\*IDN\?', reply: "UNI-T Technologies, UTS3036B, 000000001, 00.00.01", source: "p7"}
+  - {send: ':SENSe:FREQuency:CENTer\?', reply: "1.000000e+09", source: "p93"}
+  - {send: ':SENSe:FREQuency:SPAN\?', reply: "2.000000e+08", source: "p94"}
+  - {send: ':SENSe:FREQuency:STARt\?', reply: "9.000000e+08", source: "p95"}
+  - {send: ':SENSe:FREQuency:STOP\?', reply: "1.100000e+09", source: "p95"}
+  - {send: ':SENSe:BANDwidth:RESolution\?', reply: "1.000000e+06", source: "p80"}
+  - {send: ':SENSe:BANDwidth:RESolution:AUTO\?', reply: "1", source: "p81"}
+  - {send: ':SENSe:BANDwidth:VIDeo\?', reply: "1.000000e+06", source: "p81"}
+  - {send: ':SENSe:BANDwidth:VIDeo:AUTO\?', reply: "1", source: "p82"}
+  - {send: ':DISPlay:WINDow:TRACe:Y:SCALe:RLEVel\?', reply: "-1.000000e+01", source: "p51"}
+  - {send: ':DISPlay:WINDow:TRACe:Y:SCALe:PDIVision\?', reply: "1.000000e+00", source: "p51"}
+  - {send: ':SENSe:POWer:RF:ATTenuation\?', reply: "1.000000e+01", source: "p98"}
+  - {send: ':SENSe:POWer:RF:ATTenuation:AUTO\?', reply: "1", source: "p104"}
+  - {send: ':SENSe:POWer:RF:GAIN:STATe\?', reply: "0", source: "p104"}
+  - {send: ':SENSe:DETector:FUNCtion\?', reply: "POSitive", source: "p91"}
+  - {send: ':SENSe:SWEep:TIME\?', reply: "1.000000e-01", source: "p108"}
+  - {send: ':SENSe:SWEep:POINts\?', reply: "1001", source: "p107"}
+  - {send: ':INITiate:CONTinuous\?', reply: "1", source: "p62"}
+  - {send: ':TRACe:TYPE\?', reply: "AVERage", source: "p116"}
+  - {send: ':CALCulate:MARKer1:STATe\?', reply: "1", source: "p42"}
+  - {send: ':CALCulate:MARKer1:X\?', reply: "1.000000e+09", source: "p41"}
+  - {send: ':CALCulate:MARKer1:Y\?', reply: "-5.000000e+01", source: "p43"}
+  - {send: ':TRACe1:DATA\?', reply: "#500097-5.948681e+01,-7.703760e+01,-6.052045e+01,-9.845841e+01,-5.940556e+01,-3.012000e+01,-7.110000e+01", source: "p117-118 (shortened, header recomputed)"}
+  - {send: ':OUTPut:STATe\?', reply: "0", source: "p66"}
+  - {send: ':SOURce:POWer\?', reply: "-4.000000e+01", source: "p115"}
+expect:
+  SAL:
+    1: {CENTER: 1000000000, SPAN: 200000000, RBW: 1000000, REF_LEVEL: -10, SCALE: 1, ATTEN: 10, PREAMP: "OFF", DETECTOR: POS, POINTS: 1001, SWEEP_MODE: CONT, TRACE_MODE: AVERAGE, MARKER: "ON", MARKER_LEVEL: -50}

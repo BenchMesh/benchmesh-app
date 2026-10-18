@@ -1,0 +1,23 @@
+# Replies quoted from the UDP3000S programming manual (V1.1) examples; checks the definition
+# through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: unit_udp3000s
+transport: usbtmc
+model: UDP3305S
+replies:
+  - {send: '\*IDN\?', reply: "Uni-Trend,UDP3305S,UDP51183557335E,V1.10", source: "format per philpagel TestController; SN from PM p.5 VISA example"}
+  - {send: ':MEAS:ALL\? CH[123]', reply: "05.10,0.089,00.45", source: "PM p.19"}
+  - {send: ':MEAS:VOLT\? CH[123]', reply: "05.10", source: "PM p.19"}
+  - {send: ':MEAS:CURR\? CH[123]', reply: "0.089", source: "PM p.19"}
+  - {send: ':MEAS:POWE\? CH[123]', reply: "00.45", source: "PM p.19"}
+  - {send: ':OUTP:STAT\? CH[123]', reply: "ON", source: "PM p.17"}
+  - {send: ':OUTP:CVCC\? CH[123]', reply: "CV", source: "PM p.17"}
+  - {send: ':STAT:QUES:INST:ISUM[123]\?', reply: "2", source: "PM p.9 (bit1 = CV) and p.43"}
+  - {send: ':SYST:RWL\?', reply: "OFF", source: "PM p.49"}
+  - {send: ':SOUR[123]:VOLT\?', reply: "25.00", source: "PM p.14"}
+  - {send: ':SOUR[123]:CURR\?', reply: "5.000", source: "PM p.15"}
+  - {send: ':SOUR[123]:VOLT:PROT\?', reply: "30.00", source: "PM p.14"}
+  - {send: ':SOUR[123]:CURR:PROT\?', reply: "5.000", source: "PM p.16"}
+expect:
+  PSU:
+    1: {VOUT: 5.1, IOUT: 0.089, POUT: 0.45, OUTPUT: "ON", CV: true, CC: false, OVP: false, REMOTE: "OFF"}
+    3: {VOUT: 5.1, OUTPUT: "ON"}

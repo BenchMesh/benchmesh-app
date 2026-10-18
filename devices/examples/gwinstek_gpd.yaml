@@ -1,0 +1,17 @@
+# Replies for the GPD-x303S command set (GPD-X303S user manual pp.48-51; reply number
+# formats as sigrok gwinstek-gpd reads them). Spec: ai_context/migration/coverage/README.md.
+definition: gwinstek_gpd
+model: GPD-2303S
+replies:
+  - {send: '\*IDN\?', reply: "GW INSTEK,GPD-2303S,SN:ER915277,V2.10", source: "p.51 (format), sigrok (example)"}
+  - {send: 'VOUT1\?', reply: "20.345V\r\n", source: "p.49 (value from the VSET1:20.345 example)"}
+  - {send: 'IOUT1\?', reply: "1.000A\r\n", source: "p.49"}
+  - {send: 'VOUT2\?', reply: "05.000V\r\n", source: "p.49"}
+  - {send: 'IOUT2\?', reply: "2.234A\r\n", source: "p.49 (value from the ISET1:2.234 example)"}
+  - {send: 'VSET1\?', reply: "20.345V\r\n", source: "p.49"}
+  - {send: 'ISET1\?', reply: "2.234A\r\n", source: "p.48"}
+  - {send: 'STATUS\?', reply: "10010110\r\n", source: "p.50 (CH1 CV, CH2 CC, independent, beep on, output on, 9600 baud)"}
+expect:
+  PSU:
+    1: {VOUT: 20.345, IOUT: 1.0, OUTPUT: "ON", CV: true, CC: false, REMOTE: "ON"}
+    2: {VOUT: 5.0, IOUT: 2.234, OUTPUT: "ON", CV: false, CC: true}

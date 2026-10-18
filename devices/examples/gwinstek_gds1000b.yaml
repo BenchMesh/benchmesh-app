@@ -1,0 +1,30 @@
+# Replies as the GDS-1000B Programming Manual shows them (printed = PDF pages): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: gwinstek_gds1000b
+model: GDS-1074B
+replies:
+  - {send: '\*IDN\?', reply: "GW,GDS-1074B,PXXXXXX,V1.XX", source: "p29"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "ON", source: "p45"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "5.000e+00", source: "p38 (Vertical Scale in the memory header)"}
+  - {send: ':CHANnel[1-4]:POSition\?', reply: "2.4E-3", source: "p46"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "DC", source: "p44"}
+  - {send: ':CHANnel[1-4]:PROBe:RATio\?', reply: "1.000e+01", source: "p38 (Probe Ratio in the memory header)"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "2.000E+07", source: "p43"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "OFF", source: "p46"}
+  - {send: ':TIMebase:SCALe\?', reply: "5.000E-04", source: "p38 (Horizontal Scale)"}
+  - {send: ':TIMebase:POSition\?', reply: "0.000E+00", source: "p38 (Horizontal Position)"}
+  - {send: ':ACQuire:RECOrdlength\?', reply: "1.000e+03", source: "p40-41 (1e+3)"}
+  - {send: ':TRIGger:STATe\?', reply: "*AUTO", source: "p132"}
+  - {send: ':TRIGger:MODe\?', reply: "AUTO", source: "p120 (from *LRN? p29: MODe AUTO)"}
+  - {send: ':TRIGger:SOURce\?', reply: "CH1", source: "p119"}
+  - {send: ':TRIGger:EDGe:SLOP\?', reply: "RISE", source: "p29 (*LRN?: EDGe:SLOP RISE)"}
+  - {send: ':TRIGger:LEVel\?', reply: "3.30E-1", source: "p121"}
+  - {send: ':ACQuire:MODe\?', reply: "PDETECT", source: "p36"}
+  - {send: ':ACQuire[1-4]:MEMory\?', reply: "#16\x00\x1c\x00\x1b\x00\x1a\n", source: "p37 (raw data 00 1C 00 1B 00 1A)"}
+  - {send: ':MEASure:PK2Pk\?', reply: "2.04E-1", source: "p92"}
+  - {send: ':MEASure:MEAN\?', reply: "1.82E-3", source: "p89"}
+  - {send: ':MEASure:RMS\?', reply: "1.31E-3", source: "p93"}
+  - {send: ':MEASure:FREQuency\?', reply: ">1.0E+3", source: "p82"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 5.0, OFFSET: 0.0024, COUPLING: "DC", PROBE: 10, BWLIMIT: "20M", INVERT: "OFF", TIMEBASE: 5.0e-4, TIMEOFFSET: 0.0, TRIG_SWEEP: "AUTO", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "POS", TRIG_LEVEL: 0.33, ACQ_TYPE: "PEAK", WAVE: [28, 27, 26], WAVE_Y0: 0.0, WAVE_DY: 0.2, WAVE_X0: -2.5e-3, WAVE_DX: 5.0e-6, VPP: 0.204, VAVG: 0.00182, VRMS: 0.00131, FREQ: 1000.0}

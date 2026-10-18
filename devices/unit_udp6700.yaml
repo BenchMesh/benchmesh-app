@@ -1,0 +1,82 @@
+# UNI-T UDP6720 series (UDP6720/6721/6730/6731) single-output switching DC power supply, RS232
+# only. SCPI-99 baseline (devices/bases/scpi_psu.yaml) plus UNI-T quirks. Written from the
+# programming manual before anyone tested it on hardware. Coverage: ai_context/migration/coverage/PSU.md §2.16.
+schema: benchmesh.device/v1
+extends: scpi_psu
+id: unit_udp6700
+vendor: UNI-T
+family: UDP6720 series single-output DC power supply (SCPI, RS232)
+version: 0.1.0
+sources:
+  - {doc: "UDP6720 Series Programming Manual REV 1.2 (UDP6720_Series_Programming_Manual_V1.2.pdf)", pages: "2, 7-12, 20 (n / 47 footer)"}
+  - {doc: "UDP6700 Series Programming Manual (January 30, 2023)", pages: "1-3 (commands 1-18)"}
+  - {doc: "UDP6700 Series Data Sheet V1.0", pages: "Technical Specification"}
+  - {note: "Baud rate is chosen in the instrument menu; the manuals do not state a default (9600 assumed)"}
+models:
+  - {name: UDP6720, match: "^UNI-?T,UDP6720,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 100.0}}}}}
+  - {name: UDP6721, match: "^UNI-?T,UDP6721,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 8.0}, power: {unit: W, max: 180.0}}}}}
+  - {name: UDP6722, match: "^UNI-?T,UDP6722,", note: "Only in the programming manual's *IDN? example (PM p.20); ratings unknown, UDP6720 limits assumed"}
+  - {name: UDP6730, match: "^UNI-?T,UDP6730,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 40.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 360.0}}}}}
+  - {name: UDP6731, match: "^UNI-?T,UDP6731,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 80.0}, current: {unit: A, max: 15.0}, power: {unit: W, max: 360.0}}}}}
+link:
+  serial: {baud: 9600, format: 8N1, flow: none}
+framing:
+  # the parser executes on CR+LF (PM p.2); replies end in CR LF
+  tx: {terminator: "\r\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 100}
+commands:
+  idn: {source: "PM p.20"}
+  meas_all:
+    send: "MEAS:ALL?"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p]}}]
+    description: "Voltage, current, power read back"
+    source: "PM p.12"
+  meas_v: {source: "PM p.11"}
+  meas_i: {source: "PM p.11-12"}
+  meas_p: {source: "PM p.12 (MEASure:POWer?; V1.0 manual spells POWEr)"}
+  volt_q: {source: "PM p.9"}
+  curr_q: {source: "PM p.8"}
+  outp_q: {parse: [trim], description: "ON|OFF", source: "PM p.7"}
+  cvcc_q: {send: "OUTP:CVCC?", parse: [trim], description: "CV|CC", source: "PM p.7"}
+  ovp_trip_q: {send: "VOLT:PROT:TRIP?", parse: [trim, {map: {"0": "false", "1": "true"}}], description: "0 not tripped, 1 OVP", source: "PM p.10 (not in the V1.0 manual)"}
+  ocp_trip_q: {send: "CURR:PROT:TRIP?", parse: [trim, {map: {"0": "false", "1": "true"}}], description: "0 not tripped, 1 OCP", source: "PM p.9 (not in the V1.0 manual)"}
+  ovp_lvl_q: {source: "PM p.9"}
+  ocp_lvl_q: {source: "PM p.8"}
+  volt_set:
+    params: {v: {max: 80, format: "%.2f"}}
+    description: "10 mV resolution; refused by the instrument above the model's rating or the OVP level"
+    source: "PM p.9; DS (set resolution 10 mV)"
+  curr_set:
+    params: {a: {max: 30}}
+    source: "PM p.8; DS (set resolution 1 mA)"
+  outp_set: {source: "PM p.7"}
+  ovp_lvl_set: {params: {v: {max: 85, format: "%.2f"}}, source: "PM p.9"}
+  ocp_lvl_set: {params: {a: {max: 31}}, source: "PM p.8"}
+  ovp_set: {source: "PM p.10"}
+  ocp_set: {source: "PM p.8-9"}
+  remote_set:
+    params: {on: {values: {"ON": "SYST:REM", "OFF": null}}}
+    description: "Remote locks the keys except OUTPUT; the panel ESC key leaves remote, there is no SYST:LOC"
+    source: "V1.0 manual cmd 17"
+classes:
+  PSU:
+    features:
+      absolute_limits:
+        voltage: {unit: V, max: 60.0}
+        current: {unit: A, max: 5.0}
+        power: {unit: W, max: 100.0}
+      memory_banks: 3
+      protection: {OVP: {type: boolean}, OCP: {type: boolean}}
+    poll:
+      - every_ms: 500
+        read: [meas_all, outp_q, cvcc_q, ovp_trip_q, ocp_trip_q]
+    status:
+      VOUT: {expr: "num(meas_all.v)", as: si}
+      IOUT: {expr: "num(meas_all.i)", as: si}
+      POUT: {expr: "num(meas_all.p)", as: si}
+      CV: 'outp_q == "ON" && cvcc_q == "CV"'
+      CC: 'outp_q == "ON" && cvcc_q == "CC"'
+      OVP: 'ovp_trip_q == "true"'
+      OCP: 'ocp_trip_q == "true"'
+      FAIL: 'ovp_trip_q == "true" || ocp_trip_q == "true"'

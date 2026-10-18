@@ -1,0 +1,14 @@
+# Replies as the DM3058 programming guide / DM3068 help print them. The RIGOL command set is
+# reached over USBTMC here; RS-232 uses the same commands with \r\n.
+definition: rigol_dm3000
+transport: usbtmc
+model: DM3058
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DM3058,DM3L000000000,01.01.00.01.01.00", source: "CHM IDN format (DM3068 example model replaced)"}
+  - {send: ':FUNCtion\?', reply: "DCV", source: "PG 3-15 :FUNCtion? → DCV"}
+  - {send: ':MEASure:VOLTage:DC\?', reply: "8.492853e-05", source: "PG 3-31 :MEASure:VOLTage:DC?"}
+  - {send: ':MEASure:VOLTage:DC:RANGe\?', reply: "3", source: "CHM :MEASure:VOLTage:DC:RANGe? example → 3 (200 V)"}
+  - {send: ':RATE:VOLTage:DC\?', reply: "M", source: "PG 3-49 :RATE:VOLTage:DC? → F|M|S"}
+expect:
+  DMM:
+    1: {MEAS: 8.492853e-5, MODE: VOLT, OVERLOAD: false}

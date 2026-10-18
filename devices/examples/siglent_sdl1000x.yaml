@@ -1,0 +1,21 @@
+# Siglent SDL1000X replies quoted from the programming guide (PG,
+# SDL1000X_programming_guide_E02B.pdf); `\s` in the PG's IDN example is a space.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: siglent_sdl1000x
+transport: usbtmc
+model: SDL1020X
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDL1020X,0123456789,1.01.01.15", source: "PG p.15"}
+  - {send: 'MEAS:VOLT\?', reply: "7.924678", source: "PG p.17"}
+  - {send: 'MEAS:CURR\?', reply: "3.986634", source: "PG p.17"}
+  - {send: 'MEAS:POW\?', reply: "31.867329", source: "PG p.17"}
+  - {send: 'INP\?', reply: "0", source: "PG p.18"}
+  - {send: 'FUNC\?', reply: "RESISTANCE", source: "PG p.19"}
+  - {send: 'CURR\?', reply: "2.674", source: "PG p.20"}
+  - {send: 'VOLT\?', reply: "4.000", source: "PG p.24"}
+  - {send: 'POW\?', reply: "4.000", source: "PG p.27"}
+  - {send: 'RES\?', reply: "4.000", source: "PG p.30"}
+  - {send: ':SOUR:SHOR\?', reply: "1", source: "PG p.18"}
+expect:
+  ELL:
+    1: {VIN: 7.924678, IIN: 3.986634, PIN: 31.867329, INPUT: "OFF", MODE: "RES"}

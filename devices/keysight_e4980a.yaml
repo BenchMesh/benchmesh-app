@@ -1,0 +1,91 @@
+# Keysight (Agilent) E4980A / E4980AL precision LCR meters — the reference "E4980 dialect".
+# Written from the QCoDeS driver (keysight_e4980a/doc/qcodes_e4980a.py, citing User's Guide
+# E4980-90230; the Keysight PDF itself was not downloadable). See ai_context/migration/coverage/LCR.md §2.8.
+schema: benchmesh.device/v1
+id: keysight_e4980a
+extends: scpi_lcr_e4980
+vendor: Keysight
+family: E4980A/AL precision LCR meter
+version: 0.1.0
+sources:
+  - {doc: "qcodes_e4980a.py (BenchMeshDOC/keysight_e4980a)", pages: "l.158-461 (commands), l.218-242 (limits)"}
+  - {note: "TRIG:SOUR / TRIG and CORR:OPEN (not in the QCoDeS driver) as in the E4980 / HP 4284A command tree, unverified here"}
+  - {note: "USBTMC vid 0957 (pid commonly 0909, not verified); LAN raw SCPI socket 5025"}
+models:
+  - name: E4980A
+    match: '(?i)^(Agilent|Keysight) Technologies,\s*E4980A,'
+    features: {LCR: {frequency: {min: 20, max: 2000000, presets: [100, 120, 1000, 10000, 100000, 1000000]}}}
+  - name: E4980AL
+    match: '(?i)^(Agilent|Keysight) Technologies,\s*E4980AL,'
+    note: "Upper frequency 300 kHz, 500 kHz or 1 MHz by option; the instrument refuses higher values"
+    features: {LCR: {frequency: {min: 20, max: 1000000, presets: [100, 120, 1000, 10000, 100000]}}}
+link:
+  usbtmc:
+    vid: "0957"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}
+      timing: {min_gap_ms: 0}
+  tcp: {port: 5025}
+commands:
+  fetch: {send: "FETC:IMP:FORM?", source: "qcodes l.398"}
+  fetch_a: {send: "FETC:IMP:FORM?"}
+  fetch_b: {send: "FETC:IMP:FORM?"}
+  # SHORt / MEDium / LONG integration time (QCoDeS l.319, l.335-336), canonical FAST / MED / SLOW
+  aper_q:
+    parse: [trim, upper, {split: {sep: ",", index: 0}}, trim, {map: {SHOR: FAST, SHORT: FAST, MED: MED, MEDIUM: MED, LONG: SLOW}}]
+  aper_set:
+    params: {s: {values: {FAST: SHOR, SLOW: LONG}}}
+  rang_q: {parse: [trim, number]}
+  rang_set:
+    params: {r: {values: {"1": "FUNC:IMP:RANG 1", "30": null}}}
+  freq_set:
+    params: {f: {min: 20, max: 2000000}}
+  bias_stat_q:
+    send: "BIAS:STAT?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+    cache_ms: 2500
+  bias_volt_q: {send: "BIAS:VOLT:LEV?", parse: [trim, number], cache_ms: 2500}
+  bias_stat_set:
+    send: "BIAS:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: energize
+    invalidates: [bias_stat_q]
+  bias_volt_set:
+    send: "BIAS:VOLT:LEV {v}"
+    params: {v: {type: number, min: 0, max: 2, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    invalidates: [bias_volt_q]
+    description: "Standard instrument: 0, 1.5 or 2 V (option 001: ±40 V); the meter rounds"
+  corr_open_stat:
+    params: {on: {values: {"ON": "1", "OFF": "0"}}}
+  corr_short_stat:
+    params: {on: {values: {"ON": "1", "OFF": "0"}}}
+classes:
+  LCR:
+    features:
+      level: {min: 0, max: 2}
+      bias: {min: 0, max: 2, unit: V}
+      ranges:
+        - {value: AUTO, display: AUTO}
+        - {value: "1", display: "1 Ω"}
+        - {value: "10", display: "10 Ω"}
+        - {value: "100", display: "100 Ω"}
+        - {value: "300", display: "300 Ω"}
+        - {value: "1000", display: "1 kΩ"}
+        - {value: "3000", display: "3 kΩ"}
+        - {value: "10000", display: "10 kΩ"}
+        - {value: "30000", display: "30 kΩ"}
+        - {value: "100000", display: "100 kΩ"}
+    poll:
+      - every_ms: 300
+        read: [fetch, func_q, freq_q, volt_q, aper_q, rang_auto_q, rang_q, bias_stat_q, bias_volt_q]
+    status:
+      RANGE: 'rang_auto_q == "ON" ? "AUTO" : string(int(rang_q))'
+      BIAS: {expr: bias_volt_q, as: si}
+      BIAS_ON: bias_stat_q
+    operations:
+      bias: {get: bias_volt_q, set: bias_volt_set, as: si}
+      bias_output: {get: bias_stat_q, set: bias_stat_set}

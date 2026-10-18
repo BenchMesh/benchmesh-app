@@ -1,0 +1,167 @@
+# Korad KEL102 / KEL103 DC electronic loads and their rebrands (Tenma 72-13200 / 72-13210,
+# RND 320-KEL102 / 320-KEL103), over USB (CDC-ACM) or RS232. Written from Korad's command
+# table and the hardware-verified community spec before anyone tested it here (all models
+# awaiting confirmation). LAN is UDP (port 18190, KEL10x_IP_LAN_Communication_Protocol.pdf),
+# which BenchMesh has no link for: not offered. Coverage report: ai_context/migration/coverage/ELL.md §2.1.
+#
+# Not SCPI enough to extend scpi_load: every value carries a unit suffix, sent and received
+# (`:CURR 2.000A`, reply `2.000A`), and the mode keywords are CC/CV/CR/CW.
+#
+# Mode side effect: on this load, setting :CURR/:VOLT/:RES/:POW also switches the load into
+# that mode (kelctl KEL103-protocol.md). The setpoint setters are therefore gated with
+# `requires` on the active mode: a setpoint never changes the mode behind the user's back;
+# select the mode first (POST mode/<KEY>), as on the OWON OEL.
+#
+# CC = Korad "Communication Commands with Computer" (KEL10x_Communication_Commands_with_Computer.pdf),
+# KP = kelctl KEL103-protocol.md (https://github.com/vorbeiei/kelctl).
+schema: benchmesh.device/v1
+id: korad_kel10x
+vendor: Korad
+family: KEL10x DC electronic load (KEL102, KEL103; Tenma 72-132xx, RND 320-KEL10x)
+version: 0.1.0
+sources:
+  - {doc: "Korad KEL10x Communication Commands with Computer (8 pp)", pages: "1-8 (commands 1-30)"}
+  - {doc: "kelctl KEL103-protocol.md (community spec, verified on an RND 320-KEL103)", pages: "FUNC, INP, SYST:LOCK, SYST:COMP, unit suffixes, mode switching"}
+  - {note: "Ratings: KEL102 120 V / 30 A / 150 W, KEL103 120 V / 30 A / 300 W; Tenma 72-13200 = 150 W unit, 72-13210 = 300 W unit (Farnell datasheet). CR maximum 7500 ohm (CC p.2 :RES:UPP? example)"}
+  - {note: "kelctl waits 100 ms after every command; gap_after_write_ms 100 until measured"}
+models:
+  - {name: KEL102, match: "KEL102", note: "Also RND 320-KEL102", features: {ELL: {absolute_limits: {power: {unit: W, max: 150.0}}, modes: {POW: {setpoint: {max: 150.0}}}}}}
+  - {name: KEL103, match: "KEL103", note: "Also RND 320-KEL103"}
+  - {name: 72-13200, match: "72-13200", note: "Tenma rebrand of the KEL102; identify reply form unknown", features: {ELL: {absolute_limits: {power: {unit: W, max: 150.0}}, modes: {POW: {setpoint: {max: 150.0}}}}}}
+  - {name: 72-13210, match: "72-13210", note: "Tenma rebrand of the KEL103; identify reply form unknown"}
+identify: idn
+link:
+  # USB CDC-ACM (vid:pid unknown) or RS232; 9600-115200 8N1, factory 115200 (CC p.1 :STAT? baud
+  # codes; KP default).
+  serial: {baud: 115200, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 100}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "CC p.1 #1; KP (RND 320-KEL103 V2.60 SN:01234567)"}
+  meas_v:
+    send: ":MEAS:VOLT?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.4 #18 (1.4999V)"
+  meas_i:
+    send: ":MEAS:CURR?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.4 #17 (0.789A)"
+  meas_p:
+    send: ":MEAS:POW?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.4 #19 (1.1968W)"
+  inp_q:
+    send: ":INP?"
+    parse: [trim, upper, {map: {"ON": "ON", "OFF": "OFF", "1": "ON", "0": "OFF"}}]
+    source: "CC p.2 #7; KP (:INP? -> ON)"
+  # KP (kelenums.py): CC CV CR CW SHORt BATTERY OCP OPP LIST PULSE TOGGLE "CONTINUOUS CC" ...
+  func_q:
+    send: ":FUNC?"
+    parse: [trim, upper, {map: {CC: CURR, CV: VOLT, CR: RES, CW: POW, SHORT: SHORT, BATTERY: BATT, _: OTHER}}]
+    source: "KP (the vendor table, CC p.3 #16, shows VOLT as the reply; the community spec found CC/CV/CR/CW on hardware)"
+  lock_q:
+    send: ":SYST:LOCK?"
+    parse: [trim, upper, {map: {"ON": "ON", "OFF": "OFF", "1": "ON", "0": "OFF"}}]
+    source: "KP :SYST:LOCK ON|OFF (panel lock; also field 3 of :STAT?, CC p.1 #6)"
+  curr_q:
+    send: ":CURR?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.2 #10 (>2A)"
+  volt_q:
+    send: ":VOLT?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.2 #8 (>20V)"
+  res_q:
+    send: ":RES?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.3 #12 (>20OHM)"
+  pow_q:
+    send: ":POW?"
+    parse: [trim, {regex: {pattern: "^([-+0-9.Ee]+)", group: 1}}, number]
+    source: "CC p.3 #14 (>20W)"
+  mode_set:
+    send: ":FUNC {mode}"
+    params: {mode: {type: enum, values: {CURR: CC, VOLT: CV, RES: CR, POW: CW}}}
+    reply: none
+    safety: configure
+    source: "KP (CV|CC|CR|CW|SHORt; the vendor table CC p.3 #16 lists VOLT|CURR|RES|POW|SHORT)"
+  curr_set:
+    send: ":CURR {a}A"
+    params: {a: {type: number, min: 0, max: 30, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "CURR"', message: "CC setpoint requires MODE=CURR (on this load setting it would also switch the mode); POST mode/CURR first"}
+    source: "CC p.2 #10 (:CURRent 2A)"
+  volt_set:
+    send: ":VOLT {v}V"
+    params: {v: {type: number, min: 0, max: 120, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "VOLT"', message: "CV setpoint requires MODE=VOLT (on this load setting it would also switch the mode); POST mode/VOLT first"}
+    source: "CC p.2 #8 (:VOLTage 20V)"
+  res_set:
+    send: ":RES {r}OHM"
+    params: {r: {type: number, min: 0.05, max: 7500, format: "%.3f", unit: ohm}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "RES"', message: "CR setpoint requires MODE=RES (on this load setting it would also switch the mode); POST mode/RES first"}
+    source: "CC p.3 #12 (:RESistance 20OHM); minimum not documented (0.05 assumed)"
+  pow_set:
+    send: ":POW {p}W"
+    params: {p: {type: number, min: 0, max: 300, format: "%.2f", unit: W}}
+    reply: none
+    safety: configure
+    requires: {expr: 'func_q == "POW"', message: "CP setpoint requires MODE=POW (on this load setting it would also switch the mode); POST mode/POW first"}
+    source: "CC p.3 #14 (:POWer 20W)"
+  input_set:
+    send: ":INP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: "CC p.2 #7 (:INPut ON)"
+  lock_set:
+    send: ":SYST:LOCK {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "KP :SYST:LOCK ON|OFF"
+  comp_set:
+    send: ":SYST:COMP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "KP :SYST:COMP ON|OFF (remote compensation; undocumented by Korad, field 5 of :STAT?)"
+classes:
+  ELL:
+    channels: 1
+    ui_component: KoradKEL10xELL
+    features:
+      remote_sense: true
+      absolute_limits: {voltage: {unit: V, max: 120.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 300.0}}
+      modes:
+        CURR: {ui_name: "Constant Current", setpoint: {unit: "A", symbol: "I", min: 0.0, max: 30.0, step: 0.001}}
+        VOLT: {ui_name: "Constant Voltage", setpoint: {unit: "V", symbol: "U", min: 0.0, max: 120.0, step: 0.001}}
+        RES: {ui_name: "Constant Resistance", setpoint: {unit: "Ω", symbol: "R", max: 7500.0, step: 0.001}}
+        POW: {ui_name: "Constant Power", setpoint: {unit: "W", symbol: "P", min: 0.0, max: 300.0, step: 0.01}}
+        SHORT: {ui_name: "Short circuit"}
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, meas_p, inp_q, func_q, lock_q]
+    status:
+      VIN: {expr: "meas_v", as: si}
+      IIN: {expr: "meas_i", as: si}
+      PIN: {expr: "meas_p", as: si}
+      INPUT: inp_q
+      MODE: func_q
+      REMOTE: lock_q
+    operations:
+      mode: {set: mode_set}
+      input: {get: inp_q, set: input_set}
+      remote: {get: lock_q, set: lock_set, description: "Front-panel lock (:SYST:LOCK); the load has no remote/local mode"}
+      curr: {get: curr_q, set: curr_set}
+      volt: {get: volt_q, set: volt_set}
+      res: {get: res_q, set: res_set}
+      pow: {get: pow_q, set: pow_set}
+      remote_compensation: {set: comp_set}

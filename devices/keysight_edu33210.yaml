@@ -1,0 +1,45 @@
+# Keysight EDU33211A / EDU33212A (EDU33210 series) function/arbitrary waveform generators.
+# Written from the user's guide before anyone tested it on hardware (the EDU programming guide
+# needs a Keysight login). Research: ai_context/migration/coverage/AWG.md §2.7. Pages are PDF
+# pages (printed = PDF).
+schema: benchmesh.device/v1
+id: keysight_edu33210
+extends: scpi_awg
+vendor: Keysight
+family: EDU33210 series Trueform function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "EDU33210 Series User's Guide EDU33212-90002 Ed4", pages: "50 (LAN socket 5025), 52 (USB ids), 83-84 (FUNC, FREQ, limits), 87-89 (OFFS, VOLT:UNIT, LOAD), 91 (RAMP:SYMM), 93 (OUTP), 149 (*IDN?)"}
+  - {note: "Reply formats and PHASe are not shown in the user's guide: taken from the Trueform command set (33500B, pymeasure). Unverified."}
+models:
+  - {"name": "EDU33211A", "match": "^Keysight Technologies,EDU33211A,", "channels": {"AWG": 1}}
+  - {"name": "EDU33212A", "match": "^Keysight Technologies,EDU33212A,"}
+link:
+  # EDU33212A 2A8D:8D01, EDU33211A 2A8D:8C01 (PDF p52): vendor only, identify picks the model
+  usbtmc: {vid: "2a8d"}
+  tcp: {port: 5025}
+commands:
+  outp_q: {source: "PDF p93"}
+  outp_set: {source: "PDF p93"}
+  shape_q: {source: "PDF p83; SIN SQU TRI RAMP PULS PRBS NOIS ARB DC"}
+  shape_set: {source: "PDF p83"}
+  freq_q: {source: "PDF p84"}
+  freq_set: {source: "PDF p83-84; 1 µHz–20 MHz sine"}
+  unit_q: {source: "PDF p88"}
+  ampl_q: {source: "PDF p87"}
+  ampl_set:
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    description: "Vpp < 2(Vmax − |Voffset|), Vmax ±5 V into 50 Ω / ±10 V High-Z"
+    source: "PDF p87"
+  offs_q: {source: "PDF p87"}
+  offs_set: {source: "PDF p87"}
+  phase_q: {source: "Trueform [SOURce[1|2]:]PHASe (not in the user's guide)"}
+  phase_set:
+    params: {deg: {type: number, min: -360, max: 360, format: "%.3f", unit: deg}}
+    source: "Trueform [SOURce[1|2]:]PHASe (not in the user's guide)"
+  symm_q: {source: "PDF p91"}
+  symm_set: {source: "PDF p91"}
+  load_q: {source: "PDF p89; ohms or 9.9E+37 (High-Z)"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 20e6, "SQU": 10e6, "PUL": 10e6, "RAMP": 0.2e6}, "channel_colors": {"1": "#FFD700", "2": "#32CD32"}}

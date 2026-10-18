@@ -1,0 +1,65 @@
+# UNI-T UT8806E 6½-digit bench multimeter (SCPI). Written from the SCPI programming manual
+# (ai_context/migration/coverage/DMM.md §3.10) before anyone tested it: awaiting confirmation.
+# Keysight-style SCPI → devices/bases/scpi_dmm.yaml.
+schema: benchmesh.device/v1
+id: unit_ut8806e
+extends: scpi_dmm
+vendor: UNI-T
+family: UT8806E bench multimeter
+version: 0.1.0
+sources:
+  - {doc: "UT8806E SCPI Programming Manual (unitrend)", pages: "6 *IDN?, 9-17 CONFigure, 26 FUNC, 26-38 RANGe/NPLC (printed x/91)"}
+  - {doc: "UT8806E User Manual", pages: "RS-232C 9600 8N1 default, USB-TMC, LAN, GPIB option"}
+  - {note: "The manual's *IDN? example reads \"UNI-T UT8805A, …\" (copy-edited): the model regex also accepts UT8806. USB vid/pid unknown; raw LAN port 5025 unverified (VXI-11 documented)"}
+models:
+  - name: UT8806E
+    match: "(?i)^UNI-T,? *UT8806"
+link:
+  serial: {baud: 9600, format: 8N1, flow: none}
+commands:
+  func:
+    parse:
+      - trim
+      - unquote
+      - upper
+      - {replace: {from: " ", to: ""}}
+      - map: {"VOLT": VOLT, "VOLT:DC": VOLT, "VOLT:AC": VOLT_AC, "CURR": CURR, "CURR:DC": CURR,
+              "CURR:AC": CURR_AC, "RES": RES, "FRES": FRES, "CAP": CAP, "FREQ": FREQ, "PER": PER,
+              "CONT": CONT, "DIOD": DIOD, "TEMP": TEMP}
+    source: "PM p.26 FUNC? → VOLT: AC (unquoted, space after the colon)"
+  meas: {source: "PM p.17-25 READ?/MEASure; overload +9.90000000E+37"}
+  mode_set: {source: "PM p.9-17 CONFigure:<function> [AUTO]"}
+  rng_q: {source: "PM p.27-29 <fn>:RANGe? → +2.00000000E+01"}
+  auto_q: {source: "PM p.29-31 <fn>:RANGe:AUTO? → 1"}
+  nplc_q:
+    parse: [trim, number, {map: {"0.006": "0.006", "0.02": "0.02", "0.06": "0.06", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    source: "PM p.35-37 <fn>:NPLC? → +0.20000000E+00"
+  rate_set:
+    params:
+      plc: {type: enum, values: {"0.006": "0.006", "0.06": "0.06"}}
+    source: "PM p.35-37 <fn>:NPLC {0.006|0.02|0.06|0.2|1|10|100}"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.000000002": " 2E-9", "0.00000002": " 20E-9", "0.0000002": " 200E-9", "0.000002": " 2E-6",
+                 "0.00002": " 20E-6", "0.0002": " 200E-6", "0.002": " 2E-3", "0.02": " 20E-3", "0.2": " 0.2",
+                 "2": " 2", "10": " 10", "20": " 20", "200": " 200", "750": " 750", "1000": " 1000",
+                 "2000": " 2E3", "20000": " 20E3", "200000": " 200E3", "2000000": " 2E6", "10000000": " 10E6",
+                 "100000000": " 100E6"}
+    source: "PM p.27-29 <fn>:RANGe <value> / :RANGe:AUTO ON"
+  temp_scale_set: {source: "PM UNIT:TEMPerature {C|F|K}"}
+classes:
+  DMM:
+    features:
+      rate: [{value: "0.006", display: "0.006 PLC (fastest)"}, {value: "0.02", display: "0.02 PLC"}, {value: "0.06", display: "0.06 PLC"}, {value: "0.2", display: "0.2 PLC"}, {value: "1", display: "1 PLC"}, {value: "10", display: "10 PLC"}, {value: "100", display: "100 PLC (slowest)"}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.002", display: "2mF"}]
+        TEMP:
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]

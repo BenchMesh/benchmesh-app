@@ -1,0 +1,13 @@
+# Replies as the B&K 1685B Series programming manual shows them (pp.11-13); the 1688B is the
+# HCS-3200. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: manson_hcs
+model: HCS-3200/1688B
+replies:
+  - {send: 'GMAX', reply: "180200\r", source: "BK PM p.13 (18.0 V / 20.0 A)"}
+  - {send: 'GETD', reply: "030201450\r", source: "BK PM p.12 (3.02 V, 1.45 A, CV)"}
+  - {send: 'GETS', reply: "025051\r", source: "BK PM p.11 (2.5 V, 5.1 A)"}
+  - {send: 'GOVP', reply: "152\r", source: "BK PM p.13 (15.2 V)"}
+  - {send: 'GOCP', reply: "052\r", source: "BK PM p.13 (5.2 A)"}
+  - {send: '(VOLT|CURR|SOVP|SOCP)\d{3}|SOUT[01]', reply: "", source: "BK PM pp.11-13 (OK)"}
+expect:
+  PSU: {1: {VOUT: 3.02, IOUT: 1.45, OUTPUT: "OFF", SBY: true}}

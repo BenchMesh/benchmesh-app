@@ -1,0 +1,86 @@
+# UNI-T UTS1000B/T and UTS3000B/T spectrum analyzers (one programming manual for all series).
+# Written from the manual, not yet seen live ("awaiting confirmation"). Coverage report:
+# ai_context/migration/coverage/SAL.md §2.4. Dialect differences to the baseline: WINDow,
+# preamp GAIN:STATe, trace type of the current trace (`:TRACe:TYPE`), detectors without RMS and
+# quasi-peak, no operation-status register. Sweep points are capped at 1001 on connect (up to
+# 40001 points would make every trace read a ~560 KB transfer).
+schema: benchmesh.device/v1
+id: unit_uts
+extends: scpi_sa
+vendor: UNI-T
+family: UTS1000B/T, UTS3000B/T spectrum analyzer
+version: 0.1.0
+sources:
+  - {doc: "UTS Spectrum Analyzer Programming Manual V1.0 (UTS_Spectrum_Analyzer_Programming_Manual_V1.0.pdf)", pages: "printed p7 *IDN?, p36-37 MARKer MAXimum, p41-43 MARKer X/Y, p51 RLEVel/PDIVision, p62 FORMat / INITiate:CONTinuous, p66 OUTPut, p80-82 BANDwidth, p91 DETector, p93-95 FREQuency, p98-104 POWer:ATTenuation / GAIN:STATe, p107-108 SWEep, p115 SOURce:POWer, p116-118 TRACe:TYPE / TRACe<n>:DATA?"}
+  - {note: "USBTMC vid:pid not documented (UNI-T instruments commonly 5345:xxxx or 6656:xxxx) — matched by *IDN?"}
+models:
+  - {name: UTS1015B, match: "(?i)^UNI-T[^,]*,\\s*UTS1015B,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}}
+  - {name: UTS1015T, match: "(?i)^UNI-T[^,]*,\\s*UTS1015T,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS1032B, match: "(?i)^UNI-T[^,]*,\\s*UTS1032B,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}}
+  - {name: UTS1032T, match: "(?i)^UNI-T[^,]*,\\s*UTS1032T,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3021B, match: "(?i)^UNI-T[^,]*,\\s*UTS3021[BT],", features: {SAL: {freq_range: {min: 9e3, max: 2.1e9}}}}
+  - {name: UTS3036B, match: "(?i)^UNI-T[^,]*,\\s*UTS3036B,", features: {SAL: {freq_range: {min: 9e3, max: 3.6e9}}}}
+  - {name: UTS3036T, match: "(?i)^UNI-T[^,]*,\\s*UTS3036T,", features: {SAL: {freq_range: {min: 9e3, max: 3.6e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3084B, match: "(?i)^UNI-T[^,]*,\\s*UTS3084B,", features: {SAL: {freq_range: {min: 9e3, max: 8.4e9}}}}
+  - {name: UTS3084T, match: "(?i)^UNI-T[^,]*,\\s*UTS3084T,", features: {SAL: {freq_range: {min: 9e3, max: 8.4e9}, tg: {min: -40, max: 0}}}}
+link:
+  usbtmc: {}
+  tcp: {port: 5025}
+session:
+  on_connect: [form_asc, poin_cap]
+commands:
+  form_asc: {send: ":FORMat:TRACe:DATA ASCii", source: "p62 (default ASCii)"}
+  poin_cap: {send: ":SENSe:SWEep:POINts 1001", reply: none, safety: configure, source: "p107"}
+  cent_set: {params: {f: {max: 8.4e9}}}
+  span_set: {params: {f: {max: 8.4e9}}}
+  star_set: {params: {f: {max: 8.4e9}}}
+  stop_set: {params: {f: {max: 8.4e9}}}
+  mkx_set: {params: {f: {max: 8.4e9}}}
+  rbw_set: {params: {f: {min: 1, max: 3e6}}, source: "p80; 1 Hz to the model maximum, 1-3-10"}
+  rlev_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel?", source: "p51; -1.000000e+01"}
+  rlev_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel {v}", params: {v: {min: -100, max: 30}}}
+  pdiv_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision?"}
+  pdiv_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision {v}"}
+  att_set: {params: {v: {min: 0, max: 50}}, source: "p98"}
+  gain_q: {send: ":SENSe:POWer:RF:GAIN:STATe?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}], source: "p104"}
+  gain_set:
+    send: ":SENSe:POWer:RF:GAIN:STATe {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  det_set:
+    params: {d: {values: {AVER: AVERage, RMS: null, QPE: null}}}
+    source: "p91: SAMPle|POSitive|NEGative|NORMal|AVERage"
+  swt_set: {params: {s: {min: 0.000001, max: 4000}}, source: "p108"}
+  poin_set: {params: {n: {min: 101, max: 10001}}, source: "p107; up to 40001 on UTS3000B, capped for transfer time"}
+  oper_q: null
+  trace_q: {send: ":TRACe1:DATA?", source: "p117-118: #514013-5.948681e+01,-7.703760e+01,…"}
+  tmode_q: {send: ":TRACe:TYPE?", source: "p116 (current trace)"}
+  tmode_set: {send: ":TRACe:TYPE {m}", params: {m: {values: {AVERAGE: AVERage, VIEW: null}}}, source: "p116: WRITe|AVERage|MAXHold|MINHold"}
+  tglev_q: {send: ":SOURce:POWer?"}
+  tglev_set: {send: ":SOURce:POWer {v}", source: "p115"}
+classes:
+  SAL:
+    features:
+      freq_range: {min: 9e3, max: 3.2e9}
+      rbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000, 3000000]
+      vbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000, 3000000]
+      ref_level: {min: -100, max: 30}
+      attenuation: {min: 0, max: 50, step: 1}
+      points: {min: 101, max: 10001}
+      divisions: {horizontal: 10, vertical: 10}
+      preamp: true
+    poll:
+      - every_ms: 2000
+        read: [cent_q, span_q, star_q, stop_q, rbw_q, rbw_auto_q, vbw_q, vbw_auto_q, rlev_q, pdiv_q, att_q, att_auto_q, gain_q, det_q, swt_q, poin_q, cont_q, tmode_q]
+      - every_ms: 500
+        read: [mark_q, mkx_q, mky_q]
+      - every_ms: 500
+        read: [trace_q]
+      - every_ms: 5000
+        read: [tg_q, tglev_q]
+    status:
+      SWEEPING: null
+      PREAMP: gain_q
+    operations:
+      preamp: {get: gain_q, set: gain_set}

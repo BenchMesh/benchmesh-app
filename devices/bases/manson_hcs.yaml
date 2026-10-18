@@ -1,0 +1,120 @@
+# Manson HCS-3xxx protocol (also B&K Precision 1685B/1687B/1688B): partial definition shared by
+# `manson_hcs` (current in 0.1 A steps) and `manson_hcs_10ma` (current in 0.01 A steps). Values
+# are implied-decimal integers; every command is answered (`<data>\rOK\r`, setters `OK\r`).
+# Wire forms: Manson "HCS USB protocol" (Conrad 000513911 data sheet, p.1-2) and the B&K
+# "1685B Series programming manual" pp.11-13. There is no *IDN?: GMAX (maximum V and I) is the
+# fingerprint that selects the model.
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: gmax
+link:
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  tx: {terminator: "\r"}
+  # "<data>\rOK\r" for queries, "OK\r" for setters: the reply ends at "OK\r"; the "\r" between
+  # data and OK is stripped.
+  rx: {mode: terminator, terminator: "OK\r", strip_trailing: "\r", timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+state:
+  output:
+    type: enum
+    initial: "OFF"
+    description: "No output-state query exists: tracks our own SOUT commands (unknown until the first one; front-panel changes are not seen)"
+commands:
+  gmax:
+    send: "GMAX"
+    parse: [trim]
+    description: "Maximum voltage (V x10, 3 digits) and current (3 digits, model scale), e.g. 180200 = 18.0 V / 20.0 A"
+    source: "BK PM p.13; MANSON p.1"
+  getd:
+    send: "GETD"
+    parse: [trim, number]
+    description: "Display reading VVVVIIIIM as one integer: V x0.01 (4 digits), I (4 digits, model scale), M 0 = CV, 1 = CC"
+    source: "BK PM p.12; MANSON p.1"
+  getd_v:
+    send: "GETD"
+    parse: [trim, {regex: {pattern: "^(\\d{4})\\d{4}[01]$", group: 1}}, number, {scale: 0.01}]
+    source: "BK PM p.12"
+  getd_i:
+    send: "GETD"
+    parse: [trim, {regex: {pattern: "^\\d{4}(\\d{4})[01]$", group: 1}}, number, {scale: 0.01}]
+    source: "BK PM p.12"
+  gets_v:
+    send: "GETS"
+    parse: [trim, {regex: {pattern: "^(\\d{3})\\d{3}$", group: 1}}, number, {scale: 0.1}]
+    description: "Setpoints VVVIII: V x0.1"
+    source: "BK PM p.11; MANSON p.1"
+  gets_i:
+    send: "GETS"
+    parse: [trim, {regex: {pattern: "^\\d{3}(\\d{3})$", group: 1}}, number, {scale: 0.1}]
+    source: "BK PM p.11; MANSON p.1"
+  govp:
+    send: "GOVP"
+    parse: [trim, number, {scale: 0.1}]
+    description: "Upper voltage limit (UVL), x0.1"
+    source: "BK PM p.13; MANSON p.2"
+  gocp:
+    send: "GOCP"
+    parse: [trim, number, {scale: 0.1}]
+    description: "Upper current limit (UCL)"
+    source: "BK PM p.13; MANSON p.2"
+  volt_set:
+    send: "VOLT{v}"
+    params: {v: {type: number, min: 1, max: 60, scale: 10, format: "%03d", unit: V}}
+    on_empty: "null"
+    safety: configure
+    description: "VOLT127 = 12.7 V; answers OK"
+    source: "BK PM p.11; MANSON p.1"
+  curr_set:
+    send: "CURR{a}"
+    params: {a: {type: number, min: 0, max: 60, scale: 10, format: "%03d", unit: A}}
+    on_empty: "null"
+    safety: configure
+    description: "CURR025 = 2.5 A; answers OK"
+    source: "BK PM p.11; MANSON p.1"
+  sovp_set:
+    send: "SOVP{v}"
+    params: {v: {type: number, min: 1, max: 60, scale: 10, format: "%03d", unit: V}}
+    on_empty: "null"
+    safety: configure
+    description: "Upper voltage limit: setpoints above it are refused by the supply"
+    source: "BK PM p.12; MANSON p.2"
+  socp_set:
+    send: "SOCP{a}"
+    params: {a: {type: number, min: 0, max: 60, scale: 10, format: "%03d", unit: A}}
+    on_empty: "null"
+    safety: configure
+    source: "BK PM p.13; MANSON p.2"
+  sout:
+    send: "SOUT{on}"
+    params: {on: {type: enum, values: {"ON": "0", "OFF": "1"}}}
+    on_empty: "null"
+    safety: energize
+    effects: {output: "{on}"}
+    description: "Inverted: SOUT0 switches the output ON, SOUT1 OFF"
+    source: "BK PM p.12; MANSON p.1"
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    features: {"lock": false, "compulsory_lock": false, "memory_banks": 3, "memory_storage": ["V", "A"], "modes": {"CV": {"setpoint": {"step": 0.1}, "protection": {"OVP": {"step": 0.1}}}, "CC": {"setpoint": {"step": 0.1}, "protection": {"OCP": {"step": 0.1}}}}}
+    poll:
+      - every_ms: 500
+        read: [getd]
+    status:
+      VOUT: {expr: "double(int(getd / 100000.0)) / 100.0", as: si}
+      IOUT: {expr: "double(int(getd / 10.0) % 10000) / 100.0", as: si}
+      POUT: {expr: "double(int(getd / 100000.0)) / 100.0 * double(int(getd / 10.0) % 10000) / 100.0", as: si}
+      OUTPUT: state.output
+      REMOTE: '"OFF"'  # the panel stays usable under USB control (no lock command on these models)
+      CV: 'state.output == "ON" && int(getd) % 10 == 0'
+      CC: 'state.output == "ON" && int(getd) % 10 == 1'
+      SBY: 'state.output == "OFF"'
+    operations:
+      voltage: {get: gets_v, set: volt_set, as: si}
+      current: {get: gets_i, set: curr_set, as: si}
+      output: {set: sout}
+      voltage_limit: {get: govp, set: sovp_set, as: si}
+      current_limit: {get: gocp, set: socp_set, as: si}
+      output_voltage: {get: getd_v, as: si}
+      output_current: {get: getd_i, as: si}

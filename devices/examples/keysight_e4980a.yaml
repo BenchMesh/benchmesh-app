@@ -1,0 +1,20 @@
+# Replies in the E4980A ASCII formats as the QCoDeS driver (citing User's Guide E4980-90230)
+# parses them. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keysight_e4980a
+transport: usbtmc
+model: E4980A
+replies:
+  - {send: '\*IDN\?', reply: "Keysight Technologies,E4980A,MY54412345,A.02.20", source: "*IDN? (vendor,model,serial,firmware)"}
+  - {send: 'FETC:IMP:FORM\?', reply: "+1.00000E+03,+1.20000E-04,+0", source: "qcodes l.398-399 (<A>,<B>,<status>)"}
+  - {send: 'FUNC:IMP\?', reply: "RX", source: "qcodes l.269"}
+  - {send: 'FREQ\?', reply: "+1.00000E+03", source: "qcodes l.238"}
+  - {send: 'VOLT\?', reply: "+1.00000E+00", source: "qcodes l.426"}
+  - {send: 'APER\?', reply: "MED,1", source: "qcodes l.319, l.336 (<time>,<averaging>)"}
+  - {send: 'FUNC:IMP:RANG:AUTO\?', reply: "0", source: "qcodes l.287"}
+  - {send: 'FUNC:IMP:RANG\?', reply: "+1.00000E+03", source: "qcodes l.276"}
+  - {send: 'TRIG:SOUR\?', reply: "INT", source: "E4980 tree (not in qcodes)"}
+  - {send: 'BIAS:STAT\?', reply: "0", source: "qcodes l.296"}
+  - {send: 'BIAS:VOLT:LEV\?', reply: "+0.00000E+00", source: "qcodes l.307"}
+expect:
+  LCR:
+    1: {PRIMARY: 1000, SECONDARY: 0.00012, FUNC: RX, FREQ: 1000, SPEED: MED, RANGE: "1000", BIAS_ON: "OFF", OVERLOAD: false}

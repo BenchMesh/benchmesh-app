@@ -1,0 +1,41 @@
+# Manson HCS-3xxx switching supplies whose current is set in 0.01 A steps (also B&K Precision 1685B).
+# Protocol in devices/bases/manson_hcs.yaml. Written from the manuals, not yet seen live.
+# Model ratings: B&K 1685B manual p.28 (1685B/1687B/1688B); Manson HCS ratings from sigrok
+# `manson-hcs-3xxx` (no Manson model table in the local documents). Models are selected by the
+# GMAX reply (maximum V x10, I x100).
+schema: benchmesh.device/v1
+extends: manson_hcs
+id: manson_hcs_10ma
+vendor: Manson
+family: HCS-3xxx (0.01 A current resolution) / B&K 1685B
+version: 0.1.0
+sources:
+  - {doc: "Manson HCS USB protocol (Conrad 000513911 data sheet, DOC/manson_hcs/doc/conrad_000513911DS01_hcs_usb_protocol.pdf)", pages: "1-2"}
+  - {doc: "B&K Precision 1685B Series programming manual (DOC/bk_1680/doc/1685B_Series_programming_manual.pdf)", pages: "2, 11-13"}
+  - {doc: "B&K Precision 1685B Series user manual (DOC/bk_1680/doc/1685B_series_manual_bk.pdf)", pages: "28-30"}
+  - {note: "Model ratings of the Manson HCS units from sigrok src/hardware/manson-hcs-3xxx/api.c"}
+models:
+  - {"name": "HCS-3102", "match": "^360500$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 36.0}, "current": {"unit": "A", "max": 5.0}}}}}
+  - {"name": "HCS-3104", "match": "^600250$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 2.5}}}}}
+  - {"name": "HCS-3204/1685B", "match": "^600500$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 5.0}}}}, "note": "B&K 1685B is this model (BK PM p.11: two current decimals)"}
+commands:
+  getd_i:
+    parse: [trim, {regex: {pattern: "^\\d{4}(\\d{4})[01]$", group: 1}}, number, {scale: 0.001}]
+    description: "Display current x0.001 on the 0.01 A models (MANSON p.1 example 150016001 = 15.00 V / 1.60 A)"
+  gets_i:
+    parse: [trim, {regex: {pattern: "^\\d{3}(\\d{3})$", group: 1}}, number, {scale: 0.01}]
+    description: "Current setpoint x0.01 (BK PM p.11: two decimals on the 1685B; MANSON p.1 GETS 150180 = 1.8 A)"
+  gocp:
+    parse: [trim, number, {scale: 0.01}]
+    source: "MANSON p.2 (GOCP 110 = 1.1 A)"
+  curr_set:
+    params: {a: {type: number, min: 0, max: 5, scale: 100, format: "%03d", unit: A}}
+    description: "CURR120 = 1.20 A (MANSON p.1)"
+  socp_set:
+    params: {a: {type: number, min: 0, max: 5, scale: 100, format: "%03d", unit: A}}
+classes:
+  PSU:
+    features: {"modes": {"CC": {"setpoint": {"step": 0.01}, "protection": {"OCP": {"step": 0.01}}}}}
+    status:
+      IOUT: {expr: "double(int(getd / 10.0) % 10000) / 1000.0", as: si}
+      POUT: {expr: "double(int(getd / 100000.0)) / 100.0 * double(int(getd / 10.0) % 10000) / 1000.0", as: si}

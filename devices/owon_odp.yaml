@@ -1,0 +1,102 @@
+# OWON ODP multi-output programmable DC supplies (ODP3033/3063/6033 triple, ODP3122/6062 dual),
+# written from the programming manual (not yet seen live). Channel-specific commands act on the
+# channel chosen with INST:NSEL, so every per-channel command selects first (`before`).
+# Readings and output states come as all-channel lists. Research: PSU.md §2.15.
+schema: benchmesh.device/v1
+extends: owon_psu
+id: owon_odp
+vendor: OWON
+family: ODP series multi-output DC power supply
+version: 0.1.0
+sources:
+  - {doc: "OWON ODP Series DC Power Supply Programming Manual (ODP3033/3063/6033/3122/6062)", pages: "3-17"}
+  - {note: "Ratings are not in the manual; inferred from the model names (ODP<V><A><outputs>) and the MAX examples of VOLT:LIM:ALL? / CURR:LIM:ALL? for the ODP6033 (61, 61, 6.6 V; 3.1 A, p.15/17). CH3 of the triple models assumed 6 V/3 A as on the ODP6033."}
+  - {note: "ODP3032/3052 are not covered: their user manual (V1.5.8) only mentions OWON's PC software, the programming manual does not list them. Link settings (baud, USB class) are not documented: serial 115200 8N1 assumed like other OWON supplies; the USB port needs OWON's driver (USBDRV)."}
+models:
+  - {name: ODP3033, match: "^OWON,ODP3033,", channels: {PSU: 3}, features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 3.0}}, channel_limits: {"1": {voltage: 30.0, current: 3.0}, "2": {voltage: 30.0, current: 3.0}, "3": {voltage: 6.0, current: 3.0}}}}}
+  - {name: ODP3063, match: "^OWON,ODP3063,", channels: {PSU: 3}, features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 6.0}}, channel_limits: {"1": {voltage: 30.0, current: 6.0}, "2": {voltage: 30.0, current: 6.0}, "3": {voltage: 6.0, current: 3.0}}}}}
+  - {name: ODP6033, match: "^OWON,ODP6033,", channels: {PSU: 3}, features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 3.0}}, channel_limits: {"1": {voltage: 60.0, current: 3.0}, "2": {voltage: 60.0, current: 3.0}, "3": {voltage: 6.0, current: 3.0}}}}}
+  - {name: ODP3122, match: "^OWON,ODP3122,", channels: {PSU: 2}, features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 12.0}}}}}
+  - {name: ODP6062, match: "^OWON,ODP6062,", channels: {PSU: 2}, features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 6.0}}}}}
+identify: idn
+session:
+  # local mode rejects everything but the common and SYST commands (p.3)
+  on_connect: [{cmd: remote_set, args: {on: "ON"}}]
+  on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+commands:
+  idn: {source: "PM p.4"}
+  info: null
+  inst_sel:
+    send: "INST:NSEL {ch}"
+    reply: none
+    safety: configure
+    description: Selects the channel the plain VOLT/CURR/MEAS commands act on
+    source: "PM p.10"
+  v_all:
+    send: "MEAS:VOLT:ALL?"
+    parse: [numbers]
+    description: "e.g. `1.000, 2.000, 3.000` (2 values on dual models)"
+    source: "PM p.8-9"
+  i_all: {send: "MEAS:CURR:ALL?", parse: [numbers], source: "PM p.9"}
+  out_all:
+    send: "CHAN:OUTP:ALL?"
+    parse: [numbers]
+    description: "per-channel output states, e.g. `1, 0, 1`"
+    source: "PM p.13-14"
+  meas_v: {before: [inst_sel], source: "PM p.7"}
+  meas_i: {before: [inst_sel], source: "PM p.7-8"}
+  meas_p: {before: [inst_sel], description: "the manual's example shows MEAS:CURR? (typo)", source: "PM p.8"}
+  volt_q: {before: [inst_sel], source: "PM p.15-16"}
+  curr_q: {before: [inst_sel], source: "PM p.14"}
+  ovp_lvl_q: {before: [inst_sel], source: "PM p.16"}
+  ocp_lvl_q: {before: [inst_sel], source: "PM p.14-15"}
+  volt_set: {before: [inst_sel], params: {v: {type: number, min: 0, max: 61, format: "%.3f", unit: V}}, source: "PM p.15-16"}
+  curr_set: {before: [inst_sel], params: {a: {type: number, min: 0, max: 12.4, format: "%.3f", unit: A}}, source: "PM p.14"}
+  ovp_lvl_set: {before: [inst_sel], params: {v: {type: number, min: 0.1, max: 61, format: "%.3f", unit: V}}, source: "PM p.16"}
+  ocp_lvl_set: {before: [inst_sel], params: {a: {type: number, min: 0.1, max: 12.4, format: "%.3f", unit: A}}, source: "PM p.14-15"}
+  outp_q: null
+  outp_set: null
+  ch_outp_set:
+    # CHAN:OUTP:ALL takes the whole list: the other channels keep their current state
+    send: "CHAN:OUTP:ALL {pre}{on}{post}"
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+      pre:
+        type: string
+        from: >-
+          ch == 1 ? "" : ch == 2 ? (out_all[0] > 0.5 ? "1," : "0,")
+          : (out_all[0] > 0.5 ? "1," : "0,") + (out_all[1] > 0.5 ? "1," : "0,")
+      post:
+        type: string
+        from: >-
+          ch == 1 ? ("," + (out_all[1] > 0.5 ? "1" : "0") + (size(out_all) > 2 ? (out_all[2] > 0.5 ? ",1" : ",0") : ""))
+          : ch == 2 && size(out_all) > 2 ? (out_all[2] > 0.5 ? ",1" : ",0") : ""
+    reply: none
+    safety: energize
+    description: Switches one channel; the others are re-sent with their state read just before
+    source: "PM p.13-14"
+classes:
+  PSU:
+    channels: 3
+    features: {"lock": true, "compulsory_lock": true, "absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 12.0}}}
+    poll:
+      - every_ms: 500
+        read: [v_all, i_all, out_all]
+    status:
+      VOUT: {expr: "v_all[ch - 1]", as: si}
+      IOUT: {expr: "i_all[ch - 1]", as: si}
+      POUT: {expr: "v_all[ch - 1] * i_all[ch - 1]", as: si}
+      OUTPUT: 'out_all[ch - 1] > 0.5 ? "ON" : "OFF"'
+      REMOTE: state.remote
+      SBY: "out_all[ch - 1] < 0.5"
+      CV: null
+      CC: null
+      FAIL: null
+      OVP: null
+      OCP: null
+      OTP: null
+    operations:
+      output: {get: null, set: ch_outp_set}
+      remote: null

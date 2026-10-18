@@ -1,0 +1,172 @@
+# "E4980 dialect" baseline for LCR meters (partial definition, see DEVICE_DSL.md "extends"):
+# Keysight E4980A/AL (HP 4284A lineage), Tonghui TH28xx and their OEM B&K Precision 894/895.
+# Commands are sent without the leading colon (valid at the start of a SCPI message on all of them).
+# Derived definitions add identity, links, limits and per-model features and override what
+# their dialect does differently (speed tokens, range values, bias, extra parameter pairs).
+# Source: ai_context/migration/coverage/LCR.md §2.3, §2.8, §3 baseline A.
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  # no flow control: pace commands (BK 894/895 PM p.6)
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  # <A>,<B>,<status>[,<bin>]; status -1 no data, 0 normal, +1..+4 bridge/ADC/source faults
+  # (data then +9.99999E+37) — TH2817B+ UM p.102-103, BK 894/895 PM p.30
+  fetch:
+    send: "FETC?"
+    parse: [trim, {fields: {sep: ",", names: [a, b, status]}}]
+    source: "TH UM p.102-103; BK PM p.30"
+  fetch_a: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 0}}, trim, number], description: "Primary of the last measurement"}
+  fetch_b: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 1}}, trim, number], description: "Secondary of the last measurement"}
+  func_q: {send: "FUNC:IMP?", parse: [trim, upper], cache_ms: 2500, source: "TH UM p.94; BK PM p.21"}
+  freq_q: {send: "FREQ?", parse: [trim, number], cache_ms: 2500, source: "TH UM p.91; BK PM p.15"}
+  volt_q: {send: "VOLT?", parse: [trim, number], cache_ms: 2500, source: "TH UM p.91; BK PM p.16"}
+  aper_q:
+    send: "APER?"
+    parse: [trim, upper, {split: {sep: ",", index: 0}}, trim, {map: {FAST: FAST, MED: MED, MEDIUM: MED, SLOW: SLOW}}]
+    cache_ms: 2500
+    source: "TH UM p.100; BK PM p.28 (<speed>,<averaging>)"
+  rang_auto_q:
+    send: "FUNC:IMP:RANG:AUTO?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    cache_ms: 2500
+    source: "TH UM p.94; BK PM p.22"
+  rang_q: {send: "FUNC:IMP:RANG?", parse: [trim], cache_ms: 2500, source: "TH UM p.94; BK PM p.21"}
+  trig_sour_q: {send: "TRIG:SOUR?", parse: [trim, upper], cache_ms: 2500, source: "TH UM p.101; BK PM p.29"}
+
+  func_set:
+    invalidates: [func_q]
+    send: "FUNC:IMP {f}"
+    params:
+      f:
+        type: enum
+        values: {CPD: CPD, CPQ: CPQ, CPG: CPG, CPRP: CPRP, CSD: CSD, CSQ: CSQ, CSRS: CSRS, LPQ: LPQ, LPD: LPD, LPG: LPG,
+                 LPRP: LPRP, LSD: LSD, LSQ: LSQ, LSRS: LSRS, RX: RX, ZTD: ZTD, ZTR: ZTR, GB: GB, YTD: YTD, YTR: YTR}
+    reply: none
+    safety: configure
+    source: "TH UM p.93-94; BK PM p.21"
+  freq_set:
+    invalidates: [freq_q]
+    send: "FREQ {f}"
+    params: {f: {type: number, min: 20, max: 2000000, format: "%g", unit: Hz}}
+    reply: none
+    safety: configure
+    source: "TH UM p.90-91; BK PM p.15"
+  volt_set:
+    invalidates: [volt_q]
+    send: "VOLT {v}"
+    params: {v: {type: number, min: 0, max: 2, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    source: "TH UM p.91; BK PM p.16"
+  aper_set:
+    invalidates: [aper_q]
+    send: "APER {s}"
+    params: {s: {type: enum, values: {FAST: FAST, MED: MED, SLOW: SLOW}}}
+    reply: none
+    safety: configure
+    source: "TH UM p.100; BK PM p.28"
+  # FUNC:IMP:RANG <ohm> turns AUTO off (TH UM p.94, BK PM p.21)
+  rang_set:
+    invalidates: [rang_q, rang_auto_q]
+    send: "{r}"
+    params:
+      r:
+        type: enum
+        values: {AUTO: "FUNC:IMP:RANG:AUTO ON", "10": "FUNC:IMP:RANG 10", "30": "FUNC:IMP:RANG 30", "100": "FUNC:IMP:RANG 100",
+                 "300": "FUNC:IMP:RANG 300", "1000": "FUNC:IMP:RANG 1000", "3000": "FUNC:IMP:RANG 3000",
+                 "10000": "FUNC:IMP:RANG 10000", "30000": "FUNC:IMP:RANG 30000", "100000": "FUNC:IMP:RANG 100000"}
+    reply: none
+    safety: configure
+  trig_sour_set:
+    invalidates: [trig_sour_q]
+    send: "TRIG:SOUR {s}"
+    params: {s: {type: enum, values: {INT: INT, EXT: EXT, BUS: BUS, HOLD: HOLD}}}
+    reply: none
+    safety: configure
+    source: "TH UM p.101; BK PM p.29"
+  trig:
+    send: "{t}"
+    params: {t: {type: enum, values: {ONCE: TRIG}}}
+    reply: none
+    safety: configure
+    source: "TH UM p.101; BK PM p.28"
+  # sweeps every preset correction point: seconds to minutes; fixture open / shorted first
+  corr_set:
+    send: "{c}"
+    params: {c: {type: enum, values: {OPEN: "CORR:OPEN", SHORT: "CORR:SHOR"}}}
+    reply: none
+    safety: configure
+    gap_after_ms: 500
+    source: "TH UM p.104-106; BK PM p.32-34"
+  corr_open_stat:
+    send: "CORR:OPEN:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  corr_short_stat:
+    send: "CORR:SHOR:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+classes:
+  LCR:
+    channels: 1
+    ui_component: GenericLCR
+    features:
+      counts: 6
+      functions:
+        CPD:  {primary: Cp, secondary: D,  circuit: PAR, units: [F, ""],  ui_name: "Cp–D"}
+        CPQ:  {primary: Cp, secondary: Q,  circuit: PAR, units: [F, ""],  ui_name: "Cp–Q"}
+        CPG:  {primary: Cp, secondary: G,  circuit: PAR, units: [F, S],   ui_name: "Cp–G"}
+        CPRP: {primary: Cp, secondary: Rp, circuit: PAR, units: [F, "Ω"], ui_name: "Cp–Rp"}
+        CSD:  {primary: Cs, secondary: D,  circuit: SER, units: [F, ""],  ui_name: "Cs–D"}
+        CSQ:  {primary: Cs, secondary: Q,  circuit: SER, units: [F, ""],  ui_name: "Cs–Q"}
+        CSRS: {primary: Cs, secondary: Rs, circuit: SER, units: [F, "Ω"], ui_name: "Cs–Rs"}
+        LPQ:  {primary: Lp, secondary: Q,  circuit: PAR, units: [H, ""],  ui_name: "Lp–Q"}
+        LPD:  {primary: Lp, secondary: D,  circuit: PAR, units: [H, ""],  ui_name: "Lp–D"}
+        LPG:  {primary: Lp, secondary: G,  circuit: PAR, units: [H, S],   ui_name: "Lp–G"}
+        LPRP: {primary: Lp, secondary: Rp, circuit: PAR, units: [H, "Ω"], ui_name: "Lp–Rp"}
+        LSD:  {primary: Ls, secondary: D,  circuit: SER, units: [H, ""],  ui_name: "Ls–D"}
+        LSQ:  {primary: Ls, secondary: Q,  circuit: SER, units: [H, ""],  ui_name: "Ls–Q"}
+        LSRS: {primary: Ls, secondary: Rs, circuit: SER, units: [H, "Ω"], ui_name: "Ls–Rs"}
+        RX:   {primary: R,  secondary: X,  units: ["Ω", "Ω"], ui_name: "R–X"}
+        ZTD:  {primary: Z,  secondary: θ,  units: ["Ω", "°"], ui_name: "Z–θ°"}
+        ZTR:  {primary: Z,  secondary: θ,  units: ["Ω", rad], ui_name: "Z–θr"}
+        GB:   {primary: G,  secondary: B,  units: [S, S],     ui_name: "G–B"}
+        YTD:  {primary: Y,  secondary: θ,  units: [S, "°"],   ui_name: "Y–θ°"}
+        YTR:  {primary: Y,  secondary: θ,  units: [S, rad],   ui_name: "Y–θr"}
+      speeds: [{value: FAST, display: fast}, {value: MED, display: medium}, {value: SLOW, display: slow}]
+      trigger_sources: [INT, BUS, EXT, HOLD]
+    # one group (the first status update must carry every required key); settings are cached
+    # (cache_ms) so they are read every ~2.5 s, and setters invalidate what they change
+    poll:
+      - every_ms: 400
+        read: [fetch, func_q, freq_q, volt_q, aper_q, rang_auto_q, rang_q]
+    status:
+      PRIMARY: {expr: 'fetch != null && num(fetch.status) == 0.0 ? num(fetch.a) : null', as: si}
+      SECONDARY: {expr: 'fetch != null && num(fetch.status) == 0.0 ? num(fetch.b) : null', as: si}
+      OVERLOAD: 'fetch != null && num(fetch.status) != 0.0'
+      FUNC: func_q
+      FREQ: {expr: freq_q, as: si}
+      LEVEL: {expr: volt_q, as: si}
+      SPEED: aper_q
+      RANGE: 'rang_auto_q == "ON" ? "AUTO" : rang_q'
+      CIRCUIT: 'func_q.startsWith("CP") || func_q.startsWith("LP") ? "PAR" : func_q.startsWith("CS") || func_q.startsWith("LS") ? "SER" : null'
+    operations:
+      function: {get: func_q, set: func_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      level: {get: volt_q, set: volt_set, as: si}
+      speed: {get: aper_q, set: aper_set}
+      range: {get: rang_q, set: rang_set}
+      measurement: {get: fetch_a, as: si}
+      secondary: {get: fetch_b, as: si}
+      trigger_source: {get: trig_sour_q, set: trig_sour_set}
+      trigger: {set: trig}
+      correction: {set: corr_set}
+      open_correction: {set: corr_open_stat}
+      short_correction: {set: corr_short_stat}

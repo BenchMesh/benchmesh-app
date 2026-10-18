@@ -1,0 +1,17 @@
+# Replies as the TH2810B+/TH2817B+ operation manual (v1.1, Chinese) documents them.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: tonghui_th28xx
+model: TH2817B+
+replies:
+  - {send: '\*IDN\?', reply: "Tonghui,TH2817B+,VER1.0.0,HardWare Ver A5.0", source: "UM p.115"}
+  - {send: 'FETC\?', reply: "+4.70120E-07,+1.23400E-02,+0", source: "UM p.102-103 (SN.NNNNNESNN,SN.NNNNNESNN,SN)"}
+  - {send: 'FUNC:IMP\?', reply: "CSD", source: "UM p.94"}
+  - {send: 'FREQ\?', reply: "+1.00000E+03", source: "UM p.91 (<NR3>)"}
+  - {send: 'VOLT\?', reply: "+1.00000E+00", source: "UM p.91 (<NR3>)"}
+  - {send: 'APER\?', reply: "MED,1", source: "UM p.100 ({FAST|MED|SLOW},<NR1>)"}
+  - {send: 'FUNC:IMP:RANG:AUTO\?', reply: "1", source: "UM p.94-95 (<NR1>)"}
+  - {send: 'FUNC:IMP:RANG\?', reply: "1000", source: "UM p.94"}
+  - {send: 'TRIG:SOUR\?', reply: "INT", source: "UM p.101"}
+expect:
+  LCR:
+    1: {PRIMARY: 4.7012e-7, SECONDARY: 0.01234, FUNC: CSD, FREQ: 1000, LEVEL: 1.0, SPEED: MED, RANGE: AUTO, CIRCUIT: SER, OVERLOAD: false}

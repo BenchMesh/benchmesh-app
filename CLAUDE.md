@@ -153,7 +153,7 @@ npm run start:nodered
 
 ### Instrument UI (bench)
 
-The UI is a **bench**: one panel per instrument class (`PSU`, `DMM`, `ELL`, `AWG`, `OSC`; any other
+The UI is a **bench**: one panel per instrument class (`PSU`, `DMM`, `ELL`, `AWG`, `OSC`, `LCR`, `SAL`; any other
 class gets a read-only generic panel), laid out in a responsive rack. Every instrument of a class
 uses the same panel; manufacturer differences (limits, steps, ranges, modes, optional controls)
 come only from the API — features (`GET /instruments/{CLS}/{id}`) and setter value specs
@@ -162,9 +162,9 @@ code; the definitions' `ui_component` is not used by the UI.
 
 | Path (`frontend/src/ui/`) | Role |
 |---|---|
-| `kit/` | instrument component kit with three skins in `kit.css` — **Reflective LCD** (default), LED segment, Cockpit glass — switched in the top bar (`kit/skin.tsx`, stored in `localStorage` `benchmesh:skin`; canvases read colour tokens at draw time). Components: segment readout, digit-wise setpoint editor, arm-to-enable switch (two presses for anything that `energizes`), micro switch, annunciators, rotary dial, knob, 1-2-5 stepper, bargraph, sparkline, waveform preview, oscilloscope screen. Fonts are bundled (B612, B612 Mono, Chakra Petch) — the desktop app runs offline |
+| `kit/` | instrument component kit with three skins in `kit.css` — **Reflective LCD** (default), LED segment, Cockpit glass — switched in the top bar (`kit/skin.tsx`, stored in `localStorage` `benchmesh:skin`; canvases read colour tokens at draw time). Components: segment readout, digit-wise setpoint editor, arm-to-enable switch (two presses for anything that `energizes`), micro switch, annunciators, rotary dial, knob, 1-2-5 stepper, bargraph, sparkline, waveform preview, oscilloscope screen, spectrum screen, action button (momentary actions confirmed by a reported change). Fonts are bundled (B612, B612 Mono, Chakra Petch) — the desktop app runs offline |
 | `bench/profiles.ts` | features + methods → what a class panel shows (limits, decimals, modes, ranges, optional controls) |
-| `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel`, `AwgChannel`, `OscPanel` — one screen for all channels, `GenericPanel`) |
+| `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel`, `AwgChannel`, `OscPanel` — one screen for all channels, `LcrPanel` — primary/secondary readouts, function keys L/C/R/Z/DCR → secondary → SER/PAR, frequency/level, range/speed, open/short correction with a prompt, bias; `SalPanel` — spectrum screen (`kit/SpectrumScreen`: dB graticule, max-hold ghost, marker diamond, click to place), marker readout, annotation bar, soft-key groups FREQ/BW/AMPT/SWEEP/TRACE/MKR/TG; `GenericPanel`) |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden, persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings (incl. **Detect**: `DetectView.tsx`, `detect.ts`), request log |

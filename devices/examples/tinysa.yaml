@@ -1,0 +1,25 @@
+# Shell exchanges as the tinySA firmware produces them (echo line, output, then the `ch> `
+# prompt, which the simulator appends as the rx terminator). Trace shortened to 7 points.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: tinysa
+model: tinySA Ultra ZS405
+replies:
+  - {send: 'version', reply: "version\r\ntinySA4_v1.4-217-gabcdef\r\nHW Version:V0.4.5.1 \r\n", source: "main.c cmd_version l.2553, HW table l.2516"}
+  - {send: 'trace dBm', reply: "trace dBm\r\n", source: "main.c cmd_trace l.2173"}
+  - {send: 'sweep', reply: "sweep\r\n428000000 440000000 450\r\n", source: "main.c cmd_sweep l.2052"}
+  - {send: 'rbw', reply: "rbw\r\nusage: rbw 0.2..850|auto\r\n30.0kHz\r\n", source: "sa_cmd.c cmd_rbw l.574-582"}
+  - {send: 'attenuate', reply: "attenuate\r\nusage: attenuate 0..31|auto\r\n10.00\r\n", source: "sa_cmd.c cmd_attenuate l.354-357"}
+  - {send: 'sweeptime', reply: "sweeptime\r\nusage: sweeptime 0.003..60\r\n0.120s\r\n", source: "sa_cmd.c cmd_sweeptime l.386-390"}
+  - {send: 'trace', reply: "trace\r\n1: dBm -10.000000 10.000000 \r\n", source: "main.c cmd_trace l.2173-2236"}
+  - {send: 'status', reply: "status\r\nResumed\r\n", source: "main.c l.482-510"}
+  - {send: 'marker', reply: "marker\r\n1 225 433920000 -4.23e+01\r\n", source: "main.c cmd_marker l.2304-2360"}
+  - {send: 'data 2', reply: "data 2\r\n-8.312e+01\r\n-8.290e+01\r\n-7.951e+01\r\n-4.230e+01\r\n-7.802e+01\r\n-8.277e+01\r\n-8.301e+01\r\n", source: "main.c cmd_data l.901-916"}
+  # setters: echo + prompt only
+  - {send: 'sweep (center|span|start|stop) \d+', reply: "sweep center 433920000\r\n", source: "main.c l.2071-2075"}
+  - {send: '(rbw|attenuate|sweeptime) [0-9.e+-]+', reply: "rbw 30\r\n", source: "sa_cmd.c"}
+  - {send: 'trace (reflevel|scale) [0-9.e+-]+', reply: "trace reflevel -10\r\n", source: "main.c cmd_trace"}
+  - {send: '(pause|resume)', reply: "pause\r\n", source: "main.c l.482-510"}
+  - {send: 'marker 1 (on|off|peak|\d+)', reply: "marker 1 peak\r\n", source: "main.c cmd_marker"}
+expect:
+  SAL:
+    1: {START: 428000000, STOP: 440000000, CENTER: 434000000, SPAN: 12000000, POINTS: 450, RBW: 30000, REF_LEVEL: -10, SCALE: 10, TRACE_UNIT: dBm, ATTEN: 10, SWEEP_TIME: 0.12, SWEEP_MODE: CONT, MARKER: "ON", MARKER_FREQ: 433920000, MARKER_LEVEL: -42.3}

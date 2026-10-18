@@ -1,0 +1,37 @@
+# GW Instek AFG-2000 / AFG-2100 series function generators (single channel, no phase control,
+# no pulse). Written from the user manual before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.8. Pages are printed page numbers of the
+# EF1 manual (AFG-2000_User_Manual_farnell_2713159.pdf).
+schema: benchmesh.device/v1
+id: gwinstek_afg2000
+extends: gw_afg
+vendor: GW Instek
+family: AFG-2000/AFG-2100 series function generator
+version: 0.1.0
+sources:
+  - {doc: "AFG-2000 Series User Manual (EF1, farnell 2713159)", pages: "86-88 (USB CDC, terminal, *idn?), 92 (terminators LF / LF CR), 96 (*IDN?), 104 (FUNCtion), 105-106 (FREQuency), 107 (AMPLitude), 108 (DCOffset), 109 (RAMP:SYMMetry), 110 (OUTPut), 111 (OUTPut:LOAD), 111-112 (VOLTage:UNIT)"}
+  - {note: "Limits: sine/square 0.1 Hz-25 MHz (AFG-2005/2105 5 MHz, AFG-2012/2112 12 MHz), ramp 1 MHz (p105); 1 mVpp-10 Vpp into 50 Ω, offset ±5 V into 50 Ω (doubled at High-Z)"}
+models:
+  - {"name": "AFG-2005", "match": "^GW INSTEK, ?AFG-2005,", "features": {"AWG": {"max_freq_hz": {"SIN": 5e6, "SQU": 5e6, "RAMP": 1e6}}}}
+  - {"name": "AFG-2012", "match": "^GW INSTEK, ?AFG-2012,", "features": {"AWG": {"max_freq_hz": {"SIN": 12e6, "SQU": 12e6, "RAMP": 1e6}}}}
+  - {"name": "AFG-2025", "match": "^GW INSTEK, ?AFG-2025,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 25e6, "RAMP": 1e6}}}}
+  - {"name": "AFG-2105", "match": "^GW INSTEK, ?AFG-2105,", "features": {"AWG": {"max_freq_hz": {"SIN": 5e6, "SQU": 5e6, "RAMP": 1e6}}}}
+  - {"name": "AFG-2112", "match": "^GW INSTEK, ?AFG-2112,", "features": {"AWG": {"max_freq_hz": {"SIN": 12e6, "SQU": 12e6, "RAMP": 1e6}}}}
+  - {"name": "AFG-2125", "match": "^GW INSTEK, ?AFG-2125,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 25e6, "RAMP": 1e6}}}}
+commands:
+  outp_q: {source: "p110; reply 1/0"}
+  outp_set: {source: "p110"}
+  shape_q: {source: "p104; SIN, SQU, RAMP, NOIS, USER"}
+  shape_set: {source: "p104"}
+  freq_q: {source: "p106"}
+  freq_set:
+    params: {hz: {type: number, min: 0.1, max: 25000000, format: "%.6f", unit: Hz}}
+    source: "p105"
+  unit_q: {source: "p111-112"}
+  ampl_q: {source: "p107"}
+  ampl_set: {source: "p107; 20 Vpp at High-Z (10 Vpp into 50 Ω), the instrument clamps"}
+  offs_q: {source: "p108"}
+  offs_set: {source: "p108"}
+  symm_q: {source: "p109"}
+  symm_set: {source: "p109"}
+  load_q: {source: "p111; DEF / INF"}

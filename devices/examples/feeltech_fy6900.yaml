@@ -1,0 +1,15 @@
+# Replies as the FY6900 protocol shows them where it agrees with the tested drivers (fygen):
+# checks the definition through the real engine without hardware.
+definition: feeltech_fy6900
+model: FY6900-60M
+replies:
+  - {send: 'UMO', reply: "FY6900-60M", source: "user manual p6 (model number), protocol p35"}
+  - {send: 'RMN', reply: "255", source: "protocol p13"}
+  - {send: 'RMW', reply: "0000000001", source: "protocol p10 (Square)"}
+  - {send: 'RMF', reply: "00010000.000000", source: "protocol p12 (10 kHz)"}
+  - {send: 'RMA', reply: "50000", source: "fygen scaling (÷10000: 5 V)"}
+  - {send: 'RMO', reply: "4294963480", source: "AWG.md §2.3 / fygen (−3.816 V)"}
+  - {send: 'RMP', reply: "90000", source: "fygen scaling (÷1000: 90°)"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SQU", FREQ: 10000.0, AMPL: 5.0, OFFS: -3.816, PHASE: 90.0}

@@ -1,0 +1,102 @@
+# Aim-TTi (Thurlby Thandar) multi-output PSU command set shared by the CPX400DP and MX100TP
+# (partial definition, see ai_context/migration/DEVICE_DSL.md "extends"). Derived definitions add
+# identity, models, limits and per-output resolutions. ai_context/migration/coverage/PSU.md §2.12.
+#
+# Status: CV/CC and OVP/OCP trips exist only in the Limit Event Status Register (`LSR<N>?`),
+# which is *read and cleared* and records events ("set when output enters current limit"), not the
+# present condition. Polling it would show CC only on the poll after a transition and would steal
+# the events from other clients of the same interface, so it is not polled and CV/CC/OVP/OCP
+# are not reported. Any command puts the unit into remote (front panel locked; LOCAL lasts only
+# until the next command), so REMOTE is always ON while BenchMesh polls and no remote setter is
+# offered.
+schema: benchmesh.device/v1
+identify: idn
+link:
+  # RS-232 fixed 9600 8N1 XON/XOFF; the USB port is a CDC virtual COM port (baud ignored).
+  serial: {baud: 9600, format: 8N1, flow: xon_xoff}
+  # LAN: raw socket 9221; commands need no terminator there (LF is accepted and ignored).
+  tcp: {port: 9221}
+framing:
+  # Commands end with LF; responses end with CR LF.
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 30}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  vout:
+    send: "V{ch}O?"
+    parse: [trim, {regex: {pattern: '^([-+]?[0-9.]+(?:[eE][-+]?[0-9]+)?)\s*V$', group: 1}}, number]
+    description: "Output readback voltage, reply `<NR2>V` (e.g. `12.003V`)"
+  iout:
+    send: "I{ch}O?"
+    parse: [trim, {regex: {pattern: '^([-+]?[0-9.]+(?:[eE][-+]?[0-9]+)?)\s*A$', group: 1}}, number]
+    description: "Output readback current, reply `<NR2>A` (e.g. `0.512A`)"
+  vset_q:
+    send: "V{ch}?"
+    parse: [trim, {regex: {pattern: '([-+]?[0-9.]+)$', group: 1}}, number]
+    description: "Voltage setting, reply `V<N> <NR2>` (e.g. `V1 12.50`)"
+  iset_q:
+    send: "I{ch}?"
+    parse: [trim, {regex: {pattern: '([-+]?[0-9.]+)$', group: 1}}, number]
+    description: "Current limit setting, reply `I<N> <NR2>`"
+  ovp_q:
+    send: "OVP{ch}?"
+    parse: [trim, {regex: {pattern: '(\S+)$', group: 1}}, {null_if: ["OFF"]}, number]
+    description: "OVP trip point, reply `VP<N> <NR2>` (MX: `VP<N> OFF` when disabled -> null)"
+  ocp_q:
+    send: "OCP{ch}?"
+    parse: [trim, {regex: {pattern: '(\S+)$', group: 1}}, {null_if: ["OFF"]}, number]
+    description: "OCP trip point, reply `CP<N> <NR2>` (MX: `CP<N> OFF` when disabled -> null)"
+  op_q:
+    send: "OP{ch}?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+    description: "Output on/off, reply `<NR1>`: 1 = ON, 0 = OFF"
+  v_set:
+    send: "V{ch} {v}"
+    params: {v: {type: number, min: 0, max: 60, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+  i_set:
+    send: "I{ch} {a}"
+    params: {a: {type: number, min: 0, max: 20, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+  ovp_set:
+    send: "OVP{ch} {v}"
+    params: {v: {type: number, min: 1, max: 66, format: "%.1f", unit: V}}
+    reply: none
+    safety: configure
+    description: "Setting resolution 100 mV"
+  ocp_set:
+    send: "OCP{ch} {a}"
+    params: {a: {type: number, min: 0.01, max: 22, format: "%.2f", unit: A}}
+    reply: none
+    safety: configure
+    description: "Setting resolution 10 mA"
+  op_set:
+    send: "OP{ch} {on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    reply: none
+    safety: energize
+classes:
+  PSU:
+    channels: 2
+    ui_component: GenericPSU
+    poll:
+      - every_ms: 500
+        read: [vout, iout, op_q]
+    status:
+      VOUT: {expr: vout, as: si}
+      IOUT: {expr: iout, as: si}
+      POUT: {expr: "vout * iout", as: si}
+      OUTPUT: op_q
+      REMOTE: '"ON"'
+      SBY: 'op_q == "OFF"'
+    operations:
+      voltage: {get: vset_q, set: v_set, as: si}
+      current: {get: iset_q, set: i_set, as: si}
+      output: {get: op_q, set: op_set}
+      voltage_limit: {get: ovp_q, set: ovp_set, as: si}
+      current_limit: {get: ocp_q, set: ocp_set, as: si}
+      output_voltage: {get: vout, as: si}
+      output_current: {get: iout, as: si}

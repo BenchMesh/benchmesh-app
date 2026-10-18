@@ -1,0 +1,89 @@
+# GW Instek GSP-9300 / GSP-9300B / GSP-9330 spectrum analyzers (same command set in all three
+# programming manuals). Written from the manual, not yet seen live ("awaiting confirmation").
+# The only SA family here with RS-232. Coverage report: ai_context/migration/coverage/SAL.md §2.8.
+# Dialect differences: attenuation under :INPut, peak search `:CALC:MARK1:PEAK MAX|NEXT|…`,
+# marker to center `:CALC:MARK1:SET CENT`, trace mode set-only under :DISPlay, plain CSV trace
+# of 601 points (no format setting, no sweep-point setting).
+schema: benchmesh.device/v1
+id: gwinstek_gsp9300
+extends: scpi_sa
+vendor: GW Instek
+family: GSP-9300 / GSP-9300B / GSP-9330 spectrum analyzer
+version: 0.1.0
+sources:
+  - {doc: "GSP-9300 Programming Manual (201501_PM_GSP-9300_VB_E.pdf)", pages: "printed p34 RS-232 (8N1, 300-115200 baud), p74 *IDN?, p100 CALC:MARK:PEAK, p103-106 MARKer SET/STATe/X/Y?, p125 DISP:TRAC:MODE, p128 RLEVel/PDIVision, p131 INITiate, p132 INPut:ATTenuation, p142 OUTPut, p152-153 BANDwidth, p159 DETector, p161-163 FREQuency, p189 SWEep:TIME, p192 SOURce:POWer, p202 STATus:OPERation:CONDition?, p217 TRACe:DATA?"}
+  - {doc: "GSP-9300B / GSP-9330 programming manuals (201701_PM_GSP-9300B_VA_E.pdf, 201707_PM_GSP-9330_VD_E.pdf)", pages: "same command set"}
+  - {note: "USBTMC vid:pid not documented; RS-232 flow control RTS/CTS per the report (SAL.md §2.8, p37); baud set on the instrument (System > RmtInterface Config)"}
+models:
+  - {name: GSP-9300, match: "(?i)^GW ?INSTEK,GSP-?9300,", features: {SAL: {freq_range: {min: 9e3, max: 3e9}}}}
+  - {name: GSP-9300B, match: "(?i)^GW ?INSTEK,GSP-?9300B,", features: {SAL: {freq_range: {min: 9e3, max: 3e9}}}}
+  - {name: GSP-9330, match: "(?i)^GW ?INSTEK,GSP-?9330,", features: {SAL: {freq_range: {min: 9e3, max: 3.25e9}}}}
+link:
+  serial: {baud: 115200, format: 8N1, flow: rts_cts}
+  usbtmc: {}
+session:
+  on_connect: []
+commands:
+  form_asc: null
+  cent_set: {params: {f: {max: 3.25e9}}}
+  span_set: {params: {f: {max: 3.25e9}}}
+  star_set: {params: {f: {max: 3.25e9}}}
+  stop_set: {params: {f: {max: 3.25e9}}}
+  mkx_set: {params: {f: {max: 3.25e9}}}
+  rbw_set: {params: {f: {min: 1, max: 1e6}}, source: "p152"}
+  rbw_auto_q: {send: ":SENSe:BANDwidth:RESolution:AUTO?"}
+  vbw_set: {params: {f: {min: 1, max: 1e6}}, source: "p153"}
+  rlev_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel?", source: "p128"}
+  rlev_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel {v}", params: {v: {min: -110, max: 30}}}
+  pdiv_q: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision?", source: "p127"}
+  pdiv_set: {send: ":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision {v}", params: {v: {min: 1, max: 10}}}
+  att_q: {send: ":INPut:ATTenuation?", source: "p132; integer dB"}
+  att_set: {send: ":INPut:ATTenuation {v}", params: {v: {min: 0, max: 50}}}
+  att_auto_q: {send: ":INPut:ATTenuation:AUTO?"}
+  att_auto_set: {send: ":INPut:ATTenuation:AUTO {on}"}
+  det_set:
+    params: {d: {values: {AVER: AVERage, RMS: null, QPE: null}}}
+    source: "p159: AVERage|SAMPle|POSitive|NEGative|NORMal"
+  swt_set: {params: {s: {min: 0.0003, max: 1000}}, source: "p189"}
+  poin_q: null
+  poin_set: null
+  oper_q: {source: "p202; bit 3 sweeping"}
+  trace_q: {send: ":TRACe:DATA? TRACe1", reply: line, max_bytes: null, source: "p217; 601 points CSV, e.g. -5.234e+01,-4.593e+01,…"}
+  tmode_q: null
+  tmode_set:
+    send: ":DISPlay:WINDow:TRACe1:MODE {m}"
+    params: {m: {values: {AVERAGE: null}}}
+    source: "p125 (set only): WRITe|VIEW|BLANk|MAXHold|MINHold"
+  peak_set:
+    params: {p: {values: {PEAK: ":CALCulate:MARKer1:PEAK MAXimum", NEXT: ":CALCulate:MARKer1:PEAK NEXT", LEFT: ":CALCulate:MARKer1:PEAK LEFT", RIGHT: ":CALCulate:MARKer1:PEAK RIGHt", MKR_CF: ":CALCulate:MARKer1:SET CENTer"}}}
+    source: "p100, p103"
+  tg_set: {source: "p142 (TG option)"}
+  tglev_q: {send: ":SOURce:POWer?"}
+  tglev_set: {send: ":SOURce:POWer {v}", params: {v: {min: -50, max: 0}}, source: "p192; TG -50 to 0 dBm"}
+classes:
+  SAL:
+    features:
+      freq_range: {min: 9e3, max: 3e9}
+      rbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000]
+      vbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000]
+      ref_level: {min: -110, max: 30}
+      attenuation: {min: 0, max: 50, step: 1}
+      points: 601
+      divisions: {horizontal: 10, vertical: 10}
+      preamp: false
+      tg: {min: -50, max: 0}
+    poll:
+      - every_ms: 2000
+        read: [cent_q, span_q, star_q, stop_q, rbw_q, rbw_auto_q, vbw_q, vbw_auto_q, rlev_q, pdiv_q, att_q, att_auto_q, det_q, swt_q, cont_q, oper_q]
+      - every_ms: 500
+        read: [mark_q, mkx_q, mky_q]
+      - every_ms: 500
+        read: [trace_q]
+      - every_ms: 5000
+        read: [tg_q, tglev_q]
+    status:
+      TRACE_MODE: null
+      POINTS: 'trace_q == null ? null : size(trace_q)'
+    operations:
+      points: null
+      trace_mode: {get: null, set: tmode_set}

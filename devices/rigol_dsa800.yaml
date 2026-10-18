@@ -1,0 +1,49 @@
+# RIGOL DSA800 series spectrum analyzers (DSA815, DSA832, DSA832E, DSA875; -TG with tracking
+# generator). Written from the programming guide, not yet seen live ("awaiting confirmation").
+# The baseline (scpi_sa) is written in this dialect, so the definition carries only identity,
+# limits and links. Coverage report: ai_context/migration/coverage/SAL.md §2.2.
+schema: benchmesh.device/v1
+id: rigol_dsa800
+extends: scpi_sa
+vendor: RIGOL
+family: DSA800 series spectrum analyzer
+version: 0.1.0
+sources:
+  - {doc: "DSA800 Programming Guide (DSA800_ProgrammingGuide_EN.pdf, Aug 2016)", pages: "PDF p38-55 CALCulate:MARKer, p70 DISPlay RLEVel/PDIVision, p86 FORMat, p94 *IDN?, p97-98 INITiate, p110 OUTPut, p128-129 BANDwidth, p143 DETector, p148-153 FREQuency, p160 POWer:ATTenuation, p170 SWEep, p180 SOURce, p185 STATus:OPERation, p210-217 TRACe"}
+  - {note: "Raw SCPI socket 5555 (p224); USBTMC PID not documented — matched by vendor id + *IDN?"}
+models:
+  - {name: DSA815, match: "(?i)^Rigol Technologies,DSA815,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}}}}
+  - {name: DSA815-TG, match: "(?i)^Rigol Technologies,DSA815-TG,", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}, tg: {min: -40, max: 0}}}}
+  - {name: DSA832, match: "(?i)^Rigol Technologies,DSA832,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}}
+  - {name: DSA832-TG, match: "(?i)^Rigol Technologies,DSA832-TG,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}, tg: {min: -40, max: 0}}}}
+  - {name: DSA832E, match: "(?i)^Rigol Technologies,DSA832E(-TG)?,", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}}}}
+  - {name: DSA875, match: "(?i)^Rigol Technologies,DSA875,", features: {SAL: {freq_range: {min: 9e3, max: 7.5e9}}}}
+  - {name: DSA875-TG, match: "(?i)^Rigol Technologies,DSA875-TG,", features: {SAL: {freq_range: {min: 9e3, max: 7.5e9}, tg: {min: -40, max: 0}}}}
+link:
+  usbtmc: {vid: "1ab1"}
+  tcp: {port: 5555}
+commands:
+  form_asc: {source: "FORMat:TRACe:DATA p86 (default ASCii)"}
+  cent_q: {source: "SENSe:FREQuency:CENTer p148; integer Hz"}
+  rbw_set: {params: {f: {min: 10, max: 1e6}}, description: "10 Hz–1 MHz in 1-3-10 steps (p128); the analyzer rounds"}
+  vbw_set: {params: {f: {min: 1, max: 3e6}}, source: "p129"}
+  rlev_set: {params: {v: {min: -100, max: 20}}, source: "p70"}
+  att_set: {params: {v: {min: 0, max: 30}}, source: "p160"}
+  swt_set: {params: {s: {min: 0.00002, max: 7500}}, source: "p170"}
+  poin_set: {params: {n: {min: 101, max: 3001}}, source: "p170"}
+  oper_q: {source: "STATus:OPERation:CONDition? p185; bit 3 SWEeping"}
+  trace_q: {source: "TRACe:DATA? TRACE1 p210-211; #9000009014 -1.390530e+01, -7.108871e+01, …"}
+  peak_set: {source: "CALCulate:MARKer<n>:MAXimum:MAX/NEXT/LEFT/RIGHt p38, MARKer1:SET:CENTer p42"}
+  tg_set: {source: "OUTPut:STATe p110 (-TG only)"}
+  tglev_set: {params: {v: {min: -40, max: 0}}, source: "SOURce:POWer:LEVel:IMMediate:AMPLitude p180"}
+classes:
+  SAL:
+    features:
+      freq_range: {min: 9e3, max: 7.5e9}
+      rbw: [10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000]
+      vbw: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000, 3000000]
+      ref_level: {min: -100, max: 20}
+      attenuation: {min: 0, max: 30, step: 1}
+      points: {min: 101, max: 3001}
+      divisions: {horizontal: 10, vertical: 10}
+      preamp: false

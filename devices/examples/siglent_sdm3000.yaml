@@ -1,0 +1,15 @@
+# Replies as the SDM3000 remote manuals print them (the IDN format is not printed: sigrok's
+# vendor string). Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: siglent_sdm3000
+transport: usbtmc
+model: SDM3055
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDM3055,SDM35HBQ000000,1.01.01.25", source: "not printed; sigrok vendor alias"}
+  - {send: 'READ\?', reply: "-5.21391630E-04", source: "SDM3055 p.46 READ? typical response"}
+  - {send: 'FUNC\?', reply: '"VOLT"', source: "SDM3065X p.54 FUNCtion? (quoted short form)"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+2.00000000E+00", source: "SDM3065X p.79 VOLTage:DC:RANGe?"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "0", source: "SDM3065X p.80 0(OFF) or 1(ON)"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.00000000E+01", source: "SDM3055 p.83 NPLC? typical return"}
+expect:
+  DMM:
+    1: {MEAS: -5.21391630e-4, MODE: VOLT, RANGE: "2", OVERLOAD: false}

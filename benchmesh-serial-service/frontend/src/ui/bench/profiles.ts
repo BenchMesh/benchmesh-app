@@ -7,6 +7,7 @@
 import { decimalsFromFormat, intDigitsFor } from '../kit/format'
 import type { DigitSpec } from '../kit/digitModel'
 import { WAVE_SHAPES } from '../kit/WavePreview'
+import { siText } from '../kit/scope'
 
 export interface ValueSpec { type: string; min?: number; max?: number; format?: string; unit?: string; values?: string[] }
 export interface Setter { value?: ValueSpec; energizes?: boolean }
@@ -201,3 +202,196 @@ export function oscProfile(features: any, setters: Setters, channels: number) {
   }
 }
 export type OscProfile = ReturnType<typeof oscProfile>
+
+// ---- LCR -------------------------------------------------------------------------------
+
+/** One parameter pair of an LCR meter (a `features.functions` key, canonical E4980 token). */
+export interface LcrFunction {
+  key: string
+  primary: string
+  secondary: string | null
+  circuit: 'SER' | 'PAR' | null
+  /** Units of the primary and secondary reading ('' = unitless, '°' or 'rad' for θ). */
+  units: [string, string]
+  name: string
+  /** Front-panel primary key: L, C, R, Z, Y, G or DCR. */
+  group: string
+}
+
+type Canon = [string, string | null, 'SER' | 'PAR' | null, string, string]
+/** Canonical E4980/Tonghui function tokens (definitions may override any field in features). */
+const LCR_CANON: Record<string, Canon> = {
+  CPD: ['Cp', 'D', 'PAR', 'F', ''], CPQ: ['Cp', 'Q', 'PAR', 'F', ''], CPG: ['Cp', 'G', 'PAR', 'F', 'S'], CPRP: ['Cp', 'Rp', 'PAR', 'F', 'Ω'],
+  CSD: ['Cs', 'D', 'SER', 'F', ''], CSQ: ['Cs', 'Q', 'SER', 'F', ''], CSRS: ['Cs', 'Rs', 'SER', 'F', 'Ω'], CSESR: ['Cs', 'ESR', 'SER', 'F', 'Ω'],
+  LPD: ['Lp', 'D', 'PAR', 'H', ''], LPQ: ['Lp', 'Q', 'PAR', 'H', ''], LPG: ['Lp', 'G', 'PAR', 'H', 'S'], LPRP: ['Lp', 'Rp', 'PAR', 'H', 'Ω'], LPRD: ['Lp', 'Rdc', 'PAR', 'H', 'Ω'],
+  LSD: ['Ls', 'D', 'SER', 'H', ''], LSQ: ['Ls', 'Q', 'SER', 'H', ''], LSRS: ['Ls', 'Rs', 'SER', 'H', 'Ω'], LSRD: ['Ls', 'Rdc', 'SER', 'H', 'Ω'], LSESR: ['Ls', 'ESR', 'SER', 'H', 'Ω'],
+  RX: ['R', 'X', null, 'Ω', 'Ω'], RPQ: ['Rp', 'Q', 'PAR', 'Ω', ''], RSQ: ['Rs', 'Q', 'SER', 'Ω', ''],
+  ZTD: ['Z', 'θ', null, 'Ω', '°'], ZTR: ['Z', 'θ', null, 'Ω', 'rad'], ZD: ['Z', 'D', null, 'Ω', ''], ZQ: ['Z', 'Q', null, 'Ω', ''],
+  GB: ['G', 'B', null, 'S', 'S'], YTD: ['Y', 'θ', null, 'S', '°'], YTR: ['Y', 'θ', null, 'S', 'rad'],
+  DCR: ['DCR', null, null, 'Ω', ''],
+}
+/** Primary keys in front-panel order (handhelds: L / C / R / Z / DCR). */
+export const LCR_GROUPS = ['L', 'C', 'R', 'Z', 'Y', 'G', 'DCR']
+const LCR_SECONDARY_ORDER = ['D', 'Q', 'θ', 'ESR', 'Rs', 'Rp', 'X', 'G', 'B', 'Rdc']
+
+/** The pair behind a function key: features entry over the canonical token. */
+export function lcrFunction(key: string, f: any = {}): LcrFunction {
+  const c: Canon = LCR_CANON[key.toUpperCase()] ?? [key, null, null, '', '']
+  const primary = typeof f?.primary === 'string' ? f.primary : c[0]
+  const secondary = f?.secondary === undefined ? c[1] : (f.secondary || null)
+  const circuit = f?.circuit === 'SER' || f?.circuit === 'PAR' ? f.circuit : f?.circuit === undefined ? c[2] : null
+  const units: [string, string] = Array.isArray(f?.units) ? [String(f.units[0] ?? c[3]), String(f.units[1] ?? c[4])] : [c[3], c[4]]
+  const group = primary.toUpperCase() === 'DCR' ? 'DCR' : primary.charAt(0).toUpperCase()
+  return { key, primary, secondary, circuit, units, name: f?.ui_name ?? (secondary ? `${primary}–${secondary}` : primary), group }
+}
+
+/** A discrete list (chips) or a continuous range (digit editor + presets) for frequency / level. */
+export type LcrSetting =
+  | { kind: 'list'; values: { value: string; num: number }[] }
+  | { kind: 'range'; spec: NumberSpec; presets: number[] }
+  | null
+
+/**
+ * Volt-scale settings whose wire format counts mV (`scale: 1000, format: %.0f`; `/methods` does not
+ * report the scale): keep millivolt resolution instead of whole volts.
+ */
+function fineVolts(spec: NumberSpec | null): NumberSpec | null {
+  if (!spec || spec.decimals > 0 || spec.max > 10) return spec
+  return { ...spec, decimals: 3 }
+}
+
+function lcrSetting(setter: Setter | undefined, f: any, unit: string): LcrSetting {
+  const v = setter?.value
+  if (!v) return null
+  if (v.type === 'enum') {
+    const values = (v.values ?? []).map((s) => ({ value: s, num: Number(s) })).filter((x) => Number.isFinite(x.num))
+    return { kind: 'list', values: values.sort((a, b) => a.num - b.num) }
+  }
+  const n = numberSpec(setter, { min: f?.min, max: f?.max, unit })
+  const spec = unit === 'V' ? fineVolts(n && { ...n, min: Math.max(isNum(v.min) ? v.min : 0, isNum(f?.min) ? f.min : 0) }) : n
+  if (!spec) return null
+  // a model with discrete points (features list) behind a numeric setter shared with continuous models
+  if (Array.isArray(f?.list) && f.list.length) {
+    // raw setter limits: a scaled wire format (`%.0f` in mV) would round the spec's limits
+    const lo = Math.max(isNum(v.min) ? v.min : -Infinity, isNum(f?.min) ? f.min : -Infinity)
+    const hi = Math.min(isNum(v.max) ? v.max : Infinity, isNum(f?.max) ? f.max : Infinity)
+    const values = f.list.filter((x: unknown): x is number => isNum(x) && x >= lo && x <= hi)
+      .sort((a: number, b: number) => a - b).map((n: number) => ({ value: String(n), num: n }))
+    if (values.length) return { kind: 'list', values }
+  }
+  const presets = (Array.isArray(f?.presets) ? f.presets : [])
+    .filter((x: unknown): x is number => isNum(x) && x >= spec.min && x <= spec.max)
+  return { kind: 'range', spec, presets }
+}
+
+/** Options of an enum setter, labelled from a features list `[{value, display}]`. */
+function enumOptions(setters: Setters, op: string, order: string[], display: any): Option[] {
+  const names = new Map<string, string>(Array.isArray(display) ? display.map((d: Option) => [String(d.value), String(d.display ?? d.value)]) : [])
+  return ordered(setters, op, order).map((v) => ({ value: v, display: names.get(v) ?? v }))
+}
+
+export function lcrProfile(features: any, setters: Setters) {
+  const fdefs = features?.functions && typeof features.functions === 'object' && !Array.isArray(features.functions) ? features.functions : {}
+  const keys: string[] = setters.function?.value?.values?.length ? setters.function.value.values : Object.keys(fdefs)
+  const groupRank = (g: string) => { const i = LCR_GROUPS.indexOf(g); return i < 0 ? 99 : i }
+  const secRank = (s: string | null) => { const i = LCR_SECONDARY_ORDER.indexOf(s ?? ''); return i < 0 ? 99 : i }
+  const functions = keys.map((k) => lcrFunction(k, fdefs[k]))
+    .sort((a, b) => groupRank(a.group) - groupRank(b.group) || secRank(a.secondary) - secRank(b.secondary) || (a.circuit ?? '').localeCompare(b.circuit ?? ''))
+  const counts = isNum(features?.counts) ? (features.counts > 9 ? Math.ceil(Math.log10(features.counts + 1)) : features.counts) : 5
+  const rangeNames = Array.isArray(features?.ranges) ? features.ranges : []
+  const ranges = ordered(setters, 'range', ['AUTO', 'HOLD']).map((v) => {
+    const d = rangeNames.find((r: Option) => String(r.value) === v)?.display
+    const n = Number(v)
+    return { value: v, display: d ?? (Number.isFinite(n) && v.trim() !== '' ? siText(n, 'Ω', 3) : v) }
+  })
+  // numeric ranges ascending after AUTO/HOLD
+  ranges.sort((a, b) => {
+    const na = Number(a.value), nb = Number(b.value)
+    const fa = Number.isFinite(na), fb = Number.isFinite(nb)
+    return fa && fb ? na - nb : fa ? 1 : fb ? -1 : 0
+  })
+  return {
+    functions,
+    canFunction: !!setters.function,
+    circuit: enumSetter(setters, 'circuit'),
+    frequency: lcrSetting(setters.frequency, features?.frequency, 'Hz'),
+    level: lcrSetting(setters.level, features?.level, 'V'),
+    speeds: enumOptions(setters, 'speed', ['FAST', 'MED', 'SLOW'], features?.speeds),
+    ranges,
+    triggerSources: ordered(setters, 'trigger_source', ['INT', 'BUS', 'MAN', 'EXT', 'HOLD']),
+    trigger: !!setters.trigger,
+    corrections: ordered(setters, 'correction', ['OPEN', 'SHORT', 'AUTO']),
+    correctionSwitches: ['open_correction', 'short_correction'].filter((op) => enumSetter(setters, op)),
+    bias: fineVolts(numberSpec(setters.bias, { ...(features?.bias ?? {}), unit: 'V' })),
+    /** The bias setter itself applies the bias (no separate output switch): a value needs two presses. */
+    biasEnergizes: !!setters.bias?.energizes,
+    biasOutput: !!setters.bias_output,
+    remote: enumSetter(setters, 'remote'),
+    counts,
+  }
+}
+export type LcrProfile = ReturnType<typeof lcrProfile>
+
+// ---- SAL -------------------------------------------------------------------------------
+
+/** 1-3-10 sequence (RBW / VBW steps) between min and max. */
+export function steps1310(min: number, max: number): number[] {
+  const out: number[] = []
+  if (!(min > 0) || !(max >= min)) return out
+  for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) {
+    for (const m of [1, 3]) {
+      const v = Number((m * 10 ** e).toPrecision(6))
+      if (v >= min * 0.9999 && v <= max * 1.0001) out.push(v)
+    }
+  }
+  return out
+}
+
+/** Bandwidth steps: an enum setter's values, else the features list, else 1-3-10 over the setter's limits. */
+function bandwidths(setter: Setter | undefined, list: unknown): number[] {
+  const v = setter?.value
+  if (!v) return []
+  if (v.type === 'enum') return (v.values ?? []).map(Number).filter(Number.isFinite).sort((a, b) => a - b)
+  if (Array.isArray(list)) return list.filter(isNum).sort((a, b) => a - b)
+  return isNum(v.min) && isNum(v.max) ? steps1310(v.min, v.max) : []
+}
+
+export function salProfile(features: any, setters: Setters) {
+  const fr = features?.freq_range ?? {}
+  const freq = (op: string, min?: number) => numberSpec(setters[op], { min: min ?? fr.min, max: fr.max, unit: 'Hz' })
+  const range = (r: any, s: Setter | undefined, min: number, max: number) => ({
+    min: isNum(r?.min) ? r.min : isNum(s?.value?.min) ? s!.value!.min! : min,
+    max: isNum(r?.max) ? r.max : isNum(s?.value?.max) ? s!.value!.max! : max,
+  })
+  const att = features?.attenuation ?? {}
+  const scales = setters.scale ? [1, 2, 5, 10].filter((s) => s >= (setters.scale?.value?.min ?? 0) && s <= (setters.scale?.value?.max ?? 20)) : []
+  return {
+    hdivs: isNum(features?.divisions?.horizontal) ? features.divisions.horizontal : 10,
+    vdivs: isNum(features?.divisions?.vertical) ? features.divisions.vertical : 10,
+    freqRange: isNum(fr.min) && isNum(fr.max) ? { min: fr.min as number, max: fr.max as number } : null,
+    center: freq('center'),
+    span: freq('span', 0),
+    start: freq('start'),
+    stop: freq('stop'),
+    fullSpan: !!setters.full_span,
+    rbw: bandwidths(setters.rbw, features?.rbw),
+    rbwAuto: enumSetter(setters, 'rbw_auto'),
+    vbw: bandwidths(setters.vbw, features?.vbw),
+    vbwAuto: enumSetter(setters, 'vbw_auto'),
+    refLevel: setters.ref_level ? range(features?.ref_level, setters.ref_level, -100, 30) : null,
+    scales,
+    attenuation: setters.attenuation ? { ...range(att, setters.attenuation, 0, 50), step: isNum(att.step) ? att.step as number : 10 } : null,
+    attenAuto: enumSetter(setters, 'atten_auto'),
+    preamp: enumSetter(setters, 'preamp'),
+    sweeps: ordered(setters, 'sweep', ['CONT', 'SINGLE', 'HOLD', 'RESTART']),
+    sweepTime: setters.sweep_time ? range(null, setters.sweep_time, 1e-6, 1000) : null,
+    traceModes: ordered(setters, 'trace_mode', ['WRITE', 'MAXHOLD', 'MINHOLD', 'AVERAGE', 'VIEW']),
+    detectors: ordered(setters, 'detector', ['POS', 'NEG', 'NORM', 'SAMP', 'RMS', 'AVER', 'QPE']),
+    marker: enumSetter(setters, 'marker'),
+    markerFreq: freq('marker_freq'),
+    peaks: ordered(setters, 'peak_search', ['PEAK', 'NEXT', 'LEFT', 'RIGHT', 'MKR_CF']),
+    // the generator control only on models that have one (definitions bind tg_output family-wide)
+    tg: setters.tg_output && features?.tg ? { level: numberSpec(setters.tg_level, { ...(features?.tg ?? {}), unit: 'dBm' }) } : null,
+  }
+}
+export type SalProfile = ReturnType<typeof salProfile>

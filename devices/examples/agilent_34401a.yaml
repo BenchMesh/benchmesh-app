@@ -1,0 +1,14 @@
+# Replies as the 34401A User's Guide prints them (RS-232 reading format p.159).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: agilent_34401a
+model: 34401A
+replies:
+  - {send: '\*IDN\?', reply: "HEWLETT-PACKARD,34401A,0,11-5-2\r\n", source: "p.90 *IDN? returns HEWLETT-PACKARD,34401A,0,XX-XX-XX"}
+  - {send: 'READ\?', reply: "+1.23456789E+00\r\n", source: "reading format SD.DDDDDDDDESDD<cr><nl> p.159"}
+  - {send: 'FUNC\?', reply: "\"VOLT\"\r\n", source: "p.106 FUNCtion?"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+1.00000000E+01\r\n", source: "p.106 VOLTage:DC:RANGe?"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "0\r\n", source: "p.106 RANGe:AUTO?"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.00000000E+01\r\n", source: "p.59 NPLC"}
+expect:
+  DMM:
+    1: {MEAS: 1.23456789, MODE: VOLT, RANGE: "10", OVERLOAD: false}

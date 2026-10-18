@@ -1,0 +1,37 @@
+# OWON SP / SPE / SPS single-output programmable DC supplies and the Kiprim DC310S/DC605S
+# rebrands, written from the manuals (not yet seen live). The protocol is the PSU half of the
+# bench-tested OWON SPM (devices/owon_spm.yaml), shared through devices/bases/owon_psu.yaml.
+# Research: ai_context/migration/coverage/PSU.md §2.3.
+schema: benchmesh.device/v1
+extends: owon_psu
+id: owon_spe
+vendor: OWON
+family: SP / SPE / SPS single-output DC power supply (+ Kiprim DC310S/DC605S)
+version: 0.1.0
+sources:
+  - {doc: "OWON Single Channel DC Power Supply Programming Manual (SP_and_SPE_SPS_programming_manual.pdf)", pages: "4-10"}
+  - {doc: "OWON SPE Series Single Output Power Supply User Manual V1.0.5", pages: "4-6 (rear USB device port = PC control)"}
+  - {doc: "OWON SP Series Single Output Power Supply User Manual", pages: "15-17 (RS232, 115200 8N1 factory default)"}
+  - {note: "Model ratings are not in the manuals: retailer data / sigrok (PSU.md §2.3, medium confidence). SPE USB is a CH340 (1a86:7523, generic id) at 115200 per community drivers (kakuteki/owon-spe6103-mcp, sjoerdsimons/owon-spe). -L models have a LAN port whose socket port is undocumented: not offered."}
+models:
+  - {name: SPE3051, match: "^OWON,SPE3051,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 150.0}}}}}
+  - {name: SPE3102, match: "^OWON,SPE3102,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 200.0}}}}}
+  - {name: SPE3103, match: "^OWON,SPE3103,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 300.0}}}}}
+  - {name: SPE6053, match: "^OWON,SPE6053,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 300.0}}}}}
+  - {name: SPE6102, match: "^OWON,SPE6102,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 200.0}}}}}
+  - {name: SPE6103, match: "^OWON,SPE6103,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 300.0}}}}}
+  - {name: SP3103, match: "^OWON,SP3103,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 300.0}}}}}
+  - {name: SP6103, match: "^OWON,SP6103,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 300.0}}}}}
+  - {name: DC310S, match: "^KIPRIM,DC310S,", note: "Kiprim rebrand of the SPE3103 class; MEAS:ALL:INFO? support unconfirmed", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 10.0}}}}}
+  - {name: DC605S, match: "^KIPRIM,DC605S,", note: "Kiprim rebrand; MEAS:ALL:INFO? support unconfirmed", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 5.0}}}}}
+  - {name: SP/SPE/SPS, match: "^OWON,SP[ES]?\\d{4}", note: "Other SP/SPE/SPS models (e.g. SP80xx, SPS): limits not known, the setters accept up to 61 V / 10.1 A"}
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+commands:
+  volt_set: {params: {v: {type: number, min: 0, max: 61, format: "%.3f", unit: V}}}
+  curr_set: {params: {a: {type: number, min: 0, max: 10.1, format: "%.3f", unit: A}}}
+  ovp_lvl_set: {params: {v: {type: number, min: 0.1, max: 62, format: "%.3f", unit: V}}}
+  ocp_lvl_set: {params: {a: {type: number, min: 0.1, max: 10.2, format: "%.3f", unit: A}}}
+classes:
+  PSU:
+    features: {"lock": false, "compulsory_lock": false, "absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 10.0}}}

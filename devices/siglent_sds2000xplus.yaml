@@ -1,0 +1,43 @@
+# Siglent SDS2000X Plus digital oscilloscopes (8-bit ADC with a 10-bit mode, 100-350 MHz).
+# Written from the "SDS Series Programming Guide" EN11F, not yet seen live (models are
+# "awaiting confirmation"). Commands: devices/bases/siglent_scope.yaml (cites EN11G pages; EN11F
+# pages here). Unlike the HD models the trace is read as signed BYTEs with code_per_div 30 (the
+# guide's example value, p694); in 10-bit mode WORD would be required (p689), so the trace is
+# refused there. Coverage report ai_context/migration/coverage/OSC.md §2.5.
+schema: benchmesh.device/v1
+id: siglent_sds2000xplus
+extends: siglent_scope
+vendor: Siglent
+family: SDS2000X Plus series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "SDS Series Programming Guide EN11F (SDS_Series_ProgrammingGuide.pdf)", pages: "PDF p18 supported models (SDS2000X Plus from firmware 1.3.5R3), p30 *IDN?, p41-47 ACQuire (RESolution p43), p50-60 CHANnel, p304 MEASure:SIMPle:VALue?, p412-431 TIMebase/TRIGger, p683-695 WAVeform (WIDTh p689, DATA p693)"}
+  - {note: "USBTMC product id not in the guide: matched on the Siglent vendor id f4ec"}
+models:
+  - {name: SDS2102X Plus, match: "^Siglent Technologies,SDS2102X ?Plus,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS2104X Plus, match: "^Siglent Technologies,SDS2104X ?Plus,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS2202X Plus, match: "^Siglent Technologies,SDS2202X ?Plus,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6}}}
+  - {name: SDS2204X Plus, match: "^Siglent Technologies,SDS2204X ?Plus,", features: {OSC: {bandwidth_hz: 200e6}}}
+  - {name: SDS2354X Plus, match: "^Siglent Technologies,SDS2354X ?Plus,", features: {OSC: {bandwidth_hz: 350e6}}}
+identify: idn
+session:
+  on_connect: [wav_width, meas_on, meas_mode, meas_item_pkpk, meas_item_mean, meas_item_rms, meas_item_freq]
+commands:
+  wav_width: {send: ":WAVeform:WIDTh BYTE", source: "WAVeform:WIDTh p689"}
+  wav_order: null
+  res_q: {send: ":ACQuire:RESolution?", parse: [trim], cache_ms: 3000, source: "ACQuire:RESolution p43; 8Bits or 10Bits"}
+  bwl_set:
+    params: {b: {values: {"200M": "200M"}}}
+  wav_data:
+    requires: {expr: "disp_q == 'ON' && res_q == '8Bits'", message: "channel is not displayed, or the 10-bit mode is on (needs WORD data)"}
+    parse: [{samples: i8}]
+    max_bytes: 50000
+    source: "WAVeform:DATA? p693-694; signed 8-bit"
+classes:
+  OSC:
+    features:
+      bandwidth_hz: 100e6
+      code_per_div: 30
+    status:
+      WAVE_Y0: "scale_q == null || offset_q == null || scale_q == 0.0 ? null : offset_q * 30.0 / scale_q"
+      WAVE_DY: "scale_q == null ? null : scale_q / 30.0"

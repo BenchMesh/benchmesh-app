@@ -1,0 +1,73 @@
+# B&K Precision 894 / 895 benchtop LCR meters (Tonghui OEM, E4980 dialect) with DC bias.
+# Written from the 894/895 programming manual; see ai_context/migration/coverage/LCR.md §2.3.
+schema: benchmesh.device/v1
+id: bk_894
+extends: scpi_lcr_e4980
+vendor: B&K Precision
+family: 894/895 LCR meter
+version: 0.1.0
+sources:
+  - {doc: "894_895_programming_manual.pdf (BenchMeshDOC/bk_894)", pages: "6-7 (interfaces), 9 (*IDN?), 14-43 (SCPI)"}
+  - {note: "RS-232/USB virtual COM: 9600-115200 8N1, no flow control, commands must be paced (PM p.6-7); 9600 assumed"}
+models:
+  - name: "894"
+    match: '(?i)^B&K Precision,\s*894\b'
+    features: {LCR: {frequency: {min: 20, max: 500000, presets: [100, 120, 1000, 10000, 100000]}}}
+  - name: "895"
+    match: '(?i)^B&K Precision,\s*895\b'
+    features: {LCR: {frequency: {min: 20, max: 1000000, presets: [100, 120, 1000, 10000, 100000, 1000000]}}}
+link:
+  serial: {baud: 9600, format: 8N1}
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  freq_set:
+    params: {f: {max: 1000000}}
+  bias_stat_q:
+    send: "BIAS:STAT?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    cache_ms: 2500
+    source: "PM p.17"
+  bias_volt_q: {send: "BIAS:VOLT?", parse: [trim, number], cache_ms: 2500, source: "PM p.18"}
+  bias_stat_set:
+    send: "BIAS:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    invalidates: [bias_stat_q]
+    source: "PM p.17"
+  bias_volt_set:
+    send: "BIAS:VOLT {v}V"
+    params: {v: {type: number, min: -2, max: 2, format: "%g", unit: V}}
+    reply: none
+    safety: configure
+    invalidates: [bias_volt_q]
+    source: "PM p.18 (±5 mV .. ±2 V)"
+classes:
+  LCR:
+    features:
+      level: {min: 0.005, max: 2}
+      bias: {min: -2, max: 2, unit: V}
+      ranges:
+        - {value: AUTO, display: AUTO}
+        - {value: "10", display: "10 Ω"}
+        - {value: "30", display: "30 Ω"}
+        - {value: "100", display: "100 Ω"}
+        - {value: "300", display: "300 Ω"}
+        - {value: "1000", display: "1 kΩ"}
+        - {value: "3000", display: "3 kΩ"}
+        - {value: "10000", display: "10 kΩ"}
+        - {value: "30000", display: "30 kΩ"}
+        - {value: "100000", display: "100 kΩ"}
+    poll:
+      - every_ms: 400
+        read: [fetch, func_q, freq_q, volt_q, aper_q, rang_auto_q, rang_q, bias_stat_q, bias_volt_q]
+    status:
+      BIAS: {expr: bias_volt_q, as: si}
+      BIAS_ON: bias_stat_q
+    operations:
+      bias: {get: bias_volt_q, set: bias_volt_set, as: si}
+      bias_output: {get: bias_stat_q, set: bias_stat_set}

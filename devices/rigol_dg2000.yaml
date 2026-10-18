@@ -1,0 +1,45 @@
+# RIGOL DG2000 series function/arbitrary waveform generators (DG2052/DG2072/DG2102).
+# Written from the programming guide before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.1. Pages are PDF pages.
+schema: benchmesh.device/v1
+id: rigol_dg2000
+extends: scpi_awg
+vendor: RIGOL
+family: DG2000 series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "DG2000 Programming Guide PGB12100 (DG2000_ProgrammingGuide_EN.pdf)", pages: "35 (*IDN?), 53-54 (OUTPut LOAD/STATe), 80 (FREQ), 91 (RAMP:SYMM), 97 (FUNC), 133 (PHAS), 148-151 (VOLT, OFFS, UNIT); Table 2-1 p60 (limits)"}
+  - {note: "USB PID undocumented (the guide's VISA example copies DG1000Z 0642): the link names the vendor only and identify picks the model"}
+models:
+  - {"name": "DG2052", "match": "^Rigol Technologies,DG2052,", "features": {"AWG": {"max_freq_hz": {"SIN": 50e6, "SQU": 15e6, "PUL": 15e6, "RAMP": 1.5e6}}}}
+  - {"name": "DG2072", "match": "^Rigol Technologies,DG2072,", "features": {"AWG": {"max_freq_hz": {"SIN": 70e6, "SQU": 20e6, "PUL": 20e6, "RAMP": 1.5e6}}}}
+  - {"name": "DG2102", "match": "^Rigol Technologies,DG2102,", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 2e6}}}}
+link:
+  usbtmc: {vid: "1ab1"}
+  # raw SCPI socket (:SYST:COMM:LAN:CONT? answers 5555)
+  tcp: {port: 5555}
+commands:
+  outp_q: {source: "PDF p54; reply ON/OFF"}
+  outp_set: {source: "PDF p54"}
+  shape_q: {source: "PDF p97"}
+  shape_set: {source: "PDF p97"}
+  freq_q: {source: "PDF p80"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 100000000, format: "%.6f", unit: Hz}}
+    source: "PDF p80"
+  unit_q: {source: "PDF p151"}
+  ampl_q: {source: "PDF p148"}
+  ampl_set:
+    params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
+    description: "2 mVpp minimum; 20 Vpp at High-Z ≤10 MHz, less above — the instrument clamps"
+    source: "PDF p148"
+  offs_q: {source: "PDF p150"}
+  offs_set: {source: "PDF p150"}
+  phase_q: {source: "PDF p133"}
+  phase_set: {source: "PDF p133"}
+  symm_q: {source: "PDF p91"}
+  symm_set: {source: "PDF p91"}
+  load_q: {source: "PDF p53; High-Z 9.900000E+37"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 100e6, "SQU": 25e6, "PUL": 25e6, "RAMP": 2e6}}

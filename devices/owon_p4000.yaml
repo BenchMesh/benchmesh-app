@@ -1,0 +1,69 @@
+# OWON P4000 single-output programmable DC supplies (P4305, P4603), written from the manuals
+# (not yet seen live). The OWON PSU dialect (devices/bases/owon_psu.yaml) minus
+# MEAS:ALL:INFO? (and SYST:REM/LOC are undocumented): no regulation-mode or trip query, so status is read from the
+# individual MEAS queries and OUTP?. Research: ai_context/migration/coverage/PSU.md §2.20.
+schema: benchmesh.device/v1
+extends: owon_psu
+id: owon_p4000
+vendor: OWON
+family: P4000 single-output DC power supply
+version: 0.1.0
+sources:
+  - {doc: "OWON P4000 Series DC Power Supply Programming Manual", pages: "3-9"}
+  - {doc: "OWON P4000 Single Output Power Supply User Manual V1.2.0", pages: "4 (COM port; optional USB with USBTMC), 12-13 (RS232 115200 8N1 default; factory limit 61.00 V / 3.10 A)"}
+  - {note: "Ratings P4305 30 V/5 A, P4603 60 V/3 A from the model names / retail data (PSU.md §2.20). USBTMC vid:pid not documented (OWON instruments usually use 5345)."}
+models:
+  - {name: P4305, match: "^OWON,P4305,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 150.0}}}}}
+  - {name: P4603, match: "^OWON,P4603,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 3.0}, power: {unit: W, max: 180.0}}}}}
+session:
+  on_connect: [{cmd: remote_set, args: {on: "ON"}}]
+  on_disconnect: [{cmd: remote_set, args: {on: "OFF"}}]
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+commands:
+  idn: {source: "PM p.4"}
+  info: null
+  remote_set:
+    description: >-
+      Not listed in the P4000 manual, but its "Mode Setting" (p.3) says local mode rejects all
+      but the common and "SCPI Essential" commands (SYST:REM/LOC in the sibling OWON manuals):
+      sent on connect, back to local on disconnect
+    source: "PM p.3; SP/SPE manual p.10"
+  volt_set: {params: {v: {type: number, min: 0, max: 61, format: "%.3f", unit: V}}}
+  curr_set: {params: {a: {type: number, min: 0, max: 5.1, format: "%.3f", unit: A}}}
+  ovp_lvl_set: {params: {v: {type: number, min: 0.1, max: 61, format: "%.3f", unit: V}}}
+  ocp_lvl_set: {params: {a: {type: number, min: 0.1, max: 5.1, format: "%.3f", unit: A}}}
+  outp_q: {description: "1|0 per the manual", source: "PM p.6-7"}
+  meas_v: {source: "PM p.5"}
+  meas_i: {source: "PM p.5-6"}
+  meas_p: {source: "PM p.6"}
+  volt_q: {source: "PM p.8"}
+  curr_q: {source: "PM p.7"}
+  ovp_lvl_q: {source: "PM p.8-9"}
+  ocp_lvl_q: {source: "PM p.7-8"}
+classes:
+  PSU:
+    features: {"lock": false, "compulsory_lock": false, "absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 5.0}}}
+    poll:
+      - every_ms: 500
+        read: [meas_v, meas_i, meas_p, outp_q]
+    status:
+      VOUT: {expr: meas_v, as: si}
+      IOUT: {expr: meas_i, as: si}
+      POUT: {expr: meas_p, as: si}
+      OUTPUT: outp_q
+      REMOTE: state.remote
+      SBY: 'outp_q == "OFF"'
+      CV: null
+      CC: null
+      FAIL: null
+      OVP: null
+      OCP: null
+      OTP: null
+    operations:
+      remote: null

@@ -1,0 +1,24 @@
+# Replies quoted from the DP800 Programming Guide (2015) examples: checks the definition through
+# the real engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dp800
+transport: usbtmc
+model: DP832A
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DP832A,DP8A000001,00.01.16", source: "PG p.2-24 (4-part format), serial from the VISA example p.4-2"}
+  - {send: ':MEAS:ALL\? CH[123]', reply: "2.0000,0.0500,0.100", source: "PG p.2-34"}
+  - {send: ':MEAS\? CH[123]', reply: "2.0000", source: "PG p.2-36"}
+  - {send: ':MEAS:CURR\? CH[123]', reply: "0.0500", source: "PG p.2-35"}
+  - {send: ':MEAS:POWE\? CH[123]', reply: "0.100", source: "PG p.2-35"}
+  - {send: ':OUTP\? CH[123]', reply: "ON", source: "PG p.2-63"}
+  - {send: ':OUTP:CVCC\? CH[123]', reply: "CV", source: "PG p.2-53"}
+  - {send: ':OUTP:OVP:QUES\? CH[123]', reply: "NO", source: "PG p.2-59 (after :OUTP:OVP:CLEAR)"}
+  - {send: ':OUTP:OCP:QUES\? CH[123]', reply: "NO", source: "PG p.2-55 (after :OUTP:OCP:CLEAR)"}
+  - {send: ':SOUR[123]:VOLT\?', reply: "7.500", source: "PG p.2-90"}
+  - {send: ':SOUR[123]:CURR\?', reply: "1.5000", source: "PG p.2-83"}
+  - {send: ':OUTP:OVP:VAL\? CH[123]', reply: "8.800", source: "PG p.2-61"}
+  - {send: ':OUTP:OCP:VAL\? CH[123]', reply: "5.0000", source: "PG p.2-57"}
+# OVP/OCP trips come from the slow (2 s) poll group, which the check's first update does not include
+expect:
+  PSU:
+    1: {VOUT: 2.0, IOUT: 0.05, POUT: 0.1, OUTPUT: "ON", CV: true, CC: false}
+    3: {VOUT: 2.0, OUTPUT: "ON"}

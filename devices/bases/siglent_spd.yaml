@@ -1,0 +1,58 @@
+# Siglent legacy SPD dialect (partial definition, see ai_context/migration/DEVICE_DSL.md
+# "extends"): SPD3303X / SPD3303X-E / SPD3303C and SPD1000X. Channel as a `CH{n}:` prefix on
+# setpoints and a `CH{n}` argument on measurements and output; hex `SYST:STAT?` status word.
+# Derived definitions add identity, links, models, poll and status (the status bits differ).
+# Source: ai_context/migration/coverage/PSU.md §2.4, §2.13.
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+framing:
+  # `\n` only: a CR breaks commands (EEVblog "SPD3303X-E SCPI Interface issues"). The legacy
+  # firmware loses commands sent faster than ~100 ms apart (two quick OUTP: second one lost).
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 150, gap_after_write_ms: 300}
+state:
+  locked: {type: enum, initial: "OFF", description: "Front panel lock; not queryable, tracks our own *LOCK / *UNLOCK"}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  meas_v: {send: "MEAS:VOLT? CH{ch}", parse: [trim, number]}
+  meas_i: {send: "MEAS:CURR? CH{ch}", parse: [trim, number]}
+  volt_q: {send: "CH{ch}:VOLT?", parse: [trim, number]}
+  curr_q: {send: "CH{ch}:CURR?", parse: [trim, number]}
+  stat:
+    send: "SYST:STAT?"
+    description: "Status word in hex, e.g. 0x0224; bit layout per derived definition"
+  volt_set:
+    send: "CH{ch}:VOLT {v}"
+    params: {v: {type: number, min: 0, max: 32, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+  curr_set:
+    send: "CH{ch}:CURR {a}"
+    params: {a: {type: number, min: 0, max: 3.2, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+  outp_set:
+    send: "OUTP CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  lock_set:
+    send: "{on}"
+    params: {on: {type: enum, values: {"ON": "*LOCK", "OFF": "*UNLOCK"}}}
+    reply: none
+    safety: configure
+    effects: {locked: "{on}"}
+classes:
+  PSU:
+    ui_component: GenericPSU
+    poll: []
+    status: {}
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {set: outp_set}
+      remote: {set: lock_set, description: "Front-panel key lock (*LOCK / *UNLOCK)"}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}

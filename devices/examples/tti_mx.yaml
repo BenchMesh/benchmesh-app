@@ -1,0 +1,21 @@
+# Replies in the formats of the MX100T/MX100TP manual's command list (pp.35-37): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: tti_mx
+transport: tcpip
+model: MX100TP
+replies:
+  - {send: '\*IDN\?', reply: "THURLBY THANDAR,MX100TP,506123,1.10-1.00-1.00", source: "p.37 <NAME>,<model>,<serial>,<version> (values illustrative)"}
+  - {send: 'V1O\?', reply: "5.002V", source: "p.36 <NR2>V"}
+  - {send: 'I1O\?', reply: "0.1234A", source: "p.36 <NR2>A"}
+  - {send: 'V[23]O\?', reply: "0.00V", source: "p.36"}
+  - {send: 'I[23]O\?', reply: "0.000A", source: "p.36"}
+  - {send: 'OP1\?', reply: "1", source: "p.36"}
+  - {send: 'OP[23]\?', reply: "0", source: "p.36"}
+  - {send: 'V1\?', reply: "V1 5.000", source: "p.35 V<N> <NR2>"}
+  - {send: 'I1\?', reply: "I1 0.5000", source: "p.35 I<N> <NR2>"}
+  - {send: 'OVP1\?', reply: "VP1 40.0", source: "p.36 VP<N> <NR2>"}
+  - {send: 'OCP1\?', reply: "CP1 OFF", source: "p.36 CP<N> OFF when disabled"}
+expect:
+  PSU:
+    1: {VOUT: 5.002, IOUT: 0.1234, OUTPUT: "ON"}
+    3: {OUTPUT: "OFF"}

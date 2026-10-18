@@ -1,0 +1,23 @@
+# Replies as the SPD4000X programming guide shows them (printed pages); checks the definition
+# through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: siglent_spd4000x
+transport: usbtmc
+model: SPD4306X
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SPD4306X,0123456789,4.1.2.4", source: "p.53"}
+  - {send: 'MEASure:VOLTage\? CH[1-4]', reply: "2.991442", source: "p.72"}
+  - {send: 'MEASure:CURRent\? CH[1-4]', reply: "1.999407", source: "p.72"}
+  - {send: 'MEASure:POWER\? CH[1-4]', reply: "19.959515", source: "p.72"}
+  - {send: 'MEASure:RUN:MODE\? CH[1-4]', reply: "CV", source: "p.72"}
+  - {send: ':SOURce:VOLTage:SET\? CH[1-4]', reply: "3.000000", source: "p.55"}
+  - {send: ':SOURce:CURRent:SET\? CH[1-4]', reply: "2.000000", source: "p.56"}
+  - {send: ':SOURce:OVP\? CH[1-4]', reply: "15.000000", source: "p.56"}
+  - {send: ':SOURce:OCP\? CH[1-4]', reply: "8.000000", source: "p.57 (no reply shown; level from the OCP CH1,8 example)"}
+  - {send: ':SOURce:(OVP|OCP):PROTect:STATe\? CH[1-4]', reply: "0", source: "p.56-57"}
+  - {send: 'OUTPut\? CH1', reply: "1", source: "p.58 (shows 0; 1 after OUTPut CH1,1)"}
+  - {send: 'OUTPut\? CH[2-4]', reply: "0", source: "p.58"}
+  - {send: ':SOURce:LOCK:STATe\?', reply: "0", source: "p.64"}
+expect:
+  PSU:
+    1: {VOUT: 2.991442, IOUT: 1.999407, OUTPUT: "ON", CV: true, OVP: false, REMOTE: "OFF"}
+    4: {OUTPUT: "OFF", SBY: true}

@@ -1,0 +1,100 @@
+# Hantek PPS2320A dual programmable supply (also sold by Circuit Specialists): lowercase ASCII
+# commands, implied-decimal integer replies (V x0.01, I x0.001). Written from Hantek's 2-page
+# protocol sheet, not yet seen live; low confidence. Reply framing is not documented (fixed
+# 4-digit / 2-digit values, "OK" or "N"): replies end after a short silence.
+schema: benchmesh.device/v1
+id: hantek_pps
+vendor: Hantek
+family: PPS2000 series programmable DC supply
+version: 0.1.0
+sources:
+  - {doc: "Hantek power supply communication protocol (DOC/hantek_pps/doc/hantek_power_supply_communication_protocol.pdf)", pages: "1-2"}
+  - {note: "The sheet writes the output commands as O0/O1 but says only lowercase letters are valid; lowercase o0/o1 as in community scripts"}
+models:
+  - {"name": "PPS2320A", "match": "^3203", "channels": {"PSU": 2}, "note": "identify reply taken from the sheet's example ('Like 3203'); PPS2116A not included: its model reply is undocumented"}
+identify: model
+link:
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: idle, idle_ms: 30, timeout_ms: 500, drain_idle_ms: 50}
+  timing: {min_gap_ms: 20, gap_after_write_ms: 50}
+commands:
+  model: {send: "a", parse: [trim], description: "Device model, e.g. 3203", source: "p.1"}
+  v1: {send: "rv", parse: [trim, number, {scale: 0.01}], description: "CH1 measured V, 0200 = 2.00 V", source: "p.2"}
+  i1: {send: "ra", parse: [trim, number, {scale: 0.001}], description: "CH1 measured I, 0020 = 0.020 A", source: "p.2"}
+  v2: {send: "rh", parse: [trim, number, {scale: 0.01}], source: "p.2"}
+  i2: {send: "rj", parse: [trim, number, {scale: 0.001}], source: "p.2"}
+  st1: {send: "rs", parse: [trim], description: "CH1 state: 00 no output, 01 CV, 10 CC", source: "p.2"}
+  st2: {send: "rp", parse: [trim], description: "CH2 state: 00 no output, 01 CV, 10 CC", source: "p.2"}
+  lock: {send: "rl", parse: [trim, {map: {"00": "OFF", "01": "ON"}}], source: "p.2"}
+  vset_q:
+    send: "r{x}"
+    params: {x: {type: string, from: 'ch == 1 ? "u" : "k"'}}
+    parse: [trim, number, {scale: 0.01}]
+    description: "Preset voltage: ru (CH1), rk (CH2)"
+    source: "p.2"
+  iset_q:
+    send: "r{x}"
+    params: {x: {type: string, from: 'ch == 1 ? "i" : "q"'}}
+    parse: [trim, number, {scale: 0.001}]
+    description: "Preset current: ri (CH1), rq (CH2)"
+    source: "p.2"
+  vout_q:
+    send: "r{x}"
+    params: {x: {type: string, from: 'ch == 1 ? "v" : "h"'}}
+    parse: [trim, number, {scale: 0.01}]
+    source: "p.2"
+  iout_q:
+    send: "r{x}"
+    params: {x: {type: string, from: 'ch == 1 ? "a" : "j"'}}
+    parse: [trim, number, {scale: 0.001}]
+    source: "p.2"
+  vset:
+    send: "s{x}{v}"
+    params:
+      x: {type: string, from: 'ch == 1 ? "u" : "a"'}
+      v: {type: number, min: 0, max: 32, scale: 100, format: "%04d", unit: V}
+    on_empty: "null"
+    safety: configure
+    description: "su1200 = CH1 12.00 V (sa for CH2); answers OK, or N on failure"
+    source: "p.1"
+  iset:
+    send: "s{x}{a}"
+    params:
+      x: {type: string, from: 'ch == 1 ? "i" : "d"'}
+      a: {type: number, min: 0, max: 3.2, scale: 1000, format: "%04d", unit: A}
+    on_empty: "null"
+    safety: configure
+    description: "si2500 = CH1 2.500 A (sd for CH2)"
+    source: "p.1"
+  out_set:
+    send: "o{on}"
+    params: {on: {type: enum, values: {"ON": "1", "OFF": "0"}}}
+    on_empty: "null"
+    safety: energize
+    description: "Global (both channels); the sheet calls it the output indicator"
+    source: "p.1"
+classes:
+  PSU:
+    channels: 2
+    ui_component: GenericPSU
+    features: {"lock": true, "compulsory_lock": false, "absolute_limits": {"voltage": {"unit": "V", "max": 32.0}, "current": {"unit": "A", "max": 3.2}}, "modes": {"CV": {"setpoint": {"step": 0.01}}, "CC": {"setpoint": {"step": 0.001}}}}
+    poll:
+      - every_ms: 500
+        read: [v1, i1, v2, i2, st1, st2, lock]
+    status:
+      VOUT: {expr: "ch == 1 ? v1 : v2", as: si}
+      IOUT: {expr: "ch == 1 ? i1 : i2", as: si}
+      POUT: {expr: "ch == 1 ? v1 * i1 : v2 * i2", as: si}
+      OUTPUT: '(ch == 1 ? st1 : st2) != "00" ? "ON" : "OFF"'
+      REMOTE: lock
+      CV: '(ch == 1 ? st1 : st2) == "01"'
+      CC: '(ch == 1 ? st1 : st2) == "10"'
+      SBY: '(ch == 1 ? st1 : st2) == "00"'
+    operations:
+      voltage: {get: vset_q, set: vset, as: si}
+      current: {get: iset_q, set: iset, as: si}
+      output: {set: out_set}
+      output_voltage: {get: vout_q, as: si}
+      output_current: {get: iout_q, as: si}

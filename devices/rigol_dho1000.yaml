@@ -1,0 +1,67 @@
+# RIGOL DHO1000 and DHO4000 series digital oscilloscopes (one programming guide covers both).
+# Written from the guide, not yet seen live (models "awaiting confirmation"). Same command tree
+# as the bench-tested DHO800 (base scpi_osc); differences: autoset is `:AUToset`, edge sources
+# include ACLine (reply ACL) and EXT, acquisition adds HRESolution and ULTRa, probe 0.001…50000.
+# Coverage report: ai_context/migration/coverage/OSC.md §2.2. Pages below are PDF pages
+# (printed = PDF - 22).
+schema: benchmesh.device/v1
+id: rigol_dho1000
+extends: scpi_osc
+vendor: RIGOL
+family: DHO1000/DHO4000 series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "DHO1000/DHO4000 Programming Guide PGA34101-1110 (DHO1000-4000_ProgrammingGuide_EN.pdf)", pages: "PDF p24 models, p28-31 RUN/STOP/SINGle/CLEar/AUToset, p41 ACQuire:TYPE/SRATe, p94-102 CHANnel, p144 *IDN?, p196-197 MEASure:ITEM, p292-293 TIMebase, p301-307 TRIGger, p433-441 WAVeform"}
+  - {note: "USB product id not in the guide: discovery matches the RIGOL vendor id. Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide)."}
+models:
+  - {name: DHO1072, match: "^RIGOL TECHNOLOGIES,DHO1072,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: DHO1074, match: "^RIGOL TECHNOLOGIES,DHO1074,", features: {OSC: {bandwidth_hz: 70e6}}}
+  - {name: DHO1102, match: "^RIGOL TECHNOLOGIES,DHO1102,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: DHO1104, match: "^RIGOL TECHNOLOGIES,DHO1104,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: DHO1202, match: "^RIGOL TECHNOLOGIES,DHO1202,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}
+  - {name: DHO1204, match: "^RIGOL TECHNOLOGIES,DHO1204,", features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}
+  - {name: DHO4204, match: "^RIGOL TECHNOLOGIES,DHO4204,", features: {OSC: {bandwidth_hz: 200e6, scale: {min: 100e-6, max: 10}, timebase: {min: 500e-12, max: 1000}}}}
+  - {name: DHO4404, match: "^RIGOL TECHNOLOGIES,DHO4404,", features: {OSC: {bandwidth_hz: 400e6, scale: {min: 100e-6, max: 10}, timebase: {min: 500e-12, max: 1000}}}}
+  - {name: DHO4804, match: "^RIGOL TECHNOLOGIES,DHO4804,", features: {OSC: {bandwidth_hz: 800e6, scale: {min: 100e-6, max: 10}, timebase: {min: 500e-12, max: 1000}}}}
+identify: idn
+link:
+  usbtmc: {vid: "1ab1"}
+  tcp: {port: 5555}
+commands:
+  disp_q: {source: "CHANnel<n>:DISPlay p95"}
+  scale_q: {source: "CHANnel<n>:SCALe p99; 1E-1"}
+  offset_q: {source: "CHANnel<n>:OFFSet p97"}
+  coup_q: {source: "CHANnel<n>:COUPling p94-95; AC, DC or GND"}
+  bwl_q: {source: "CHANnel<n>:BWLimit p94; 20M, 250M (DHO4000) or OFF"}
+  probe_q: {source: "CHANnel<n>:PROBe p101-102"}
+  probe_set:
+    params: {r: {values: {"0.001": "0.001", "0.002": "0.002", "0.005": "0.005", "0.01": "0.01", "0.02": "0.02", "0.05": "0.05", "0.2": "0.2", "0.5": "0.5", "2": "2", "5": "5", "20": "20", "50": "50", "200": "200", "500": "500", "2000": "2000", "5000": "5000", "10000": "10000", "20000": "20000", "50000": "50000"}}}
+    source: "CHANnel<n>:PROBe p101"
+  tb_q: {source: "TIMebase[:MAIN]:SCALe p292"}
+  tbofs_q: {source: "TIMebase[:MAIN]:OFFSet p292"}
+  trig_stat_q: {source: "TRIGger:STATus? p301; TD, WAIT, RUN, AUTO or STOP"}
+  sweep_q: {source: "TRIGger:SWEep p302-303; AUTO, NORM or SING"}
+  tsrc_q: {source: "TRIGger:EDGE:SOURce p305; CHAN1..CHAN4, ACL or EXT"}
+  tsrc_set:
+    params: {s: {values: {"EXT": "EXT"}}}
+    source: "TRIGger:EDGE:SOURce p305"
+  slope_q: {source: "TRIGger:EDGE:SLOPe p306; POS, NEG or RFAL"}
+  tlev_q: {source: "TRIGger:EDGE:LEVel p307"}
+  acq_q: {source: "ACQuire:TYPE p41; NORM, PEAK, AVER, ULTR or HRES"}
+  acq_set:
+    params: {t: {values: {"HRES": "HRESolution", "ULTRA": "ULTRa"}}}
+    source: "ACQuire:TYPE p41"
+  srate_q: {source: "ACQuire:SRATe? p41"}
+  run_set:
+    params: {a: {values: {"AUTO": ":AUToset"}}}
+    source: ":RUN :STOP :SINGle :CLEar :AUToset p28-31"
+  wav_pre: {source: "WAVeform:PREamble? p440-441"}
+  wav_data: {source: "WAVeform:DATA? p433; 1000 screen points, BYTE"}
+  vpp_q: {source: "MEASure:ITEM? p196-197"}
+classes:
+  OSC:
+    features:
+      bandwidth_hz: 100e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X; multiplied by the probe ratio"}
+      timebase: {min: 5e-9, max: 1000}
+      probe: ["0.001", "0.002", "0.005", "0.01", "0.02", "0.05", "0.1", "0.2", "0.5", "1", "2", "5", "10", "20", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "20000", "50000"]

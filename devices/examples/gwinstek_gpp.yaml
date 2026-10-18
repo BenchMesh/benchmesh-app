@@ -1,0 +1,20 @@
+# The GPP manual lists commands without reply examples: replies here follow its formats
+# (identify example p.188; numbers as NR2). Checks the definition through the real engine.
+definition: gwinstek_gpp
+transport: serial
+model: GPP-4323
+replies:
+  - {send: '\*IDN\?', reply: "GW INSTEK,GPP-4323,XXXXXXXXX,V1.00", source: "p.188 (example shows GPP-3323)"}
+  - {send: ':MEAS[1-4]:VOLT\?', reply: "5.0000", source: "p.124 (format assumed)"}
+  - {send: ':MEAS[1-4]:CURR\?', reply: "0.5000", source: "p.124 (format assumed)"}
+  - {send: ':MEAS[1-4]:POWE\?', reply: "2.5000", source: "p.124 (format assumed)"}
+  - {send: ':OUTP[1-4]\?', reply: "1", source: "p.128 (format assumed)"}
+  - {send: ':SOUR[1-4]:CURR:STAT\?', reply: "0", source: "p.133"}
+  - {send: ':SOUR[1-4]:VOLT\?', reply: "5.000", source: "p.134"}
+  - {send: ':SOUR[1-4]:CURR\?', reply: "1.0005", source: "p.132 (setter example value)"}
+  - {send: ':OUTP[1-4]:OVP\?', reply: "10.5", source: "p.129 (setter example value)"}
+  - {send: ':OUTP[1-4]:OCP\?', reply: "1.5", source: "p.130 (setter example value)"}
+expect:
+  PSU:
+    1: {VOUT: 5.0, IOUT: 0.5, POUT: 2.5, OUTPUT: "ON", CV: true, CC: false, REMOTE: "OFF"}
+    4: {VOUT: 5.0, OUTPUT: "ON"}

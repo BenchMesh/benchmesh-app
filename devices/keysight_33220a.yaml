@@ -1,0 +1,51 @@
+# Keysight (Agilent) 33220A / 33210A single-channel function/arbitrary waveform generators.
+# Written from the 33220A user's guide before anyone tested it on hardware; the 33210A shares the
+# command set. Research: ai_context/migration/coverage/AWG.md §2.7. Pages are PDF pages
+# (printed = PDF − 2). Single channel: no SOURce/OUTPut suffix.
+schema: benchmesh.device/v1
+id: keysight_33220a
+extends: scpi_awg
+vendor: Keysight
+family: 33220A/33210A function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "Agilent 33220A User's Guide 33220-90002 Ed4", pages: "22 (limits), 135 (*IDN?), 146 (PHASe), 179 (APPLy? reply format), 180-185 (FUNC, FREQ, VOLT, OFFS), 189-192 (OUTP, SYMM, LOAD, VOLT:UNIT), 255 (LAN socket 5025)"}
+  - {note: "USB ids from usb.ids: 33220A 0957:0407, 33210A 0957:1507 (the link names the vendor; identify picks the model). Replies carry 14 digits: +5.0000000000000E+03"}
+models:
+  - {"name": "33220A", "match": "^(Agilent|Keysight) Technologies,33220A,", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6, "SQU": 20e6, "PUL": 5e6, "RAMP": 0.2e6}}}}
+  - {"name": "33210A", "match": "^(Agilent|Keysight) Technologies,33210A,", "note": "Limits from the 33210A datasheet, not from a local manual", "features": {"AWG": {"max_freq_hz": {"SIN": 10e6, "SQU": 10e6, "PUL": 5e6, "RAMP": 0.1e6}}}}
+link:
+  usbtmc: {vid: "0957"}
+  # raw SCPI socket
+  tcp: {port: 5025}
+commands:
+  outp_q: {send: "OUTP?", source: "PDF p189; reply 0/1"}
+  outp_set: {send: "OUTP {on}", source: "PDF p189"}
+  shape_q: {send: "FUNC?", source: "PDF p180; SIN SQU RAMP PULS NOIS DC USER"}
+  shape_set: {send: "FUNC {shape}", source: "PDF p180"}
+  freq_q: {send: "FREQ?", source: "PDF p182"}
+  freq_set:
+    send: "FREQ {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 20000000, format: "%.6f", unit: Hz}}
+    source: "PDF p182"
+  unit_q: {send: "VOLT:UNIT?", source: "PDF p192"}
+  ampl_q: {send: "VOLT?", source: "PDF p183; in the VOLT:UNIT unit"}
+  ampl_set:
+    send: "VOLT {vpp}"
+    params: {vpp: {type: number, min: 0.01, max: 20, format: "%.4f", unit: Vpp}}
+    description: "10 mVpp–10 Vpp into 50 Ω (20 Vpp at High-Z); conflicts are clipped with a 'Settings conflict' error"
+    source: "PDF p183"
+  offs_q: {send: "VOLT:OFFS?", source: "PDF p185"}
+  offs_set: {send: "VOLT:OFFS {v}", source: "PDF p185; |offset| + Vpp/2 ≤ 5 V (50 Ω) / 10 V (High-Z)"}
+  phase_q: {send: "PHAS?", source: "PDF p146"}
+  phase_set:
+    send: "PHAS {deg}"
+    params: {deg: {type: number, min: -360, max: 360, format: "%.3f", unit: deg}}
+    source: "PDF p146 (±360°)"
+  symm_q: {send: "FUNC:RAMP:SYMM?", source: "PDF p189"}
+  symm_set: {send: "FUNC:RAMP:SYMM {pct}", source: "PDF p189"}
+  load_q: {send: "OUTP:LOAD?", source: "PDF p190; ohms or 9.9E+37"}
+classes:
+  AWG:
+    channels: 1
+    features: {"max_freq_hz": {"SIN": 20e6, "SQU": 20e6, "PUL": 5e6, "RAMP": 0.2e6}}

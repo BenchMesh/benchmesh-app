@@ -1,0 +1,23 @@
+# Siglent SDS1000X HD digital oscilloscopes (12-bit, 2/4 channels, 100/200 MHz). Written from
+# the "SDS Series Programming Guide" EN11F, not yet seen live (models are "awaiting
+# confirmation"). Commands and scaling: devices/bases/siglent_scope.yaml (cites EN11G pages;
+# EN11F pages here); coverage report ai_context/migration/coverage/OSC.md §2.5.
+schema: benchmesh.device/v1
+id: siglent_sds1000xhd
+extends: siglent_scope
+vendor: Siglent
+family: SDS1000X HD series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "SDS Series Programming Guide EN11F (SDS1000XHD_Series_ProgrammingGuide.pdf)", pages: "PDF p18 supported models (SDS1000X HD from firmware 1.1.0.2), p30 *IDN?, p41-47 ACQuire, p50-60 CHANnel, p304 MEASure:SIMPle:VALue?, p412-431 TIMebase/TRIGger, p683-695 WAVeform (WIDTh p689, DATA p693)"}
+  - {note: "USBTMC product id not in the guide: matched on the Siglent vendor id f4ec"}
+models:
+  - {name: SDS1102X HD, match: "^Siglent Technologies,SDS1102X ?HD,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS1104X HD, match: "^Siglent Technologies,SDS1104X ?HD,", features: {OSC: {bandwidth_hz: 100e6}}}
+  - {name: SDS1202X HD, match: "^Siglent Technologies,SDS1202X ?HD,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6}}}
+  - {name: SDS1204X HD, match: "^Siglent Technologies,SDS1204X ?HD,", features: {OSC: {bandwidth_hz: 200e6}}}
+identify: idn
+classes:
+  OSC:
+    features:
+      bandwidth_hz: 100e6

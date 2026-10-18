@@ -555,3 +555,40 @@ classes:
     let sent: Vec<String> = log.lock().unwrap().texts().into_iter().skip(1).collect();
     assert_eq!(sent, ["FUNC:IMP:A R\n", "FUNC:IMP:A C\n", "FUNC:IMP:EQU SER\n"], "R-X has no circuit step");
 }
+
+#[test]
+fn a_command_whose_computed_param_uses_ch_is_polled_per_channel() {
+    let d: DeviceDef = bm_devicedef::from_yaml(
+        r#"
+schema: benchmesh.device/v1
+id: dg1022
+vendor: Test
+family: old DG1022
+version: 1.0.0
+models: [{name: DG1022, match: "^DG"}]
+identify: idn
+link: {serial: {baud: 9600}}
+framing: {tx: {terminator: "\n"}, rx: {mode: terminator, terminator: "\n", timeout_ms: 100}}
+commands:
+  idn: {send: "*IDN?"}
+  freq: {send: "FREQ?{sfx}", params: {sfx: {type: string, from: "ch == 1 ? '' : ':CH2'"}}, parse: [trim, number]}
+classes:
+  AWG:
+    channels: 2
+    ui_component: x
+    poll: [{every_ms: 1000, read: [freq]}]
+    status: {FREQ: freq}
+"#,
+    )
+    .unwrap();
+    let (t, _) = sim(|w| match w {
+        b"*IDN?\n" => Some(b"DG1022\n".to_vec()),
+        b"FREQ?\n" => Some(b"1000\n".to_vec()),
+        b"FREQ?:CH2\n" => Some(b"2000\n".to_vec()),
+        _ => None,
+    });
+    let mut e = Engine::open(Arc::new(d), t).unwrap();
+    let u = e.poll_due().unwrap();
+    let f = |ch: u8| u.iter().rfind(|u| u.ch == ch).unwrap().status["FREQ"].clone();
+    assert_eq!((f(1), f(2)), (json!(1000.0), json!(2000.0)));
+}

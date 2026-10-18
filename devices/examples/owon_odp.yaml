@@ -1,0 +1,21 @@
+# Replies quoted from the OWON ODP programming manual (printed pages).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: owon_odp
+model: ODP6033
+replies:
+  - {send: '\*IDN\?', reply: "OWON,ODP6033,1715040,FV:V1.0.2", source: "PM p.4"}
+  - {send: 'MEAS:VOLT:ALL\?', reply: "1.000, 2.000, 3.000", source: "PM p.9"}
+  - {send: 'MEAS:CURR:ALL\?', reply: "1.000, 2.000, 3.000", source: "PM p.9"}
+  - {send: 'CHAN:OUTP:ALL\?', reply: "1, 0, 1", source: "PM p.13-14"}
+  - {send: 'MEAS:VOLT\?', reply: "1.000", source: "PM p.7"}
+  - {send: 'MEAS:CURR\?', reply: "1.000", source: "PM p.8"}
+  - {send: 'MEAS:POW\?', reply: "1.000", source: "PM p.8"}
+  - {send: 'VOLT\?', reply: "1.000", source: "PM p.16"}
+  - {send: 'CURR\?', reply: "1.000", source: "PM p.14"}
+  - {send: 'VOLT:LIM\?', reply: "1.000", source: "PM p.16"}
+  - {send: 'CURR:LIM\?', reply: "1.000", source: "PM p.15"}
+expect:
+  PSU:
+    1: {VOUT: 1.0, IOUT: 1.0, OUTPUT: "ON"}
+    2: {VOUT: 2.0, POUT: 4.0, OUTPUT: "OFF", SBY: true}
+    3: {VOUT: 3.0, IOUT: 3.0, OUTPUT: "ON"}

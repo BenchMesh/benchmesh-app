@@ -1,0 +1,51 @@
+# Aim-TTi CPX400DP PowerFlex dual 60 V / 20 A / 420 W supply. Written from the instruction manual
+# before anyone tested it (support: awaiting). Shared TTi command set: devices/bases/tti_psu.yaml.
+# The CPX400D (no "P") has no remote interface. The CPX200DP has its own manual (not read).
+schema: benchmesh.device/v1
+extends: tti_psu
+id: tti_cpx
+vendor: Aim-TTi
+family: CPX400DP PowerFlex dual-output DC power supply
+version: 0.1.0
+sources:
+  - {doc: "CPX400D & DP Instruction Manual 48511-1480 Iss. 14", pages: "2-3 (specs), 15-19 (interfaces, RS232 9600 8N1 XON/XOFF, TCP 9221), 22 (LSR), 25-29 (commands)"}
+  - {note: "IDN vendor field may read THURLBY THANDAR, TTi or Aim-TTi depending on firmware; the model regex ignores it"}
+models:
+  - name: CPX400DP
+    match: '^[^,]*, ?CPX400DP ?(,|$)'
+    note: "Entering remote resets both PowerFlex ranges to 60V/20A (p.16)"
+commands:
+  idn: {source: "p.29 *IDN?"}
+  vout: {source: "p.27 V<N>O?"}
+  iout: {source: "p.27 I<N>O?"}
+  vset_q: {source: "p.27 V<N>?"}
+  iset_q: {source: "p.27 I<N>?"}
+  ovp_q: {source: "p.27 OVP<N>?"}
+  ocp_q: {source: "p.27 OCP<N>?"}
+  op_q: {source: "p.27 OP<N>?"}
+  v_set:
+    params: {v: {max: 60, format: "%.2f"}}
+    description: "Setting resolution 10 mV (p.3)"
+    source: "p.26 V<N> <NRF>"
+  i_set:
+    params: {a: {max: 20, format: "%.3f"}}
+    description: "Setting resolution 1 mA (p.3); the output is unregulated outside the 420 W envelope"
+    source: "p.26 I<N> <NRF>"
+  ovp_set:
+    params: {v: {min: 1, max: 66}}
+    source: "p.2 OVP range 1-66 V; p.26 OVP<N> <NRF>"
+  ocp_set:
+    params: {a: {min: 0.01, max: 22}}
+    source: "p.2 OCP; p.26 OCP<N> <NRF>"
+  op_set: {source: "p.27 OP<N> <NRF>"}
+classes:
+  PSU:
+    channels: 2
+    features:
+      lock: false
+      absolute_limits:
+        voltage: {unit: V, max: 60.0}
+        current: {unit: A, max: 20.0}
+        power: {unit: W, max: 420.0}
+      protection: {OVP: {type: number, min: 1, max: 66}, OCP: {type: number, min: 0.01, max: 22}}
+      note: "Per output; OVP/OCP are always armed (levels only). CV/CC not reported (only a read-to-clear event register exists)."

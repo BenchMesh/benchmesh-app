@@ -1,0 +1,139 @@
+# Siglent SDG `C<n>:` dialect function/arbitrary generator baseline: SDG1000X / SDG1000X Plus /
+# SDG2000X / SDG6000X and the BK Precision 4050B / 4060B rebrands. Research:
+# ai_context/migration/coverage/AWG.md §2.2, §3.3. A definition `extends: siglent_sdg` and adds
+# identity, models, links and its setter limits.
+#
+# Wire: `C1:OUTP?` → `C1:OUTP ON,LOAD,HZ,PLRT,NOR`; `C1:BSWV?` → one key,value list whose keys
+# depend on the waveform, units glued to the numbers:
+#   C1:BSWV WVTP,SINE,FRQ,100HZ,PERI,0.01S,AMP,2V,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0
+# Every status key is its own regex over that reply (parse by key, never by position). Keys a
+# waveform does not have (SYM except RAMP, PHSE for PULSE/NOISE/DC, FRQ/AMP for DC/NOISE) read
+# as null: the optional regex captures nothing and `null_if` turns that into null. BK 4050B examples show
+# spaces after commas, so the patterns allow them. Setters never answer; the instrument parses
+# a command only after the previous one has executed (PG p13), hence the write gap.
+# API values: SHAPE SIN SQU RAMP PUL PRN DC (ARB/PRBS/IQ read as such), PHASE degrees,
+# LOAD "50" … "100000" or "HIGHZ" (HZ), AMPL Vpp (AMP is always Vpp; AMPVRMS is separate).
+schema: benchmesh.device/v1
+identify: idn
+# TCP (raw SCPI socket): LF-terminated lines
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 2000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+link:
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 2000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "PG p12 (printed)"}
+  outp_q:
+    send: "C{ch}:OUTP?"
+    parse: [{regex: {pattern: "OUTP\\s*(ON|OFF)", group: 1}}]
+    source: "PG p15-16 (printed): C1:OUTP ON,LOAD,HZ,PLRT,NOR"
+  load_q:
+    send: "C{ch}:OUTP?"
+    parse: [{regex: {pattern: "[ ,]LOAD,\\s*(\\w+)", group: 1}}, upper]
+    description: "LOAD field of the output query: ohms or HZ (High-Z)"
+    source: "PG p15-16 (printed)"
+  outp_set:
+    send: "C{ch}:OUTP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: "PG p15 (printed)"
+  shape_q:
+    send: "C{ch}:BSWV?"
+    parse:
+      - {regex: {pattern: "WVTP,\\s*([A-Z_]+)", group: 1}}
+      - map: {SINE: SIN, SQUARE: SQU, RAMP: RAMP, PULSE: PUL, NOISE: PRN, DC: DC, ARB: ARB, PRBS: PRBS, IQ: IQ, _: ARB}
+    source: "PG p17-19 (printed)"
+  freq_q:
+    send: "C{ch}:BSWV?"
+    parse: [{regex: {pattern: "^(?:.*[ ,]FRQ,\\s*([-+0-9.eE]+))?", group: 1}}, {null_if: [""]}, number]
+    description: "FRQ in Hz (unit HZ glued); empty for NOISE/DC"
+    source: "PG p17-19 (printed)"
+  ampl_q:
+    send: "C{ch}:BSWV?"
+    parse: [{regex: {pattern: "^(?:.*[ ,]AMP,\\s*([-+0-9.eE]+))?", group: 1}}, {null_if: [""]}, number]
+    description: "AMP in Vpp (unit V glued); AMPVRMS / MAX_OUTPUT_AMP do not match"
+    source: "PG p17-19 (printed)"
+  offs_q:
+    send: "C{ch}:BSWV?"
+    parse: [{regex: {pattern: "^(?:.*[ ,]OFST,\\s*([-+0-9.eE]+))?", group: 1}}, {null_if: [""]}, number]
+    source: "PG p17-19 (printed)"
+  phase_q:
+    send: "C{ch}:BSWV?"
+    parse: [{regex: {pattern: "^(?:.*[ ,]PHSE,\\s*([-+0-9.eE]+))?", group: 1}}, {null_if: [""]}, number]
+    description: "PHSE in degrees (no unit); absent for PULSE/NOISE/DC"
+    source: "PG p17-19 (printed)"
+  symm_q:
+    send: "C{ch}:BSWV?"
+    parse: [{regex: {pattern: "^(?:.*[ ,]SYM,\\s*([-+0-9.eE]+))?", group: 1}}, {null_if: [""]}, number]
+    description: "SYM in % (only for RAMP)"
+    source: "PG p17-19 (printed)"
+  shape_set:
+    send: "C{ch}:BSWV WVTP,{shape}"
+    params: {shape: {type: enum, values: {SIN: SINE, SQU: SQUARE, RAMP: RAMP, PUL: PULSE, PRN: NOISE, DC: DC}}}
+    reply: none
+    safety: configure
+    source: "PG p17 (printed)"
+  freq_set:
+    send: "C{ch}:BSWV FRQ,{hz}"
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+    source: "PG p17 (printed)"
+  ampl_set:
+    send: "C{ch}:BSWV AMP,{vpp}"
+    params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
+    reply: none
+    safety: configure
+    description: "Vpp; 20 Vpp at High-Z at low frequencies, less above (the instrument limits)"
+    source: "PG p18 (printed)"
+  offs_set:
+    send: "C{ch}:BSWV OFST,{v}"
+    params: {v: {type: number, min: -10, max: 10, format: "%.4f", unit: V}}
+    reply: none
+    safety: configure
+    source: "PG p18 (printed)"
+  phase_set:
+    send: "C{ch}:BSWV PHSE,{deg}"
+    params: {deg: {type: number, min: 0, max: 360, format: "%.2f", unit: deg}}
+    reply: none
+    safety: configure
+    source: "PG p18 (printed)"
+  symm_set:
+    send: "C{ch}:BSWV SYM,{pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+    description: "Only settable while the waveform is RAMP"
+    source: "PG p18 (printed)"
+classes:
+  AWG:
+    channels: 2
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700", "2": "#FF66CC"}}
+    # one group (2 OUTP? + 6 BSWV? per channel)
+    poll:
+      - every_ms: 1500
+        read: [outp_q, load_q, shape_q, freq_q, ampl_q, offs_q, phase_q, symm_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: ampl_q, as: si}
+      OFFS: {expr: offs_q, as: si}
+      PHASE: phase_q
+      SYMM: symm_q
+      LOAD: "load_q == 'HZ' ? 'HIGHZ' : load_q"
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      offset: {get: offs_q, set: offs_set, as: si}
+      phase: {get: phase_q, set: phase_set}
+      symmetry: {get: symm_q, set: symm_set}

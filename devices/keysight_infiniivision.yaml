@@ -1,0 +1,122 @@
+# Keysight (Agilent) InfiniiVision 1000 X / 1200 X, 2000 X and 3000T oscilloscopes.
+# Written from the programmer's guides, not yet seen live (models are "awaiting confirmation").
+# Keysight's tree is the ancestor of the Rigol dialect in base scpi_osc; overrides: timebase
+# `:TIMebase:SCALe/POSition`, run state from the Operation Status Condition register, sweep
+# AUTO/NORMal (single shot = `:SINGle`), coupling without GND, BWLimit 1/0, `:MEASure:<item>?`
+# queries, `:WAVeform:POINts` and the Keysight preamble formula
+# volts = (code - yreference) * yincrement + yorigin.
+# Coverage report: ai_context/migration/coverage/OSC.md §2.6. Pages = PDF pages of the 1000 X
+# guide (v01.20) unless marked "2000X".
+schema: benchmesh.device/v1
+id: keysight_infiniivision
+extends: scpi_osc
+vendor: Keysight
+family: InfiniiVision 1000 X / 2000 X / 3000T series oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "Keysight InfiniiVision 1000 X-Series Programmer's Guide v01.20 (1000X_ProgrammersGuide_v01.20_akmetron.pdf)", pages: "p3 models, p116 *IDN?, p137-163 root (:AUToscale :OPERegister:CONDition? :RUN :SINGle :STOP), p188-189 ACQuire, p205-219 CHANnel, p347 9.9E+37, p360-385 MEASure, p564-590 TIMebase/TRIGger, p630-648 WAVeform"}
+  - {doc: "Agilent InfiniiVision 2000 X-Series Programmer's Guide v02.30 (2000X_ProgrammersGuide_xdevs.pdf)", pages: "p3 models, p130 *IDN? (AGILENT TECHNOLOGIES), p167 OPERegister, p220-234 CHANnel, p351-373 MEASure, p580-606 TIMebase/TRIGger, p639-644 WAVeform"}
+  - {note: "1200 X (DSOX1202/1204) and 3000T use the same command tree; their guides were not fetched. USB vendor id 2a8d (Keysight); Agilent-era units report 0957. LAN raw socket 5025 (5024 is the telnet prompt, binary data corrupted there, p630)"}
+models:
+  - {name: EDUX1002A, match: "^KEYSIGHT TECHNOLOGIES,EDUX1002[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}}
+  - {name: EDUX1052G, match: "^KEYSIGHT TECHNOLOGIES,EDUX1052[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 50e6}}, note: "1200 X guide not fetched; same tree"}
+  - {name: DSOX1102A, match: "^KEYSIGHT TECHNOLOGIES,DSOX1102[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "100 MHz with the DSOX1B7T102 upgrade"}
+  - {name: DSOX1202G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1202[AG],", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6}}, note: "1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
+  - {name: DSOX1204G, match: "^KEYSIGHT TECHNOLOGIES,DSOX1204[AG],", features: {OSC: {bandwidth_hz: 70e6}}, note: "1200 X guide not fetched; bandwidth upgradable to 200 MHz"}
+  - {name: DSO-X 2002A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2002A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}}
+  - {name: DSO-X 2004A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2004A,", features: {OSC: {bandwidth_hz: 70e6, scale: {min: 1e-3, max: 5}}}}
+  - {name: DSO-X 2012A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2012A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}}
+  - {name: DSO-X 2014A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2014A,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}}
+  - {name: DSO-X 2022A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2022A,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}}
+  - {name: DSO-X 2024A, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SO-X 2024A,", features: {OSC: {bandwidth_hz: 200e6, scale: {min: 1e-3, max: 5}, timebase: {min: 2e-9, max: 50}}}}
+  - {name: DSOX3000T, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]4T,", features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "3000T guide not fetched; same tree. Bandwidth from the model number (100 MHz-1 GHz)"}
+  - {name: DSOX3000T 2ch, match: "^(AGILENT|KEYSIGHT) TECHNOLOGIES,[DM]SOX30[1-9]2T,", channels: {OSC: 2}, features: {OSC: {bandwidth_hz: 100e6, scale: {min: 1e-3, max: 5}}}, note: "3000T guide not fetched; same tree"}
+identify: idn
+link:
+  usbtmc: {vid: "2a8d"}
+  tcp: {port: 5025}
+session:
+  # screen record (≤ 1000 points), one unsigned byte per point (p635, p633, p632, p648)
+  on_connect: [wav_mode, wav_points, wav_form, wav_unsigned]
+commands:
+  disp_q: {source: "CHANnel<n>:DISPlay p207; 1 or 0"}
+  scale_q: {source: "CHANnel<n>:SCALe p219"}
+  offset_q: {source: "CHANnel<n>:OFFSet p211"}
+  coup_q: {source: "CHANnel<n>:COUPling p206; AC or DC"}
+  probe_q: {source: "CHANnel<n>:PROBe p212"}
+  bwl_q:
+    parse: [trim, {map: {"1": "20M", "0": "OFF"}}]
+    source: "CHANnel<n>:BWLimit p205; 1 or 0 (about 20 MHz low-pass)"
+  inv_q: {source: "CHANnel<n>:INVert p209"}
+  coup_set:
+    params: {c: {values: {"GND": null}}}
+    source: "CHANnel<n>:COUPling p206; no GND coupling"
+  bwl_set:
+    params: {b: {values: {"20M": "1", "OFF": "0"}}}
+    source: "CHANnel<n>:BWLimit p205"
+  scale_set:
+    description: "500 µV/div to 10 V/div at probe 1X on the 1000 X, 1 mV-5 V on the 2000 X; the scope clamps"
+
+  tb_q: {send: ":TIMebase:SCALe?", source: "TIMebase:SCALe p567"}
+  tbofs_q: {send: ":TIMebase:POSition?", source: "TIMebase:POSition p564; trigger to display reference (s)"}
+  tb_set:
+    send: ":TIMebase:SCALe {v}"
+    params: {v: {min: 1e-9, max: 50}}
+    source: "TIMebase:SCALe p567"
+  tbofs_set:
+    send: ":TIMebase:POSition {v}"
+    source: "TIMebase:POSition p564"
+  # bit 3 = Run (not stopped), bit 5 = Wait Trig (trigger armed)
+  trig_stat_q:
+    send: ":OPERegister:CONDition?"
+    parse: [trim, {bits: {run: "3", wait: "5"}}]
+    source: "OPERegister:CONDition? p150, table 48"
+    description: "Operation Status Condition register; TRIG_STATUS derives STOP, WAIT or TD"
+  sweep_q: {source: "TRIGger:SWEep p584; AUTO or NORM"}
+  sweep_set:
+    send: "{s}"
+    params: {s: {values: {"AUTO": ":TRIGger:SWEep AUTO", "NORM": ":TRIGger:SWEep NORMal", "SING": ":SINGle"}}}
+    source: "TRIGger:SWEep p584 (AUTO|NORMal); single shot :SINGle p161"
+  tsrc_q: {source: "TRIGger[:EDGE]:SOURce p590; CHAN<n>, EXT, LINE, WGEN or NONE"}
+  tsrc_set:
+    params: {s: {values: {"EXT": "EXTernal", "AC": "LINE"}}}
+    source: "TRIGger[:EDGE]:SOURce p590"
+  slope_q:
+    parse: [trim, {map: {"POS": "POS", "NEG": "NEG", "EITH": "RFAL", "ALT": "ALT"}}]
+    source: "TRIGger[:EDGE]:SLOPe p589; NEG, POS, EITH or ALT"
+  slope_set:
+    params: {s: {values: {"RFAL": "EITHer"}}}
+    source: "TRIGger[:EDGE]:SLOPe p589"
+  tlev_q: {source: "TRIGger[:EDGE]:LEVel p587"}
+  acq_q: {source: "ACQuire:TYPE p189; NORM, AVER, HRES or PEAK"}
+  acq_set:
+    params: {t: {values: {"AVER": "AVERage", "HRES": "HRESolution"}}}
+    source: "ACQuire:TYPE p189"
+  srate_q: {source: "ACQuire:SRATe? p188"}
+  run_set:
+    params: {a: {values: {"CLEAR": null}}}
+    source: ":RUN p159, :STOP p163, :SINGle p161, :AUToscale p137"
+
+  wav_mode: {send: ":WAVeform:POINts:MODE NORMal", source: "WAVeform:POINts:MODE p635"}
+  wav_points: {send: ":WAVeform:POINts 1000", reply: none, safety: configure, source: "WAVeform:POINts p633"}
+  wav_unsigned: {send: ":WAVeform:UNSigned 1", reply: none, safety: configure, source: "WAVeform:UNSigned p648"}
+  wav_form: {source: "WAVeform:FORMat p632"}
+  wav_src: {source: "WAVeform:SOURce p642"}
+  wav_pre: {source: "WAVeform:PREamble? p637"}
+  wav_data: {source: "WAVeform:DATA? p630; #8 header, 0x00 hole, 0x01/0xFF clipped"}
+  vpp_q: {send: ":MEASure:VPP? CHANnel{ch}", source: "MEASure:VPP p384"}
+  vavg_q: {send: ":MEASure:VAVerage? DISPlay,CHANnel{ch}", source: "MEASure:VAVerage p380"}
+  vrms_q: {send: ":MEASure:VRMS? DISPlay,DC,CHANnel{ch}", source: "MEASure:VRMS p385"}
+  freq_q: {send: ":MEASure:FREQuency? CHANnel{ch}", source: "MEASure:FREQuency p360; +9.9E+37 when not measurable (p347)"}
+
+classes:
+  OSC:
+    features:
+      bandwidth_hz: 70e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X; multiplied by the probe ratio"}
+      timebase: {min: 5e-9, max: 50}
+    status:
+      TRIG_STATUS: "trig_stat_q == null ? null : (!trig_stat_q.run ? 'STOP' : (trig_stat_q.wait ? 'WAIT' : 'TD'))"
+      # volts = (code - yref) * yinc + yorig; time = (i - xref) * xinc + xorig (p631, p637)
+      WAVE_Y0: "wav_pre == null ? null : num(wav_pre.yref) - num(wav_pre.yorig) / num(wav_pre.yinc)"
+      WAVE_X0: "wav_pre == null ? null : num(wav_pre.xorig) - num(wav_pre.xref) * num(wav_pre.xinc)"

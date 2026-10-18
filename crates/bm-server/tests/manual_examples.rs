@@ -171,7 +171,8 @@ fn check(cat: &Catalog, ex: &Example) -> Vec<String> {
         let Some(contract) = cat.classes.get(cls) else { continue };
         let channels = e.model.channels.get(cls).copied().unwrap_or(binding.channels);
         for ch in 1..=channels {
-            let Some(u) = updates.iter().find(|u| &u.class == cls && u.ch == ch) else {
+            // the last update of a channel has the results of every poll group
+            let Some(u) = updates.iter().rfind(|u| &u.class == cls && u.ch == ch) else {
                 problems.push(format!("{cls} ch{ch}: no status after a poll"));
                 continue;
             };

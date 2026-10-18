@@ -1,0 +1,19 @@
+# Replies as the DG4000 programming guide shows them (PDF pages): checks the definition through
+# the real engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dg4000
+transport: usbtmc
+model: DG4162
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DG4162,DG41620000,00.01.02", source: "PDF p148"}
+  - {send: ':OUTP[12]\?', reply: "ON", source: "PDF p199"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "SIN", source: "PDF p341"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "1.000000E+03", source: "PDF p324"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "PDF p527"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "5.000000E+00", source: "PDF p518"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "0.000000E+00", source: "PDF p525"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "9.000000E+01", source: "PDF p478"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "5.000000E+01", source: "PDF p340"}
+  - {send: ':OUTP[12]:IMP\?', reply: "INFINITY", source: "PDF p201 (High-Z)"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 1000.0, AMPL: 5.0, OFFS: 0.0, PHASE: 90.0, SYMM: 50.0, LOAD: "HIGHZ"}

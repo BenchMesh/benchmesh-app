@@ -1,0 +1,139 @@
+# Siglent SPD4000X (SPD4121X, SPD4306X, SPD4323X) four-output programmable DC power supply,
+# written from the user manual / programming guide before any hardware test (awaiting
+# confirmation). Modern IEEE 488.2 SCPI with the channel as the first argument; does not share
+# the legacy SPD3303X dialect.
+schema: benchmesh.device/v1
+id: siglent_spd4000x
+vendor: Siglent
+family: SPD4000X four-output programmable DC power supply
+version: 0.1.0
+sources:
+  - {doc: "SPD4000X Series User Manual / Programming Guide (SPD4000X_UserManual_ProgrammingGuide.pdf), printed pages", pages: "17 (ratings), 51 (socket port 5025), 53-58, 64, 72 (commands)"}
+  - {note: "USBTMC vendor id 0xF4EC (Siglent) assumed, product id unknown; inter-command gap 50 ms is a cautious start (undocumented)"}
+models:
+  - name: SPD4323X
+    match: "^Siglent Technologies,SPD4323X,"
+    features: {PSU: {absolute_limits: {voltage: {unit: V, max: 32.0}, current: {unit: A, max: 3.2}, power: {unit: W, max: 240.0}},
+                     channel_limits: {"1": {voltage: 6.0, current: 3.2}, "2": {voltage: 32.0, current: 3.2}, "3": {voltage: 32.0, current: 3.2}, "4": {voltage: 6.0, current: 3.2}}}}
+  - name: SPD4121X
+    match: "^Siglent Technologies,SPD4121X,"
+    features: {PSU: {absolute_limits: {voltage: {unit: V, max: 15.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 285.0}},
+                     channel_limits: {"1": {voltage: 15.0, current: 1.5}, "2": {voltage: 12.0, current: 10.0}, "3": {voltage: 12.0, current: 10.0}, "4": {voltage: 15.0, current: 1.5}}}}
+  - name: SPD4306X
+    match: "^Siglent Technologies,SPD4306X,"
+    features: {PSU: {absolute_limits: {voltage: {unit: V, max: 30.0}, current: {unit: A, max: 6.0}, power: {unit: W, max: 400.0}},
+                     channel_limits: {"1": {voltage: 15.0, current: 1.5}, "2": {voltage: 30.0, current: 6.0}, "3": {voltage: 30.0, current: 6.0}, "4": {voltage: 15.0, current: 1.0}}}}
+identify: idn
+link:
+  usbtmc:
+    vid: "f4ec"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 50, gap_after_write_ms: 50}
+  tcp: {port: 5025}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 50, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "p.53 ('Siglent Technologies,SPD4306X,0123456789,4.1.2.4')"}
+  meas_v: {send: "MEASure:VOLTage? CH{ch}", parse: [trim, number], source: "p.72 (-> 2.991442)"}
+  meas_i: {send: "MEASure:CURRent? CH{ch}", parse: [trim, number], source: "p.72 (-> 1.999407)"}
+  meas_p: {send: "MEASure:POWER? CH{ch}", parse: [trim, number], source: "p.72 (-> 19.959515)"}
+  mode_q: {send: "MEASure:RUN:MODE? CH{ch}", parse: [trim], description: "CV or CC", source: "p.72 (-> CV)"}
+  volt_q: {send: ":SOURce:VOLTage:SET? CH{ch}", parse: [trim, number], source: "p.55 (-> 3.000000)"}
+  curr_q: {send: ":SOURce:CURRent:SET? CH{ch}", parse: [trim, number], source: "p.56 (-> 2.000000)"}
+  ovp_q: {send: ":SOURce:OVP? CH{ch}", parse: [trim, number], source: "p.56 (-> 15.000000)"}
+  ocp_q: {send: ":SOURce:OCP? CH{ch}", parse: [trim, number], source: "p.57"}
+  ovp_trip: {send: ":SOURce:OVP:PROTect:STATe? CH{ch}", parse: [trim], description: "1 = OVP tripped", source: "p.56 (-> 0)"}
+  ocp_trip: {send: ":SOURce:OCP:PROTect:STATe? CH{ch}", parse: [trim], description: "1 = OCP tripped", source: "p.57 (-> 0)"}
+  outp_q:
+    send: "OUTPut? CH{ch}"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    source: "p.58 (-> 0)"
+  lock_q:
+    send: ":SOURce:LOCK:STATe?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+    source: "p.64 (-> 0)"
+  volt_set:
+    send: ":SOURce:VOLTage:SET CH{ch},{v}"
+    params: {v: {type: number, min: 0, max: 32, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    description: "Channel maxima differ per model (features.channel_limits); the instrument rejects values above"
+    source: "p.55 (:SOURce:VOLTage:SET CH1,3)"
+  curr_set:
+    send: ":SOURce:CURRent:SET CH{ch},{a}"
+    params: {a: {type: number, min: 0, max: 10, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    source: "p.56 (:SOURce:CURRent:SET CH1,2)"
+  ovp_set:
+    send: ":SOURce:OVP CH{ch},{v}"
+    params: {v: {type: number, min: 0, max: 33, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    description: "OVP level; OVP is always armed (no enable command)"
+    source: "p.56 (:SOURce:OVP CH1,8)"
+  ocp_set:
+    send: ":SOURce:OCP CH{ch},{a}"
+    params: {a: {type: number, min: 0, max: 11, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    source: "p.57 (:SOURce:OCP CH1,8)"
+  ocp_enable:
+    send: ":SOURce:OCP:STATe CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p.58 (:SOURce:OCP:STATe CH1, 1)"
+  outp_set:
+    send: "OUTPut CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    source: "p.58 (OUTPut CH1,1)"
+  lock_set:
+    send: ":SOURce:LOCK:STATe {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    description: "Front-panel lock (global)"
+    source: "p.64 (:SOURce:LOCK:STATe ON)"
+classes:
+  PSU:
+    channels: 4
+    ui_component: GenericPSU
+    features:
+      lock: true
+      absolute_limits: {voltage: {unit: V, max: 32.0}, current: {unit: A, max: 10.0}, power: {unit: W, max: 400.0}}
+    poll:
+      # 4 channels x 4 queries + lock at a 50 ms gap: about one second per cycle
+      - every_ms: 1000
+        read: [meas_v, meas_i, outp_q, mode_q, lock_q]
+      - every_ms: 2000
+        read: [ovp_trip, ocp_trip]
+    status:
+      VOUT: {expr: meas_v, as: si}
+      IOUT: {expr: meas_i, as: si}
+      POUT: {expr: "meas_v * meas_i", as: si}
+      OUTPUT: outp_q
+      REMOTE: lock_q
+      CV: 'outp_q == "ON" && mode_q == "CV"'
+      CC: 'outp_q == "ON" && mode_q == "CC"'
+      SBY: 'outp_q == "OFF"'
+      OVP: 'ovp_trip == "1"'
+      OCP: 'ocp_trip == "1"'
+      FAIL: 'ovp_trip == "1" || ocp_trip == "1"'
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: lock_set, description: "Front-panel key lock"}
+      voltage_limit: {get: ovp_q, set: ovp_set, as: si}
+      current_limit: {get: ocp_q, set: ocp_set, as: si}
+      ocp: {set: ocp_enable}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}

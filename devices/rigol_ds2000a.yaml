@@ -1,0 +1,73 @@
+# RIGOL DS2000A / MSO2000A series digital oscilloscopes (2 channels).
+# Written from the programming guide, not yet seen live (models "awaiting confirmation").
+# Same command tree as the bench-tested DHO800 (base scpi_osc); differences: no :MEASure:ITEM
+# (one query per item, 9.9e37 when invalid), 14 horizontal divisions, screen trace of 1400
+# points (YREFerence 127), edge sources EXT and ACLine, bandwidth limit 20M/100M.
+# Coverage report: ai_context/migration/coverage/OSC.md §2.3. Pages are PDF pages.
+schema: benchmesh.device/v1
+id: rigol_ds2000a
+extends: scpi_osc
+vendor: RIGOL
+family: DS2000A/MSO2000A series digital oscilloscope
+version: 0.1.0
+sources:
+  - {doc: "MSO2000A/DS2000A Programming Guide PGA18106-1110 (MSODS2000A_ProgrammingGuide_EN.pdf)", pages: "PDF p4-5 models, p18-19 RUN/STOP/SINGle/AUToscale/CLEar, p22 *IDN?, p28-29 ACQuire, p98-103 CHANnel, p188/218/226/228 MEASure, p291-292 TIMebase, p304-305 and p317-319 TRIGger, p377-390 WAVeform, p394 USB id"}
+  - {note: "Raw SCPI socket 5555 as on other RIGOL scopes (not in the guide)."}
+models:
+  - {name: DS2102A, match: "^RIGOL TECHNOLOGIES,DS2102A,", features: {OSC: {bandwidth_hz: 100e6, timebase: {min: 5e-9, max: 1000}}}}
+  - {name: DS2202A, match: "^RIGOL TECHNOLOGIES,DS2202A,", features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}
+  - {name: DS2302A, match: "^RIGOL TECHNOLOGIES,DS2302A,", features: {OSC: {bandwidth_hz: 300e6, timebase: {min: 1e-9, max: 1000}}}}
+  - {name: MSO2102A, match: "^RIGOL TECHNOLOGIES,MSO2102A(-S)?,", features: {OSC: {bandwidth_hz: 100e6, timebase: {min: 5e-9, max: 1000}}}}
+  - {name: MSO2202A, match: "^RIGOL TECHNOLOGIES,MSO2202A(-S)?,", features: {OSC: {bandwidth_hz: 200e6, timebase: {min: 2e-9, max: 1000}}}}
+  - {name: MSO2302A, match: "^RIGOL TECHNOLOGIES,MSO2302A(-S)?,", features: {OSC: {bandwidth_hz: 300e6, timebase: {min: 1e-9, max: 1000}}}}
+identify: idn
+link:
+  usbtmc: {vid: "1ab1", pid: "04b0"}
+  tcp: {port: 5555}
+commands:
+  disp_q: {source: "CHANnel<n>:DISPlay p99"}
+  scale_q: {source: "CHANnel<n>:SCALe p102"}
+  offset_q: {source: "CHANnel<n>:OFFSet p101"}
+  coup_q: {source: "CHANnel<n>:COUPling p99; AC, DC or GND"}
+  bwl_q: {source: "CHANnel<n>:BWLimit p98; 20M, 100M or OFF"}
+  bwl_set:
+    params: {b: {values: {"100M": "100M"}}}
+    source: "CHANnel<n>:BWLimit p98"
+  probe_q: {source: "CHANnel<n>:PROBe p103"}
+  probe_set:
+    params: {r: {values: {"0.01": "0.01", "0.02": "0.02", "0.05": "0.05", "0.2": "0.2", "0.5": "0.5", "2": "2", "5": "5", "20": "20", "50": "50", "200": "200", "500": "500"}}}
+    source: "CHANnel<n>:PROBe p103"
+  tb_q: {source: "TIMebase[:MAIN]:SCALe p292"}
+  tbofs_q: {source: "TIMebase[:MAIN]:OFFSet p291"}
+  trig_stat_q: {source: "TRIGger:STATus? p304; TD, WAIT, RUN, AUTO or STOP"}
+  sweep_q: {source: "TRIGger:SWEep p305; AUTO, NORM or SING"}
+  tsrc_q: {send: ":TRIGger:EDGe:SOURce?", source: "TRIGger:EDGe:SOURce p319"}
+  tsrc_set:
+    send: ":TRIGger:EDGe:SOURce {s}"
+    params: {s: {values: {"CHAN3": null, "CHAN4": null, "EXT": "EXT"}}}
+    source: "TRIGger:EDGe:SOURce p319; CHANnel1|CHANnel2|EXT|ACLine|D0-D15"
+  slope_q: {send: ":TRIGger:EDGe:SLOPe?", source: "TRIGger:EDGe:SLOPe p318-319; POS, NEG or RFAL"}
+  slope_set: {send: ":TRIGger:EDGe:SLOPe {s}"}
+  tlev_q: {send: ":TRIGger:EDGe:LEVel?", source: "TRIGger:EDGe:LEVel p318"}
+  tlev_set: {send: ":TRIGger:EDGe:LEVel {v}"}
+  acq_q: {source: "ACQuire:TYPE p29; NORM, AVER, PEAK or HRES"}
+  acq_set:
+    params: {t: {values: {"HRES": "HRESolution"}}}
+    source: "ACQuire:TYPE p29"
+  srate_q: {source: "ACQuire:SRATe? p28"}
+  run_set: {source: ":RUN :STOP :SINGle :AUToscale :CLEar p18-19"}
+  wav_pre: {source: "WAVeform:PREamble? p390; NORMal: 1400 points, YREFerence 127"}
+  wav_data: {source: "WAVeform:DATA? p377-382; 1400 screen points, BYTE"}
+  vpp_q: {send: ":MEASure:VPP? CHANnel{ch}", source: "MEASure:VPP p226; 9.9e37 when invalid"}
+  vavg_q: {send: ":MEASure:VAVG? CHANnel{ch}", source: "MEASure:VAVG p218"}
+  vrms_q: {send: ":MEASure:VRMS? CHANnel{ch}", source: "MEASure:VRMS p228"}
+  freq_q: {send: ":MEASure:FREQuency? CHANnel{ch}", source: "MEASure:FREQuency p188"}
+classes:
+  OSC:
+    channels: 2
+    features:
+      divisions: {horizontal: 14, vertical: 8}
+      bandwidth_hz: 100e6
+      scale: {min: 500e-6, max: 10, note: "V/div at probe 1X and 1 MΩ (50 Ω: up to 1 V/div); multiplied by the probe ratio"}
+      timebase: {min: 5e-9, max: 1000}
+      probe: ["0.01", "0.02", "0.05", "0.1", "0.2", "0.5", "1", "2", "5", "10", "20", "50", "100", "200", "500", "1000"]

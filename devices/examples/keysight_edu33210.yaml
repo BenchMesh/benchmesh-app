@@ -1,0 +1,19 @@
+# Replies in the Keysight Trueform format (the EDU user's guide shows no query replies; values as
+# its examples): checks the definition through the real engine without hardware.
+definition: keysight_edu33210
+transport: usbtmc
+model: EDU33212A
+replies:
+  - {send: '\*IDN\?', reply: "Keysight Technologies,EDU33212A,CN12340005,K-01.00.04-01.00-01.00-01.00-01.00", source: "PDF p149 (form), p52 (serial)"}
+  - {send: ':OUTP[12]\?', reply: "0", source: "PDF p93"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "SIN", source: "PDF p83"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "+5.00000000000000E+03", source: "PDF p84 (5 kHz example)"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "PDF p88"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "+1.00000000000000E-01", source: "PDF p87 (default 100 mVpp)"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "+0.00000000000000E+00", source: "PDF p87"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "+0.00000000000000E+00", source: "Trueform"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "+1.00000000000000E+02", source: "PDF p91"}
+  - {send: ':OUTP[12]:LOAD\?', reply: "+5.00000000000000E+01", source: "PDF p89"}
+expect:
+  AWG:
+    1: {OUTPUT: "OFF", SHAPE: "SIN", FREQ: 5000.0, AMPL: 0.1, OFFS: 0.0, SYMM: 100.0, LOAD: "50"}

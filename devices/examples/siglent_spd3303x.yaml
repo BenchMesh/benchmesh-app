@@ -1,0 +1,16 @@
+# Replies as the SPD3303X quick start shows them (printed pages); checks the definition
+# through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: siglent_spd3303x
+transport: usbtmc
+model: SPD3303X
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies, SPD3303X, SPD00001130025, 1.01.01.01.02,V3.0", source: "X QS p.27"}
+  - {send: 'MEAS:VOLT\? CH[12]', reply: "30.000", source: "X QS p.28"}
+  - {send: 'MEAS:CURR\? CH[12]', reply: "3.000", source: "X QS p.28"}
+  - {send: 'CH[12]:VOLT\?', reply: "25.000", source: "X QS p.29"}
+  - {send: 'CH[12]:CURR\?', reply: "0.500", source: "X QS p.28"}
+  - {send: 'SYST:STAT\?', reply: "0x0224", source: "X QS p.30 (independent, CH2 on, CH2 waveform display)"}
+expect:
+  PSU:
+    1: {VOUT: 30.0, IOUT: 3.0, OUTPUT: "OFF", SBY: true}
+    2: {OUTPUT: "ON", CV: true, CC: false}

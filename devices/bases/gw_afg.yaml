@@ -1,0 +1,92 @@
+# GW Instek AFG function generator baseline (Keysight-33120-style SCPI): AFG-2000/2100,
+# AFG-2225, AFG-3000. Research: ai_context/migration/coverage/AWG.md §2.8.
+# Single-channel sends (`SOUR1:`, `OUTPut` without suffix); AFG-2225 overrides them with `{ch}`.
+#
+# Link: USB CDC virtual COM (the baud is ignored by CDC; 115200 8N1 also matches the AFG-3000
+# RS-232 default). LF terminated; replies may end CRLF. Setters never answer.
+# API values: SHAPE / shape SIN SQU RAMP PUL PRN DC (per model). LOAD "50" (DEFault) or "HIGHZ".
+# AMPL in Vpp: null while the front panel has the unit at Vrms/dBm (amplitude setter refused).
+# `APPLy:<fn>` switches the output on: never used.
+schema: benchmesh.device/v1
+identify: idn
+link:
+  serial: {baud: 115200, format: 8N1}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  outp_q:
+    send: "OUTP?"
+    parse: [trim, {map: {"1": "ON", "0": "OFF"}}]
+  outp_set:
+    send: "OUTP {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  shape_q:
+    send: "SOUR1:FUNC?"
+    parse: [trim, upper, {map: {SIN: SIN, SQU: SQU, RAMP: RAMP, PULS: PUL, NOIS: PRN, DC: DC, TRI: TRI, USER: ARB}}]
+  shape_set:
+    send: "SOUR1:FUNC {shape}"
+    params: {shape: {type: enum, values: {SIN: SIN, SQU: SQU, RAMP: RAMP, PRN: NOIS}}}
+    reply: none
+    safety: configure
+  freq_q: {send: "SOUR1:FREQ?", parse: [trim, number]}
+  freq_set:
+    send: "SOUR1:FREQ {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 25000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+  unit_q:
+    send: "SOUR1:VOLT:UNIT?"
+    parse: [trim, upper]
+    cache_ms: 1000
+    description: "Amplitude unit chosen on the front panel: VPP, VRMS or DBM"
+  ampl_q: {send: "SOUR1:AMPL?", parse: [trim, number], description: "Amplitude in the current unit (VOLT:UNIT)"}
+  ampl_set:
+    send: "SOUR1:AMPL {vpp}"
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    requires: {expr: "unit_q == 'VPP'", message: "the amplitude unit is set to Vrms or dBm on the instrument; switch it to Vpp"}
+    reply: none
+    safety: configure
+  offs_q: {send: "SOUR1:DCO?", parse: [trim, number]}
+  offs_set:
+    send: "SOUR1:DCO {v}"
+    params: {v: {type: number, min: -10, max: 10, format: "%.4f", unit: V}}
+    reply: none
+    safety: configure
+  symm_q: {send: "SOUR1:RAMP:SYMM?", parse: [trim, number]}
+  symm_set:
+    send: "SOUR1:RAMP:SYMM {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+  load_q:
+    send: "OUTP:LOAD?"
+    parse: [trim, upper, {map: {DEF: "50", INF: HIGHZ}}]
+    description: "Only 50 Ω (DEFault) or High-Z (INFinity)"
+classes:
+  AWG:
+    channels: 1
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700", "2": "#00BFFF"}}
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, unit_q, ampl_q, offs_q, symm_q, load_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: "unit_q == 'VPP' ? ampl_q : null", as: si}
+      OFFS: {expr: offs_q, as: si}
+      SYMM: symm_q
+      LOAD: load_q
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      offset: {get: offs_q, set: offs_set, as: si}
+      symmetry: {get: symm_q, set: symm_set}

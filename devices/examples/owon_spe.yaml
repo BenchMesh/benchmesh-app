@@ -1,0 +1,18 @@
+# Replies from the OWON SP/SPE/SPS programming manual (printed pages) and, where the manual's
+# format is known to be wrong, the observed SPE format (community drivers, PSU.md §2.3).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: owon_spe
+model: SPE6103
+replies:
+  - {send: '\*IDN\?', reply: "OWON,SPE6103,24371986,FV:V5.2.0", source: "PM p.4 format; string observed on an SPE6103"}
+  - {send: 'MEAS:ALL:INFO\?', reply: "2.000,5.000,10.000,OFF,OFF,OFF,2", source: "PM p.6-7 example (comma-separated as observed)"}
+  - {send: 'MEAS:VOLT\?', reply: "1.000", source: "PM p.5"}
+  - {send: 'MEAS:CURR\?', reply: "1.000", source: "PM p.5-6"}
+  - {send: 'MEAS:POW\?', reply: "1.000", source: "PM p.6"}
+  - {send: 'OUTP\?', reply: "1", source: "PM p.7"}
+  - {send: 'VOLT\?', reply: "1.000", source: "PM p.9"}
+  - {send: 'CURR\?', reply: "1.000", source: "PM p.8"}
+  - {send: 'VOLT:LIM\?', reply: "1.000", source: "PM p.10"}
+  - {send: 'CURR:LIM\?', reply: "1.000", source: "PM p.9"}
+expect:
+  PSU: {1: {VOUT: 2.0, IOUT: 5.0, POUT: 10.0, OUTPUT: "ON", CC: true, CV: false, FAIL: false}}

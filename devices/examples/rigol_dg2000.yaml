@@ -1,0 +1,19 @@
+# Replies as the DG2000 programming guide shows them (PDF pages): checks the definition through
+# the real engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: rigol_dg2000
+transport: usbtmc
+model: DG2102
+replies:
+  - {send: '\*IDN\?', reply: "Rigol Technologies,DG2102,DG20000000001,01.00.01", source: "PDF p35"}
+  - {send: ':OUTP[12]\?', reply: "ON", source: "PDF p54"}
+  - {send: ':SOUR[12]:FUNC\?', reply: "SQU", source: "PDF p97"}
+  - {send: ':SOUR[12]:FREQ\?', reply: "1.000000E+03", source: "PDF p80"}
+  - {send: ':SOUR[12]:VOLT:UNIT\?', reply: "VPP", source: "PDF p151"}
+  - {send: ':SOUR[12]:VOLT\?', reply: "5.000000E+00", source: "PDF p148"}
+  - {send: ':SOUR[12]:VOLT:OFFS\?', reply: "1.000000E+00", source: "PDF p150"}
+  - {send: ':SOUR[12]:PHAS\?', reply: "1.000000E+01", source: "PDF p133"}
+  - {send: ':SOUR[12]:FUNC:RAMP:SYMM\?', reply: "5.000000E+01", source: "PDF p91"}
+  - {send: ':OUTP[12]:LOAD\?', reply: "9.900000E+37", source: "PDF p53"}
+expect:
+  AWG:
+    2: {OUTPUT: "ON", SHAPE: "SQU", FREQ: 1000.0, AMPL: 5.0, OFFS: 1.0, PHASE: 10.0, SYMM: 50.0, LOAD: "HIGHZ"}

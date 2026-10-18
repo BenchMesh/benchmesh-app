@@ -455,11 +455,19 @@ impl Engine {
     }
 }
 
-/// A command is per channel if its text uses `{ch}` or one of its `before` steps does
-/// (e.g. `:WAVeform:DATA?` after selecting `:WAVeform:SOURce CHANnel{ch}`).
+/// A command is per channel if its text uses `{ch}`, a computed param depends on `ch`
+/// (`from: "ch == 1 ? '' : ':CH2'"`), or one of its `before` steps is per channel (e.g.
+/// `:WAVeform:DATA?` after selecting `:WAVeform:SOURce CHANnel{ch}`).
+fn mentions_ch(expr: &str) -> bool {
+    let b = expr.as_bytes();
+    let word = |c: u8| c.is_ascii_alphanumeric() || c == b'_' || c == b'.';
+    expr.match_indices("ch").any(|(i, _)| (i == 0 || !word(b[i - 1])) && b.get(i + 2).is_none_or(|&c| !word(c)))
+}
+
 fn uses_ch(def: &DeviceDef, cmd: &Command) -> bool {
     fn go(def: &DeviceDef, cmd: &Command, depth: u8) -> bool {
         template::placeholders(&cmd.send).map(|p| p.iter().any(|x| x == "ch")).unwrap_or(false)
+            || cmd.params.values().any(|p| p.from.as_deref().is_some_and(mentions_ch))
             || (depth < 8 && cmd.before.iter().any(|s| def.commands.get(s.command()).is_some_and(|c| go(def, c, depth + 1))))
     }
     go(def, cmd, 0)

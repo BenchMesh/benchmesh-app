@@ -1,0 +1,46 @@
+# GW Instek GPD-3303D (10 mV / 10 mA resolution, 9600 baud only). Written from the user
+# manual; see ai_context/migration/coverage/PSU.md §2.8. Shared commands:
+# devices/bases/gwinstek_gpd.yaml. Separate from gwinstek_gpd because its STATUS? reports the
+# output in bit 6 (the GPD-x303S manual: bit 5).
+schema: benchmesh.device/v1
+extends: gwinstek_gpd
+id: gwinstek_gpd3303d
+vendor: GW Instek
+family: GPD-3303D multi-output linear DC power supply
+version: 0.1.0
+sources:
+  - {doc: "GPD-3303 Series User Manual (GPD-3303D_User_Manual.pdf)", pages: "35-42 (remote control)"}
+  - {note: "Reply formats and terminators from sigrok gwinstek-gpd / PyGPD3303S (GPD-x303S); not verified for the 3303D"}
+models:
+  - {"name": "GPD-3303D", "match": "^GW ?INSTEK, ?GPD-3303D", "note": "CH3 (2.5/3.3/5 V) is panel-only"}
+link:
+  serial: {baud: 9600, format: 8N1, flow: none, settle_ms: 50}
+framing:
+  # response times 70-80 ms, STATUS? 400 ms, *IDN? 300 ms (p.39-42)
+  rx: {timeout_ms: 1000}
+  timing: {min_gap_ms: 80, gap_after_write_ms: 80}
+commands:
+  idn: {source: "p.41-42 (minimum 300 ms)"}
+  vout: {source: "p.40"}
+  iout: {source: "p.40"}
+  vset_q: {source: "p.40"}
+  iset_q: {source: "p.39-40"}
+  status: {source: "p.41-42 (bit0 CH1 CV, bit1 CH2 CV, bits2-3 tracking, bit4 beep, bit6 output; minimum 400 ms)"}
+  vset:
+    params: {v: {format: "%.2f"}}
+    source: "p.40 (range 0-32 V)"
+  iset:
+    params: {i: {format: "%.2f"}}
+    source: "p.39 (example ISET1:2.23 for the GPD-3303D)"
+  output: {source: "p.41"}
+  remote_set: null  # the 3303D manual has no REMOTE / LOCAL commands
+classes:
+  PSU:
+    operations: {remote: null}
+    status:
+      REMOTE: '"ON"'  # assumed: the panel locks while the USB link is open (not documented for the 3303D)
+      # output = character 7 (bit 6)
+      OUTPUT: 'int(status / 10.0) % 10 == 1 ? "ON" : "OFF"'
+      SBY: "int(status / 10.0) % 10 == 0"
+      CV: "int(status / 10.0) % 10 == 1 && int(status / (ch == 1 ? 10000000.0 : 1000000.0)) % 10 == 1"
+      CC: "int(status / 10.0) % 10 == 1 && int(status / (ch == 1 ? 10000000.0 : 1000000.0)) % 10 == 0"

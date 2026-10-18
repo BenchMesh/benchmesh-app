@@ -1,0 +1,72 @@
+# Aim-TTi MX100TP triple-output multi-range supply (3 x 35 V / 3 A, ranges to 70 V or 6 A).
+# Written from the instruction manual before anyone tested it (support: awaiting). Shared TTi
+# command set: devices/bases/tti_psu.yaml. The MX100T (no "P") has no remote interface; the
+# MX180TP has its own manual (not read). Ranges (VRANGE<N>) have no class operation yet.
+schema: benchmesh.device/v1
+extends: tti_psu
+id: tti_mx
+vendor: Aim-TTi
+family: MX100TP triple-output multi-range DC power supply
+version: 0.1.0
+sources:
+  - {doc: "MX100T & MX100TP Instruction Manual 48511-1610 Iss. 9", pages: "4, 12-13 (OVP/OCP, ranges), 25-29 (interfaces, LSR), 34-39 (commands), 41-44 (specs)"}
+models:
+  - name: MX100TP
+    match: '^[^,]*, ?MX100TP ?(,|$)'
+    note: "Output 1: 16V/6A or 35V/3A; output 2: 35V/3A, 16V/6A or 35V/6A (disables output 3); output 3: 35V/3A, 70V/1.5A or 70V/3A (p.13, p.36). Setpoints outside the selected range are rejected (EER 100)."
+commands:
+  idn: {source: "p.37 *IDN?"}
+  vout: {source: "p.36 V<N>O?"}
+  iout: {source: "p.36 I<N>O?"}
+  vset_q: {source: "p.35 V<N>?"}
+  iset_q: {source: "p.35 I<N>?"}
+  ovp_q: {source: "p.36 OVP<N>? (VP<N> OFF when disabled)"}
+  ocp_q: {source: "p.36 OCP<N>? (CP<N> OFF when disabled)"}
+  op_q: {source: "p.36 OP<N>?"}
+  v_set:
+    params: {v: {max: 70, format: "%.3f"}}
+    description: "Resolution 1 mV on output 1, 10 mV on outputs 2-3 (p.41); limit depends on the range"
+    source: "p.35 V<N> <NRF>"
+  i_set:
+    params: {a: {max: 6, format: "%.4f"}}
+    description: "Resolution 0.1 mA on output 1, 1 mA on outputs 2-3 (p.41); limit depends on the range"
+    source: "p.35 I<N> <NRF>"
+  ovp_set:
+    params: {v: {min: 1, max: 80}}
+    description: "1-40 V on outputs 1-2, 1-80 V on output 3 (p.12)"
+    source: "p.35 OVP<N> <NRF>"
+  ocp_set:
+    params: {a: {min: 0.01, max: 7}}
+    description: "0.01-7 A on outputs 1-2, 0.01-3.5 A on output 3 (p.12)"
+    source: "p.35 OCP<N> <NRF>"
+  op_set: {source: "p.36 OP<N> <NRF>"}
+  ovp_on:
+    send: "OVP{ch} {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p.35 OVP<N> <CPD>"
+  ocp_on:
+    send: "OCP{ch} {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "p.35 OCP<N> <CPD>"
+classes:
+  PSU:
+    channels: 3
+    features:
+      lock: false
+      absolute_limits:
+        voltage: {unit: V, max: 70.0}
+        current: {unit: A, max: 6.0}
+        power: {unit: W, max: 210.0}
+      channel_limits:
+        "1": {voltage: 35.0, current: 6.0, ovp_max: 40.0, ocp_max: 7.0}
+        "2": {voltage: 35.0, current: 6.0, ovp_max: 40.0, ocp_max: 7.0}
+        "3": {voltage: 70.0, current: 3.0, ovp_max: 80.0, ocp_max: 3.5}
+      protection: {OVP: {type: number, min: 1, max: 80}, OCP: {type: number, min: 0.01, max: 7}}
+      note: "Up to 315 W total (p.41). CV/CC not reported (only a read-to-clear event register exists)."
+    operations:
+      ovp: {set: ovp_on}
+      ocp: {set: ocp_on}

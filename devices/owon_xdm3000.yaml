@@ -1,0 +1,123 @@
+# OWON XDM3041 / XDM3051 bench multimeters. Written from the XDM Series programming manual
+# (ai_context/migration/coverage/DMM.md §3.1) before anyone tested it. OWON dialect as on the
+# bench-tested XDM1241 (`owon_xdm`: FUNC? with a space, MEAS1?, RATE, no reply to setters), but
+# with documented range queries, so it builds on scpi_dmm.
+schema: benchmesh.device/v1
+id: owon_xdm3000
+extends: scpi_dmm
+vendor: OWON
+family: XDM3000 series digital multimeter
+version: 0.1.0
+sources:
+  - {doc: "XDM Series Digital Multimeter Programming Manual (XDM3041/XDM3051)", pages: "6-41 (printed)"}
+  - {doc: "XDM Series Digital Multimeters User Manual", pages: "17-29 (overload), 38-39 (interfaces), factory defaults table"}
+  - {note: "USB device port class (CDC or USBTMC) and VID:PID are undocumented: only RS-232 and LAN are offered. Terminators are undocumented; the XDM1241's (tx CR, replies CRLF) are assumed. Overload remote form undocumented (screen 'overload')"}
+models:
+  - name: XDM3051
+    match: "^OWON,XDM3051,"
+  - name: XDM3041
+    match: "^OWON,XDM3041,"
+    features:
+      DMM:
+        RANGe:
+          VOLT: [{value: AUTO, display: AUTO}, {value: "0.6", display: "600mV"}, {value: "6", display: "6V"}, {value: "60", display: "60V"}, {value: "600", display: "600V"}, {value: "1000", display: "1000V"}]
+          VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.6", display: "600mV"}, {value: "6", display: "6V"}, {value: "60", display: "60V"}, {value: "600", display: "600V"}, {value: "750", display: "750V"}]
+          CURR: [{value: AUTO, display: AUTO}, {value: "0.0006", display: "600µA"}, {value: "0.006", display: "6mA"}, {value: "0.06", display: "60mA"}, {value: "0.6", display: "600mA"}, {value: "6", display: "6A"}, {value: "10", display: "10A"}]
+          CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.06", display: "60mA"}, {value: "0.6", display: "600mA"}, {value: "6", display: "6A"}, {value: "10", display: "10A"}]
+          RES: [{value: AUTO, display: AUTO}, {value: "600", display: "600Ω"}, {value: "6000", display: "6kΩ"}, {value: "60000", display: "60kΩ"}, {value: "600000", display: "600kΩ"}, {value: "6000000", display: "6MΩ"}, {value: "60000000", display: "60MΩ"}, {value: "100000000", display: "100MΩ"}]
+          FRES: [{value: AUTO, display: AUTO}, {value: "600", display: "600Ω"}, {value: "6000", display: "6kΩ"}, {value: "60000", display: "60kΩ"}, {value: "600000", display: "600kΩ"}, {value: "6000000", display: "6MΩ"}, {value: "60000000", display: "60MΩ"}, {value: "100000000", display: "100MΩ"}]
+link:
+  # UM: 1200-115200 baud; the text says default 9600, the factory-defaults table 115200
+  serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}
+  usbtmc: null
+  # LAN port is user-set (Utility > LAN Setting); give it as host:port in the config
+  tcp: {port: 5025}
+framing:
+  tx: {terminator: "\r"}
+  rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 20}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+commands:
+  func:
+    send: "FUNC?"
+    parse:
+      - trim
+      - unquote
+      - map: {"VOLT": VOLT, "VOLT AC": VOLT_AC, "CURR": CURR, "CURR AC": CURR_AC, "RES": RES, "FRES": FRES,
+              "CAP": CAP, "FREQ": FREQ, "PER": PER, "CONT": CONT, "DIOD": DIOD, "TEMP": TEMP}
+    source: "PM p.8-10 [SENSe:]FUNCtion? (quoted, \"VOLT AC\" with a space)"
+  meas:
+    send: "MEAS1?"
+    parse: [trim, number]
+    timeout_ms: 1000
+    source: "PM p.41 MEAS1? main display value, scientific notation"
+  rng_q: {source: "PM p.10-19 <fn>:RANGe? (scientific notation)"}
+  auto_q: {source: "PM p.11 <fn>:RANGe:AUTO? → 0|1"}
+  nplc_q: null
+  rate_q: {send: "RATE?", parse: [trim, upper], source: "PM p.40 RATE? → F|M|L"}
+  rate_set:
+    send: "RATE {rate}"
+    params:
+      fn: null
+      plc: null
+      rate: {type: enum, values: {F: F, M: M, L: L}}
+    requires: null
+    description: "The XDM1241 answers RATE? with S and ignores L; this manual documents L (verify)"
+    source: "PM p.40 RATE {F|M|L}"
+  mode_set:
+    params:
+      mode:
+        type: enum
+        values: {TEMP: "CONF:TEMP:RTD KITS90"}
+    gap_after_ms: 3000
+    settle_ms: 1500
+    description: "XDM1241: CONF:TEMP stalls the meter ~2.8 s, first readings after CONF carry the previous value"
+    source: "PM p.23-27 CONFigure:<function> [AUTO]"
+  range_set:
+    params:
+      range:
+        type: enum
+        values: {"0.0002": " 200E-6", "0.0006": " 600E-6", "0.002": " 2E-3", "0.006": " 6E-3", "0.02": " 20E-3",
+                 "0.06": " 60E-3", "0.2": " 200E-3", "0.6": " 600E-3", "2": " 2", "6": " 6", "10": " 10", "20": " 20",
+                 "60": " 60", "200": " 200", "600": " 600", "750": " 750", "1000": " 1000", "2000": " 2E3",
+                 "6000": " 6E3", "20000": " 20E3", "60000": " 60E3", "200000": " 200E3", "600000": " 600E3",
+                 "2000000": " 2E6", "6000000": " 6E6", "10000000": " 10E6", "60000000": " 60E6", "100000000": " 100E6",
+                 "0.000000002": " 2E-9", "0.00000002": " 20E-9", "0.0000002": " 200E-9", "0.000002": " 2E-6",
+                 "0.00002": " 20E-6", "0.01": " 10E-3"}
+    gap_after_ms: 1000
+    settle_ms: 1500
+    source: "PM p.10-20 <fn>:RANGe <range> / :RANGe:AUTO ON"
+  temp_sensor_set:
+    send: "CONF:TEMP:RTD {sensor}"
+    params:
+      sensor:
+        type: enum
+        values: {KITS90: KITS90, NITS90: NITS90, EITS90: EITS90, JITS90: JITS90, TITS90: TITS90, SITS90: SITS90,
+                 RITS90: RITS90, BITS90: BITS90, W5_26: W5_26, W3_25: W3_25, PT100: PT100, PT10: PT10,
+                 Cu100: Cu100, Cu50: Cu50}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 3000
+    settle_ms: 1500
+    source: "PM p.21, 26 CONFigure:TEMPerature:RTD <type>"
+  temp_scale_set:
+    send: "TEMP:RTD:UNIT {unit}"
+    source: "PM p.22 [SENSe:]TEMPerature:RTD:UNIT {C|F|K}"
+classes:
+  DMM:
+    features:
+      rate: [{value: F, display: fast}, {value: M, display: middle}, {value: L, display: slow}]
+      RANGe:
+        VOLT: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "1000", display: "1000V"}]
+        VOLT_AC: [{value: AUTO, display: AUTO}, {value: "0.2", display: "200mV"}, {value: "2", display: "2V"}, {value: "20", display: "20V"}, {value: "200", display: "200V"}, {value: "750", display: "750V"}]
+        CURR: [{value: AUTO, display: AUTO}, {value: "0.0002", display: "200µA"}, {value: "0.002", display: "2mA"}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        CURR_AC: [{value: AUTO, display: AUTO}, {value: "0.02", display: "20mA"}, {value: "0.2", display: "200mA"}, {value: "2", display: "2A"}, {value: "10", display: "10A"}]
+        RES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
+        CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.01", display: "10mF"}]
+        TEMP:
+          Sensor: [{value: KITS90, display: "K TC"}, {value: NITS90, display: "N TC"}, {value: EITS90, display: "E TC"}, {value: JITS90, display: "J TC"}, {value: TITS90, display: "T TC"}, {value: SITS90, display: "S TC"}, {value: RITS90, display: "R TC"}, {value: BITS90, display: "B TC"}, {value: W5_26, display: "W5-26"}, {value: W3_25, display: "W3-25"}, {value: PT100, display: PT100}, {value: PT10, display: PT10}, {value: Cu100, display: Cu100}, {value: Cu50, display: Cu50}]
+          Scale: [{unit: "°C", symbol: C, display: Celsius}, {unit: "°F", symbol: F, display: Fahrenheit}, {unit: K, symbol: K, display: Kelvin}]
+    operations:
+      rate: {get: rate_q, set: rate_set}
+      temp_sensor: {set: temp_sensor_set}

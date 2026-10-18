@@ -1,0 +1,140 @@
+# SCPI bench multimeter baseline, Keysight 34401A/34461A dialect (also Siglent SDM, Rigol DM858,
+# Hantek HDM3000, GW Instek GDM-906x, Keithley 2100, Tektronix DMM4040 …).
+# Research: ai_context/migration/coverage/DMM.md §2.1. A definition `extends: scpi_dmm` and adds
+# identity, models, links (USB ids), per-model features and the range/rate wire values; dialect
+# quirks override single keys (`commands: {func: {parse: …}}`).
+#
+# Function keys (features.modes / MODE): VOLT, VOLT_AC, CURR, CURR_AC, RES, FRES, CAP, FREQ,
+# PER, CONT, DIOD, TEMP. Range values are in base units as CEL `string()` prints the meter's
+# `<fn>:RANG?` number (0.2, 2, 0.0002, 100000000), so RANGE matches features.RANGe values.
+# Rate values are NPLC (integration time in power-line cycles), as these meters set speed.
+schema: benchmesh.device/v1
+identify: idn
+# serial / TCP: LF-terminated lines (replies may end CRLF)
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 3000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+link:
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 3000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 10}
+  # raw SCPI socket; the instrument's LAN settings may use another port (config `host:port`)
+  tcp: {port: 5025}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "IEEE 488.2 *IDN?"}
+  func:
+    send: "FUNC?"
+    parse:
+      - trim
+      - unquote
+      - upper
+      - map: {"VOLT": VOLT, "VOLT:DC": VOLT, "VOLT:AC": VOLT_AC, "CURR": CURR, "CURR:DC": CURR,
+              "CURR:AC": CURR_AC, "RES": RES, "FRES": FRES, "CAP": CAP, "FREQ": FREQ, "PER": PER,
+              "CONT": CONT, "DIOD": DIOD, "TEMP": TEMP}
+    cache_ms: 400
+    description: "Quoted short form of the active function, e.g. \"VOLT:AC\""
+  meas:
+    send: "READ?"
+    # several readings when SAMP:COUN > 1: keep the first
+    parse: [trim, {split: {sep: ",", index: 0}}, number]
+    timeout_ms: 6000
+    description: "INIT + FETC?: one fresh reading in base units (±9.9E37 overload, 9.91E37 no data); slow NPLC/AC take seconds"
+  rng_q:
+    send: "{fn}:RANG?"
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", VOLT_AC: "VOLT:AC", CURR: "CURR:DC", CURR_AC: "CURR:AC", RES: RES, FRES: FRES, CAP: CAP}}
+    parse: [trim, number]
+    cache_ms: 2000
+    description: "Present range of the active function (none for FREQ/PER/CONT/DIOD/TEMP)"
+  auto_q:
+    send: "{fn}:RANG:AUTO?"
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", VOLT_AC: "VOLT:AC", CURR: "CURR:DC", CURR_AC: "CURR:AC", RES: RES, FRES: FRES, CAP: CAP}}
+    parse: [trim, number]
+    cache_ms: 2000
+    description: "1 = autorange on"
+  nplc_q:
+    send: "{fn}:NPLC?"
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", CURR: "CURR:DC", RES: RES, FRES: FRES}}
+    # the number's text (10.0, 0.02) → rate value; a definition lists its meter's NPLC set
+    parse: [trim, number, {map: {"0.02": "0.02", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+  mode_set:
+    send: "{mode}"
+    params:
+      mode:
+        type: enum
+        values: {VOLT: "CONF:VOLT:DC AUTO", VOLT_AC: "CONF:VOLT:AC AUTO", CURR: "CONF:CURR:DC AUTO",
+                 CURR_AC: "CONF:CURR:AC AUTO", RES: "CONF:RES AUTO", FRES: "CONF:FRES AUTO",
+                 CAP: "CONF:CAP AUTO", FREQ: "CONF:FREQ", PER: "CONF:PER", CONT: "CONF:CONT",
+                 DIOD: "CONF:DIOD", TEMP: "CONF:TEMP"}
+    reply: none
+    safety: configure
+    invalidates: [func, rng_q, auto_q]
+    gap_after_ms: 300
+    settle_ms: 800
+    description: "CONF resets range (auto), NPLC and trigger of the function to defaults (known state for READ?)"
+  range_set:
+    send: "{fn}:RANG{range}"
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", VOLT_AC: "VOLT:AC", CURR: "CURR:DC", CURR_AC: "CURR:AC", RES: RES, FRES: FRES, CAP: CAP}}
+      # a definition adds its range values ("2": " 2"); a fixed range switches autorange off
+      range: {type: enum, values: {AUTO: ":AUTO ON"}}
+    reply: none
+    safety: configure
+    invalidates: [rng_q, auto_q]
+    gap_after_ms: 100
+    settle_ms: 500
+  rate_set:
+    send: "{fn}:NPLC {plc}"
+    params:
+      fn: {type: enum, from: func, values: {VOLT: "VOLT:DC", CURR: "CURR:DC", RES: RES, FRES: FRES}}
+      plc: {type: enum, values: {"0.02": "0.02", "0.2": "0.2", "1": "1", "10": "10", "100": "100"}}
+    reply: none
+    safety: configure
+    requires:
+      expr: 'func in ["VOLT", "CURR", "RES", "FRES"]'
+      message: "Integration time (NPLC) applies to DC voltage, DC current and resistance only"
+  temp_scale_set:
+    send: "UNIT:TEMP {unit}"
+    params: {unit: {type: enum, values: {C: C, F: F, K: K}}}
+    reply: none
+    safety: configure
+classes:
+  DMM:
+    channels: 1
+    ui_component: GenericDMM
+    features:
+      modes:
+        VOLT: {unit: V, symbol: U, note: DC, techname: "VOLT:DC", ui_name: "Voltage DC"}
+        VOLT_AC: {unit: V, symbol: U, note: AC, techname: "VOLT:AC", ui_name: "Voltage AC"}
+        CURR: {unit: A, symbol: I, note: DC, techname: "CURR:DC", ui_name: "Current DC"}
+        CURR_AC: {unit: A, symbol: I, note: AC, techname: "CURR:AC", ui_name: "Current AC"}
+        RES: {unit: "Ω", symbol: R, techname: RES, ui_name: Resistance}
+        FRES: {unit: "Ω", symbol: R, note: 4W, techname: FRES, ui_name: Resistance}
+        CAP: {unit: F, symbol: C, techname: CAP, ui_name: Capacitance}
+        FREQ: {unit: Hz, symbol: f, techname: FREQ, ui_name: Frequency}
+        PER: {unit: s, symbol: T, techname: PER, ui_name: Period}
+        CONT: {unit: "Ω", symbol: R, note: buzzer, techname: CONT, ui_name: Continuity}
+        DIOD: {unit: V, symbol: D, techname: DIOD, ui_name: Diode}
+        TEMP: {unit: "°C", symbol: T, techname: TEMP, ui_name: Temperature}
+    # rng_q/auto_q are cached (cache_ms): range state is read about every 2 s
+    poll:
+      - every_ms: 500
+        read: [meas, func, rng_q, auto_q]
+    status:
+      # ±9.9E37 = overload, 9.91E37 = no reading (NaN, e.g. range change in progress)
+      MEAS: {expr: 'meas >= 9.9e37 || meas <= -9.9e37 ? null : meas', as: si}
+      MODE: func
+      RANGE: 'auto_q > 0.5 ? "AUTO" : string(rng_q)'
+      OVERLOAD: '(meas >= 9.9e37 && meas < 9.905e37) || meas <= -9.9e37'
+    operations:
+      mode: {set: mode_set}
+      range: {set: range_set}
+      measurement: {get: meas, as: si}
+      function: {get: func}
+      rate: {get: nplc_q, set: rate_set}
+      temp_scale: {set: temp_scale_set}

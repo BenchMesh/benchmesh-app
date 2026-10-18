@@ -1,0 +1,19 @@
+# Replies as the 33220A user's guide shows them (PDF pages): checks the definition through the
+# real engine without hardware. Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: keysight_33220a
+transport: usbtmc
+model: 33220A
+replies:
+  - {send: '\*IDN\?', reply: "Agilent Technologies,33220A,0,f.ff-b.bb-aa-p", source: "PDF p135"}
+  - {send: 'OUTP\?', reply: "1", source: "PDF p189"}
+  - {send: 'FUNC\?', reply: "SIN", source: "PDF p180"}
+  - {send: 'FREQ\?', reply: "+5.0000000000000E+03", source: "PDF p179 (APPLy? example values)"}
+  - {send: 'VOLT:UNIT\?', reply: "VPP", source: "PDF p192"}
+  - {send: 'VOLT\?', reply: "+3.0000000000000E+00", source: "PDF p179"}
+  - {send: 'VOLT:OFFS\?', reply: "-2.5000000000000E+00", source: "PDF p179"}
+  - {send: 'PHAS\?', reply: "+0.0000000000000E+00", source: "PDF p146"}
+  - {send: 'FUNC:RAMP:SYMM\?', reply: "+1.0000000000000E+02", source: "PDF p189"}
+  - {send: 'OUTP:LOAD\?', reply: "9.9E+37", source: "PDF p190"}
+expect:
+  AWG:
+    1: {OUTPUT: "ON", SHAPE: "SIN", FREQ: 5000.0, AMPL: 3.0, OFFS: -2.5, PHASE: 0.0, SYMM: 100.0, LOAD: "HIGHZ"}

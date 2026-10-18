@@ -1,0 +1,14 @@
+# Replies as the GDM-906X user manual prints them. Spec: ai_context/migration/coverage/README.md.
+definition: gwinstek_gdm9000
+transport: usbtmc
+model: GDM9061
+replies:
+  - {send: '\*IDN\?', reply: "GWInstek,GDM9061,000000000,M0.69B_S0.25B", source: "p.246 *IDN?"}
+  - {send: 'READ\?', reply: "-1.13148354E-04", source: "p.274 READ?"}
+  - {send: 'FUNC\?', reply: '"VOLT"', source: "p.295 FUNCtion?"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+1.00000000E+01", source: "p.282 CONF? example range 10 V"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "0", source: "p.300 RANGe:AUTO? 0|1"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "12", source: "p.299 NPLCycles? 0.006 … 12"}
+expect:
+  DMM:
+    1: {MEAS: -1.13148354e-4, MODE: VOLT, RANGE: "10", OVERLOAD: false}

@@ -1,0 +1,23 @@
+# ITECH IT8500+ (SCPI mode) replies as the SCPI programming guide (IS,
+# ITECH_IT8500plus_Programming-Guide_SCPI.pdf) documents them. The identify example uses the
+# placeholder model IT85XX (IS p.71); here it names a real model. Numbers follow the
+# documented <NR2>/<NR1> formats.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: itech_it8500plus
+model: IT8512+
+replies:
+  - {send: '\*IDN\?', reply: "ITECH Ltd, IT8512+, 600009011747210041, 1.21-1.28", source: "IS p.71 (model filled in)"}
+  - {send: 'MEAS:VOLT\?', reply: "12.004", source: "IS p.53 (<NR2>)"}
+  - {send: 'MEAS:CURR\?', reply: "5.0000", source: "IS p.54 (<NR2>)"}
+  - {send: 'MEAS:POW\?', reply: "60.02", source: "IS p.55 (<NR2>)"}
+  - {send: 'INP\?', reply: "1", source: "IS p.31 (0|1)"}
+  - {send: 'FUNC\?', reply: "CURR", source: "IS p.41 (CURRent|VOLTage|...; short form assumed)"}
+  - {send: 'STAT:QUES:COND\?', reply: "16", source: "IS p.22/p.27 (<NR1>; bit 4 OT)"}
+  - {send: 'CURR\?', reply: "5.0000", source: "IS p.42 (example CURR 5)"}
+  - {send: 'VOLT\?', reply: "5.000", source: "IS p.43 (example VOLT 5)"}
+  - {send: 'POW\?', reply: "10.00", source: "IS p.44 (example POW 10)"}
+  - {send: 'RES\?', reply: "5.000", source: "IS p.45 (example RES 5)"}
+  - {send: 'INP:SHOR\?', reply: "0", source: "IS p.32 (0|1)"}
+expect:
+  ELL:
+    1: {VIN: 12.004, IIN: 5.0, PIN: 60.02, INPUT: "ON", MODE: "CURR", OVP: false, OCP: false, OPP: false}

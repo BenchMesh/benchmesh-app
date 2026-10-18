@@ -1,0 +1,153 @@
+# UNI-T UDP3305S series programmable DC power supply (CH1/CH2 30 V/5 A, CH3 6 V/3 A; CH4 is a
+# fixed 5 V USB port without remote control). Written from the programming manual before
+# anyone tested it on hardware. Coverage notes: ai_context/migration/coverage/PSU.md §2.7.
+schema: benchmesh.device/v1
+id: unit_udp3000s
+vendor: UNI-T
+family: UDP3305S series programmable DC power supply (SCPI)
+version: 0.1.0
+sources:
+  - {doc: "UDP3000S Series Programming Manual V1.1 (UDP3000S_Series_Programming_Manual_V1.1.pdf)", pages: "3-19, 42-49 (n / 49 footer)"}
+  - {doc: "UDP3305S Series User Manual V1.1", pages: "§1.1 Product Series, §1.1.2 Specifications"}
+  - {note: "IDN format `Uni-Trend,UDP3305S,<SN>,<fw>` from philpagel TestController (manual shows no example); ~0.2 s pacing used by community scripts (pnuding/udp3000s-control)"}
+models:
+  - {name: UDP3305S, match: "^Uni-Trend,UDP3305S,", note: "1 mV / 1 mA programming resolution"}
+  - {name: UDP3305S-E, match: "^Uni-Trend,UDP3305S-E,", note: "10 mV / 1 mA programming resolution; reads back one voltage decimal fewer"}
+identify: idn
+link:
+  # USB-TMC (manual p.5: VISA "USB0::0x0483::0x5740::UDP51183557335E::INSTR")
+  usbtmc:
+    vid: "0483"
+    pid: "5740"
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 50, gap_after_write_ms: 100}
+  # RS232 with a crossed cable; the baud rate is chosen in the menu (4800..128000, p.5)
+  serial: {baud: 9600, format: 8N1, flow: none}
+  # LAN socket port 5025 (p.5)
+  tcp: {port: 5025}
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 1000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 50, gap_after_write_ms: 100}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "PM p.10"}
+  meas_all:
+    send: ":MEAS:ALL? CH{ch}"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p]}}]
+    description: "V,I,P measured, e.g. 05.10,0.089,00.45"
+    source: "PM p.18-19"
+  meas_v: {send: ":MEAS:VOLT? CH{ch}", parse: [trim, number], source: "PM p.19"}
+  meas_i: {send: ":MEAS:CURR? CH{ch}", parse: [trim, number], source: "PM p.19"}
+  meas_p: {send: ":MEAS:POWE? CH{ch}", parse: [trim, number], source: "PM p.19"}
+  outp_q: {send: ":OUTP:STAT? CH{ch}", parse: [trim], description: "ON|OFF", source: "PM p.16-17"}
+  cvcc_q: {send: ":OUTP:CVCC? CH{ch}", parse: [trim], description: "CV|CC", source: "PM p.17"}
+  isum:
+    send: ":STAT:QUES:INST:ISUM{ch}?"
+    parse: [trim, {bits: {cc: "0", cv: "1", ovp: "2", ocp: "3"}}]
+    description: >-
+      Channel questionable event register (latched, cleared by reading): bit0 CC, bit1 CV,
+      bit2 OVP, bit3 OCP (PM p.9). The condition register clears within ~150 ms, so the event
+      register is polled: a trip shows on the poll after it happened.
+    source: "PM p.9, p.43"
+  rwl_q: {send: ":SYST:RWL?", parse: [trim], description: "Remote key lock ON|OFF", source: "PM p.49"}
+  volt_q: {send: ":SOUR{ch}:VOLT?", parse: [trim, number], source: "PM p.14"}
+  curr_q: {send: ":SOUR{ch}:CURR?", parse: [trim, number], source: "PM p.15"}
+  ovp_lvl_q: {send: ":SOUR{ch}:VOLT:PROT?", parse: [trim, number], source: "PM p.14"}
+  ocp_lvl_q: {send: ":SOUR{ch}:CURR:PROT?", parse: [trim, number], source: "PM p.15-16"}
+  volt_set:
+    send: ":SOUR{ch}:VOLT {v}"
+    params: {v: {type: number, min: 0, max: 33, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    description: "CH1/CH2 up to 33 V, CH3 up to 6.2 V (user manual §1.1); the instrument limits CH3"
+    source: "PM p.13-14"
+  curr_set:
+    send: ":SOUR{ch}:CURR {a}"
+    params: {a: {type: number, min: 0, max: 5.2, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    description: "CH1/CH2 up to 5.2 A, CH3 up to 3.2 A"
+    source: "PM p.15"
+  ovp_lvl_set:
+    send: ":SOUR{ch}:VOLT:PROT {v}"
+    params: {v: {type: number, min: 0, max: 33, format: "%.3f", unit: V}}
+    reply: none
+    safety: configure
+    source: "PM p.14"
+  ocp_lvl_set:
+    send: ":SOUR{ch}:CURR:PROT {a}"
+    params: {a: {type: number, min: 0, max: 5.2, format: "%.3f", unit: A}}
+    reply: none
+    safety: configure
+    source: "PM p.15"
+  ovp_set:
+    send: ":SOUR{ch}:VOLT:PROT:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "PM p.14-15"
+  ocp_set:
+    send: ":SOUR{ch}:CURR:PROT:STAT {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    source: "PM p.16"
+  outp_set:
+    send: ":OUTP:STAT CH{ch},{on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+    description: Per channel (CH1-CH3)
+    source: "PM p.16"
+  rwl_set:
+    send: ":SYST:RWL {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+    description: "Remote key lock: only a remote command or a restart unlocks the panel"
+    source: "PM p.49"
+classes:
+  PSU:
+    channels: 3
+    ui_component: GenericPSU
+    features:
+      lock: true
+      memory_banks: 10
+      absolute_limits:
+        voltage: {unit: V, max: 33.0}
+        current: {unit: A, max: 5.2}
+        power: {unit: W, max: 348.0}
+      channel_limits:
+        "1": {voltage: 33.0, current: 5.2}
+        "2": {voltage: 33.0, current: 5.2}
+        "3": {voltage: 6.2, current: 3.2}
+      protection: {OVP: {type: boolean}, OCP: {type: boolean}}
+    poll:
+      - every_ms: 500
+        read: [meas_all, outp_q, cvcc_q, isum, rwl_q]
+    status:
+      VOUT: {expr: "num(meas_all.v)", as: si}
+      IOUT: {expr: "num(meas_all.i)", as: si}
+      POUT: {expr: "num(meas_all.p)", as: si}
+      OUTPUT: outp_q
+      REMOTE: rwl_q
+      CV: 'outp_q == "ON" && cvcc_q == "CV"'
+      CC: 'outp_q == "ON" && cvcc_q == "CC"'
+      SBY: 'outp_q == "OFF"'
+      OVP: isum.ovp
+      OCP: isum.ocp
+      FAIL: "isum.ovp || isum.ocp"
+    operations:
+      voltage: {get: volt_q, set: volt_set, as: si}
+      current: {get: curr_q, set: curr_set, as: si}
+      output: {get: outp_q, set: outp_set}
+      remote: {set: rwl_set}
+      voltage_limit: {get: ovp_lvl_q, set: ovp_lvl_set, as: si}
+      current_limit: {get: ocp_lvl_q, set: ocp_lvl_set, as: si}
+      ovp: {set: ovp_set}
+      ocp: {set: ocp_set}
+      output_voltage: {get: meas_v, as: si}
+      output_current: {get: meas_i, as: si}
+      output_power: {get: meas_p, as: si}

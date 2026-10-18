@@ -1,0 +1,117 @@
+# SCPI function/arbitrary generator baseline, `:SOURce<n>:` / `:OUTPut<n>` dialect: Rigol
+# DG800/DG900/DG1000Z/DG2000/DG4000, Keysight Trueform 33500B/33600A/EDU33210, Hantek HDG2000B
+# (Keysight 33220A by overriding the sends). Research: ai_context/migration/coverage/AWG.md §2.1,
+# §2.7, §2.10, §3.1. A definition `extends: scpi_awg` and adds identity, models, links (USB ids),
+# per-model features and its setter limits; dialect quirks override single keys.
+#
+# API values: SHAPE / shape SIN SQU RAMP PUL PRN DC (bench UI `kit/WavePreview.tsx`); other
+# waveforms the instrument reports (built-in arbitrary waves, harmonics, user waves) read as ARB.
+# PHASE in degrees. LOAD "50" … "10000" (ohms as text) or "HIGHZ" (9.9E+37 / INFINITY).
+# AMPL in Vpp: null while the front panel has the amplitude unit at Vrms/dBm (the amplitude
+# setter is refused then, rather than switching the unit behind the user's back).
+# Setters never answer; out-of-range values are clamped by the instrument (read back).
+schema: benchmesh.device/v1
+identify: idn
+# TCP (raw SCPI socket): LF-terminated lines
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 2000, drain_idle_ms: 50}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+link:
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 2000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
+commands:
+  idn: {send: "*IDN?", parse: [trim], source: "IEEE 488.2 *IDN?"}
+  outp_q:
+    send: ":OUTP{ch}?"
+    # Rigol and Hantek answer ON/OFF, Keysight 0/1
+    parse: [trim, upper, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]
+  outp_set:
+    send: ":OUTP{ch} {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  shape_q:
+    send: ":SOUR{ch}:FUNC?"
+    parse:
+      - trim
+      - unquote
+      - upper
+      - map: {SIN: SIN, SINUSOID: SIN, SQU: SQU, SQUARE: SQU, RAMP: RAMP, PULS: PUL, PULSE: PUL,
+              NOIS: PRN, NOISE: PRN, DC: DC, TRI: TRI, TRIANGLE: TRI, PRBS: PRBS, _: ARB}
+    description: "Short form of the waveform; built-in arbitrary waves answer their own name (read as ARB)"
+  shape_set:
+    send: ":SOUR{ch}:FUNC {shape}"
+    params: {shape: {type: enum, values: {SIN: SIN, SQU: SQU, RAMP: RAMP, PUL: PULS, PRN: NOIS, DC: DC}}}
+    reply: none
+    safety: configure
+  freq_q: {send: ":SOUR{ch}:FREQ?", parse: [trim, number]}
+  freq_set:
+    send: ":SOUR{ch}:FREQ {hz}"
+    # %.6f: 1 µHz resolution (%g would round to 6 significant digits)
+    params: {hz: {type: number, min: 0.000001, max: 20000000, format: "%.6f", unit: Hz}}
+    reply: none
+    safety: configure
+  unit_q:
+    send: ":SOUR{ch}:VOLT:UNIT?"
+    parse: [trim, upper]
+    cache_ms: 1000
+    description: "Amplitude unit chosen on the front panel: VPP, VRMS or DBM"
+  ampl_q: {send: ":SOUR{ch}:VOLT?", parse: [trim, number], description: "Amplitude in the current unit (VOLT:UNIT)"}
+  ampl_set:
+    send: ":SOUR{ch}:VOLT {vpp}"
+    params: {vpp: {type: number, min: 0.001, max: 20, format: "%.4f", unit: Vpp}}
+    requires: {expr: "unit_q == 'VPP'", message: "the amplitude unit is set to Vrms or dBm on the instrument; switch it to Vpp"}
+    reply: none
+    safety: configure
+  offs_q: {send: ":SOUR{ch}:VOLT:OFFS?", parse: [trim, number]}
+  offs_set:
+    send: ":SOUR{ch}:VOLT:OFFS {v}"
+    params: {v: {type: number, min: -10, max: 10, format: "%.4f", unit: V}}
+    reply: none
+    safety: configure
+  phase_q: {send: ":SOUR{ch}:PHAS?", parse: [trim, number], description: "Degrees"}
+  phase_set:
+    send: ":SOUR{ch}:PHAS {deg}"
+    params: {deg: {type: number, min: 0, max: 360, format: "%.2f", unit: deg}}
+    reply: none
+    safety: configure
+  symm_q: {send: ":SOUR{ch}:FUNC:RAMP:SYMM?", parse: [trim, number]}
+  symm_set:
+    send: ":SOUR{ch}:FUNC:RAMP:SYMM {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+  load_q:
+    send: ":OUTP{ch}:LOAD?"
+    # ohms in scientific notation; HighZ is 9.9E+37 (DG4000 answers the text INFINITY)
+    parse: [trim, upper, {replace: {from: "INFINITY", to: "9.9E+37"}}, number]
+classes:
+  AWG:
+    channels: 2
+    ui_component: GenericAWG
+    features: {"lock": false, "compulsory_lock": false, "channel_colors": {"1": "#FFD700", "2": "#00BFFF"}}
+    # one group: ~9 short exchanges per channel, cheap over USBTMC/LAN
+    poll:
+      - every_ms: 1500
+        read: [outp_q, shape_q, freq_q, unit_q, ampl_q, offs_q, phase_q, symm_q, load_q]
+    status:
+      OUTPUT: outp_q
+      SHAPE: shape_q
+      FREQ: {expr: freq_q, as: si}
+      AMPL: {expr: "unit_q == 'VPP' ? ampl_q : null", as: si}
+      OFFS: {expr: offs_q, as: si}
+      PHASE: phase_q
+      SYMM: symm_q
+      LOAD: "load_q >= 9.0e37 ? 'HIGHZ' : string(int(load_q))"
+    operations:
+      output: {get: outp_q, set: outp_set}
+      shape: {get: shape_q, set: shape_set}
+      frequency: {get: freq_q, set: freq_set, as: si}
+      amplitude: {get: ampl_q, set: ampl_set, as: si}
+      offset: {get: offs_q, set: offs_set, as: si}
+      phase: {get: phase_q, set: phase_set}
+      symmetry: {get: symm_q, set: symm_set}

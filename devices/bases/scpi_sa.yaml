@@ -1,0 +1,246 @@
+# Shared SCPI swept-spectrum-analyzer baseline (the HP/Agilent ESA tree that RIGOL DSA, Siglent
+# SSA, UNI-T UTS and GW Instek GSP copied), written in the RIGOL DSA800 spelling. Families
+# override a handful of commands (ai_context/migration/coverage/SAL.md §3 "Dialect differences")
+# and set models, links and features. Frequencies are Hz, times s, levels dBm, the trace is an
+# ASCII list (`numbers` drops an IEEE 488.2 block header and a trailing comma).
+schema: benchmesh.device/v1
+version: 0.1.0
+identify: idn
+link:
+  usbtmc:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 3000}
+# LAN socket / RS-232: every reply ends with a line feed
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 3000, drain_idle_ms: 100}
+  timing: {min_gap_ms: 0}
+session:
+  # trace as ASCII text (some families default to binary)
+  on_connect: [form_asc]
+commands:
+  idn: {send: "*IDN?", parse: [trim]}
+  form_asc: {send: ":FORMat:TRACe:DATA ASCii", reply: none, safety: configure}
+
+  # --- frequency -----------------------------------------------------------------------
+  cent_q: {send: ":SENSe:FREQuency:CENTer?", parse: [trim, number]}
+  span_q: {send: ":SENSe:FREQuency:SPAN?", parse: [trim, number]}
+  star_q: {send: ":SENSe:FREQuency:STARt?", parse: [trim, number]}
+  stop_q: {send: ":SENSe:FREQuency:STOP?", parse: [trim, number]}
+  cent_set:
+    send: ":SENSe:FREQuency:CENTer {f}"
+    params: {f: {type: number, min: 0, max: 7.5e9, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  span_set:
+    send: ":SENSe:FREQuency:SPAN {f}"
+    params: {f: {type: number, min: 0, max: 7.5e9, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  star_set:
+    send: ":SENSe:FREQuency:STARt {f}"
+    params: {f: {type: number, min: 0, max: 7.5e9, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  stop_set:
+    send: ":SENSe:FREQuency:STOP {f}"
+    params: {f: {type: number, min: 0, max: 7.5e9, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  full_set: {send: ":SENSe:FREQuency:SPAN:FULL", reply: none, safety: configure}
+
+  # --- bandwidths ----------------------------------------------------------------------
+  rbw_q: {send: ":SENSe:BANDwidth:RESolution?", parse: [trim, number]}
+  rbw_set:
+    send: ":SENSe:BANDwidth:RESolution {f}"
+    params: {f: {type: number, min: 1, max: 3e6, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  rbw_auto_q: {send: ":SENSe:BANDwidth:RESolution:AUTO?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]}
+  rbw_auto_set:
+    send: ":SENSe:BANDwidth:RESolution:AUTO {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  vbw_q: {send: ":SENSe:BANDwidth:VIDeo?", parse: [trim, number]}
+  vbw_set:
+    send: ":SENSe:BANDwidth:VIDeo {f}"
+    params: {f: {type: number, min: 1, max: 3e6, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  vbw_auto_q: {send: ":SENSe:BANDwidth:VIDeo:AUTO?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]}
+  vbw_auto_set:
+    send: ":SENSe:BANDwidth:VIDeo:AUTO {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+
+  # --- amplitude -----------------------------------------------------------------------
+  rlev_q: {send: ":DISPlay:WINdow:TRACe:Y:SCALe:RLEVel?", parse: [trim, number]}
+  rlev_set:
+    send: ":DISPlay:WINdow:TRACe:Y:SCALe:RLEVel {v}"
+    params: {v: {type: number, min: -100, max: 20, format: "%.2f", unit: dBm}}
+    reply: none
+    safety: configure
+  pdiv_q: {send: ":DISPlay:WINdow:TRACe:Y:SCALe:PDIVision?", parse: [trim, number]}
+  pdiv_set:
+    send: ":DISPlay:WINdow:TRACe:Y:SCALe:PDIVision {v}"
+    params: {v: {type: number, min: 0.1, max: 20, format: "%g", unit: dB}}
+    reply: none
+    safety: configure
+  att_q: {send: ":SENSe:POWer:RF:ATTenuation?", parse: [trim, number]}
+  att_set:
+    send: ":SENSe:POWer:RF:ATTenuation {v}"
+    params: {v: {type: number, min: 0, max: 30, format: "%.0f", unit: dB}}
+    reply: none
+    safety: configure
+  att_auto_q: {send: ":SENSe:POWer:RF:ATTenuation:AUTO?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]}
+  att_auto_set:
+    send: ":SENSe:POWer:RF:ATTenuation:AUTO {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  det_q:
+    send: ":SENSe:DETector:FUNCtion?"
+    parse: [trim, upper, {map: {POS: POS, POSITIVE: POS, NEG: NEG, NEGATIVE: NEG, NORM: NORM, NORMAL: NORM, SAMP: SAMP, SAMPLE: SAMP, RMS: RMS, AVER: AVER, AVERAGE: AVER, VAV: AVER, VAVERAGE: AVER, QPE: QPE, QPEAK: QPE, QUAS: QPE, QUASI: QPE}}]
+  det_set:
+    send: ":SENSe:DETector:FUNCtion {d}"
+    params: {d: {type: enum, values: {POS: POSitive, NEG: NEGative, NORM: NORMal, SAMP: SAMPle, RMS: RMS, AVER: VAVerage, QPE: QPEak}}}
+    reply: none
+    safety: configure
+
+  # --- sweep ---------------------------------------------------------------------------
+  swt_q: {send: ":SENSe:SWEep:TIME?", parse: [trim, number]}
+  swt_set:
+    send: ":SENSe:SWEep:TIME {s}"
+    params: {s: {type: number, min: 0.00002, max: 7500, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+  poin_q: {send: ":SENSe:SWEep:POINts?", parse: [trim, number]}
+  poin_set:
+    send: ":SENSe:SWEep:POINts {n}"
+    params: {n: {type: integer, min: 101, max: 3001, format: "%d"}}
+    reply: none
+    safety: configure
+  cont_q: {send: ":INITiate:CONTinuous?", parse: [trim, {map: {"1": "CONT", "0": "SINGLE", "ON": "CONT", "OFF": "SINGLE"}}]}
+  sweep_set:
+    send: "{m}"
+    params: {m: {type: enum, values: {CONT: ":INITiate:CONTinuous ON", SINGLE: ":INITiate:CONTinuous OFF;:INITiate:IMMediate", RESTART: ":INITiate:IMMediate"}}}
+    reply: none
+    safety: configure
+    description: "Continuous sweep, one single sweep, or restart the sweep"
+  oper_q: {send: ":STATus:OPERation:CONDition?", parse: [trim, {bits: {sweeping: "3"}}], description: "bit 3 = SWEeping"}
+
+  # --- trace ---------------------------------------------------------------------------
+  trace_q: {send: ":TRACe:DATA? TRACE1", reply: block, parse: [numbers], max_bytes: 200000, timeout_ms: 5000}
+  tmode_q:
+    send: ":TRACe1:MODE?"
+    parse: [trim, upper, {map: {WRIT: WRITE, WRITE: WRITE, MAXH: MAXHOLD, MAXHOLD: MAXHOLD, MINH: MINHOLD, MINHOLD: MINHOLD, VIEW: VIEW, BLAN: BLANK, BLANK: BLANK, AVER: AVERAGE, AVERAGE: AVERAGE, VID: AVERAGE, VIDEOAVG: AVERAGE, POW: AVERAGE, POWERAVG: AVERAGE}}]
+  tmode_set:
+    send: ":TRACe1:MODE {m}"
+    params: {m: {type: enum, values: {WRITE: WRITe, MAXHOLD: MAXHold, MINHOLD: MINHold, VIEW: VIEW, AVERAGE: VIDeoavg}}}
+    reply: none
+    safety: configure
+
+  # --- marker 1 ------------------------------------------------------------------------
+  mark_q: {send: ":CALCulate:MARKer1:STATe?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}]}
+  mark_set:
+    send: ":CALCulate:MARKer1:STATe {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: configure
+  mkx_q: {send: ":CALCulate:MARKer1:X?", parse: [trim, number]}
+  mkx_set:
+    send: ":CALCulate:MARKer1:X {f}"
+    params: {f: {type: number, min: 0, max: 7.5e9, format: "%.0f", unit: Hz}}
+    reply: none
+    safety: configure
+  mky_q: {send: ":CALCulate:MARKer1:Y?", parse: [trim, number]}
+  peak_set:
+    send: "{p}"
+    params: {p: {type: enum, values: {PEAK: ":CALCulate:MARKer1:MAXimum:MAX", NEXT: ":CALCulate:MARKer1:MAXimum:NEXT", LEFT: ":CALCulate:MARKer1:MAXimum:LEFT", RIGHT: ":CALCulate:MARKer1:MAXimum:RIGHt", MKR_CF: ":CALCulate:MARKer1:SET:CENTer"}}}
+    reply: none
+    safety: configure
+
+  # --- tracking generator (-TG models; others do not answer) -----------------------------
+  tg_q: {send: ":OUTPut:STATe?", parse: [trim, {map: {"1": "ON", "0": "OFF", "ON": "ON", "OFF": "OFF"}}], timeout_ms: 500}
+  tg_set:
+    send: ":OUTPut:STATe {on}"
+    params: {on: {type: enum, values: {"ON": "ON", "OFF": "OFF"}}}
+    reply: none
+    safety: energize
+  tglev_q: {send: ":SOURce:POWer:LEVel:IMMediate:AMPLitude?", parse: [trim, number], timeout_ms: 500}
+  tglev_set:
+    send: ":SOURce:POWer:LEVel:IMMediate:AMPLitude {v}"
+    params: {v: {type: number, min: -40, max: 0, format: "%.1f", unit: dBm}}
+    reply: none
+    safety: configure
+classes:
+  SAL:
+    channels: 1
+    ui_component: GenericSAL
+    features:
+      divisions: {horizontal: 10, vertical: 10}
+    poll:
+      # settings first: the first status after connecting already has the frequency axis
+      - every_ms: 2000
+        read: [cent_q, span_q, star_q, stop_q, rbw_q, rbw_auto_q, vbw_q, vbw_auto_q, rlev_q, pdiv_q, att_q, att_auto_q, det_q, swt_q, poin_q, cont_q, oper_q, tmode_q]
+      - every_ms: 500
+        read: [mark_q, mkx_q, mky_q]
+      - every_ms: 500
+        read: [trace_q]
+      - every_ms: 5000
+        read: [tg_q, tglev_q]
+    status:
+      CENTER: {expr: cent_q, as: si}
+      SPAN: {expr: span_q, as: si}
+      START: {expr: star_q, as: si}
+      STOP: {expr: stop_q, as: si}
+      RBW: {expr: rbw_q, as: si}
+      RBW_AUTO: rbw_auto_q
+      VBW: {expr: vbw_q, as: si}
+      VBW_AUTO: vbw_auto_q
+      REF_LEVEL: rlev_q
+      SCALE: pdiv_q
+      ATTEN: att_q
+      ATTEN_AUTO: att_auto_q
+      DETECTOR: det_q
+      SWEEP_TIME: {expr: swt_q, as: si}
+      SWEEP_MODE: cont_q
+      SWEEPING: oper_q.sweeping
+      POINTS: 'poin_q == null ? (trace_q == null ? null : size(trace_q)) : int(poin_q)'
+      TRACE: trace_q
+      TRACE_MODE: tmode_q
+      TRACE_UNIT: '"dBm"'
+      MARKER: mark_q
+      MARKER_FREQ: {expr: mkx_q, as: si}
+      MARKER_LEVEL: mky_q
+      TG_OUTPUT: tg_q
+      TG_LEVEL: tglev_q
+    operations:
+      center: {get: cent_q, set: cent_set, as: si}
+      span: {get: span_q, set: span_set, as: si}
+      start: {get: star_q, set: star_set, as: si}
+      stop: {get: stop_q, set: stop_set, as: si}
+      full_span: {set: full_set}
+      rbw: {get: rbw_q, set: rbw_set, as: si}
+      rbw_auto: {get: rbw_auto_q, set: rbw_auto_set}
+      vbw: {get: vbw_q, set: vbw_set, as: si}
+      vbw_auto: {get: vbw_auto_q, set: vbw_auto_set}
+      ref_level: {get: rlev_q, set: rlev_set}
+      scale: {get: pdiv_q, set: pdiv_set}
+      attenuation: {get: att_q, set: att_set}
+      atten_auto: {get: att_auto_q, set: att_auto_set}
+      detector: {get: det_q, set: det_set}
+      sweep_time: {get: swt_q, set: swt_set, as: si}
+      points: {get: poin_q, set: poin_set}
+      sweep: {set: sweep_set}
+      trace: {get: trace_q}
+      trace_mode: {get: tmode_q, set: tmode_set}
+      marker: {get: mark_q, set: mark_set}
+      marker_freq: {get: mkx_q, set: mkx_set, as: si}
+      marker_level: {get: mky_q}
+      peak_search: {set: peak_set}
+      tg_output: {get: tg_q, set: tg_set}
+      tg_level: {get: tglev_q, set: tglev_set}

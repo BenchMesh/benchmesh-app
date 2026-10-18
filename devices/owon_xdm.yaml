@@ -14,6 +14,7 @@ models:
   - {"name": "XDM1241", "match": "^OWON,XDM1241,", "support": "tested"}
   - {"name": "XDM1041", "match": "^OWON,XDM1041,"}
   - {"name": "XDM1141", "match": "^OWON,XDM1141,"}
+  - {"name": "XDM2041", "match": "^OWON,XDM2041,", "note": "Same programming manual (XDM1041&XDM2041 edition); RS-232 only (DB9, UM p.14, p.41). The 2041-only PM edition prints CONF without the AUTO keyword: verify mode changes"}
 identify: idn
 link:
   serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}

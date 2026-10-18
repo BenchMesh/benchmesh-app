@@ -1,0 +1,14 @@
+# Replies as the XDM Series programming manual prints them (formats; values illustrative).
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: owon_xdm3000
+model: XDM3051
+replies:
+  - {send: '\*IDN\?', reply: "OWON,XDM3051,1546011,V2.0.2.0,2", source: "PM p.6 *IDN? example"}
+  - {send: 'FUNC\?', reply: '"VOLT AC"', source: "PM p.9 FUNCtion? return values"}
+  - {send: 'MEAS1\?', reply: "1.2345E+00", source: "PM p.41 MEAS1? (scientific notation)"}
+  - {send: 'VOLT:AC:RANG\?', reply: "2.000000E+00", source: "PM p.10 RANGe? (scientific notation)"}
+  - {send: 'VOLT:AC:RANG:AUTO\?', reply: "1", source: "PM p.11 0 (OFF) or 1 (ON)"}
+  - {send: 'RATE\?', reply: "M", source: "PM p.40 RATE? → F|M|L"}
+expect:
+  DMM:
+    1: {MEAS: 1.2345, MODE: VOLT_AC, RANGE: AUTO, OVERLOAD: false}

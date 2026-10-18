@@ -1,0 +1,14 @@
+# Replies in the forms the DMM4040/4050 Programmer Manual prints (IDN p.32); the FUNC? quoting
+# follows the 34401A-compatible SCPI set. Spec: ai_context/migration/coverage/README.md.
+definition: tektronix_dmm4000
+model: DMM4040
+replies:
+  - {send: '\*IDN\?', reply: "TEKTRONIX, DMM4040, 9963001, 05/19/09-13:59\r\n", source: "p.32 *IDN? (report §3.17 example)"}
+  - {send: 'READ\?', reply: "+1.23456700E+00\r\n", source: "SCPI reading format"}
+  - {send: 'FUNC\?', reply: "\"VOLT\"\r\n", source: "p.45 FUNCtion?"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+1.00000000E+01\r\n", source: "p.45 RANGe?"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1\r\n", source: "p.45 RANGe:AUTO?"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.00000000E+01\r\n", source: "p.46 NPLCycles?"}
+expect:
+  DMM:
+    1: {MEAS: 1.234567, MODE: VOLT, RANGE: AUTO, OVERLOAD: false}

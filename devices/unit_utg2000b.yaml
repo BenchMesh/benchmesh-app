@@ -1,0 +1,39 @@
+# UNI-T UTG2000B series function/arbitrary waveform generators (UTG2062B / UTG2082B / UTG2122B).
+# Written from the programming manual before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.5. PM = UTG2000B Programming Manual V1.0 (PDF pages).
+schema: benchmesh.device/v1
+id: unit_utg2000b
+extends: unit_utg
+vendor: UNI-T
+family: UTG2000B series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "UTG2000B Programming Manual V1.0 (UTG2000B_Programming_Manual_V1.0.pdf, SW V2.01.0010)", pages: "3 (<NL> terminator), 5 (*IDN?), 9 (OUTPut), 9-10 (AMPLitude:UNIT), 10 (LOAD), 16 (BASe:WAVe, FREQuency), 17 (PHASe, AMPLitude, OFFSet), 19 (RAMP:SYMMetry)"}
+  - {note: "LAN: the manual only shows VXI-11 (TCPIP0::<ip>::inst0::INSTR, PM p45-47), no raw socket port, so no tcp link. Limits: AWG.md §2.5 (60/80/120 MHz sine). The *IDN? model field is the family (UTG2000)"}
+models:
+  - {"name": "UTG2062B", "match": "^UNI-T Technologies, ?UTG2062B,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6}}}}
+  - {"name": "UTG2082B", "match": "^UNI-T Technologies, ?UTG2082B,", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
+  - {"name": "UTG2122B", "match": "^UNI-T Technologies, ?UTG2122B,", "features": {"AWG": {"max_freq_hz": {"SIN": 120e6}}}}
+  - {"name": "UTG2000B", "match": "^UNI-T Technologies, ?UTG2[0-9]{3}B?,", "note": "IDN reports the family (UTG2000); limits of the largest model (UTG2122B)"}
+commands:
+  shape_q: {source: "PM p16; reply SINe (also HARMonic, EXP → ARB)"}
+  shape_set: {source: "PM p16"}
+  freq_q: {source: "PM p16; reply 2e+3"}
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 120000000, format: "%.6f", unit: Hz}}
+    source: "PM p16"
+  unit_q: {source: "PM p9-10; reply VPP"}
+  ampl_q: {source: "PM p17; reply 2e+0"}
+  ampl_set: {source: "PM p17; 1 mVpp to load·20/(50+load)"}
+  offs_q: {source: "PM p17; reply 2e+0"}
+  offs_set: {source: "PM p17"}
+  phase_q: {source: "PM p17; reply 2e+01"}
+  phase_set: {source: "PM p17; -360…360°"}
+  symm_q: {source: "PM p19; reply 20"}
+  symm_set: {source: "PM p19"}
+  load_q: {source: "PM p10; 1…1000000 Ω, 1000000 = High-Z; reply 5e+1"}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 120e6}}
+    status:
+      LOAD: "load_q >= 1000000.0 ? 'HIGHZ' : string(int(load_q))"

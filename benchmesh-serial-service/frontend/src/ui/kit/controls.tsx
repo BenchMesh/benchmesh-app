@@ -97,3 +97,34 @@ export function Selector({ options, value, onChange, label, variant = 'seg', dis
     </div>
   )
 }
+
+/**
+ * Momentary action (peak search, single sweep, correction, trigger): after the request it
+ * pulses until `done(reported, reportedAtPress)` holds for the instrument's reported value,
+ * and shows "not confirmed" after the confirmation timeout. `onPress` rejects to show why.
+ */
+export function ActionButton<T>({ label, title, reported, done, onPress, disabled, primary }: {
+  label: React.ReactNode; title?: string; reported: T; done: (now: T, before: T) => boolean
+  onPress: () => Promise<unknown> | unknown; disabled?: boolean; primary?: boolean
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirmation<T>(reported, (now, before) => done(now, before))
+  return (
+    <button type="button" className={`bench-btn kit-action${primary ? ' bench-btn--primary' : ''}`} disabled={disabled || busy}
+      data-confirm={confirm.state} aria-busy={busy || confirm.state === 'waiting'}
+      title={error ?? (confirm.state === 'unconfirmed' ? NOT_CONFIRMED : title)}
+      onClick={async () => {
+        const before = reported
+        setBusy(true)
+        setError(null)
+        try {
+          await onPress()
+          confirm.begin(before)
+        } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setBusy(false) }
+      }}>
+      {label}
+      {error && <span className="kit-error" role="alert">!</span>}
+    </button>
+  )
+}

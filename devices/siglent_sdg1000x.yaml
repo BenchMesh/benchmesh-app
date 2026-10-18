@@ -1,0 +1,31 @@
+# Siglent SDG1000X and SDG1000X Plus function/arbitrary waveform generators.
+# Written from the programming guide and datasheets before anyone tested it on hardware.
+# Research: ai_context/migration/coverage/AWG.md §2.2. PG pages are printed pages (PDF = +12).
+schema: benchmesh.device/v1
+id: siglent_sdg1000x
+extends: siglent_sdg
+vendor: Siglent
+family: SDG1000X / SDG1000X Plus series function/arbitrary waveform generator
+version: 0.1.0
+sources:
+  - {doc: "SDG Series Programming Guide PG02-E05C (SDG_Programming_Guide_PG02-E05C.pdf)", pages: "12 (*IDN?), 13 (command sync), 15-16 (OUTPut), 17-19 (BSWV), 175 (VISA USB0::0xF4EC::0x1101)"}
+  - {doc: "SDG1000X Plus Programming Guide EN01B", pages: "§3.1.1 *IDN? (SDG1062X Plus reply)"}
+  - {doc: "SDG1000X datasheet (ds_SDG1000X.pdf)", pages: "2-4 (models, sine/square/pulse/ramp limits)"}
+  - {doc: "SDG1000X Plus datasheet (ds_SDG1000X_Plus.pdf)", pages: "2-4 (models, sine/square/pulse/ramp limits)"}
+  - {note: "USB product id differs by model (0x1101 printed, 0x1102 reported): vendor id only, identify decides"}
+models:
+  - {"name": "SDG1062X Plus", "match": "^Siglent Technologies,\\s*SDG1062X Plus\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 20e6, "PUL": 20e6, "RAMP": 2e6}}}}
+  - {"name": "SDG1032X Plus", "match": "^Siglent Technologies,\\s*SDG1032X Plus\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6, "SQU": 20e6, "PUL": 20e6, "RAMP": 2e6}}}}
+  - {"name": "SDG1022X Plus", "match": "^Siglent Technologies,\\s*SDG1022X Plus\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 25e6, "SQU": 20e6, "PUL": 20e6, "RAMP": 2e6}}}}
+  - {"name": "SDG1062X", "match": "^Siglent Technologies,\\s*SDG1062X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 60e6, "PUL": 12.5e6, "RAMP": 0.5e6}}}}
+  - {"name": "SDG1032X", "match": "^Siglent Technologies,\\s*SDG1032X\\s*,", "features": {"AWG": {"max_freq_hz": {"SIN": 30e6, "SQU": 30e6, "PUL": 12.5e6, "RAMP": 0.5e6}}}}
+link:
+  usbtmc: {vid: "f4ec"}
+  # raw SCPI socket (telnet 5024, VXI-11 also offered)
+  tcp: {port: 5025}
+commands:
+  freq_set:
+    params: {hz: {type: number, min: 0.000001, max: 60000000, format: "%.6f", unit: Hz}}
+classes:
+  AWG:
+    features: {"max_freq_hz": {"SIN": 60e6, "SQU": 60e6, "PUL": 20e6, "RAMP": 2e6}}

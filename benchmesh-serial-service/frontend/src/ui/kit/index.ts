@@ -15,7 +15,7 @@
  */
 import './kit.css'
 
-export { Readout, Annunciators, MicroSwitch, Selector } from './controls'
+export { Readout, Annunciators, MicroSwitch, Selector, ActionButton } from './controls'
 export type { Annunciator, Choice } from './controls'
 export { DigitEditor } from './DigitEditor'
 export type { DigitEditorHandle } from './DigitEditor'
@@ -33,6 +33,8 @@ export { WavePreview, WaveGlyph, WAVE_SHAPES } from './WavePreview'
 export * from './format'
 export { ScopeScreen } from './ScopeScreen'
 export type { ScopeTrace } from './ScopeScreen'
+export { SpectrumScreen } from './SpectrumScreen'
+export { freqAt, freqFraction, levelDivs, spectrumPoints, peakIndex, maxHold, freqText, dbText } from './spectrum'
 export { Stepper } from './Stepper'
 export { step125, screenDivs, tracePoints, siText } from './scope'
 export { ContextMenu, useContextMenu, clampToViewport } from './ContextMenu'

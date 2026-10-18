@@ -1,0 +1,29 @@
+# Replies as the MSO5000 Programming Guide shows them (PDF pages): checks the definition
+# through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: rigol_mso5000
+transport: usbtmc
+model: MSO5354
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,MSO5354,MSO5B200112345,00.01.02.05", source: "*IDN? format; serial from p269"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "p63"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "1", source: "p65"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "1E-2", source: "p64"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "AC", source: "p63"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "10", source: "p65"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "20M", source: "p62"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "1", source: "p64"}
+  - {send: ':TIMebase:MAIN:SCALe\?', reply: "2.000000E-4", source: "p190"}
+  - {send: ':TIMebase:MAIN:OFFSet\?', reply: "2.000000E-4", source: "p189"}
+  - {send: ':TRIGger:STATus\?', reply: "TD", source: "p194"}
+  - {send: ':TRIGger:SWEep\?', reply: "SING", source: "p195"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "CHAN1", source: "p197"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "NEG", source: "p197"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "1.600000E-1", source: "p198"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVER", source: "p21"}
+  - {send: ':ACQuire:SRATe\?', reply: "2.500000E+9", source: "p22"}
+  - {send: ':WAVeform:PREamble\?', reply: "0,0,1000,1,1.000000E-8,-5.000000E-6,0.000000E-12,4.000000E-03,0,128", source: "p266"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000006\x80\x8e\xa0\x80\x70\x60\n", source: "p262-263 (#9 header + BYTE data)"}
+  - {send: ':MEASure:ITEM\? (VPP|VAVG|VRMS|FREQuency),CHANnel[1-4]', reply: "8.888889E-3", source: "p137 (format)"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 1, OFFSET: 0.01, COUPLING: "AC", BWLIMIT: "20M", INVERT: "ON", PROBE: 10, TIMEBASE: 2.0e-4, TRIG_SWEEP: "SING", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.16, ACQ_TYPE: "AVER", SRATE: 2.5e9, TRIG_STATUS: "TD", WAVE: [128, 142, 160, 128, 112, 96], WAVE_Y0: 128, WAVE_DY: 0.004, WAVE_X0: -5.0e-6, WAVE_DX: 1.0e-8, VRMS: 0.008888889}

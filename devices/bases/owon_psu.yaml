@@ -1,0 +1,58 @@
+# OWON single-output PSU SCPI dialect (partial definition, see DEVICE_DSL.md "extends"): the
+# PSU half of owon_spm.yaml (bench-tested on an SPM3103), shared by the SP/SPE/SPS manual
+# ("Single Channel DC Power Supply Programming Manual", printed pages) and Kiprim rebrands.
+# Differences from scpi_psu: protection levels are VOLT:LIM / CURR:LIM (always armed, no
+# enable switch) and MEAS:ALL:INFO? reports readings, trips and the regulation mode at once.
+extends: scpi_psu
+framing:
+  tx: {terminator: "\n"}
+  rx: {mode: terminator, terminator: "\n", strip_trailing: "\r", timeout_ms: 500, drain_idle_ms: 30}
+  timing: {min_gap_ms: 0, gap_after_write_ms: 50}
+commands:
+  idn: {source: "PM p.4 (*IDN?)"}
+  meas_v: {source: "PM p.5"}
+  meas_i: {source: "PM p.5-6"}
+  meas_p: {source: "PM p.6"}
+  info:
+    send: "MEAS:ALL:INFO?"
+    parse: [trim, {fields: {sep: ",", names: [v, i, p, ovp, ocp, otp, mode]}}]
+    description: >-
+      V,I,P measured; OVP/OCP/OTP fault ON|OFF; mode 0 standby, 1 CV, 2 CC, 3 failure.
+      The manual shows the fields separated by spaces; the SPM3103 (same firmware family)
+      and community drivers for SPE3102/SPE6103 see commas.
+    source: "PM p.6-7"
+  outp_q: {description: "1|0 per the manual; the SPM3103 answers ON|OFF", source: "PM p.7"}
+  volt_q: {source: "PM p.9"}
+  curr_q: {source: "PM p.8"}
+  ovp_lvl_q: {send: "VOLT:LIM?", source: "PM p.9-10"}
+  ocp_lvl_q: {send: "CURR:LIM?", source: "PM p.8-9"}
+  volt_set: {source: "PM p.9"}
+  curr_set: {source: "PM p.8"}
+  outp_set: {source: "PM p.7"}
+  ovp_lvl_set: {send: "VOLT:LIM {v}", description: "OVP level; protection is always armed", source: "PM p.9-10"}
+  ocp_lvl_set: {send: "CURR:LIM {a}", description: "OCP level; protection is always armed", source: "PM p.8-9"}
+  remote_set: {source: "PM p.10"}
+  ovp_set: null
+  ocp_set: null
+classes:
+  PSU:
+    ui_component: GenericOWONPSU
+    poll:
+      - every_ms: 500
+        read: [info]
+    status:
+      VOUT: {expr: "num(info.v)", as: si}
+      IOUT: {expr: "num(info.i)", as: si}
+      POUT: {expr: "num(info.p)", as: si}
+      OUTPUT: 'info.mode == "1" || info.mode == "2" ? "ON" : "OFF"'
+      REMOTE: state.remote
+      CV: 'info.mode == "1"'
+      CC: 'info.mode == "2"'
+      SBY: 'info.mode == "0"'
+      FAIL: 'info.mode == "3" || (info.ovp == "ON" || info.ovp == "1") || (info.ocp == "ON" || info.ocp == "1") || (info.otp == "ON" || info.otp == "1")'
+      OVP: '(info.ovp == "ON" || info.ovp == "1")'
+      OCP: '(info.ocp == "ON" || info.ocp == "1")'
+      OTP: '(info.otp == "ON" || info.otp == "1")'
+    operations:
+      ovp: null
+      ocp: null

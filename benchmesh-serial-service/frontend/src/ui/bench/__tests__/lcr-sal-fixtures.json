@@ -1,0 +1,1316 @@
+{
+ "tonghui-th2817b:LCR": {
+  "features": {
+   "functions": {
+    "CPD": {
+     "primary": "Cp",
+     "secondary": "D",
+     "circuit": "PAR",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cp–D"
+    },
+    "CPQ": {
+     "primary": "Cp",
+     "secondary": "Q",
+     "circuit": "PAR",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cp–Q"
+    },
+    "CPRP": {
+     "primary": "Cp",
+     "secondary": "Rp",
+     "circuit": "PAR",
+     "units": [
+      "F",
+      "Ω"
+     ],
+     "ui_name": "Cp–Rp"
+    },
+    "CSD": {
+     "primary": "Cs",
+     "secondary": "D",
+     "circuit": "SER",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cs–D"
+    },
+    "CSQ": {
+     "primary": "Cs",
+     "secondary": "Q",
+     "circuit": "SER",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cs–Q"
+    },
+    "CSRS": {
+     "primary": "Cs",
+     "secondary": "Rs",
+     "circuit": "SER",
+     "units": [
+      "F",
+      "Ω"
+     ],
+     "ui_name": "Cs–Rs"
+    },
+    "LPQ": {
+     "primary": "Lp",
+     "secondary": "Q",
+     "circuit": "PAR",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Lp–Q"
+    },
+    "LSD": {
+     "primary": "Ls",
+     "secondary": "D",
+     "circuit": "SER",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Ls–D"
+    },
+    "LSQ": {
+     "primary": "Ls",
+     "secondary": "Q",
+     "circuit": "SER",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Ls–Q"
+    },
+    "LSRS": {
+     "primary": "Ls",
+     "secondary": "Rs",
+     "circuit": "SER",
+     "units": [
+      "H",
+      "Ω"
+     ],
+     "ui_name": "Ls–Rs"
+    },
+    "RX": {
+     "primary": "R",
+     "secondary": "X",
+     "units": [
+      "Ω",
+      "Ω"
+     ],
+     "ui_name": "R–X"
+    },
+    "ZTD": {
+     "primary": "Z",
+     "secondary": "θ",
+     "units": [
+      "Ω",
+      "°"
+     ],
+     "ui_name": "Z–θ°"
+    },
+    "ZTR": {
+     "primary": "Z",
+     "secondary": "θ",
+     "units": [
+      "Ω",
+      "rad"
+     ],
+     "ui_name": "Z–θr"
+    }
+   },
+   "frequency": {
+    "min": 50,
+    "max": 100000,
+    "presets": [
+     100,
+     120,
+     1000,
+     10000,
+     100000
+    ]
+   },
+   "level": {
+    "min": 0.1,
+    "max": 1.0
+   },
+   "speeds": [
+    {
+     "value": "FAST",
+     "display": "fast (53/s)"
+    },
+    {
+     "value": "MED",
+     "display": "medium (12/s)"
+    },
+    {
+     "value": "SLOW",
+     "display": "slow (3/s)"
+    }
+   ],
+   "ranges": [
+    {
+     "value": "AUTO",
+     "display": "AUTO"
+    },
+    {
+     "value": "10",
+     "display": "10 Ω"
+    },
+    {
+     "value": "100",
+     "display": "100 Ω"
+    },
+    {
+     "value": "1000",
+     "display": "1 kΩ"
+    },
+    {
+     "value": "10000",
+     "display": "10 kΩ"
+    },
+    {
+     "value": "100000",
+     "display": "100 kΩ"
+    }
+   ],
+   "trigger_sources": [
+    "INT",
+    "EXT",
+    "BUS",
+    "HOLD"
+   ],
+   "counts": 5,
+   "channels": 1
+  },
+  "methods": [
+   {
+    "description": "Query frequency",
+    "http_method": "GET",
+    "name": "frequency"
+   },
+   {
+    "description": "Query level",
+    "http_method": "GET",
+    "name": "level"
+   },
+   {
+    "description": "Query speed",
+    "http_method": "GET",
+    "name": "speed"
+   },
+   {
+    "description": "Query measurement",
+    "http_method": "GET",
+    "name": "measurement"
+   },
+   {
+    "description": "Query secondary",
+    "http_method": "GET",
+    "name": "secondary"
+   },
+   {
+    "description": "Query trigger source",
+    "http_method": "GET",
+    "name": "trigger_source"
+   },
+   {
+    "description": "Set function",
+    "http_method": "POST",
+    "name": "function",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CPD",
+      "CPQ",
+      "CPRP",
+      "CSD",
+      "CSQ",
+      "CSRS",
+      "LPQ",
+      "LSD",
+      "LSQ",
+      "LSRS",
+      "RX",
+      "ZTD",
+      "ZTR"
+     ]
+    }
+   },
+   {
+    "description": "Set frequency",
+    "http_method": "POST",
+    "name": "frequency",
+    "value": {
+     "type": "number",
+     "min": 50,
+     "max": 100000,
+     "format": "%g",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set level",
+    "http_method": "POST",
+    "name": "level",
+    "value": {
+     "type": "number",
+     "min": 0.1,
+     "max": 1.0,
+     "format": "%.3f",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set speed",
+    "http_method": "POST",
+    "name": "speed",
+    "value": {
+     "type": "enum",
+     "values": [
+      "FAST",
+      "MED",
+      "SLOW"
+     ]
+    }
+   },
+   {
+    "description": "Set range",
+    "http_method": "POST",
+    "name": "range",
+    "value": {
+     "type": "enum",
+     "values": [
+      "10",
+      "100",
+      "1000",
+      "10000",
+      "100000",
+      "AUTO"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger source",
+    "http_method": "POST",
+    "name": "trigger_source",
+    "value": {
+     "type": "enum",
+     "values": [
+      "BUS",
+      "EXT",
+      "HOLD",
+      "INT"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger",
+    "http_method": "POST",
+    "name": "trigger",
+    "value": {
+     "type": "enum",
+     "values": [
+      "ONCE"
+     ]
+    }
+   },
+   {
+    "description": "Set correction",
+    "http_method": "POST",
+    "name": "correction",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OPEN",
+      "SHORT"
+     ]
+    }
+   },
+   {
+    "description": "Set open correction",
+    "http_method": "POST",
+    "name": "open_correction",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set short correction",
+    "http_method": "POST",
+    "name": "short_correction",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   }
+  ]
+ },
+ "easttester-et4410:LCR": {
+  "features": {
+   "functions": {
+    "CPD": {
+     "primary": "Cp",
+     "secondary": "D",
+     "circuit": "PAR",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cp–D"
+    },
+    "CPQ": {
+     "primary": "Cp",
+     "secondary": "Q",
+     "circuit": "PAR",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cp–Q"
+    },
+    "CSD": {
+     "primary": "Cs",
+     "secondary": "D",
+     "circuit": "SER",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cs–D"
+    },
+    "CSQ": {
+     "primary": "Cs",
+     "secondary": "Q",
+     "circuit": "SER",
+     "units": [
+      "F",
+      ""
+     ],
+     "ui_name": "Cs–Q"
+    },
+    "LSQ": {
+     "primary": "Ls",
+     "secondary": "Q",
+     "circuit": "SER",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Ls–Q"
+    },
+    "LPQ": {
+     "primary": "Lp",
+     "secondary": "Q",
+     "circuit": "PAR",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Lp–Q"
+    },
+    "LSD": {
+     "primary": "Ls",
+     "secondary": "D",
+     "circuit": "SER",
+     "units": [
+      "H",
+      ""
+     ],
+     "ui_name": "Ls–D"
+    },
+    "RX": {
+     "primary": "R",
+     "secondary": "X",
+     "units": [
+      "Ω",
+      "Ω"
+     ],
+     "ui_name": "R–X"
+    },
+    "ZTD": {
+     "primary": "Z",
+     "secondary": "θ",
+     "units": [
+      "Ω",
+      "°"
+     ],
+     "ui_name": "Z–θ°"
+    },
+    "CSESR": {
+     "primary": "Cs",
+     "secondary": "ESR",
+     "circuit": "SER",
+     "units": [
+      "F",
+      "Ω"
+     ],
+     "ui_name": "Cs–ESR"
+    },
+    "DCR": {
+     "primary": "DCR",
+     "units": [
+      "Ω"
+     ],
+     "ui_name": "DCR"
+    }
+   },
+   "frequency": {
+    "list": [
+     100,
+     120,
+     200,
+     400,
+     800,
+     1000,
+     2000,
+     4000,
+     8000,
+     10000,
+     15000,
+     20000,
+     40000,
+     50000,
+     80000,
+     100000
+    ]
+   },
+   "level": {
+    "list": [
+     0.1,
+     0.3,
+     0.6,
+     1.0,
+     1.5,
+     2.0
+    ]
+   },
+   "speeds": [
+    {
+     "value": "FAST",
+     "display": "fast"
+    },
+    {
+     "value": "MED",
+     "display": "medium"
+    },
+    {
+     "value": "SLOW",
+     "display": "slow"
+    }
+   ],
+   "bias": {
+    "min": 0,
+    "max": 1.5,
+    "unit": "V"
+   },
+   "counts": 5,
+   "channels": 1
+  },
+  "methods": [
+   {
+    "description": "Query function",
+    "http_method": "GET",
+    "name": "function"
+   },
+   {
+    "description": "Query frequency",
+    "http_method": "GET",
+    "name": "frequency"
+   },
+   {
+    "description": "Query level",
+    "http_method": "GET",
+    "name": "level"
+   },
+   {
+    "description": "Query speed",
+    "http_method": "GET",
+    "name": "speed"
+   },
+   {
+    "description": "Query bias",
+    "http_method": "GET",
+    "name": "bias"
+   },
+   {
+    "description": "Set function",
+    "http_method": "POST",
+    "name": "function",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CPD",
+      "CPQ",
+      "CSD",
+      "CSESR",
+      "CSQ",
+      "DCR",
+      "LPQ",
+      "LSD",
+      "LSQ",
+      "RX",
+      "ZTD"
+     ]
+    }
+   },
+   {
+    "description": "Set circuit",
+    "http_method": "POST",
+    "name": "circuit",
+    "value": {
+     "type": "enum",
+     "values": [
+      "PAR",
+      "SER"
+     ]
+    }
+   },
+   {
+    "description": "Set frequency",
+    "http_method": "POST",
+    "name": "frequency",
+    "value": {
+     "type": "number",
+     "min": 10,
+     "max": 100000,
+     "format": "%g",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set level",
+    "http_method": "POST",
+    "name": "level",
+    "value": {
+     "type": "number",
+     "min": 0.01,
+     "max": 2,
+     "format": "%.0f",
+     "unit": "V"
+    }
+   },
+   {
+    "description": "Set bias",
+    "http_method": "POST",
+    "name": "bias",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1.5,
+     "format": "%.0f",
+     "unit": "V"
+    },
+    "energizes": true
+   },
+   {
+    "description": "Set speed",
+    "http_method": "POST",
+    "name": "speed",
+    "value": {
+     "type": "enum",
+     "values": [
+      "FAST",
+      "MED",
+      "SLOW"
+     ]
+    }
+   },
+   {
+    "description": "Set range",
+    "http_method": "POST",
+    "name": "range",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AUTO",
+      "HOLD"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger source",
+    "http_method": "POST",
+    "name": "trigger_source",
+    "value": {
+     "type": "enum",
+     "values": [
+      "EXT",
+      "INT",
+      "MAN"
+     ]
+    }
+   },
+   {
+    "description": "Set trigger",
+    "http_method": "POST",
+    "name": "trigger",
+    "value": {
+     "type": "enum",
+     "values": [
+      "ONCE"
+     ]
+    }
+   },
+   {
+    "description": "Set correction",
+    "http_method": "POST",
+    "name": "correction",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AUTO"
+     ]
+    }
+   },
+   {
+    "description": "Set remote",
+    "http_method": "POST",
+    "name": "remote",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   }
+  ]
+ },
+ "tinysa-ultra:SAL": {
+  "features": {
+   "freq_range": {
+    "min": 100000,
+    "max": 5300000000
+   },
+   "rbw": [
+    200,
+    1000,
+    3000,
+    10000,
+    30000,
+    100000,
+    300000,
+    600000,
+    850000
+   ],
+   "attenuation": {
+    "min": 0,
+    "max": 31,
+    "step": 1
+   },
+   "ref_level": {
+    "min": -150,
+    "max": 30
+   },
+   "points": 450,
+   "divisions": {
+    "horizontal": 10,
+    "vertical": 10
+   },
+   "tg": {
+    "min": -115,
+    "max": 13
+   },
+   "channels": 1
+  },
+  "methods": [
+   {
+    "description": "Query center",
+    "http_method": "GET",
+    "name": "center"
+   },
+   {
+    "description": "Query span",
+    "http_method": "GET",
+    "name": "span"
+   },
+   {
+    "description": "Query start",
+    "http_method": "GET",
+    "name": "start"
+   },
+   {
+    "description": "Query stop",
+    "http_method": "GET",
+    "name": "stop"
+   },
+   {
+    "description": "Query rbw",
+    "http_method": "GET",
+    "name": "rbw"
+   },
+   {
+    "description": "Query ref level",
+    "http_method": "GET",
+    "name": "ref_level"
+   },
+   {
+    "description": "Query attenuation",
+    "http_method": "GET",
+    "name": "attenuation"
+   },
+   {
+    "description": "Query sweep time",
+    "http_method": "GET",
+    "name": "sweep_time"
+   },
+   {
+    "description": "Query trace",
+    "http_method": "GET",
+    "name": "trace"
+   },
+   {
+    "description": "Query marker freq",
+    "http_method": "GET",
+    "name": "marker_freq"
+   },
+   {
+    "description": "Query marker level",
+    "http_method": "GET",
+    "name": "marker_level"
+   },
+   {
+    "description": "Set center",
+    "http_method": "POST",
+    "name": "center",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 5300000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set span",
+    "http_method": "POST",
+    "name": "span",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 5300000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set start",
+    "http_method": "POST",
+    "name": "start",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 5300000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set stop",
+    "http_method": "POST",
+    "name": "stop",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 5300000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set rbw",
+    "http_method": "POST",
+    "name": "rbw",
+    "value": {
+     "type": "number",
+     "min": 200,
+     "max": 850000,
+     "format": "%g",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set rbw auto",
+    "http_method": "POST",
+    "name": "rbw_auto",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set ref level",
+    "http_method": "POST",
+    "name": "ref_level",
+    "value": {
+     "type": "number",
+     "min": -150,
+     "max": 30,
+     "format": "%g",
+     "unit": "dBm"
+    }
+   },
+   {
+    "description": "Set scale",
+    "http_method": "POST",
+    "name": "scale",
+    "value": {
+     "type": "number",
+     "min": 1,
+     "max": 20,
+     "format": "%g",
+     "unit": "dB"
+    }
+   },
+   {
+    "description": "Set attenuation",
+    "http_method": "POST",
+    "name": "attenuation",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 31,
+     "format": "%d",
+     "unit": "dB"
+    }
+   },
+   {
+    "description": "Set atten auto",
+    "http_method": "POST",
+    "name": "atten_auto",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set sweep",
+    "http_method": "POST",
+    "name": "sweep",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CONT",
+      "HOLD",
+      "SINGLE"
+     ]
+    }
+   },
+   {
+    "description": "Set sweep time",
+    "http_method": "POST",
+    "name": "sweep_time",
+    "value": {
+     "type": "number",
+     "min": 0.003,
+     "max": 60,
+     "format": "%g",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set marker",
+    "http_method": "POST",
+    "name": "marker",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set marker freq",
+    "http_method": "POST",
+    "name": "marker_freq",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 5300000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set peak search",
+    "http_method": "POST",
+    "name": "peak_search",
+    "value": {
+     "type": "enum",
+     "values": [
+      "PEAK"
+     ]
+    }
+   },
+   {
+    "description": "Set tg output",
+    "http_method": "POST",
+    "name": "tg_output",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    },
+    "energizes": true
+   },
+   {
+    "description": "Set tg level",
+    "http_method": "POST",
+    "name": "tg_level",
+    "value": {
+     "type": "number",
+     "min": -115,
+     "max": 13,
+     "format": "%g",
+     "unit": "dBm"
+    }
+   }
+  ]
+ },
+ "rigol-dsa815:SAL": {
+  "features": {
+   "freq_range": {
+    "min": 9000,
+    "max": 1500000000
+   },
+   "ref_level": {
+    "min": -100,
+    "max": 20
+   },
+   "attenuation": {
+    "min": 0,
+    "max": 30,
+    "step": 1
+   },
+   "points": {
+    "min": 101,
+    "max": 3001
+   },
+   "divisions": {
+    "horizontal": 10,
+    "vertical": 10
+   },
+   "preamp": true,
+   "channels": 1
+  },
+  "methods": [
+   {
+    "description": "Query center",
+    "http_method": "GET",
+    "name": "center"
+   },
+   {
+    "description": "Query span",
+    "http_method": "GET",
+    "name": "span"
+   },
+   {
+    "description": "Query start",
+    "http_method": "GET",
+    "name": "start"
+   },
+   {
+    "description": "Query stop",
+    "http_method": "GET",
+    "name": "stop"
+   },
+   {
+    "description": "Query rbw",
+    "http_method": "GET",
+    "name": "rbw"
+   },
+   {
+    "description": "Query vbw",
+    "http_method": "GET",
+    "name": "vbw"
+   },
+   {
+    "description": "Query ref level",
+    "http_method": "GET",
+    "name": "ref_level"
+   },
+   {
+    "description": "Query trace",
+    "http_method": "GET",
+    "name": "trace"
+   },
+   {
+    "description": "Query marker freq",
+    "http_method": "GET",
+    "name": "marker_freq"
+   },
+   {
+    "description": "Query marker level",
+    "http_method": "GET",
+    "name": "marker_level"
+   },
+   {
+    "description": "Query detector",
+    "http_method": "GET",
+    "name": "detector"
+   },
+   {
+    "description": "Query trace mode",
+    "http_method": "GET",
+    "name": "trace_mode"
+   },
+   {
+    "description": "Set center",
+    "http_method": "POST",
+    "name": "center",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1500000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set span",
+    "http_method": "POST",
+    "name": "span",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1500000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set start",
+    "http_method": "POST",
+    "name": "start",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1500000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set stop",
+    "http_method": "POST",
+    "name": "stop",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1500000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set full span",
+    "http_method": "POST",
+    "name": "full_span"
+   },
+   {
+    "description": "Set rbw",
+    "http_method": "POST",
+    "name": "rbw",
+    "value": {
+     "type": "number",
+     "min": 10,
+     "max": 1000000,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set rbw auto",
+    "http_method": "POST",
+    "name": "rbw_auto",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set vbw",
+    "http_method": "POST",
+    "name": "vbw",
+    "value": {
+     "type": "number",
+     "min": 1,
+     "max": 3000000,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set vbw auto",
+    "http_method": "POST",
+    "name": "vbw_auto",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set ref level",
+    "http_method": "POST",
+    "name": "ref_level",
+    "value": {
+     "type": "number",
+     "min": -100,
+     "max": 20,
+     "format": "%g",
+     "unit": "dBm"
+    }
+   },
+   {
+    "description": "Set scale",
+    "http_method": "POST",
+    "name": "scale",
+    "value": {
+     "type": "number",
+     "min": 0.1,
+     "max": 20,
+     "format": "%g",
+     "unit": "dB"
+    }
+   },
+   {
+    "description": "Set attenuation",
+    "http_method": "POST",
+    "name": "attenuation",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 30,
+     "format": "%d",
+     "unit": "dB"
+    }
+   },
+   {
+    "description": "Set preamp",
+    "http_method": "POST",
+    "name": "preamp",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set detector",
+    "http_method": "POST",
+    "name": "detector",
+    "value": {
+     "type": "enum",
+     "values": [
+      "NEG",
+      "NORM",
+      "POS",
+      "QPE",
+      "RMS",
+      "SAMP"
+     ]
+    }
+   },
+   {
+    "description": "Set sweep",
+    "http_method": "POST",
+    "name": "sweep",
+    "value": {
+     "type": "enum",
+     "values": [
+      "CONT",
+      "RESTART",
+      "SINGLE"
+     ]
+    }
+   },
+   {
+    "description": "Set trace mode",
+    "http_method": "POST",
+    "name": "trace_mode",
+    "value": {
+     "type": "enum",
+     "values": [
+      "MAXHOLD",
+      "MINHOLD",
+      "VIEW",
+      "WRITE"
+     ]
+    }
+   },
+   {
+    "description": "Set marker",
+    "http_method": "POST",
+    "name": "marker",
+    "value": {
+     "type": "enum",
+     "values": [
+      "OFF",
+      "ON"
+     ]
+    }
+   },
+   {
+    "description": "Set marker freq",
+    "http_method": "POST",
+    "name": "marker_freq",
+    "value": {
+     "type": "number",
+     "min": 0,
+     "max": 1500000000.0,
+     "format": "%.0f",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set peak search",
+    "http_method": "POST",
+    "name": "peak_search",
+    "value": {
+     "type": "enum",
+     "values": [
+      "MKR_CF",
+      "NEXT",
+      "PEAK"
+     ]
+    }
+   }
+  ]
+ }
+}

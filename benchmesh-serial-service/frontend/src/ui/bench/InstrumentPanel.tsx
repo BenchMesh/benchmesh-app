@@ -5,13 +5,15 @@ import { Selector } from '../kit'
 import { Instrument } from '../types'
 import { channelStatus, isOnline, useChannelApi, useInstrumentMeta } from './api'
 import { PanelSize, SIZES } from './layout'
-import { psuProfile, dmmProfile, ellProfile, awgProfile, oscProfile, Setters } from './profiles'
+import { psuProfile, dmmProfile, ellProfile, awgProfile, oscProfile, lcrProfile, salProfile, Setters } from './profiles'
 import { PsuPanel } from './panels/PsuPanel'
 import { DmmPanel } from './panels/DmmPanel'
 import { EllPanel } from './panels/EllPanel'
 import { AwgChannel } from './panels/AwgPanel'
 import { GenericPanel } from './panels/GenericPanel'
 import { OscPanel } from './panels/OscPanel'
+import { LcrPanel } from './panels/LcrPanel'
+import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
 
 /** Model name for the header: the IDN's model field (`OWON,SPM3103,...` → SPM3103). */
@@ -39,12 +41,16 @@ function ChannelPanel({ instrument, klass, ch, registry, features, setters, onli
     if (k === 'DMM') return dmmProfile(features, setters)
     if (k === 'ELL') return ellProfile(features, setters)
     if (k === 'AWG') return awgProfile(features, setters)
+    if (k === 'LCR') return lcrProfile(features, setters)
+    if (k === 'SAL') return salProfile(features, setters)
     return null
   }, [k, features, setters])
   if (k === 'PSU') return <PsuPanel status={status} profile={profile as ReturnType<typeof psuProfile>} api={api} online={online} />
   if (k === 'DMM') return <DmmPanel status={status} profile={profile as ReturnType<typeof dmmProfile>} api={api} online={online} />
   if (k === 'ELL') return <EllPanel status={status} profile={profile as ReturnType<typeof ellProfile>} api={api} online={online} />
   if (k === 'AWG') return <AwgChannel ch={ch} status={status} profile={profile as ReturnType<typeof awgProfile>} api={api} online={online} />
+  if (k === 'LCR') return <LcrPanel status={status} profile={profile as ReturnType<typeof lcrProfile>} api={api} online={online} />
+  if (k === 'SAL') return <SalPanel status={status} profile={profile as ReturnType<typeof salProfile>} api={api} online={online} />
   return <GenericPanel status={status} />
 }
 
