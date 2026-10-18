@@ -888,3 +888,6 @@
 .detect__cert { font-size: 10px; color: var(--kit-ink-3); }
 .detect__cert--warn { color: var(--kit-warn); }
 .detect__muted { font-size: 10px; color: var(--kit-ink-3); font-style: italic; }
+
+/* Install driver (Windows USBTMC instruments without a usable driver) */
+.install-driver { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 4px; }

@@ -164,15 +164,17 @@ pub fn ports() -> Vec<Port> {
 }
 
 /// USBTMC instruments attached, each with the service (driver) Windows bound to its USBTMC
-/// interface (`""` when none is installed). The path is the `usb:` path of `usbtmc_nusb`.
-pub fn usbtmc_ports() -> Vec<(Port, String)> {
+/// interface (`""` when none is installed) and the instance id of the device node that driver
+/// belongs to (the device, or its USBTMC interface on a composite device). The path is the
+/// `usb:` path of `usbtmc_nusb`.
+pub fn usbtmc_ports() -> Vec<(Port, String, String)> {
     let usb = wide("USB");
     // SAFETY: no class GUID (all classes), a valid enumerator string, no window.
     let set = unsafe { SetupDiGetClassDevsW(ptr::null(), usb.as_ptr(), 0, DIGCF_ALLCLASSES | DIGCF_PRESENT) };
     if set == INVALID_HANDLE_VALUE {
         return Vec::new();
     }
-    let mut out: Vec<(Port, String)> = Vec::new();
+    let mut out: Vec<(Port, String, String)> = Vec::new();
     let mut seen: Vec<u32> = Vec::new();
     for index in 0.. {
         // SAFETY: SP_DEVINFO_DATA is plain data; all-zero is valid before setting cbSize.
@@ -195,7 +197,8 @@ pub fn usbtmc_ports() -> Vec<(Port, String)> {
         let (Some(vid), Some(pid)) = (id(&usb.vendor_id), id(&usb.product_id)) else { continue };
         let path = crate::usbtmc_nusb::path_of(vid, pid, usb.serial.as_deref(), usb.location.as_deref().unwrap_or_default());
         let service = registry_property(info.DevInst, CM_DRP_SERVICE).unwrap_or_default();
-        out.push((Port { kind: PortKind::Usbtmc, path, usb }, service));
+        let Some(instance_id) = device_id(info.DevInst) else { continue };
+        out.push((Port { kind: PortKind::Usbtmc, path, usb }, service, instance_id));
     }
     // SAFETY: `set` came from SetupDiGetClassDevsW and is destroyed exactly once.
     unsafe { SetupDiDestroyDeviceInfoList(set) };

@@ -2,7 +2,8 @@
 //!
 //! - [`SerialTransport`]: RS-232 / USB-serial via `serialport` (Linux, macOS, Windows).
 //! - USBTMC on Windows / macOS: userspace protocol ([`usbtmc_proto`]) over `nusb`
-//!   ([`usbtmc_nusb`], WinUSB on Windows), or an installed VISA ([`visa`]).
+//!   ([`usbtmc_nusb`], WinUSB on Windows), or an installed VISA ([`visa`]). [`winusb`] gives a
+//!   Windows instrument the WinUSB driver (one UAC prompt).
 //! - [`UsbTmcTransport`]: Linux kernel `usbtmc` driver (`/dev/usbtmcN`); one `read()`
 //!   returns one whole device message — never split a message into several reads
 //!   (split reads strand data on the device and desync the USBTMC tags; see the DGE
@@ -25,6 +26,7 @@ pub mod lock;
 pub mod usbtmc_nusb;
 pub mod usbtmc_proto;
 pub mod visa;
+pub mod winusb;
 #[cfg(target_os = "linux")]
 mod usbtmc;
 #[cfg(target_os = "linux")]

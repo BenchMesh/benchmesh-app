@@ -14,6 +14,8 @@
 //! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
 //!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
 //! - Updates: one check per start, offered by the UI (`update.rs`).
+//! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
+//!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -82,6 +84,10 @@ fn prefer_x11_for_keep_on_top() {
 }
 
 fn main() {
+    // started elevated by the embedded server to install a Windows USB driver (no window)
+    if let Some(code) = bm_server::winusb_helper_main() {
+        std::process::exit(code);
+    }
     #[cfg(target_os = "linux")]
     prefer_x11_for_keep_on_top();
     let app = tauri::Builder::default()

@@ -23,6 +23,9 @@ pub mod opspec;
 pub mod recordings;
 pub mod run;
 
+/// For the desktop app's `main`: the elevated Windows driver-install run (see `bm_transport::winusb`).
+pub use bm_transport::winusb::helper_main as winusb_helper_main;
+
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
@@ -79,6 +82,7 @@ pub fn router(state: S) -> Router {
         .route("/devices/detect", post(detect_devices))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
+        .route("/usbtmc-devices/driver", post(install_usbtmc_driver))
         .route("/ws/registry", get(ws_registry))
         .route("/metrics", get(metrics_summary))
         .route("/metrics/{id}", get(metrics_device))
@@ -524,8 +528,39 @@ async fn usbtmc_devices(Query(q): Query<std::collections::HashMap<String, String
         .into_iter()
         .filter(|d| !ex.contains(&d.device))
         .map(|d| json!({"device": d.device, "name": d.name, "vendor_id": d.usb.vendor_id, "product_id": d.usb.product_id,
-                        "manufacturer": d.usb.manufacturer, "product": d.usb.product, "serial": d.usb.serial, "note": d.note}))
+                        "manufacturer": d.usb.manufacturer, "product": d.usb.product, "serial": d.usb.serial, "note": d.note,
+                        "driver_installable": d.driver_installable}))
         .collect::<Vec<_>>()))
+}
+
+/// Why `device` cannot be given the WinUSB driver (`None`: it can).
+fn driver_refusal(devs: &[bm_transport::discover::UsbTmcInfo], device: &str) -> Option<Response> {
+    match devs.iter().find(|d| d.device == device) {
+        None => Some(detail(StatusCode::NOT_FOUND, format!("{device}: no such USBTMC instrument attached"))),
+        Some(d) if !d.driver_installable => Some(detail(StatusCode::CONFLICT, format!("{device} does not need a driver from BenchMesh"))),
+        Some(_) => None,
+    }
+}
+
+/// Give a Windows USBTMC instrument the WinUSB driver (`{device}` from `/usbtmc-devices` with
+/// `driver_installable`). Windows asks the user for administrator approval; the request waits.
+async fn install_usbtmc_driver(Json(body): Json<Value>) -> Response {
+    let Some(device) = body.get("device").and_then(|d| d.as_str()).map(str::to_string) else {
+        return detail(StatusCode::UNPROCESSABLE_ENTITY, "body needs {\"device\": \"usb:…\"}");
+    };
+    let devs = blocking(bm_transport::discover::usbtmc_devices).await;
+    if let Some(refused) = driver_refusal(&devs, &device) {
+        return refused;
+    }
+    let target = device.clone();
+    match blocking(move || bm_transport::winusb::install(&target)).await {
+        Ok(()) => Json(json!({"device": device, "installed": true})).into_response(),
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => detail(StatusCode::FORBIDDEN, e.to_string()),
+        Err(e) => {
+            eprintln!("WinUSB driver installation for {device} failed: {e}");
+            detail(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
+    }
 }
 
 // ---- websocket ----------------------------------------------------------------------
@@ -589,5 +624,23 @@ async fn api_docs(State(s): State<S>) -> Response {
         Redirect::temporary("/ui/docs").into_response()
     } else {
         Redirect::temporary("/openapi.json").into_response()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bm_transport::discover::{UsbInfo, UsbTmcInfo};
+
+    fn tmc(device: &str, installable: bool) -> UsbTmcInfo {
+        UsbTmcInfo { device: device.into(), name: device.into(), usb: UsbInfo::default(), note: installable.then(|| "no driver".into()), driver_installable: installable }
+    }
+
+    #[test]
+    fn a_driver_is_only_installed_on_an_attached_instrument_that_needs_one() {
+        let devs = [tmc("usb:1ab1:044d:DHO8A272907001", true), tmc("usb:5345:1235:OWON1", false)];
+        assert!(driver_refusal(&devs, "usb:1ab1:044d:DHO8A272907001").is_none());
+        assert_eq!(driver_refusal(&devs, "usb:5345:1235:OWON1").unwrap().status(), StatusCode::CONFLICT);
+        assert_eq!(driver_refusal(&devs, "usb:0000:0000:NONE").unwrap().status(), StatusCode::NOT_FOUND);
     }
 }

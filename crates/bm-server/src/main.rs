@@ -19,6 +19,10 @@ fn arg(args: &[String], flag: &str) -> Option<String> {
 }
 
 fn main() {
+    // started elevated by the server itself to install a Windows USB driver
+    if let Some(code) = bm_transport::winusb::helper_main() {
+        std::process::exit(code);
+    }
     let args: Vec<String> = std::env::args().collect();
     let home = std::env::var("HOME").unwrap_or_default();
     let config = arg(&args, "--config")

@@ -9,6 +9,7 @@ import {
   apiError, buildAddEntry, buildLockEntry, certaintyLabel, identitySummary, instrumentName,
   type DetectedPort, type DetectResponse,
 } from './detect';
+import { InstallDriverButton } from './InstallDriverButton';
 
 interface DetectViewProps {
   apiBase: string;
@@ -25,6 +26,8 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
   const [ports, setPorts] = useState<DetectedPort[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Record<string, RowState>>({});
+  // USBTMC instruments BenchMesh can give a driver (Windows; from /usbtmc-devices)
+  const [installable, setInstallable] = useState<Set<string>>(new Set());
 
   const setRow = (port: string, s: RowState) => setRows((prev) => ({ ...prev, [port]: s }));
   const patchPort = (port: string, patch: Partial<DetectedPort>) =>
@@ -38,12 +41,25 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
       const resp = await fetch(`${apiBase}/devices/detect`, { method: 'POST' });
       if (!resp.ok) throw new Error(await apiError(resp));
       const data: DetectResponse = await resp.json();
-      setPorts(Array.isArray(data?.ports) ? data.ports : []);
+      const found = Array.isArray(data?.ports) ? data.ports : [];
+      setPorts(found);
+      setInstallable(found.some((p) => p.kind === 'usbtmc' && p.error) ? await driverInstallable() : new Set());
     } catch (e: any) {
       console.error('Detect failed:', e);
       setError(e?.message || String(e));
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function driverInstallable(): Promise<Set<string>> {
+    try {
+      const resp = await fetch(`${apiBase}/usbtmc-devices`);
+      if (!resp.ok) return new Set();
+      const list: Array<{ device: string; driver_installable?: boolean }> = await resp.json();
+      return new Set(list.filter((d) => d.driver_installable).map((d) => d.device));
+    } catch {
+      return new Set();
     }
   }
 
@@ -140,6 +156,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
                 </div>
                 {cert && <div className={`detect__cert${cert.warn ? ' detect__cert--warn' : ''}`}>{cert.text}</div>}
                 {p.error && <div className="detect__muted">{p.error}</div>}
+                {installable.has(p.port) && <InstallDriverButton apiBase={apiBase} device={p.port} onInstalled={detect} />}
                 {st?.error && <div className="instrument-config__inline-error">{st.error}</div>}
               </li>
             );

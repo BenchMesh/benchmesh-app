@@ -95,7 +95,7 @@ fn windows_usbtmc() -> Vec<(Port, Option<String>)> {
     let seen: Vec<Port> = crate::usbtmc_nusb::ports().into_iter().map(|(p, _)| p).collect();
     windows::usbtmc_ports()
         .into_iter()
-        .map(|(port, service)| {
+        .map(|(port, service, _)| {
             let same_usb = |u: &UsbInfo| {
                 u.vendor_id == port.usb.vendor_id && u.product_id == port.usb.product_id && same_serial(u.serial.as_deref(), port.usb.serial.as_deref())
             };
@@ -120,7 +120,14 @@ fn windows_usbtmc() -> Vec<(Port, Option<String>)> {
 /// `usb:` path and Windows service (driver; `""`: none) of each attached USBTMC instrument.
 #[cfg(windows)]
 pub(crate) fn windows_usbtmc_services() -> Vec<(String, String)> {
-    windows::usbtmc_ports().into_iter().map(|(p, service)| (p.path, service)).collect()
+    windows::usbtmc_ports().into_iter().map(|(p, service, _)| (p.path, service)).collect()
+}
+
+/// Instance id of the device node of the USBTMC instrument at `usb:` path `path` (the node a
+/// driver is installed on).
+#[cfg(windows)]
+pub(crate) fn windows_usbtmc_instance(path: &str) -> Option<String> {
+    windows::usbtmc_ports().into_iter().find(|(p, _, _)| p.path.eq_ignore_ascii_case(path)).map(|(_, _, id)| id)
 }
 
 /// Windows reports serial numbers in instance ids without their original case.
@@ -158,6 +165,8 @@ pub struct UsbTmcInfo {
     pub usb: UsbInfo,
     /// Why the instrument cannot be opened (e.g. Windows has no usable driver for it).
     pub note: Option<String>,
+    /// BenchMesh can give it the WinUSB driver ([`crate::winusb::install`]; Windows only).
+    pub driver_installable: bool,
 }
 
 #[cfg(target_os = "linux")]
@@ -200,7 +209,13 @@ pub fn usbtmc_devices() -> Vec<UsbTmcInfo> {
     noted.sort_by(|a, b| a.0.path.cmp(&b.0.path));
     noted
         .into_iter()
-        .map(|(p, note)| UsbTmcInfo { name: p.path.rsplit('/').next().unwrap_or_default().to_string(), device: p.path, usb: p.usb, note })
+        .map(|(p, note)| UsbTmcInfo {
+            name: p.path.rsplit('/').next().unwrap_or_default().to_string(),
+            driver_installable: cfg!(windows) && note.is_some() && p.path.starts_with("usb:"),
+            device: p.path,
+            usb: p.usb,
+            note,
+        })
         .collect()
 }
 

@@ -59,7 +59,10 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 **Instrument identity:** a config entry may carry `match` (USB vid/pid + serial number or chip
 revision, port position as a tie-breaker, and the serial number from the identify reply) instead
 of a fixed `port`/`device`; the instrument is then found on whatever port it is plugged into, on
-every reconnect, on Linux/Windows/macOS without udev rules or admin rights. `POST /devices/detect`
+every reconnect, on Linux/Windows/macOS without udev rules or admin rights.
+On Windows a USBTMC instrument without a usable driver gets **Install driver** (drawer / Detect):
+the server re-runs its executable elevated (`--install-winusb`, `bm_transport::winusb`) to bind
+Microsoft's in-box WinUSB driver — the one admin prompt Windows requires. `POST /devices/detect`
 identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
 them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
 lists what the OS reports. `system/udev_rules.txt` is a development aid, not part of the product.

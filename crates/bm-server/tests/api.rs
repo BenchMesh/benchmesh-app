@@ -288,6 +288,16 @@ async fn detect_lists_nothing_without_real_ports() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn usbtmc_driver_install_validates_the_request() {
+    let f = fixture("winusb");
+    let (code, _, _) = call(&f, "POST", "/usbtmc-devices/driver", Some(json!({})), None).await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+    let (code, v, _) = call(&f, "POST", "/usbtmc-devices/driver", Some(json!({"device": "usb:0000:0000:NOT-ATTACHED"})), None).await;
+    assert_eq!(code, StatusCode::NOT_FOUND);
+    assert!(v["detail"].as_str().unwrap().contains("no such USBTMC instrument"));
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn ui_is_served_with_spa_routes() {
     let f = fixture("ui");
     for p in ["/ui/", "/ui/metrics", "/ui/docs"] {

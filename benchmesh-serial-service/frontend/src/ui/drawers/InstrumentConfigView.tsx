@@ -14,6 +14,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Accordion, AccordionItem } from './Accordion';
 import { DetectView } from './DetectView';
 import { identitySummary, type DeviceMatch } from './detect';
+import { InstallDriverButton } from './InstallDriverButton';
 
 interface Device {
   id: string;
@@ -60,6 +61,8 @@ interface UsbTmcDeviceInfo {
   serial?: string;
   // Why it cannot be opened (Windows: no usable driver installed)
   note?: string | null;
+  // Windows: BenchMesh can give it the WinUSB driver (InstallDriverButton)
+  driver_installable?: boolean;
 }
 
 interface InstrumentConfigViewProps {
@@ -759,11 +762,18 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                 style={{ marginTop: '4px' }}
               />
             )}
-            {availableUsbTmcDevices.find((d) => d.device === device.device)?.note && (
-              <div className="instrument-config__inline-error" data-testid="usbtmc-note">
-                {availableUsbTmcDevices.find((d) => d.device === device.device)?.note}
-              </div>
-            )}
+            {(() => {
+              const listed = availableUsbTmcDevices.find((d) => d.device === device.device);
+              if (!listed?.note) return null;
+              return (
+                <>
+                  <div className="instrument-config__inline-error" data-testid="usbtmc-note">{listed.note}</div>
+                  {listed.driver_installable && (
+                    <InstallDriverButton apiBase={apiBase} device={listed.device} onInstalled={loadUsbTmcDevices} />
+                  )}
+                </>
+              );
+            })()}
             <span className="instrument-config__hint">
               {availableUsbTmcDevices.length === 0 && !loadingUsbTmc ? 'No USB TMC instrument found — plug it in and refresh' : 'USB TMC device'}
             </span>

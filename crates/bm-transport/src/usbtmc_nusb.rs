@@ -87,8 +87,9 @@ pub fn ports() -> Vec<(Port, DeviceInfo)> {
 pub fn driver_problem(service: &str) -> String {
     let what = if service.is_empty() { "Windows has no driver for this instrument".to_string() } else { format!("the instrument uses the Windows driver \"{service}\", not WinUSB") };
     format!(
-        "{what}. Either install a VISA (NI-VISA, Keysight IO Libraries or Rigol UltraSigma) — BenchMesh then uses it — \
-         or give the instrument the generic WinUSB driver once (Zadig: select the instrument, WinUSB, Replace Driver)"
+        "{what}. Press \"Install driver\" in the Instruments drawer to give it Microsoft's generic WinUSB driver \
+         (once, Windows asks for administrator approval), or install a VISA (NI-VISA, Keysight IO Libraries or \
+         Rigol UltraSigma) — BenchMesh then uses it"
     )
 }
 

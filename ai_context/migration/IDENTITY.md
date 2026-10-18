@@ -114,7 +114,7 @@ clippy-checked for both targets, built and run natively in CI, not yet run with 
 | OS | How BenchMesh talks to them | Port path | One-time setup |
 |---|---|---|---|
 | Linux | kernel `usbtmc` driver | `/dev/usbtmcN` | access to `/dev/usbtmc*` (generic rule, installer) |
-| Windows | own USBTMC protocol over `nusb` | `usb:1ab1:044d:DHO8A272907001` | the instrument needs the **WinUSB** driver (Zadig: select it → WinUSB → Replace Driver), unless … |
+| Windows | own USBTMC protocol over `nusb` | `usb:1ab1:044d:DHO8A272907001` | the instrument needs the **WinUSB** driver: **Install driver** in the Instruments drawer / Detect (one UAC prompt), unless … |
 | Windows with a VISA (NI-VISA, Keysight IO Libraries, Rigol UltraSigma) | that VISA, loaded at run time | `USB0::0x1AB1::0x044D::DHO8A272907001::INSTR` | none — the VISA's driver stays |
 | macOS | own USBTMC protocol over `nusb` | `usb:…` | none |
 
@@ -123,6 +123,20 @@ resource with the same vid/pid/serial). Identity matching is the same for all pa
 USBTMC instruments are listed from the device tree (compatible id `USB\Class_FE&SubClass_03`), so
 an instrument **without any driver** is listed too (`nusb` cannot see those): `/usbtmc-devices`
 gives it a `note` with the instructions above, opening it fails with them, and Detect shows them.
+
+**Install driver** (Windows, `POST /usbtmc-devices/driver {device}`, `bm_transport::winusb`):
+offered for every instrument `/usbtmc-devices` marks `driver_installable` (a note and a `usb:`
+path: no WinUSB and no VISA reaches it). The server starts its own executable again elevated
+(`runas` → one UAC prompt) with `--install-winusb <path> <result file>`; both binaries hand that
+run to `winusb::helper_main()` first thing in `main`. The helper opens the instrument's device
+node (the USBTMC interface node on a composite device), makes it a *Universal Serial Bus
+devices* class device if it has no or another class, builds the class driver list from the
+in-box `%WINDIR%\INF\winusb.inf` only (`DI_ENUMSINGLEINF`, `DI_FLAGSEX_ALLOWEXCLUDEDDRVS`) and
+installs its *WinUsb Device* driver with `DiInstallDevice` — what Device Manager's "Let me pick"
+does. Nothing is shipped, downloaded or self-signed. A declined prompt → 403. The instrument
+re-enumerates, the UI re-reads the lists after 2 s, and configured instruments reconnect on
+their own. Undo: Device Manager → Uninstall device (delete the driver). Replacing a vendor
+driver this way hides the instrument from that vendor's software.
 (First Windows test, 2026-10-18: neither the Rigol DHO800 nor the OWON DGE2070 was listed —
 most likely because neither had a driver; not yet confirmed.)
 
