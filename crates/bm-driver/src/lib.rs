@@ -10,6 +10,7 @@ pub mod engine;
 pub mod expr;
 pub mod framing;
 pub mod metrics;
+pub mod modbus;
 pub mod parse;
 pub mod pyfmt;
 pub mod replay;

@@ -49,5 +49,7 @@ expect:
   PSU: {1: {VOUT: 5.0, OUTPUT: "ON"}}
 ```
 
+Modbus instruments give a register map instead of replies (`modbus: {holding: {reg: value}, input: {…}, coils: {…}}`); a simulated slave answers reads and applies writes.
+
 Replies are text (YAML escapes such as `"\x51"` for binary bytes); in `terminator` framing the rx
 terminator is appended when missing. Commands that are not matched get no reply (setters).

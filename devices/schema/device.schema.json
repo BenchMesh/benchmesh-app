@@ -125,6 +125,17 @@
             "null"
           ]
         },
+        "modbus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModbusOp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modbus RTU request instead of `send` (framing `modbus` required)."
+        },
         "on_empty": {
           "$ref": "#/$defs/OnEmpty",
           "default": "error",
@@ -166,6 +177,8 @@
           "default": "query"
         },
         "send": {
+          "default": "",
+          "description": "Wire text template (empty for a `modbus` command).",
           "type": "string"
         },
         "settle_ms": {
@@ -197,9 +210,6 @@
           ]
         }
       },
-      "required": [
-        "send"
-      ],
       "type": "object"
     },
     "Flow": {
@@ -213,6 +223,17 @@
     "Framing": {
       "additionalProperties": false,
       "properties": {
+        "modbus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModbusFraming"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modbus RTU: commands with `modbus` are binary request frames with CRC16 to this slave."
+        },
         "rx": {
           "$ref": "#/$defs/RxFraming"
         },
@@ -277,6 +298,109 @@
           ]
         }
       },
+      "type": "object"
+    },
+    "ModbusFn": {
+      "oneOf": [
+        {
+          "const": "read_coils",
+          "description": "fc 01",
+          "type": "string"
+        },
+        {
+          "const": "read_discrete",
+          "description": "fc 02",
+          "type": "string"
+        },
+        {
+          "const": "read_holding",
+          "description": "fc 03",
+          "type": "string"
+        },
+        {
+          "const": "read_input",
+          "description": "fc 04",
+          "type": "string"
+        },
+        {
+          "const": "write_coil",
+          "description": "fc 05",
+          "type": "string"
+        },
+        {
+          "const": "write_single",
+          "description": "fc 06",
+          "type": "string"
+        },
+        {
+          "const": "write_multiple",
+          "description": "fc 16",
+          "type": "string"
+        }
+      ]
+    },
+    "ModbusFraming": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "default": 1,
+          "description": "Slave address (1..247).",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ModbusOp": {
+      "additionalProperties": false,
+      "description": "One Modbus RTU request. Reads return the data bytes (decoded with `word` / `registers` /\n`bits`); writes return nothing (the echo is checked).",
+      "properties": {
+        "count": {
+          "default": null,
+          "description": "Reads: number of registers / coils (default 1, or 2 for 32-bit `encoding`).",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "encoding": {
+          "$ref": "#/$defs/WordType",
+          "default": "u16",
+          "description": "Writes: how the value is encoded (`write_single` takes 16-bit types only)."
+        },
+        "fn": {
+          "$ref": "#/$defs/ModbusFn"
+        },
+        "register": {
+          "description": "First register / coil address (0-based, as on the wire).",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "swap": {
+          "default": false,
+          "description": "32-bit values with the low word first.",
+          "type": "boolean"
+        },
+        "value": {
+          "default": null,
+          "description": "Writes: the param holding the value (after its `scale`); coils take ON/OFF/1/0.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "fn",
+        "register"
+      ],
       "type": "object"
     },
     "Model": {
@@ -676,6 +800,35 @@
             "samples"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "One value from register data (Modbus read): `{word: {at: 0, type: u16, scale: 0.01}}`.",
+          "properties": {
+            "word": {
+              "$ref": "#/$defs/RegisterField"
+            }
+          },
+          "required": [
+            "word"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Named values from register data → map: `{registers: {vout: {at: 2, scale: 0.01}}}`.",
+          "properties": {
+            "registers": {
+              "additionalProperties": {
+                "$ref": "#/$defs/RegisterField"
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "registers"
+          ],
+          "type": "object"
         }
       ]
     },
@@ -698,6 +851,40 @@
       "required": [
         "every_ms",
         "read"
+      ],
+      "type": "object"
+    },
+    "RegisterField": {
+      "additionalProperties": false,
+      "description": "A value at a register offset of a Modbus read (big-endian words).",
+      "properties": {
+        "at": {
+          "description": "Word index in the reply (0 = the first register read).",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "scale": {
+          "default": null,
+          "description": "Multiply the raw integer (e.g. 0.01 for centivolts).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "swap": {
+          "default": false,
+          "description": "32-bit: low word first.",
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/$defs/WordType",
+          "default": "u16"
+        }
+      },
+      "required": [
+        "at"
       ],
       "type": "object"
     },
@@ -1221,6 +1408,16 @@
           "type": "string"
         }
       ]
+    },
+    "WordType": {
+      "enum": [
+        "u16",
+        "i16",
+        "u32",
+        "i32",
+        "f32"
+      ],
+      "type": "string"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",

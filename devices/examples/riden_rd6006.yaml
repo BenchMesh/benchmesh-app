@@ -1,0 +1,10 @@
+# Register values as the community register map documents them (Baldanos/rd6006 registers.md):
+# RD6006 (id 60062), 5.00 V / 1.000 A set, output on in CV delivering 4.99 V, 0.120 A, 0.60 W.
+definition: riden_rd6006
+model: RD6006
+modbus:
+  holding: {0: 60062, 1: 0, 2: 12345, 3: 128, 8: 500, 9: 1000, 10: 499, 11: 120, 12: 0, 13: 60,
+            14: 2400, 15: 0, 16: 0, 17: 0, 18: 1, 82: 6200, 83: 6200}
+expect:
+  PSU:
+    1: {VOUT: 4.99, IOUT: 0.12, POUT: 0.6, OUTPUT: "ON", REMOTE: "OFF", CV: true, CC: false, OVP: false}

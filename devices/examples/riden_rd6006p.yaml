@@ -1,0 +1,9 @@
+# RD6006P (id 60065): mV / 0.1 mA registers — 12.000 V set, 1.2345 A delivered in CC.
+definition: riden_rd6006p
+model: RD6006P
+modbus:
+  holding: {0: 60065, 8: 12000, 9: 12345, 10: 11870, 11: 12345, 12: 0, 13: 14653, 14: 24000,
+            15: 1, 16: 0, 17: 1, 18: 1, 82: 62000, 83: 62000}
+expect:
+  PSU:
+    1: {VOUT: 11.87, IOUT: 1.2345, POUT: 14.653, OUTPUT: "ON", REMOTE: "ON", CC: true}

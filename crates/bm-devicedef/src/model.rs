@@ -304,6 +304,99 @@ pub struct Framing {
     pub rx: RxFraming,
     #[serde(default)]
     pub timing: Timing,
+    /// Modbus RTU: commands with `modbus` are binary request frames with CRC16 to this slave.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modbus: Option<ModbusFraming>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ModbusFraming {
+    /// Slave address (1..247).
+    #[serde(default = "default_modbus_address")]
+    pub address: u8,
+}
+
+fn default_modbus_address() -> u8 {
+    1
+}
+
+/// One Modbus RTU request. Reads return the data bytes (decoded with `word` / `registers` /
+/// `bits`); writes return nothing (the echo is checked).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ModbusOp {
+    #[serde(rename = "fn")]
+    pub function: ModbusFn,
+    /// First register / coil address (0-based, as on the wire).
+    pub register: u16,
+    /// Reads: number of registers / coils (default 1, or 2 for 32-bit `encoding`).
+    #[serde(default)]
+    pub count: Option<u16>,
+    /// Writes: the param holding the value (after its `scale`); coils take ON/OFF/1/0.
+    #[serde(default)]
+    pub value: Option<String>,
+    /// Writes: how the value is encoded (`write_single` takes 16-bit types only).
+    #[serde(default)]
+    pub encoding: WordType,
+    /// 32-bit values with the low word first.
+    #[serde(default)]
+    pub swap: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ModbusFn {
+    /// fc 01
+    ReadCoils,
+    /// fc 02
+    ReadDiscrete,
+    /// fc 03
+    ReadHolding,
+    /// fc 04
+    ReadInput,
+    /// fc 05
+    WriteCoil,
+    /// fc 06
+    WriteSingle,
+    /// fc 16
+    WriteMultiple,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum WordType {
+    #[default]
+    U16,
+    I16,
+    U32,
+    I32,
+    F32,
+}
+
+impl WordType {
+    pub fn words(self) -> u16 {
+        match self {
+            WordType::U16 | WordType::I16 => 1,
+            _ => 2,
+        }
+    }
+}
+
+/// A value at a register offset of a Modbus read (big-endian words).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RegisterField {
+    /// Word index in the reply (0 = the first register read).
+    pub at: usize,
+    #[serde(rename = "type", default)]
+    pub kind: WordType,
+    /// Multiply the raw integer (e.g. 0.01 for centivolts).
+    #[serde(default)]
+    pub scale: Option<f64>,
+    /// 32-bit: low word first.
+    #[serde(default)]
+    pub swap: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -395,7 +488,12 @@ pub struct StateVar {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Command {
+    /// Wire text template (empty for a `modbus` command).
+    #[serde(default)]
     pub send: String,
+    /// Modbus RTU request instead of `send` (framing `modbus` required).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modbus: Option<ModbusOp>,
     #[serde(default)]
     pub params: BTreeMap<String, Param>,
     #[serde(default)]
@@ -574,6 +672,10 @@ pub enum ParseStep {
     NullIf(Vec<String>),
     /// Binary sample data (e.g. an oscilloscope's block payload) → list of integers.
     Samples(SampleFormat),
+    /// One value from register data (Modbus read): `{word: {at: 0, type: u16, scale: 0.01}}`.
+    Word(RegisterField),
+    /// Named values from register data → map: `{registers: {vout: {at: 2, scale: 0.01}}}`.
+    Registers(BTreeMap<String, RegisterField>),
 }
 
 /// Encoding of one sample in a binary `samples` reply.

@@ -1,0 +1,49 @@
+# Riden RD6006P (6 A, high resolution) — Modbus RTU; protocol in devices/bases/riden_rd60xx.yaml.
+# Written from community register maps (no vendor manual); awaiting confirmation on hardware.
+# Note: recent stock firmware reportedly breaks Modbus; the community recommends UniSoft firmware.
+schema: benchmesh.device/v1
+id: riden_rd6006p
+extends: riden_rd60xx
+family: RD6006P (6 A, high resolution)
+sources:
+  - {note: "Baldanos/rd6006 registers.md (Apache-2.0), ShayBox/Riden register.py, sigrok rdtech-dps; scales per model id: ai_context/migration/coverage/PSU.md §2.2"}
+models:
+  - {"name": "RD6006P", "match": "^60065$", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 6.0}, "power": {"unit": "W", "max": 360.0}}}}}
+commands:
+  st:
+    parse:
+      - registers:
+          vset: {at: 0, scale: 0.001}
+          iset: {at: 1, scale: 0.0001}
+          vout: {at: 2, scale: 0.001}
+          iout: {at: 3, scale: 0.0001}
+          pout: {at: 4, type: u32, scale: 0.001}
+          vin:  {at: 6, scale: 0.01}
+          lock: {at: 7}
+          prot: {at: 8}
+          cvcc: {at: 9}
+          out:  {at: 10}
+  limits:
+    parse: [{registers: {ovp: {at: 0, scale: 0.001}, ocp: {at: 1, scale: 0.0001}}}]
+  vset_q: {modbus: {fn: read_holding, register: 8}, parse: [{word: {at: 0, scale: 0.001}}]}
+  iset_q: {modbus: {fn: read_holding, register: 9}, parse: [{word: {at: 0, scale: 0.0001}}]}
+  vout_q: {modbus: {fn: read_holding, register: 10}, parse: [{word: {at: 0, scale: 0.001}}]}
+  iout_q: {modbus: {fn: read_holding, register: 11}, parse: [{word: {at: 0, scale: 0.0001}}]}
+  ovp_q: {modbus: {fn: read_holding, register: 82}, parse: [{word: {at: 0, scale: 0.001}}]}
+  ocp_q: {modbus: {fn: read_holding, register: 83}, parse: [{word: {at: 0, scale: 0.0001}}]}
+  vset:
+    modbus: {fn: write_single, register: 8, value: v}
+    params: {v: {type: number, min: 0, max: 60.0, scale: 1000, unit: V}}
+    safety: configure
+  iset:
+    modbus: {fn: write_single, register: 9, value: i}
+    params: {i: {type: number, min: 0, max: 6.0, scale: 10000, unit: A}}
+    safety: configure
+  ovp_set:
+    modbus: {fn: write_single, register: 82, value: v}
+    params: {v: {type: number, min: 0, max: 62.0, scale: 1000, unit: V}}
+    safety: configure
+  ocp_set:
+    modbus: {fn: write_single, register: 83, value: i}
+    params: {i: {type: number, min: 0, max: 6.2, scale: 10000, unit: A}}
+    safety: configure

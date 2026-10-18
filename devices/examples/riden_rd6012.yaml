@@ -1,0 +1,9 @@
+# RD6018 (id 60181): 10 mA registers — output off, OCP tripped (protection = 2).
+definition: riden_rd6012
+model: RD6018
+modbus:
+  holding: {0: 60181, 8: 1200, 9: 1800, 10: 0, 11: 0, 12: 0, 13: 0, 14: 6500, 15: 0, 16: 2, 17: 0,
+            18: 0, 82: 6200, 83: 1850}
+expect:
+  PSU:
+    1: {VOUT: 0.0, OUTPUT: "OFF", OCP: true, FAIL: true, SBY: true}

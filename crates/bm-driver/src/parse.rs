@@ -35,7 +35,7 @@ pub fn lenient_number(s: &str) -> Option<f64> {
 
 /// Parse one framed reply with the command's pipeline.
 pub fn parse_reply(cmd: &Command, reply: &[u8]) -> Result<Value, Error> {
-    let binary = matches!(cmd.parse.first(), Some(ParseStep::Byte | ParseStep::Samples(_)));
+    let binary = cmd.modbus.is_some() || matches!(cmd.parse.first(), Some(ParseStep::Byte | ParseStep::Samples(_)));
     if reply.iter().all(|b| b.is_ascii_whitespace()) && !binary {
         return match cmd.on_empty {
             OnEmpty::Null => Ok(Value::Null),
@@ -162,6 +162,18 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
         ParseStep::Samples(format) => {
             let Cur::Bytes(b) = cur else { return Err(Error::Parse("samples: needs the raw reply (first step)".into())) };
             Ok(Cur::Val(Value::Array(samples(&b, *format)?)))
+        }
+        ParseStep::Word(field) => {
+            let Cur::Bytes(b) = cur else { return Err(Error::Parse("word: needs register data (first step)".into())) };
+            Ok(Cur::Val(crate::modbus::decode(&b, field)?))
+        }
+        ParseStep::Registers(fields) => {
+            let Cur::Bytes(b) = cur else { return Err(Error::Parse("registers: needs register data (first step)".into())) };
+            let mut out = Map::new();
+            for (name, field) in fields {
+                out.insert(name.clone(), crate::modbus::decode(&b, field)?);
+            }
+            Ok(Cur::Val(Value::Object(out)))
         }
         ParseStep::NullIf(values) => {
             let t = cur.text("null_if")?;

@@ -275,6 +275,31 @@ fn check_framing(f: &Framing, at: &str, usbtmc: bool, d: &DeviceDef, cx: &mut Ct
 
 fn check_command(d: &DeviceDef, name: &str, cmd: &Command, cx: &mut Ctx) {
     let at = format!("commands.{name}");
+    match &cmd.modbus {
+        None if cmd.send.is_empty() => cx.err(format!("{at}.send"), "a command needs `send` (or `modbus`)"),
+        None => {}
+        Some(op) => {
+            if !cmd.send.is_empty() {
+                cx.err(format!("{at}.send"), "a `modbus` command has no `send`");
+            }
+            if d.framing.modbus.is_none() {
+                cx.err(format!("{at}.modbus"), "modbus commands need `framing.modbus` (slave address)");
+            }
+            let read = matches!(op.function, ModbusFn::ReadCoils | ModbusFn::ReadDiscrete | ModbusFn::ReadHolding | ModbusFn::ReadInput);
+            match (&op.value, read) {
+                (Some(_), true) => cx.err(format!("{at}.modbus.value"), "a read takes no value"),
+                (None, false) => cx.err(format!("{at}.modbus.value"), "a write needs `value` (the param holding it)"),
+                (Some(v), false) if !cmd.params.contains_key(v) => cx.err(format!("{at}.modbus.value"), format!("`{v}` is not a param")),
+                _ => {}
+            }
+            if op.function == ModbusFn::WriteSingle && op.encoding.words() != 1 {
+                cx.err(format!("{at}.modbus.encoding"), "write_single writes one 16-bit register (use write_multiple)");
+            }
+            if read && cmd.parse.is_empty() {
+                cx.warn(format!("{at}.parse"), "decode the register data with `word`, `registers` or `bits`");
+            }
+        }
+    }
     match template::placeholders(&cmd.send) {
         Err(e) => cx.err(format!("{at}.send"), e),
         Ok(ph) => {
@@ -295,9 +320,15 @@ fn check_command(d: &DeviceDef, name: &str, cmd: &Command, cx: &mut Ctx) {
                     cx.err(format!("{at}.send"), format!("placeholder `{{{p}}}` is not a param, `ch` or `state.*`"));
                 }
             }
-            for p in cmd.params.keys() {
-                if !used.contains(p) {
-                    cx.err(format!("{at}.params.{p}"), "param is not used in `send`");
+            if let Some(op) = &cmd.modbus {
+                if let Some(v) = &op.value {
+                    used.insert(v.clone());
+                }
+            }
+            for (p, spec) in &cmd.params {
+                if !used.contains(p) && spec.from.is_none() {
+                    let what = if cmd.modbus.is_some() { "`modbus.value`" } else { "`send`" };
+                    cx.err(format!("{at}.params.{p}"), format!("param is not used in {what}"));
                 }
             }
         }

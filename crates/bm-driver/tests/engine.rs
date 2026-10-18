@@ -592,3 +592,30 @@ classes:
     let f = |ch: u8| u.iter().rfind(|u| u.ch == ch).unwrap().status["FREQ"].clone();
     assert_eq!((f(1), f(2)), (json!(1000.0), json!(2000.0)));
 }
+
+#[test]
+fn riden_setpoints_are_written_as_scaled_registers_and_read_back() {
+    use bm_driver::modbus::Slave;
+    let slave = Arc::new(Mutex::new(Slave {
+        address: 1,
+        holding: [(0, 60062), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0), (14, 2400), (15, 0), (16, 0), (17, 0), (18, 0), (82, 6200), (83, 6200)].into(),
+        ..Slave::default()
+    }));
+    let s = slave.clone();
+    let (t, _) = sim(move |w| s.lock().unwrap().respond(w));
+    let mut e = Engine::open(def("riden_rd6006"), t).unwrap();
+    assert_eq!(e.model.name, "RD6006");
+    e.set("PSU", "voltage", 1, "12.34").unwrap();
+    e.set("PSU", "current", 1, "1.5").unwrap();
+    e.set("PSU", "output", 1, "ON").unwrap();
+    {
+        let h = &slave.lock().unwrap().holding;
+        assert_eq!((h[&8], h[&9], h[&18]), (1234, 1500, 1));
+    }
+    assert_eq!(e.get("PSU", "voltage", 1).unwrap().value()["val"], "12.34");
+    assert!(e.set("PSU", "voltage", 1, "61").is_err(), "limits from the definition");
+    // a register the slave does not have → the Modbus exception, not a hang
+    slave.lock().unwrap().holding.remove(&83);
+    let err = e.get("PSU", "current_limit", 1).unwrap_err();
+    assert!(err.to_string().contains("illegal data address"), "{err}");
+}

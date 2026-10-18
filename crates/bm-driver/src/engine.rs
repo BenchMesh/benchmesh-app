@@ -130,7 +130,12 @@ impl Engine {
         // a connect banner (tinySA / NanoVNA shells) must not become the identify reply
         e.drain()?;
         let idn = e.run(&def.identify, 1, &BTreeMap::new())?.value();
-        e.idn = idn.as_str().unwrap_or_default().to_string();
+        // a register (Modbus model id) identifies as its number's text
+        e.idn = match idn {
+            Value::String(s) => s,
+            Value::Null => String::new(),
+            v => v.to_string(),
+        };
         e.model = def
             .models
             .iter()
@@ -327,10 +332,15 @@ impl Engine {
                 computed.insert(expr.clone(), self.eval_with_queries(expr, ch)?);
             }
         }
-        let wire = render(&cmd, &self.def.framing.tx.terminator, args, ch, &self.state, &mut |e| {
-            computed.get(e).cloned().ok_or_else(|| Error::Definition(format!("uncomputed `{e}`")))
-        })?;
-        let reply = self.exchange(&cmd, wire.as_bytes())?;
+        let reply = match &cmd.modbus {
+            Some(op) => self.modbus_exchange(&cmd, op, args)?,
+            None => {
+                let wire = render(&cmd, &self.def.framing.tx.terminator, args, ch, &self.state, &mut |e| {
+                    computed.get(e).cloned().ok_or_else(|| Error::Definition(format!("uncomputed `{e}`")))
+                })?;
+                self.exchange(&cmd, wire.as_bytes())?
+            }
+        };
         let out = match reply {
             None => Output::Value(Value::Null),
             // a block without parse steps is returned as-is (images); with steps it is data
@@ -436,6 +446,67 @@ impl Engine {
             Err(e) => {
                 self.drain()?;
                 self.next_write = Instant::now() + ms(gap);
+                Err(e)
+            }
+        }
+    }
+
+    /// One Modbus RTU request: the frame from the op (+ the write's value param), the reply framed
+    /// by its expected length and checked (address, function, CRC, exceptions). Reads return
+    /// the data bytes, writes `None`.
+    fn modbus_exchange(&mut self, cmd: &Command, op: &bm_devicedef::ModbusOp, args: &BTreeMap<String, String>) -> Result<Option<Vec<u8>>, Error> {
+        let address = self.def.framing.modbus.as_ref().map(|m| m.address).ok_or_else(|| Error::Definition("modbus command without framing.modbus".into()))?;
+        let value = match &op.value {
+            None => None,
+            Some(p) => {
+                let spec = cmd.params.get(p).ok_or_else(|| Error::Definition(format!("modbus value param `{p}` is not declared")))?;
+                let raw = args.get(p).ok_or_else(|| Error::BadArgument(format!("missing value for `{p}`")))?;
+                let text = crate::wire::format_param(p, spec, raw)?;
+                Some(text.trim().parse::<f64>().map_err(|_| Error::Definition(format!("`{p}` does not give a number for a register ({text:?})")))?)
+            }
+        };
+        let frame = crate::modbus::request(address, op, value)?;
+        let started = Instant::now();
+        let r = self.modbus_exchange_inner(cmd, op, address, &frame);
+        self.stats.exchanges += 1;
+        self.stats.busy += started.elapsed();
+        if r.is_err() {
+            self.stats.failures += 1;
+        }
+        r
+    }
+
+    fn modbus_exchange_inner(&mut self, cmd: &Command, op: &bm_devicedef::ModbusOp, address: u8, frame: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+        let now = Instant::now();
+        if now < self.next_write {
+            sleep(self.next_write - now);
+        }
+        self.t.write(frame).map_err(|e| Error::Io(e.to_string()))?;
+        let timing = self.def.framing.timing.clone();
+        let deadline = Instant::now() + ms(cmd.timeout_ms.unwrap_or(self.def.framing.rx.timeout_ms));
+        let mut buf = Vec::new();
+        let result = loop {
+            let now = Instant::now();
+            if now >= deadline {
+                break Err(Error::Timeout { partial: buf.clone() });
+            }
+            let chunk = self.t.read(deadline - now).map_err(|e| Error::Io(e.to_string()))?;
+            buf.extend_from_slice(&chunk);
+            match crate::modbus::check_reply(address, op, &buf) {
+                Ok(None) => {}
+                Ok(Some(data)) => break Ok(data),
+                Err(e) => break Err(e),
+            }
+        };
+        let gap = cmd.gap_after_ms.unwrap_or(timing.min_gap_ms);
+        self.next_write = Instant::now() + ms(gap);
+        match result {
+            Ok(data) if crate::modbus::is_read(op.function) => Ok(Some(data)),
+            Ok(_) => Ok(None),
+            Err(e) => {
+                if !matches!(e, Error::Refused(_)) {
+                    self.drain()?;
+                }
                 Err(e)
             }
         }

@@ -1,0 +1,73 @@
+# Riden RD60xx bench supplies — Modbus RTU over the on-board CH340 (115200 8N1, slave 1).
+# No official document: register map from three independent implementations that agree
+# (Baldanos/rd6006 registers.md, ShayBox/Riden register.py, sigrok rdtech-dps), see
+# ai_context/migration/coverage/PSU.md §2.2. Scales differ per model: each definition sets the
+# register scales of its models (`*_scaled` commands and the `st` field scales).
+schema: benchmesh.device/v1
+vendor: Riden
+version: 1.0.0
+identify: model_id
+link:
+  serial: {baud: 115200, format: 8N1, flow: none, settle_ms: 100}
+framing:
+  tx: {terminator: ""}
+  # Modbus frames are self-delimiting (length from the function); `idle` only frames stray input
+  rx: {mode: idle, idle_ms: 5, timeout_ms: 500, drain_idle_ms: 30}
+  timing: {min_gap_ms: 10, gap_after_write_ms: 20}
+  modbus: {address: 1}
+commands:
+  model_id:
+    modbus: {fn: read_holding, register: 0}
+    parse: [{word: {at: 0}}]
+    description: "Model id, e.g. 60062 = RD6006 (the last digit is a hardware revision)"
+    source: "registers.md reg 0"
+  st:
+    modbus: {fn: read_holding, register: 8, count: 11}
+    description: "Registers 8..18: setpoints, readings, input voltage, lock, protection, CV/CC, output"
+    source: "registers.md regs 8-18"
+  limits:
+    modbus: {fn: read_holding, register: 82, count: 2}
+    description: "M0 OVP / OCP levels (the active preset)"
+    source: "PSU.md §2.2 regs 80-83"
+  output_set:
+    modbus: {fn: write_single, register: 18, value: on}
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+    safety: energize
+    source: "registers.md reg 18"
+  lock_set:
+    modbus: {fn: write_single, register: 15, value: on}
+    params:
+      on: {type: enum, values: {"ON": "1", "OFF": "0"}}
+    safety: configure
+    source: "registers.md reg 15 (keypad lock)"
+classes:
+  PSU:
+    channels: 1
+    ui_component: GenericPSU
+    poll:
+      - every_ms: 300
+        read: [st]
+      - every_ms: 3000
+        read: [limits]
+    status:
+      VOUT: {expr: st.vout, as: si}
+      IOUT: {expr: st.iout, as: si}
+      POUT: {expr: st.pout, as: si}
+      OUTPUT: 'st.out == 1 ? "ON" : "OFF"'
+      REMOTE: 'st.lock == 1 ? "ON" : "OFF"'
+      CV: "st.out == 1 && st.cvcc == 0"
+      CC: "st.out == 1 && st.cvcc == 1"
+      SBY: "st.out == 0"
+      OVP: "st.prot == 1"
+      OCP: "st.prot == 2"
+      FAIL: "st.prot != 0"
+    operations:
+      voltage: {get: vset_q, set: vset, as: si}
+      current: {get: iset_q, set: iset, as: si}
+      output: {set: output_set}
+      remote: {set: lock_set}
+      voltage_limit: {get: ovp_q, set: ovp_set, as: si}
+      current_limit: {get: ocp_q, set: ocp_set, as: si}
+      output_voltage: {get: vout_q, as: si}
+      output_current: {get: iout_q, as: si}

@@ -76,6 +76,21 @@ SCPI-99 PSU baseline; definitions then carry only identity, models and quirks.
 - `rx.timeout_ms`: max wait for a complete reply. `rx.drain_idle_ms`: after a timeout or malformed reply, discard input until idle this long. **Never let a late reply land on the next command.**
 - `timing.min_gap_ms`: gap between exchanges. `timing.gap_after_write_ms`: gap after a `reply: none` command (e.g. TENMA loses setters followed within 20 ms).
 
+### Modbus RTU
+`framing.modbus: {address: 1}` makes the definition a Modbus RTU slave. A command then carries
+`modbus` instead of `send`: `{fn: read_holding|read_input|read_coils|read_discrete, register, count}`
+or `{fn: write_single|write_multiple|write_coil, register, value: <param>, encoding: u16|i16|u32|i32|f32, swap}`.
+The engine builds the frame with CRC16, frames the reply by its function's length, checks slave,
+function and CRC, and turns exception replies into refusals (`modbus exception 2: illegal data
+address`). A write's value is its param after validation and `scale` (`{type: number, max: 60,
+scale: 100}` → centivolts); enum wire values give the integer (`{ON: "1", OFF: "0"}`). Reads return
+register data, decoded with `{word: {at, type, scale, swap}}` (one value) or `{registers: {name:
+{at, type, scale}}}` (map), coils with `bits`. Words are big-endian; `swap` puts the low word of a
+32-bit value first. A register used as identify (model id) identifies as its number's text.
+Manual examples describe a Modbus instrument as a register map (`modbus: {holding: {0: 60062}}`),
+answered by a simulated slave that applies writes. Example: `devices/bases/riden_rd60xx.yaml`.
+Not yet: a per-entry slave address in config.yaml, Modbus TCP.
+
 ### `session`
 `on_connect` / `on_disconnect`: steps run after identify / before close (e.g. OEL `SYST:REM` / `SYST:LOC`).
 

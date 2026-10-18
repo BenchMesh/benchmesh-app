@@ -25,11 +25,26 @@ struct Example {
     transport: Option<String>,
     /// Model the identify reply must select.
     model: String,
+    #[serde(default)]
     replies: Vec<ReplyRule>,
+    /// Modbus instruments: the register map a simulated slave answers from (writes change it).
+    #[serde(default)]
+    modbus: Option<ModbusMap>,
     /// class -> channel -> status key -> expected value (numbers compared approximately; SI
     /// values by their number).
     #[serde(default)]
     expect: BTreeMap<String, BTreeMap<u8, BTreeMap<String, Value>>>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+struct ModbusMap {
+    #[serde(default)]
+    holding: BTreeMap<u16, u16>,
+    #[serde(default)]
+    input: BTreeMap<u16, u16>,
+    #[serde(default)]
+    coils: BTreeMap<u16, bool>,
 }
 
 #[derive(Deserialize)]
@@ -152,9 +167,16 @@ fn check(cat: &Catalog, ex: &Example) -> Vec<String> {
         Ok(d) => Arc::new(d),
         Err(e) => return vec![e],
     };
-    let sim = match responder(&def, &ex.replies) {
-        Ok(r) => SimTransport::new(r),
-        Err(e) => return vec![e],
+    let sim = match (&ex.modbus, &def.framing.modbus) {
+        (Some(map), Some(m)) => {
+            let mut slave = bm_driver::modbus::Slave { address: m.address, holding: map.holding.clone(), input: map.input.clone(), coils: map.coils.clone() };
+            SimTransport::new(Box::new(move |w: &[u8]| slave.respond(w)))
+        }
+        (Some(_), None) => return vec!["`modbus` register map for a definition without framing.modbus".into()],
+        (None, _) => match responder(&def, &ex.replies) {
+            Ok(r) => SimTransport::new(r),
+            Err(e) => return vec![e],
+        },
     };
     let mut e = match Engine::open(def.clone(), Box::new(sim)) {
         Ok(e) => e,
