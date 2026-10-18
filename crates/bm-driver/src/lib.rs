@@ -18,6 +18,7 @@ pub mod si;
 pub mod sim;
 pub mod status;
 pub mod wire;
+pub mod wirelog;
 
 use std::fmt;
 

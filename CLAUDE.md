@@ -181,6 +181,13 @@ under "In own windows"; closing (or a crash) brings it back. Closing the main wi
 app. On Linux Wayland the app runs through XWayland (`GDK_BACKEND=x11`) because Wayland does not
 allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out.
 
+**Instrument console** (panel header, console icon): an optional pane at the bottom of the panel
+showing what is sent to (→) and received from (←) the instrument, plus port events (•), from
+`GET /devices/{id}/wire?after=<seq>` (per-device ring of 2000 entries, `bm_driver::wirelog`;
+reply chunks joined in the UI). Auto / Text / Hex view, pause, clear, and **Copy**: paste-ready
+evidence with instrument, model, identify reply, link and app version (`bench/wire.ts`,
+`bench/WireConsole.tsx`). Open state per panel in `localStorage` `benchmesh:consoles`.
+
 Every control that changes the instrument waits for **confirmation**: after the request is sent it
 pulses discreetly until the instrument's reported value (registry status, or a read-back for
 setpoints) equals the requested one, and shows a small red dot if that does not happen within 6 s

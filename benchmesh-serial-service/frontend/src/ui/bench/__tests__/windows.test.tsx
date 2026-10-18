@@ -75,3 +75,17 @@ describe('panel header support status', () => {
     expect(screen.getByTestId('support-awaiting').textContent).toBe('awaiting confirmation')
   })
 })
+
+describe('instrument console', () => {
+  it('opens below the panel from the header and is remembered', () => {
+    const { unmount } = wrap(<InstrumentPanel instrument={tenma} klass="PSU" registry={registry} />)
+    expect(screen.queryByTestId('wire-console')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Instrument console' }))
+    expect(screen.getByTestId('wire-console')).toBeTruthy()
+    unmount()
+    wrap(<InstrumentPanel instrument={tenma} klass="PSU" registry={registry} />)
+    expect(screen.getByTestId('wire-console')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Instrument console' }))
+    expect(screen.queryByTestId('wire-console')).toBeNull()
+  })
+})

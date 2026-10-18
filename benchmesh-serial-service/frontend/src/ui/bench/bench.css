@@ -228,3 +228,25 @@ html, body { background: var(--kit-ground); }
     transparent 70%, var(--kit-ink-3) 70%, var(--kit-ink-3) 78%, transparent 78%);
   opacity: .6;
 }
+
+/* Instrument console (wire log): optional pane at the bottom of a panel */
+.bench-panel__console-btn { margin-left: 6px; }
+.bench-wbtn--on { color: var(--kit-accent); border-color: var(--kit-accent); }
+.wire-console { margin-top: 8px; border-top: 1px solid var(--kit-panel-edge); padding-top: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wire-console__bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wire-console__bar .kit-label { margin-right: auto; }
+.wire-console__btn { padding: 3px 8px; font: 600 .62rem/1 var(--kit-font-num); letter-spacing: .04em; }
+.wire-console__btn[aria-pressed="true"] { color: var(--kit-warn); border-color: var(--kit-warn); }
+.wire-console__copy:disabled { opacity: .5; cursor: default; }
+.wire-console__note { font-size: 10px; color: var(--kit-ink-3); }
+.wire-console__log {
+  height: 160px; resize: vertical; overflow: auto; min-height: 60px;
+  background: var(--kit-ctl); border: 1px solid var(--kit-panel-edge); border-radius: 4px;
+  padding: 4px 6px; font: 400 11px/1.45 var(--kit-font-num);
+  color: var(--kit-ink-2); user-select: text; white-space: pre-wrap; word-break: break-all;
+}
+.wire-console__log:focus-visible { outline: 1px solid var(--kit-accent); }
+.wire-console__line--tx { color: var(--kit-accent); }
+.wire-console__line--rx { color: var(--kit-ink); }
+.wire-console__line--info { color: var(--kit-ink-3); font-style: italic; }
+.wire-console__empty { color: var(--kit-ink-3); font-style: italic; }

@@ -20,6 +20,8 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("post", "/devices", "configuration", "Add a device (saved and started); `match` = identity {usb: {vid, pid, serial?, revision?, location?}, idn_serial?} instead of a fixed `port`/`device`"),
     ("post", "/devices/detect", "configuration", "Identify the instruments on the attached USB ports (identify queries only, never to ports in use) → {ports: [{port, kind, usb, configured_as, locked, instrument, match, certainty, error}]}"),
     ("put", "/devices/{id}", "configuration", "Update a device (saved and reconnected)"),
+    ("get", "/devices/{id}/wire", "monitoring", "Instrument console: bytes sent / received and port events after `after` (seq) → {entries: [{seq, t (ms), dir: tx|rx|info, data (Latin-1 bytes / text), len}], next, dropped}"),
+    ("delete", "/devices/{id}/wire", "monitoring", "Clear an instrument's console (204)"),
     ("delete", "/devices/{id}", "configuration", "Remove a device"),
     ("get", "/serial-ports", "configuration", "Serial ports (query `exclude=a,b`)"),
     ("get", "/usbtmc-devices", "configuration", "USBTMC devices (query `exclude=a,b`) → [{device, name, vendor_id, product_id, manufacturer, product, serial, note, driver_installable}]"),

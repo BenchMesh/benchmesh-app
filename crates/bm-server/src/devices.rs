@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bm_devicedef::{Catalog, DeviceDef, Model};
-use bm_driver::actor::{fixed_connector, ActorConfig, Connector, DeviceClient, DeviceHandle, Event};
+use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, Connector, DeviceClient, DeviceHandle, Event};
+use bm_driver::wirelog::WireLog;
 use bm_transport::identity::Identity;
 use bm_transport::Endpoint;
 use serde_json::{json, Map, Value};
@@ -32,6 +33,30 @@ pub fn hardware_connectors() -> ConnectorFactory {
             Some(link) => bm_transport::attempts(link, &ep, id.as_ref()),
             None => Err("the definition offers no single link for this entry".to_string()),
         })
+    })
+}
+
+/// `connector` with every transport it opens recorded in `log` (failed opens too).
+fn recorded(mut connector: Connector, log: Arc<WireLog>) -> Connector {
+    Box::new(move || {
+        let attempts = connector().inspect_err(|e| log.info(&format!("no port to try: {e}")))?;
+        Ok(attempts
+            .into_iter()
+            .map(|a| {
+                let (log, port, open) = (log.clone(), a.port.clone(), a.open);
+                Attempt {
+                    port: a.port,
+                    accept: a.accept,
+                    open: Box::new(move || match open() {
+                        Ok(t) => Ok(bm_driver::wirelog::logged(t, log, &port)),
+                        Err(e) => {
+                            log.info(&format!("open {port} failed: {e}"));
+                            Err(e)
+                        }
+                    }),
+                }
+            })
+            .collect())
     })
 }
 
@@ -168,11 +193,13 @@ pub struct Devices {
     pub actor: ActorConfig,
     /// Real ports exist (Detect probes them); false for simulations and tests.
     pub hardware: bool,
+    /// Wire logs by device id (kept across reconnects and restarts of the same id).
+    pub wire: Mutex<BTreeMap<String, Arc<WireLog>>>,
 }
 
 impl Devices {
     pub fn new(catalog: Catalog, connectors: ConnectorFactory, actor: ActorConfig) -> Self {
-        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false }
+        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default() }
     }
 
     pub fn driver_ids(&self) -> Vec<String> {
@@ -185,7 +212,7 @@ impl Devices {
         let driver = str_field(&entry, "driver").unwrap_or_default();
         let def = self.catalog.devices.get(driver).ok_or(format!("unknown driver {driver:?}"))?.1.for_transport(str_field(&entry, "transport"))?;
         let def = Arc::new(def);
-        let connector = (self.connectors)(&entry, &def);
+        let connector = recorded((self.connectors)(&entry, &def), self.wire_log(&id));
         let registry = self.registry.clone();
         let rid = id.clone();
         {
@@ -218,6 +245,11 @@ impl Devices {
         r.devices.remove(id);
         r.version += 1;
         found
+    }
+
+    /// The wire log of a device id (created on first use).
+    pub fn wire_log(&self, id: &str) -> Arc<WireLog> {
+        self.wire.lock().unwrap().entry(id.to_string()).or_default().clone()
     }
 
     pub fn stop_all(&self) {

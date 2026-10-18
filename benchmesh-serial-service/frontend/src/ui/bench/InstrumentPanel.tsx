@@ -1,5 +1,6 @@
-import React, { useMemo, useRef } from 'react'
-import { CloseIcon, DetachIcon, FoldIcon, PinIcon, UnfoldIcon } from './icons'
+import React, { useMemo, useRef, useState } from 'react'
+import { CloseIcon, ConsoleIcon, DetachIcon, FoldIcon, PinIcon, UnfoldIcon } from './icons'
+import { WireConsole } from './WireConsole'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector } from '../kit'
 import { Instrument } from '../types'
@@ -15,6 +16,20 @@ import { OscPanel } from './panels/OscPanel'
 import { LcrPanel } from './panels/LcrPanel'
 import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
+
+const CONSOLES_KEY = 'benchmesh:consoles'
+
+/** Panels (`id:CLASS`) whose console is open, remembered across restarts. */
+function consoleOpen(key: string): boolean {
+  try { return (JSON.parse(localStorage.getItem(CONSOLES_KEY) ?? '[]') as string[]).includes(key) } catch { return false }
+}
+
+function setConsoleOpen(key: string, open: boolean) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(CONSOLES_KEY) ?? '[]') as string[]).filter((k) => k !== key)
+    localStorage.setItem(CONSOLES_KEY, JSON.stringify(open ? [...list, key] : list))
+  } catch { /* storage unavailable: the console just is not remembered */ }
+}
 
 /** Model name for the header: the IDN's model field (`OWON,SPM3103,...` → SPM3103). */
 export function modelOf(idn: string | undefined): string {
@@ -86,6 +101,9 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
   const el = useRef<HTMLElement>(null)
   const folded = win?.folded ?? false
   const meta = useInstrumentMeta(klass, instrument.id)
+  const consoleKey = `${instrument.id}:${klass}`
+  const [showConsole, setShowConsole] = useState(() => consoleOpen(consoleKey))
+  const toggleConsole = () => { setConsoleOpen(consoleKey, !showConsole); setShowConsole(!showConsole) }
   const online = isOnline(registry, instrument)
   const cls = instrument.classes.find((c) => c.class === klass)
   const channels = (cls?.channels ?? []).map((p) => p.split('/').pop() || '1')
@@ -111,6 +129,12 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
           </span>
         )}
         <span className="bench-panel__link" data-online={online}><i />{online ? 'connected' : 'offline'}</span>
+        {!arrange && (
+          <button type="button" className={`bench-wbtn bench-panel__console-btn${showConsole ? ' bench-wbtn--on' : ''}`} onClick={toggleConsole}
+            aria-pressed={showConsole} aria-label="Instrument console" title={showConsole ? 'Hide the console' : 'Show what is sent to and received from the instrument'}>
+            <ConsoleIcon />
+          </button>
+        )}
         {win && (
           <span className="bench-panel__wctl">
             {win.onTop && (
@@ -158,6 +182,10 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
         </div>
       )}</div>}
       {!online && !folded && <div className="bench-panel__offline">Offline — reconnecting</div>}
+      {showConsole && !folded && (
+        <WireConsole meta={{ instrument: instrument.id, klass, model: instrument.model ?? modelOf(idn), idn, support: instrument.support,
+          link: instrument.port ? `${instrument.transport ?? ''} ${instrument.port}`.trim() : undefined }} />
+      )}
     </article>
   )
 }

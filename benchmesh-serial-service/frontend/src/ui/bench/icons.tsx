@@ -15,5 +15,7 @@ export const UnfoldIcon = () => <Svg><path d="M3 6l5 5 5-5" /></Svg>
 export const DetachIcon = () => <Svg><path d="M9 3h4v4M13 3L7.5 8.5M11 9.5V13H3V5h3.5" /></Svg>
 /** Keep on top (pin). */
 export const PinIcon = () => <Svg><path d="M6 2.5h4M7 2.5v4L4.5 9h7L9 6.5v-4M8 9v4.5" /></Svg>
+/** Instrument console (wire log). */
+export const ConsoleIcon = () => <Svg><path d="M2.5 3.5h11v9h-11zM5 7l2 1.5L5 10M8.5 10.5H11" /></Svg>
 /** Close the window (back to the bench). */
 export const CloseIcon = () => <Svg><path d="M4 4l8 8M12 4l-8 8" /></Svg>

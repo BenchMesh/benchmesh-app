@@ -1,0 +1,115 @@
+/**
+ * Instrument console: an optional pane at the bottom of an instrument panel that shows what
+ * goes to and comes from the instrument (`GET /devices/{id}/wire`, polled while open), with
+ * pause, clear, text / hex view and Copy (paste-ready evidence for troubleshooting).
+ */
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { apiBaseUrl } from '../../api/base'
+import { Selector } from '../kit'
+import { appendEntries, evidence, lineText, type EvidenceMeta, type WireEntry, type WireLine, type WireView } from './wire'
+
+const POLL_MS = 500
+
+/** The console's lines while `enabled` (polling paused with `paused`). */
+export function useWireLog(id: string, enabled: boolean, paused: boolean) {
+  const [lines, setLines] = useState<WireLine[]>([])
+  const after = useRef(0)
+  useEffect(() => {
+    if (!enabled || paused) return
+    let live = true
+    const tick = async () => {
+      try {
+        const r = await fetch(`${apiBaseUrl()}/devices/${encodeURIComponent(id)}/wire?after=${after.current}`)
+        if (!r.ok || !live) return
+        const v: { entries: WireEntry[]; next: number; dropped: boolean } = await r.json()
+        if (!live) return
+        after.current = v.next
+        if (v.entries.length || v.dropped) {
+          const gap: WireEntry[] = v.dropped ? [{ seq: 0, t: Date.now(), dir: 'info', data: 'earlier entries were dropped (the console keeps the last 2000)', len: 0 }] : []
+          setLines((old) => appendEntries(old, [...gap, ...v.entries]))
+        }
+      } catch { /* server unreachable: the panel shows offline */ }
+    }
+    void tick()
+    const t = setInterval(tick, POLL_MS)
+    return () => { live = false; clearInterval(t) }
+  }, [id, enabled, paused])
+  const clear = async () => {
+    setLines([])
+    try { await fetch(`${apiBaseUrl()}/devices/${encodeURIComponent(id)}/wire`, { method: 'DELETE' }) } catch { /* local clear is enough */ }
+  }
+  return { lines, clear }
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // older webviews: a hidden textarea and execCommand
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand?.('copy') ?? false
+    ta.remove()
+    return ok
+  }
+}
+
+const VIEWS: { value: WireView; label: string; title: string }[] = [
+  { value: 'auto', label: 'Auto', title: 'Text, binary as hex' },
+  { value: 'text', label: 'Text', title: 'Everything as text (\\r \\n \\xNN escapes)' },
+  { value: 'hex', label: 'Hex', title: 'Everything as hex bytes' },
+]
+
+export function WireConsole({ meta }: { meta: EvidenceMeta }) {
+  const [paused, setPaused] = useState(false)
+  const [view, setView] = useState<WireView>('auto')
+  const [copied, setCopied] = useState<string | null>(null)
+  const { lines, clear } = useWireLog(meta.instrument, true, paused)
+  const [app, setApp] = useState<string | undefined>(meta.app)
+  const box = useRef<HTMLDivElement>(null)
+  const stick = useRef(true)
+
+  useEffect(() => {
+    fetch(`${apiBaseUrl()}/version`).then((r) => (r.ok ? r.json() : null))
+      .then((v) => v && setApp(v.displayVersion ?? `BenchMesh ${v.version ?? ""}`)).catch(() => {})
+  }, [])
+  // follow new lines unless the user scrolled up to read
+  useLayoutEffect(() => {
+    const el = box.current
+    if (el && stick.current) el.scrollTop = el.scrollHeight
+  }, [lines])
+
+  const copy = async () => {
+    const ok = await copyText(evidence({ ...meta, app }, lines, view))
+    setCopied(ok ? `Copied ${lines.length} lines` : 'Copy failed — select the text instead')
+    setTimeout(() => setCopied(null), 2500)
+  }
+
+  return (
+    <section className="wire-console" aria-label="Instrument console" data-testid="wire-console">
+      <div className="wire-console__bar">
+        <span className="kit-label">Console</span>
+        <Selector label="View" value={view} options={VIEWS} onChange={(v) => setView(v as WireView)} />
+        <button type="button" className="bench-icon wire-console__btn" aria-pressed={paused} onClick={() => setPaused((p) => !p)}
+          title={paused ? 'Resume' : 'Pause (keeps what is shown)'}>{paused ? 'Resume' : 'Pause'}</button>
+        <button type="button" className="bench-icon wire-console__btn" onClick={() => void clear()} title="Clear the console">Clear</button>
+        <button type="button" className="bench-icon wire-console__btn wire-console__copy" onClick={() => void copy()} disabled={!lines.length}
+          title="Copy as text with instrument, model and app version (for a bug report or forum post)">Copy</button>
+        {copied && <span className="wire-console__note" role="status">{copied}</span>}
+      </div>
+      <div ref={box} className="wire-console__log" tabIndex={0} aria-live="off"
+        onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24 }}>
+        {lines.length === 0
+          ? <span className="wire-console__empty">{paused ? 'Paused.' : 'Waiting for traffic…'}</span>
+          : lines.map((l) => (
+            <div key={`${l.seq}-${l.t}`} className={`wire-console__line wire-console__line--${l.dir}`}>{lineText(l, view)}</div>
+          ))}
+      </div>
+    </section>
+  )
+}

@@ -288,6 +288,35 @@ async fn detect_lists_nothing_without_real_ports() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn the_wire_log_shows_what_went_to_and_from_an_instrument() {
+    let f = fixture("wire");
+    // the simulated Tenma has connected and been polled once the registry knows its IDN
+    let mut seen = json!(null);
+    for _ in 0..100 {
+        let (code, v, _) = call(&f, "GET", "/devices/t1/wire", None, None).await;
+        assert_eq!(code, StatusCode::OK);
+        if v["entries"].as_array().unwrap().iter().any(|e| e["dir"] == "rx") {
+            seen = v;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    let entries = seen["entries"].as_array().expect("rx entries within 5 s");
+    assert_eq!(entries[0]["dir"], "info");
+    assert!(entries[0]["data"].as_str().unwrap().starts_with("opened "));
+    assert!(entries.iter().any(|e| e["dir"] == "tx" && e["data"] == "*IDN?"), "identify sent");
+    let next = seen["next"].as_u64().unwrap();
+    let (_, later, _) = call(&f, "GET", &format!("/devices/t1/wire?after={next}"), None, None).await;
+    assert!(later["entries"].as_array().unwrap().iter().all(|e| e["seq"].as_u64().unwrap() > next));
+    let (code, _, _) = call(&f, "DELETE", "/devices/t1/wire", None, None).await;
+    assert_eq!(code, StatusCode::NO_CONTENT);
+    let (code, _, _) = call(&f, "GET", "/devices/nope/wire", None, None).await;
+    assert_eq!(code, StatusCode::NOT_FOUND);
+    let (code, _, _) = call(&f, "GET", "/devices/t1/wire?after=x", None, None).await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn catalog_lists_families_with_model_support() {
     let f = fixture("catalog");
     let (code, v, _) = call(&f, "GET", "/catalog", None, None).await;

@@ -81,6 +81,7 @@ pub fn router(state: S) -> Router {
         .route("/devices", post(add_device))
         .route("/devices/{id}", put(update_device).delete(delete_device))
         .route("/devices/detect", post(detect_devices))
+        .route("/devices/{id}/wire", get(wire_log).delete(clear_wire_log))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
         .route("/usbtmc-devices/driver", post(install_usbtmc_driver))
@@ -194,6 +195,10 @@ fn instrument_list(s: &AppState, class_filter: Option<&str>) -> Vec<Value> {
         let st = reg.get(&id).cloned().unwrap_or_default();
         if let (true, Some(idn)) = (st.connected, &st.idn) {
             item.insert("IDN".into(), json!(idn));
+        }
+        if let (true, Some(port)) = (st.connected, &st.port) {
+            item.insert("port".into(), json!(port));
+            item.insert("transport".into(), json!(def.link.kinds().first().copied().unwrap_or_default()));
         }
         let health = match (st.connected, st.consecutive_failures) {
             (true, _) => "healthy",
@@ -519,6 +524,44 @@ async fn delete_device(State(s): State<S>, Path(id): Path<String>) -> Response {
     let rid = id.clone();
     blocking(move || devs.stop(&rid)).await;
     Json(json!({"status": "success", "message": format!("Device {id} removed")})).into_response()
+}
+
+// ---- wire log (the instrument console) -------------------------------------------------
+
+/// What was sent to and received from a device: entries after `after` (sequence number).
+/// Bytes come as a Latin-1 string (one char per byte, binary preserved); `info` entries are
+/// text (port opened / closed / errors). `dropped`: entries between `after` and the first
+/// one returned were already discarded.
+async fn wire_log(State(s): State<S>, Path(id): Path<String>, Query(q): Query<std::collections::HashMap<String, String>>) -> Response {
+    if s.devices.lookup(&id).is_none() {
+        return detail(StatusCode::NOT_FOUND, format!("Unknown device id {id:?}"));
+    }
+    let after = match q.get("after").map(|a| a.parse::<u64>()) {
+        None => 0,
+        Some(Ok(a)) => a,
+        Some(Err(_)) => return detail(StatusCode::UNPROCESSABLE_ENTITY, "`after` must be a sequence number"),
+    };
+    let (entries, dropped) = s.devices.wire_log(&id).since(after);
+    let next = entries.last().map(|e| e.seq).unwrap_or(after);
+    let list: Vec<Value> = entries
+        .iter()
+        .map(|e| {
+            let data: String = match e.dir {
+                bm_driver::wirelog::Dir::Info => String::from_utf8_lossy(&e.data).to_string(),
+                _ => e.data.iter().map(|&b| b as char).collect(),
+            };
+            json!({"seq": e.seq, "t": e.at_ms, "dir": e.dir.as_str(), "data": data, "len": e.len})
+        })
+        .collect();
+    Json(json!({"device_id": id, "entries": list, "next": next, "dropped": dropped})).into_response()
+}
+
+async fn clear_wire_log(State(s): State<S>, Path(id): Path<String>) -> Response {
+    if s.devices.lookup(&id).is_none() {
+        return detail(StatusCode::NOT_FOUND, format!("Unknown device id {id:?}"));
+    }
+    s.devices.wire_log(&id).clear();
+    StatusCode::NO_CONTENT.into_response()
 }
 
 // ---- discovery ----------------------------------------------------------------------
