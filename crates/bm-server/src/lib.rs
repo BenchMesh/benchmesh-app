@@ -76,6 +76,7 @@ pub fn router(state: S) -> Router {
         .route("/instruments/{klass}/{id}/{ch}/{op}/{value}", post(op_set))
         .route("/drivers", get(drivers))
         .route("/drivers/{id}", get(driver_models))
+        .route("/catalog", get(catalog))
         .route("/config", get(get_config).post(post_config))
         .route("/devices", post(add_device))
         .route("/devices/{id}", put(update_device).delete(delete_device))
@@ -355,6 +356,38 @@ async fn drivers(State(s): State<S>) -> Json<Value> {
         })
         .collect();
     Json(Value::Object(m))
+}
+
+/// Every instrument the definitions describe, by family: classes, links and each model's
+/// verification status (tested / confirmed / awaiting). The list the online service will
+/// mirror, and what the "Supported instruments" view shows.
+async fn catalog(State(s): State<S>) -> Json<Value> {
+    let families: Vec<Value> = s
+        .devices
+        .catalog
+        .devices
+        .values()
+        .filter(|(_, d)| d.enabled)
+        .map(|(_, d)| {
+            let models: Vec<Value> = d
+                .models
+                .iter()
+                .map(|m| json!({"name": m.name, "support": m.support.as_str(), "note": m.note, "channels": m.channels}))
+                .collect();
+            let docs: Vec<&String> = d.sources.iter().filter_map(|src| src.doc.as_ref()).collect();
+            json!({"driver": d.id, "vendor": d.vendor, "family": d.family, "classes": d.classes.keys().collect::<Vec<_>>(),
+                   "transports": d.link.kinds(), "models": models, "manuals": docs})
+        })
+        .collect();
+    let mut counts = Map::new();
+    for f in &families {
+        for m in f["models"].as_array().into_iter().flatten() {
+            let k = m["support"].as_str().unwrap_or("awaiting").to_string();
+            let n = counts.get(&k).and_then(|v| v.as_u64()).unwrap_or(0) + 1;
+            counts.insert(k, json!(n));
+        }
+    }
+    Json(json!({"families": families, "models": counts}))
 }
 
 async fn driver_models(State(s): State<S>, Path(id): Path<String>) -> Response {

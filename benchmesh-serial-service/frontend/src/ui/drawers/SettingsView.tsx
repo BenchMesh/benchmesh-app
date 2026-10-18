@@ -3,15 +3,17 @@
  *
  * Tabs:
  * - Instruments: Instrument configuration
+ * - Supported: instruments BenchMesh has definitions for, with each model's support status
  * - Miscellaneous: App settings (history retention, etc.)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
+import { SupportedView } from './SupportedView';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'miscellaneous';
+type SettingsTab = 'instruments' | 'supported' | 'miscellaneous';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -71,6 +73,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
 
   const tabs = [
     { id: 'instruments', label: 'Instruments', icon: VscTools },
+    { id: 'supported', label: 'Supported', icon: VscChecklist },
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
   ] as const;
 
@@ -105,6 +108,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
             onAutoAddComplete={onAutoAddComplete}
           />
         </div>
+
+        {activeTab === 'supported' && <SupportedView apiBase={apiBase} />}
 
         {activeTab === 'miscellaneous' && (
           <div className="settings-view__sections">

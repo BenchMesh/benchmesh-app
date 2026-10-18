@@ -288,6 +288,20 @@ async fn detect_lists_nothing_without_real_ports() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn catalog_lists_families_with_model_support() {
+    let f = fixture("catalog");
+    let (code, v, _) = call(&f, "GET", "/catalog", None, None).await;
+    assert_eq!(code, StatusCode::OK);
+    let tenma = v["families"].as_array().unwrap().iter().find(|f| f["driver"] == "tenma_72").unwrap();
+    assert_eq!(tenma["classes"], json!(["PSU"]));
+    assert_eq!(tenma["transports"], json!(["serial"]));
+    let m = tenma["models"].as_array().unwrap();
+    assert_eq!(m.iter().find(|m| m["name"] == "72-2540").unwrap()["support"], "tested");
+    assert_eq!(m.iter().find(|m| m["name"] == "72-2545").unwrap()["support"], "awaiting");
+    assert!(v["models"]["tested"].as_u64().unwrap() >= 6, "the bench instruments");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn usbtmc_driver_install_validates_the_request() {
     let f = fixture("winusb");
     let (code, _, _) = call(&f, "POST", "/usbtmc-devices/driver", Some(json!({})), None).await;

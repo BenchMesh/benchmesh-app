@@ -891,3 +891,24 @@
 
 /* Install driver (Windows USBTMC instruments without a usable driver) */
 .install-driver { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 4px; }
+
+/* Supported instruments (catalog) */
+.supported { display: flex; flex-direction: column; gap: 10px; }
+.supported__intro { margin: 0; font-size: 11px; color: var(--kit-ink-2); line-height: 1.45; }
+.supported__counts { display: flex; flex-wrap: wrap; gap: 6px; }
+.supported__count { padding: 4px 8px; font: 400 .68rem/1.2 var(--kit-font-num); color: var(--kit-ink-2); background: var(--kit-ctl); border: 1px solid var(--kit-panel-edge); border-radius: 4px; cursor: pointer; }
+.supported__count b { color: var(--kit-ink); margin-right: 3px; }
+.supported__count[aria-pressed="true"] { border-color: var(--kit-accent); color: var(--kit-ink); }
+.supported__bar { display: flex; gap: 6px; }
+.supported__bar input { flex: 1; min-width: 0; }
+.supported__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.supported__family { padding: 8px; border: 1px solid var(--kit-panel-edge); border-radius: 6px; }
+.supported__head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.supported__name { font-weight: 700; font-size: 12px; color: var(--kit-ink); }
+.supported__meta { font-size: 10px; color: var(--kit-ink-3); }
+.supported__models { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.supported__model { display: inline-flex; align-items: center; gap: 5px; padding: 2px 6px; font: 400 .66rem/1.3 var(--kit-font-num); border-radius: 3px; border: 1px solid var(--kit-panel-edge); color: var(--kit-ink); }
+.supported__model i { font-style: normal; font-size: .58rem; letter-spacing: .03em; }
+.supported__model--tested i { color: var(--kit-ok); }
+.supported__model--confirmed i { color: var(--kit-accent); }
+.supported__model--awaiting i { color: var(--kit-warn); }
