@@ -74,7 +74,8 @@ pub fn format_param(name: &str, spec: &Param, value: &str) -> Result<String, Err
             if spec.kind == ValueKind::Integer && x.fract() != 0.0 {
                 return bad(format!("{value:?} is not an integer"));
             }
-            format_number(x, spec.format.as_deref(), spec.kind == ValueKind::Integer)
+            let x = spec.scale.map_or(x, |k| x * k);
+            format_number(x, spec.format.as_deref(), spec.kind == ValueKind::Integer || spec.scale.is_some())
         }
         ValueKind::Bool => match value.to_ascii_uppercase().as_str() {
             "1" | "ON" | "TRUE" => Ok("1".into()),
@@ -103,6 +104,10 @@ fn format_number(x: f64, fmt: Option<&str>, integer: bool) -> Result<String, Err
         None if integer => Ok(format!("{}", x as i64)),
         None => Ok(format!("{x}")),
         Some("%d") => Ok(format!("{}", x.round() as i64)),
+        Some(f) if f.starts_with("%0") && f.ends_with('d') => {
+            let width = f[2..f.len() - 1].parse::<usize>().map_err(|_| Error::Definition(format!("unsupported format {f}")))?;
+            Ok(format!("{:0width$}", x.round() as i64))
+        }
         Some("%g") => Ok(fmt_g(x, 6)),
         Some(f) => {
             let decimals = f
@@ -139,6 +144,16 @@ mod tests {
         assert_eq!(render(&c, "", &args(&[("v", "12.345")]), 1, &st, &mut no_computed).unwrap(), "VSET1:12.35");
         assert!(matches!(render(&c, "", &args(&[("v", "31")]), 1, &st, &mut no_computed), Err(Error::BadArgument(_))));
         assert!(matches!(render(&c, "", &args(&[("v", "abc")]), 1, &st, &mut no_computed), Err(Error::BadArgument(_))));
+    }
+
+    #[test]
+    fn scaled_zero_padded_integers() {
+        // Manson HCS: VOLT127 = 12.7 V (3 digits, tenths of a volt)
+        let c = cmd("send: 'VOLT{v}'\nparams: {v: {type: number, min: 1, max: 36, scale: 10, format: '%03d'}}\nreply: none");
+        let st = BTreeMap::new();
+        assert_eq!(render(&c, "", &args(&[("v", "12.7")]), 1, &st, &mut no_computed).unwrap(), "VOLT127");
+        assert_eq!(render(&c, "", &args(&[("v", "5")]), 1, &st, &mut no_computed).unwrap(), "VOLT050");
+        assert!(render(&c, "", &args(&[("v", "37")]), 1, &st, &mut no_computed).is_err(), "limits apply to the API value");
     }
 
     #[test]

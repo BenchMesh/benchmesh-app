@@ -88,10 +88,18 @@ impl<'a> Framer<'a> {
         Framed { reply, leftover }
     }
 
-    /// IEEE 488.2 definite-length block `#<n><len><payload>`; returns the payload.
+    /// IEEE 488.2 definite-length block `#<n><len><payload>`; returns the payload. A short text
+    /// prefix before the `#` (Siglent `C1:WF DAT2,`) is skipped.
     fn block(&mut self) -> Result<Option<Framed>, Error> {
-        if self.buf[0] != b'#' {
-            return Err(Error::Framing(format!("block reply does not start with '#': {:?}", preview(&self.buf))));
+        match self.buf.iter().take(BLOCK_PREFIX_MAX + 1).position(|&b| b == b'#') {
+            Some(0) => {}
+            Some(at) => {
+                self.buf.drain(..at);
+            }
+            None if self.buf.len() > BLOCK_PREFIX_MAX => {
+                return Err(Error::Framing(format!("block reply has no '#' header: {:?}", preview(&self.buf))));
+            }
+            None => return Ok(None),
         }
         if self.buf.len() < 2 {
             return Ok(None);
@@ -116,6 +124,9 @@ impl<'a> Framer<'a> {
         Ok(Some(Framed { reply: payload, leftover }))
     }
 }
+
+/// Longest text a device may put before a block's `#` header.
+const BLOCK_PREFIX_MAX: usize = 64;
 
 fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() {
@@ -188,6 +199,17 @@ mod tests {
         let out = f.push(b"cde\n").unwrap().unwrap();
         assert_eq!(out.reply, b"abcde");
         assert_eq!(out.leftover, b"\n");
+    }
+
+    #[test]
+    fn a_text_prefix_before_the_block_header_is_skipped() {
+        let r = rx(RxMode::Message, None, "", "\r\n");
+        let mut f = Framer::new(&r, &Reply::Block);
+        assert_eq!(f.push(b"C1:WF DAT2,").unwrap(), None, "prefix alone: wait for the header");
+        let out = f.push(b"#13\x01\x02\x03\n\n").unwrap().unwrap();
+        assert_eq!(out.reply, [1, 2, 3]);
+        let mut f = Framer::new(&r, &Reply::Block);
+        assert!(f.push(&[b'x'; 80]).is_err(), "no header within the prefix limit");
     }
 
     #[test]

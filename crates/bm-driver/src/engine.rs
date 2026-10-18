@@ -127,6 +127,8 @@ impl Engine {
             silent_polls: 0,
             stats: ExchangeStats::default(),
         };
+        // a connect banner (tinySA / NanoVNA shells) must not become the identify reply
+        e.drain()?;
         let idn = e.run(&def.identify, 1, &BTreeMap::new())?.value();
         e.idn = idn.as_str().unwrap_or_default().to_string();
         e.model = def

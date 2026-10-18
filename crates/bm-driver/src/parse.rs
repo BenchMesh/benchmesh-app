@@ -77,6 +77,19 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
             let n = lenient_number(&t).ok_or_else(|| Error::Parse(format!("not a number: {t:?}")))?;
             Ok(Cur::Val(json!(n)))
         }
+        ParseStep::Scale(k) => {
+            let n = match cur {
+                Cur::Val(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
+                other => {
+                    let t = other.text("scale")?;
+                    lenient_number(&t).ok_or_else(|| Error::Parse(format!("scale: not a number: {t:?}")))?
+                }
+            };
+            // 127 × 0.1 is 12.700000000000001 in binary floating point: keep 12 significant digits
+            let x: f64 = format!("{:.11e}", n * k).parse().unwrap_or(n * k);
+            Ok(Cur::Val(json!(x)))
+        }
+        ParseStep::Numbers => Ok(Cur::Val(Value::Array(numbers(&cur.text("numbers")?)?))),
         ParseStep::Byte => match cur {
             Cur::Bytes(b) => Ok(Cur::Val(json!(b[0]))),
             Cur::Val(Value::String(t)) => {
@@ -114,7 +127,19 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
         }
         ParseStep::Bits(spec) => {
             let n = match cur {
-                Cur::Val(Value::Number(n)) => n.as_u64().ok_or_else(|| Error::Parse("bits: not an unsigned integer".into()))?,
+                Cur::Val(Value::Number(n)) => n
+                    .as_u64()
+                    .or_else(|| n.as_f64().filter(|f| *f >= 0.0 && f.fract() == 0.0).map(|f| f as u64))
+                    .ok_or_else(|| Error::Parse("bits: not an unsigned integer".into()))?,
+                // decimal, or hex with 0x (Siglent `SYST:STAT?` → `0x0224`)
+                Cur::Val(Value::String(t)) => {
+                    let t = t.trim();
+                    match t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")) {
+                        Some(h) => u64::from_str_radix(h, 16).ok(),
+                        None => t.parse().ok(),
+                    }
+                    .ok_or_else(|| Error::Parse(format!("bits: not an unsigned integer: {t:?}")))?
+                }
                 Cur::Bytes(b) => b[0] as u64,
                 Cur::Val(v) => return Err(Error::Parse(format!("bits: unexpected {v}"))),
             };
@@ -143,6 +168,19 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
             Ok(if values.contains(&t) { Cur::Val(Value::Null) } else { Cur::Val(Value::String(t)) })
         }
     }
+}
+
+fn numbers(t: &str) -> Result<Vec<Value>, Error> {
+    let mut t = t.trim();
+    if let Some(rest) = t.strip_prefix('#') {
+        // IEEE 488.2 header `#<n><n digits>` before an ASCII list
+        let n = rest.chars().next().and_then(|c| c.to_digit(10)).unwrap_or(0) as usize;
+        t = rest.get(1 + n..).ok_or_else(|| Error::Parse("numbers: truncated block header".into()))?;
+    }
+    t.split(|c: char| c == ',' || c == ';' || c.is_whitespace())
+        .filter(|f| !f.is_empty())
+        .map(|f| lenient_number(f).map(|n| json!(n)).ok_or_else(|| Error::Parse(format!("numbers: not a number: {f:?}"))))
+        .collect()
 }
 
 fn samples(b: &[u8], format: SampleFormat) -> Result<Vec<Value>, Error> {
@@ -177,6 +215,26 @@ mod tests {
         assert_eq!(parse_reply(&c, b"0.988 ").unwrap(), json!(0.988));
         assert_eq!(parse_reply(&c, b"+0.0000E-308").unwrap(), json!(0.0));
         assert!(parse_reply(&c, b"OL").is_err());
+    }
+
+    #[test]
+    fn hex_and_scaled_numbers() {
+        let c = cmd("send: x\nparse: [trim, {bits: {ch1_cv: '0', out1: '4'}}]");
+        assert_eq!(parse_reply(&c, b"0x0011\n").unwrap(), json!({"ch1_cv": true, "out1": true}));
+        let c = cmd("send: x\nparse: [trim, number, {bits: {b2: '2'}}]");
+        assert_eq!(parse_reply(&c, b"4").unwrap(), json!({"b2": true}), "bits after number (a float)");
+        let c = cmd("send: x\nparse: [trim, {scale: 0.1}]");
+        assert_eq!(parse_reply(&c, b"127").unwrap(), json!(12.7));
+    }
+
+    #[test]
+    fn ascii_number_lists() {
+        let c = cmd("send: x\nparse: [numbers]");
+        // Siglent SSA: trailing comma; tinySA: one value per line; Rigol: IEEE header first
+        assert_eq!(parse_reply(&c, b"-80.10,-79.9,1.5E+01,").unwrap(), json!([-80.1, -79.9, 15.0]));
+        assert_eq!(parse_reply(&c, b"-9.1e+01\r\n-8.9e+01\r\n").unwrap(), json!([-91.0, -89.0]));
+        assert_eq!(parse_reply(&c, b"#9000000011-1.0, -2.0").unwrap(), json!([-1.0, -2.0]));
+        assert!(parse_reply(&c, b"1,x,3").is_err());
     }
 
     #[test]

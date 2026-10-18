@@ -499,9 +499,13 @@ pub struct Param {
     pub min: Option<f64>,
     #[serde(default)]
     pub max: Option<f64>,
-    /// printf-style wire format for numbers: `%.2f`, `%.3f`, `%d`, `%g`.
+    /// printf-style wire format for numbers: `%.2f`, `%.3f`, `%d`, `%03d` (zero-padded), `%g`.
     #[serde(default)]
     pub format: Option<String>,
+    /// Wire value = API value × scale (after the min/max check), for devices that take scaled
+    /// integers: Manson `VOLT127` is 12.7 V with `scale: 10, format: "%03d"`.
+    #[serde(default)]
+    pub scale: Option<f64>,
     #[serde(default)]
     pub unit: Option<String>,
     /// For `type: enum`: API value -> wire text.
@@ -546,6 +550,12 @@ pub enum ParseStep {
     Upper,
     /// Parse as a floating point number.
     Number,
+    /// Multiply a number (scaled-integer replies: `{scale: 0.01}` turns `1270` into 12.7).
+    Scale(f64),
+    /// ASCII list of numbers → list (`-80.1,-79.9,…`): separated by commas, semicolons or
+    /// whitespace/newlines; empty fields (trailing comma) are skipped; an IEEE 488.2 header
+    /// (`#9000001234`) before the list is dropped. Spectrum analyzer / VNA traces, DAQ scans.
+    Numbers,
     /// Take the first byte as an unsigned integer (binary replies).
     Byte,
     /// Split and keep one field.

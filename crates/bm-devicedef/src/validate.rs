@@ -7,7 +7,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-static NUMBER_FORMAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^%(\.\d+)?[fdg]$").unwrap());
+static NUMBER_FORMAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^%((\.\d+)?[fg]|0?\d*d)$").unwrap());
 static SERIAL_FORMAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[5-8][NEOMS](1|1\.5|2)$").unwrap());
 static BIT_SPEC: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+)(\.\.(\d+))?$").unwrap());
 

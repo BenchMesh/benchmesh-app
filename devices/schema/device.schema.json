@@ -386,7 +386,7 @@
       "properties": {
         "format": {
           "default": null,
-          "description": "printf-style wire format for numbers: `%.2f`, `%.3f`, `%d`, `%g`.",
+          "description": "printf-style wire format for numbers: `%.2f`, `%.3f`, `%d`, `%03d` (zero-padded), `%g`.",
           "type": [
             "string",
             "null"
@@ -421,6 +421,15 @@
           "description": "For `type: string`: regex the value must match.",
           "type": [
             "string",
+            "null"
+          ]
+        },
+        "scale": {
+          "default": null,
+          "description": "Wire value = API value × scale (after the min/max check), for devices that take scaled\nintegers: Manson `VOLT127` is 12.7 V with `scale: 10, format: \"%03d\"`.",
+          "format": "double",
+          "type": [
+            "number",
             "null"
           ]
         },
@@ -471,6 +480,25 @@
         {
           "const": "number",
           "description": "Parse as a floating point number.",
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Multiply a number (scaled-integer replies: `{scale: 0.01}` turns `1270` into 12.7).",
+          "properties": {
+            "scale": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "scale"
+          ],
+          "type": "object"
+        },
+        {
+          "const": "numbers",
+          "description": "ASCII list of numbers → list (`-80.1,-79.9,…`): separated by commas, semicolons or\nwhitespace/newlines; empty fields (trailing comma) are skipped; an IEEE 488.2 header\n(`#9000001234`) before the list is dropped. Spectrum analyzer / VNA traces, DAQ scans.",
           "type": "string"
         },
         {
