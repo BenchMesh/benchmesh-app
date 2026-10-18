@@ -198,3 +198,23 @@ fn captured_wire_traffic_is_covered_by_definitions() {
         unmatched.iter().map(|((d, w), n)| format!("  {d}: {w:?} x{n}")).collect::<Vec<_>>().join("\n")
     );
 }
+
+/// ai_context/website/instrument-notes.yaml (notes for the public instrument list) names only
+/// existing definitions, with known kinds.
+#[test]
+fn website_notes_refer_to_existing_definitions() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let text = std::fs::read_to_string(root.join("ai_context/website/instrument-notes.yaml")).unwrap();
+    let notes: serde_yaml_ng::Value = serde_yaml_ng::from_str(&text).unwrap();
+    let cat = bm_devicedef::load_catalog(&root.join("devices")).unwrap();
+    let kinds = ["partial_interface", "unsupported", "unverified", "prefer", "known_issue"];
+    for (id, list) in notes["families"].as_mapping().unwrap() {
+        let id = id.as_str().unwrap();
+        assert!(cat.devices.contains_key(id), "instrument-notes.yaml: unknown definition `{id}`");
+        for n in list.as_sequence().unwrap() {
+            let k = n["kind"].as_str().unwrap_or_default();
+            assert!(kinds.contains(&k), "{id}: unknown note kind `{k}`");
+            assert!(n["text"].as_str().is_some_and(|t| !t.is_empty()), "{id}: note without text");
+        }
+    }
+}

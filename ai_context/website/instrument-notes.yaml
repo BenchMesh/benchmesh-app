@@ -1,0 +1,132 @@
+# Per-family notes for the public instrument list (online service / website).
+# Collected 2026-10-18 from the interface sweep, the coverage research and the library
+# inventory (ai_context/migration/coverage/*.md). One entry per definition id; kinds:
+#   partial_interface   — only some models of the family have this interface
+#   unsupported         — an interface the instrument has that BenchMesh cannot use (yet)
+#   unverified          — a port / USB id / reply not taken from the manual: confirm on first contact
+#   prefer              — which interface works better, and why
+#   known_issue         — reported by users / libraries (firmware, timing, quirks)
+# The website shows these next to each model's status (Bench-tested / Community-confirmed /
+# Awaiting confirmation); a user's first-contact report can resolve `unverified` items.
+schema: benchmesh.notes/v1
+updated: 2026-10-18
+families:
+  rigol_dho800:
+    - {kind: unverified, text: "LAN socket port 5555 is not stated in the DHO800/900 guide (community: pydho800; Rigol's usual port)."}
+    - {kind: known_issue, text: "Screenshot (:DISPlay:DATA? PNG) over the Linux kernel USBTMC driver crashed a DHO804; screenshots are disabled."}
+  rigol_dp800:
+    - {kind: partial_interface, text: "LAN and RS-232 are fitted on the DP8xxA models; on DP811/821/831/832 they are paid options."}
+    - {kind: unverified, text: "LAN port 5555 comes from community DP832 tools, not the guide."}
+    - {kind: unsupported, text: "GPIB only through Rigol's USB-GPIB converter."}
+    - {kind: known_issue, text: "DP831 CH3 is 0 to -32 V; the voltage setter only offers 0 and above."}
+  rigol_dg4000:
+    - {kind: unverified, text: "LAN port 5555 assumed (Rigol's usual port; not in the guide). USB product id conflicts between sources (0640 / 0641): vendor id only."}
+  rigol_dl3000:
+    - {kind: partial_interface, text: "LAN on some models only (see definition)."}
+    - {kind: unsupported, text: "GPIB only through Rigol's USB-GPIB converter."}
+    - {kind: known_issue, text: "Measurement replies reported as two lines (library inventory); current range defaults to low (4 A / 6 A)."}
+  rigol_dm3000:
+    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket) on DM3058/DM3068; DM3058E has no LAN or GPIB."}
+  rigol_dsa800:
+    - {kind: unverified, text: "USB product id not documented: vendor id only."}
+  rigol_dho1000:
+    - {kind: unverified, text: "USB product id not documented: vendor id only."}
+  keysight_infiniivision:
+    - {kind: partial_interface, text: "1000 X: EDUX1002A / DSOX1102A have no LAN. 2000 X: LAN only with the LAN/VGA module. 1200 X: unconfirmed. 3000T: community only."}
+    - {kind: unverified, text: "USB vendor 2a8d only; Agilent-era units use 0957; product ids differ per model."}
+    - {kind: known_issue, text: "Single-shot never reads back (the sweep query returns AUTO/NORM only), so the UI confirmation of Single times out."}
+  keysight_truevolt:
+    - {kind: partial_interface, text: "34460A: LAN only with the 3446LANU licence."}
+  keysight_33220a:
+    - {kind: unsupported, text: "GPIB (built in) is not supported; use USB or LAN."}
+  hantek_hdm3000:
+    - {kind: partial_interface, text: "LAN only on the B / H / X variants."}
+    - {kind: unsupported, text: "RS-232/485 settings are not documented."}
+  hantek_hdg2000b:
+    - {kind: unsupported, text: "LAN is VXI-11 / LXI (web control) only, no raw socket."}
+  bk_894:
+    - {kind: unsupported, text: "LAN is VXI-11 only (manual p.76: raw socket not supported)."}
+  bk_4050b:
+    - {kind: unverified, text: "LAN port 5025 assumed from the Siglent firmware this rebrand runs."}
+    - {kind: known_issue, text: "LAN is on by default and must be switched off for USB-TMC to answer (manual p.85)."}
+  bk_4060b:
+    - {kind: unverified, text: "LAN port 5025 assumed (same firmware as Siglent SDG2000X)."}
+  bk_8600:
+    - {kind: unsupported, text: "GPIB not supported."}
+    - {kind: unverified, text: "USB product id not documented (vendor 2ec7); 9600 baud assumed."}
+  unit_ut8805e:
+    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket port documented)."}
+  unit_ut8806e:
+    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket port documented)."}
+    - {kind: known_issue, text: "The manual prints its identify reply as UT8805A."}
+  unit_utg1000x:
+    - {kind: unsupported, text: "LAN is VXI-11 only."}
+  unit_utg2000b:
+    - {kind: unsupported, text: "LAN is VXI-11 only."}
+  unit_utg4000a:
+    - {kind: unsupported, text: "LAN is VXI-11 only."}
+  unit_upo2000:
+    - {kind: unsupported, text: "LAN is documented only through VISA / VXI-11."}
+  unit_uts:
+    - {kind: unverified, text: "LAN port 5025 has no source."}
+  gwinstek_gds1000b:
+    - {kind: unverified, text: "The socket server has no default port in the guide: give host:port when adding it."}
+  gwinstek_gsp9300:
+    - {kind: unsupported, text: "LAN is LXI / HiSLIP only (no raw socket); GPIB not supported."}
+  gwinstek_gpp:
+    - {kind: partial_interface, text: "LAN and GPIB are options on every model."}
+  gwinstek_gdm9000:
+    - {kind: unverified, text: "USB product id 0059 from a libsigrok rule for GDM-9061; GDM-9060 assumed the same."}
+  owon_xdm3000:
+    - {kind: unverified, text: "USB-TMC 5345:1234 from a community tool; LAN factory port 3000 (user manual p.42)."}
+    - {kind: known_issue, text: "Community: do not use above 57600 baud on the serial link; slow rate letter is S (not L)."}
+  owon_xdm:
+    - {kind: known_issue, text: "Overload is reported as 1E9 (would read as 1 GΩ); diode and continuity swapped below firmware V4.3; 4-wire resistance only on 2041/3041/3051."}
+  owon_spm:
+    - {kind: unsupported, text: "LAN models: no socket port documented."}
+  owon_odp:
+    - {kind: unsupported, text: "LAN named in the programming manual but no port documented."}
+  owon_spe:
+    - {kind: unsupported, text: "-L (LAN) variants: no socket port documented."}
+  owon_xdg:
+    - {kind: unsupported, text: "Optional RS-232 on XDG2000: baud rate not documented."}
+  siglent_spd3303x:
+    - {kind: unverified, text: "USB id 0483:7540 and LAN port from community reports; some units enumerate as F4EC:1430."}
+    - {kind: known_issue, text: "RS PRO RSPD3303X-E rebadges answer an identify without 'Siglent'. Firmware 1.01.01.02.05 rejects LAN commands ending in a line feed."}
+  siglent_sdg2000x:
+    - {kind: prefer, text: "Use LAN on Linux: SDG2122X USB-TMC replies carry a wrong bTag that the kernel driver rejects."}
+  siglent_sdm3000:
+    - {kind: unverified, text: "LAN port 5025 confirmed on hardware by a user; Siglent's app note says 5024."}
+  siglent_sdm4000:
+    - {kind: unverified, text: "Documents VXI-11; raw socket 5025 unverified."}
+  siglent_sdl1000x:
+    - {kind: unverified, text: "USB product id not documented (vendor f4ec only)."}
+  siglent_spd4000x:
+    - {kind: unverified, text: "USB product id not documented (vendor f4ec only)."}
+    - {kind: unsupported, text: "GPIB only through a USB-GPIB converter."}
+  tti_cpx:
+    - {kind: unsupported, text: "GPIB (option) not supported."}
+  tti_mx:
+    - {kind: unsupported, text: "GPIB (option) not supported."}
+  korad_kel10x:
+    - {kind: unsupported, text: "LAN is UDP (port 18190): not supported."}
+  korad_ka:
+    - {kind: known_issue, text: "Libraries pace commands at 50-100 ms (450 ms on Velleman PS3005D V1.3); we use 20-50 ms."}
+  tenma_72:
+    - {kind: known_issue, text: "72-13320/13330 and 72-13360 use different protocols from the 72-2540 (line-feed terminator, per-channel output, other status layout): not yet modelled."}
+  keithley_dmm6500:
+    - {kind: unsupported, text: "RS-232 and GPIB need KTTI accessory cards (not supported). Must be in SCPI mode, not TSP."}
+  juntek_dpm86xx:
+    - {kind: known_issue, text: "Replies end in '.' (libraries), which may break the identify match."}
+  feeltech_fy6900:
+    - {kind: known_issue, text: "The frequency write unit (µHz or Hz) depends on the firmware version; CH2 not yet supported."}
+  itech_it8500plus:
+    - {kind: known_issue, text: "Every outside source shows only the binary protocol on the TTL serial port, not SCPI."}
+  tinysa:
+    - {kind: known_issue, text: "Sweep-time query fails below 1 s (firmware prints e.g. 462ms)."}
+  riden_rd6006:
+    - {kind: known_issue, text: "Recent stock firmware reportedly breaks Modbus; the community recommends UniSoft firmware. Slave address fixed at 1 for now."}
+  riden_rd6006p:
+    - {kind: known_issue, text: "Recent stock firmware reportedly breaks Modbus; the community recommends UniSoft firmware."}
+  riden_rd6012:
+    - {kind: known_issue, text: "Recent stock firmware reportedly breaks Modbus; RD6012P (range-dependent scale) not covered."}

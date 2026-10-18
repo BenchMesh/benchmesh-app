@@ -53,3 +53,11 @@ Modbus instruments give a register map instead of replies (`modbus: {holding: {r
 
 Replies are text (YAML escapes such as `"\x51"` for binary bytes); in `terminator` framing the rx
 terminator is appended when missing. Commands that are not matched get no reply (setters).
+
+## Notes for the website
+
+`ai_context/website/instrument-notes.yaml` collects, per definition, what users should know
+before buying or connecting: interfaces only some models have, interfaces BenchMesh cannot use
+yet, ports / USB ids not taken from a manual (to confirm on first contact), which interface to
+prefer, and issues reported by users. The online service shows them next to each model's status;
+keep the file in step when definitions change (a test checks the ids).
