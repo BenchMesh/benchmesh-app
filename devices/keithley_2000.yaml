@@ -67,7 +67,7 @@ commands:
     settle_ms: 800
     source: "UM p.142 :RANGe[:UPPer] <n> (0 to 1010 V …), :RANGe:AUTO ON"
   nplc_q:
-    parse: [trim, number, {map: {"0.01": "0.01", "0.1": "0.1", "1.0": "1", "10.0": "10"}}]
+    parse: [trim, number, {map: {"0.01": "0.01", "0.1": "0.1", "1.0": "1", "10.0": "10", "_": "{raw}"}}]
     source: "UM p.142 :NPLCycles?"
   rate_set:
     params:

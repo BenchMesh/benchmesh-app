@@ -121,7 +121,7 @@ fn apply(step: &ParseStep, cur: Cur) -> Result<Cur, Error> {
         ParseStep::Map(m) => {
             let t = cur.text("map")?;
             match m.get(&t).or_else(|| m.get("_")) {
-                Some(v) => s(v.clone()),
+                Some(v) => s(v.replace("{raw}", &t)),
                 None => Err(Error::Parse(format!("map: unexpected value {t:?}"))),
             }
         }
@@ -215,6 +215,13 @@ mod tests {
         assert_eq!(parse_reply(&c, b"0.988 ").unwrap(), json!(0.988));
         assert_eq!(parse_reply(&c, b"+0.0000E-308").unwrap(), json!(0.0));
         assert!(parse_reply(&c, b"OL").is_err());
+    }
+
+    #[test]
+    fn map_can_pass_unlisted_values_through() {
+        let c = cmd("send: x\nparse: [trim, number, {map: {'10.0': '10', _: '{raw}'}}]");
+        assert_eq!(parse_reply(&c, b"+1.00000000E+01").unwrap(), json!("10"));
+        assert_eq!(parse_reply(&c, b"+2.00000000E+00").unwrap(), json!("2.0"));
     }
 
     #[test]

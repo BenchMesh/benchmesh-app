@@ -1,0 +1,68 @@
+# BenchMesh definition id -> library instrument classes whose protocol test vectors exercise the
+# same wire dialect. Read by crates/bm-driver/examples/crosscheck.rs; the vectors themselves live
+# outside the repository (BenchMeshDOC/_vectors/<library>/<instrument_class>.json, extract.py).
+#
+#   <definition id>:
+#     transport: usbtmc | serial | tcp     # whose framing strips the vector replies
+#     vectors: {<library>: [<instrument_class>, ...]}
+#     note: why the classes match (models, dialect caveats)
+#
+# Libraries: pymeasure (MIT, expected_protocol tests), qcodes (MIT, pyvisa-sim YAML: replies are
+# simulator defaults, not captures), instrumentkit (AGPLv3: facts only, nothing copied in).
+# Full overlap matrix: ai_context/migration/coverage/LIBRARIES.md.
+
+# ---- pilot families
+keysight_33500b:
+  transport: usbtmc
+  vectors: {pymeasure: [Agilent33500], qcodes: [Keysight_33xxx]}
+  note: "PyMeasure Agilent33500 covers 33500B/33600A; QCoDeS Keysight_33xxx sim (33511B/33522B/33622A)"
+rigol_dg800:
+  transport: usbtmc
+  vectors: {pymeasure: [DG800]}
+  note: "PyMeasure rigol.DG800 (DG800/DG900 dialect)"
+siglent_spd1000x:
+  transport: usbtmc
+  vectors: {pymeasure: [SPD1168X, SPD1305X]}
+  note: "PyMeasure siglenttechnologies SPD1168X / SPD1305X (single-channel SPD1000X series)"
+keithley_dmm6500:
+  transport: usbtmc
+  vectors: {pymeasure: [KeithleyDMM6500]}
+  note: "PyMeasure keithley.KeithleyDMM6500 (SCPI command set, not TSP)"
+
+# ---- further overlaps (reports generated, not yet reviewed against the manuals)
+agilent_34401a:
+  transport: serial
+  vectors: {pymeasure: [HP34401A]}
+  note: "PyMeasure hp.HP34401A"
+keithley_2000:
+  transport: serial
+  vectors: {pymeasure: [Keithley2000]}
+  note: "PyMeasure keithley.Keithley2000"
+keysight_truevolt:
+  transport: usbtmc
+  vectors: {qcodes: [Keysight_34465A]}
+  note: "QCoDeS Keysight 344xxA sim (34465A)"
+keysight_33220a:
+  transport: usbtmc
+  vectors: {instrumentkit: [Agilent33220a], pymeasure: [Keysight33250A]}
+  note: "InstrumentKit agilent.Agilent33220a; PyMeasure Keysight33250A (same 33xxx legacy dialect)"
+keysight_e4980a:
+  transport: usbtmc
+  vectors: {pymeasure: [AgilentE4980], qcodes: [Keysight_E4980A]}
+keysight_infiniivision:
+  transport: usbtmc
+  vectors: {pymeasure: [KeysightDSOX1102G]}
+  note: "PyMeasure KeysightDSOX1102G (InfiniiVision 1000 X)"
+siglent_sds1000xhd:
+  transport: usbtmc
+  vectors: {pymeasure: [SDS1000XHD]}
+rigol_dho800:
+  transport: usbtmc
+  vectors: {pymeasure: [DHOBase]}
+  note: "PyMeasure rigol DHO base (DHO800/DHO900)"
+rigol_dho1000:
+  transport: usbtmc
+  vectors: {pymeasure: [DHOBase]}
+rigol_ds1000z:
+  transport: usbtmc
+  vectors: {qcodes: [Rigol_DS1074Z]}

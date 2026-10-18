@@ -51,7 +51,7 @@ commands:
   rng_q: {source: "RM p.12-110 :RANGe[:UPPer]? (full scale of the present range)"}
   auto_q: {source: "RM p.12-109 :RANGe:AUTO? → 0|1"}
   nplc_q:
-    parse: [trim, number, {map: {"0.0005": "0.0005", "0.01": "0.01", "0.1": "0.1", "1.0": "1", "5.0": "5", "10.0": "10", "12.0": "12"}}]
+    parse: [trim, number, {map: {"0.0005": "0.0005", "0.01": "0.01", "0.1": "0.1", "1.0": "1", "5.0": "5", "10.0": "10", "12.0": "12", "_": "{raw}"}}]
     source: "RM :<function>:NPLCycles? (default 1)"
   rate_set:
     params:

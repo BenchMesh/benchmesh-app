@@ -31,7 +31,7 @@ commands:
   rng_q: {source: "p.116 [SENSe:]<function>:RANGe?"}
   auto_q: {source: "p.98 <function>:RANGe:AUTO? → 0|1"}
   nplc_q:
-    parse: [trim, number, {map: {"0.02": "0.02", "0.1": "0.1", "1.0": "1", "10.0": "10"}}]
+    parse: [trim, number, {map: {"0.02": "0.02", "0.1": "0.1", "1.0": "1", "10.0": "10", "_": "{raw}"}}]
     source: "p.60, p.120 <function>:NPLCycles {0.02|0.1|1|10}"
   rate_set:
     params:

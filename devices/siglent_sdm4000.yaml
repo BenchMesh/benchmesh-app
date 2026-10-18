@@ -31,7 +31,7 @@ commands:
   func: {source: "p.51 [SENSe:]FUNCtion? (quoted short form)"}
   meas: {source: "p.15 READ?; overload 9.9E37 p.33-38"}
   nplc_q:
-    parse: [trim, number, {map: {"0.001": "0.001", "0.01": "0.01", "0.1": "0.1", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    parse: [trim, number, {map: {"0.001": "0.001", "0.01": "0.01", "0.1": "0.1", "1.0": "1", "10.0": "10", "100.0": "100", "_": "{raw}"}}]
     source: "p.70 VOLTage[:DC]:NPLC? → +1.00000000E+01"
   rate_set:
     params:

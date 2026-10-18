@@ -565,7 +565,8 @@ pub enum ParseStep {
     /// Regex capture group (1-based; 0 = whole match).
     Regex { pattern: String, group: usize },
     Replace { from: String, to: String },
-    /// Exact-match mapping; unmapped values are an error unless `_` is present.
+    /// Exact-match mapping; unmapped values are an error unless `_` is present. `{raw}` in a
+    /// value stands for the input text (`_: "{raw}"` passes unlisted values through).
     Map(BTreeMap<String, String>),
     /// Bit fields from an integer: name -> `N` (one bit, bool) or `A..B` (inclusive, integer).
     Bits(BTreeMap<String, String>),

@@ -618,7 +618,7 @@
         },
         {
           "additionalProperties": false,
-          "description": "Exact-match mapping; unmapped values are an error unless `_` is present.",
+          "description": "Exact-match mapping; unmapped values are an error unless `_` is present. `{raw}` in a\nvalue stands for the input text (`_: \"{raw}\"` passes unlisted values through).",
           "properties": {
             "map": {
               "additionalProperties": {

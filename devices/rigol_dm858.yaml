@@ -30,7 +30,7 @@ commands:
   rng_q: {source: "p.109 [SENSe]:VOLTage:DC:RANGe? → 1.00000000E+00"}
   auto_q: {source: "p.110 [SENSe]:VOLTage:DC:RANGe:AUTO? → 0|1"}
   nplc_q:
-    parse: [trim, number, {map: {"0.4": "0.4", "5.0": "5", "20.0": "20"}}]
+    parse: [trim, number, {map: {"0.4": "0.4", "5.0": "5", "20.0": "20", "_": "{raw}"}}]
     source: "p.110 [SENSe]:VOLTage[:DC]:NPLC? {0.4|5|20}"
   rate_set:
     params:

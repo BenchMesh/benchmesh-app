@@ -37,7 +37,7 @@ commands:
     source: "PR p.23 [SENSe:]VOLTage:{AC|DC}:RANGe? → + 1.00000000 E+01"
   auto_q: {source: "PR p.23 RANGe:AUTO? → 0 (OFF) or 1 (ON)"}
   nplc_q:
-    parse: [trim, {replace: {from: " ", to: ""}}, number, {map: {"0.001": "0.001", "0.02": "0.02", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100"}}]
+    parse: [trim, {replace: {from: " ", to: ""}}, number, {map: {"0.001": "0.001", "0.02": "0.02", "0.2": "0.2", "1.0": "1", "10.0": "10", "100.0": "100", "_": "{raw}"}}]
     source: "PR p.25 [SENSe:]VOLTage[:DC]:NPLC? {0.02|0.2|1|10|100}"
   rate_set:
     params:
