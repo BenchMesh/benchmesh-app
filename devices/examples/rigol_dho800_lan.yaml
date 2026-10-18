@@ -1,0 +1,32 @@
+# LAN check of the bench-tested DHO804 definition: the reply formats of the USB TMC captures, framed
+# as a raw socket delivers them (line feed after every reply, blocks included).
+definition: rigol_dho800
+transport: tcpip
+model: DHO804
+replies:
+  - {send: '\*IDN\?', reply: "RIGOL TECHNOLOGIES,DHO804,DHO8A272907001,00.01.03", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "1.000000e+00", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "1.000000e-02", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "AC", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "1.000000e+01", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "20M", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "1", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TIMebase:MAIN:SCALe\?', reply: "2.0000000e-04", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TIMebase:MAIN:OFFSet\?', reply: "2.0000000e-04", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TRIGger:STATus\?', reply: "TD", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TRIGger:SWEep\?', reply: "SING", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TRIGger:EDGE:SOURce\?', reply: "CHAN1", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "NEG", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':TRIGger:EDGE:LEVel\?', reply: "1.600000e-01", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVER", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':ACQuire:SRATe\?', reply: "2.000000e+09", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':WAVeform:PREamble\?', reply: "0,2,6000000,1,1.000000e-09,-3.000000e-03,0,4.132813e-01,0,122", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000008\x7a\x7f\x90\xa0\x7a\x60\x50\x7a\n", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':MEASure:ITEM\? VPP,CHANnel[1-4]', reply: "3.120000e+00", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':MEASure:ITEM\? VAVG,CHANnel[1-4]', reply: "8.888889e-03", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':MEASure:ITEM\? VRMS,CHANnel[1-4]', reply: "1.100000e+00", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+  - {send: ':MEASure:ITEM\? FREQuency,CHANnel[1-4]', reply: "9.9E37", source: "same reply formats as the DS1000Z guide (shared dialect) and the DHO804 USB TMC captures"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 1.0, OFFSET: 0.01, COUPLING: "AC", BWLIMIT: "20M", INVERT: "ON", PROBE: 10, TIMEBASE: 2.0e-4, TRIG_SWEEP: "SING", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "NEG", TRIG_LEVEL: 0.16, ACQ_TYPE: "AVER", SRATE: 2.0e9, TRIG_STATUS: "TD", WAVE: [122, 127, 144, 160, 122, 96, 80, 122], WAVE_Y0: 122, WAVE_DY: 0.4132813, WAVE_X0: -0.003, WAVE_DX: 1.0e-9, VPP: 3.12, FREQ: null}

@@ -18,6 +18,15 @@ models:
 identify: idn
 link:
   usbtmc: {vid: "1ab1", pid: "044d"}
+  # LAN (Programming Guide §2.2.2 "Remote Control via LAN", :LAN commands §3.14): raw SCPI socket on
+  # Rigol's port 5555 (not stated in the guide; used by pydho800 and Rigol's other scopes). Over a
+  # socket every reply, blocks included, ends with a line feed; a stray one is skipped.
+  tcp:
+    port: 5555
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", timeout_ms: 2000, drain_idle_ms: 100}
+      timing: {min_gap_ms: 0}
 framing:
   tx: {terminator: "\n"}
   rx: {mode: message, strip_trailing: "\n", timeout_ms: 2000}
