@@ -10,6 +10,7 @@ import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
 import { RecorderDock } from '../recording/RecorderDock'
+import { UpdatePrompt } from '../update/UpdatePrompt'
 import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, saveLayout } from './layout'
 
 // loaded when first opened (with its chart)
@@ -95,6 +96,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
 
   return (
     <div className="bench">
+      <UpdatePrompt />
       <header className="bench-top">
         <span className="bench-brand">BenchMesh</span>
         <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>

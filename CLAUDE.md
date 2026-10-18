@@ -51,6 +51,11 @@ cargo run -p bm-server -- --config captures/bench-config.yaml --simulate capture
 cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
 ```
 
+**App updates:** the desktop app checks once per start for a newer *published* GitHub release
+(signed `latest.json`, `crates/benchmesh-app/src/update.rs`) and the UI offers it in a modal
+(`frontend/src/ui/update/`). Releases are signed with the updater key (CI secrets
+`TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]`); losing that key means installed apps can no longer update.
+
 **Instrument identity:** a config entry may carry `match` (USB vid/pid + serial number or chip
 revision, port position as a tie-breaker, and the serial number from the identify reply) instead
 of a fixed `port`/`device`; the instrument is then found on whatever port it is plugged into, on

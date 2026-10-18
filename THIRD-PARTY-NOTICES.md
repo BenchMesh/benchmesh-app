@@ -115,6 +115,11 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT
 - **URL**: https://github.com/tokio-rs/axum, https://github.com/tokio-rs/tokio, https://github.com/tower-rs/tower-http
 
+### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
+- **License**: Apache-2.0 OR MIT (used under MIT)
+- **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace
+- Desktop app shell; the updater checks for, verifies (minisign signature) and installs new versions.
+
 ### tower, tokio-tungstenite, futures-util (test-only)
 - **License**: MIT / MIT / MIT OR Apache-2.0
 - **URL**: https://github.com/tower-rs/tower, https://github.com/snapview/tokio-tungstenite, https://github.com/rust-lang/futures-rs

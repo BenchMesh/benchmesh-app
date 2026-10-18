@@ -171,6 +171,30 @@ html, body { background: var(--kit-ground); }
 .bench-drawer__head h2 { margin: 0; font: 600 1rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; }
 .bench-drawer__body { flex: 1; overflow: auto; min-height: 0; }
 
+/* ---- modal (update prompt) ------------------------------------------------------ */
+.bench-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; }
+.bench-modal__scrim { position: absolute; inset: 0; background: var(--kit-scrim); }
+.bench-modal__box {
+  position: relative; width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--kit-panel); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge);
+  border-radius: var(--kit-r-panel); box-shadow: var(--kit-sheet-shadow); padding: 18px 20px;
+  font: 400 .85rem/1.45 var(--kit-font-label);
+}
+.bench-modal__box h2 { margin: 0 0 10px; font: 600 1rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; }
+.bench-modal__notes {
+  max-height: 180px; overflow: auto; white-space: pre-wrap; margin: 10px 0; padding: 8px 10px;
+  background: var(--kit-ctl-hi); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  font: 400 .78rem/1.4 var(--kit-font-label); color: var(--kit-ink-2);
+}
+.bench-modal__progress { margin: 12px 0 4px; }
+.bench-modal__progress i {
+  display: block; height: 6px; border-radius: 3px; background: var(--kit-accent); transition: width .2s;
+}
+.bench-modal__progress i[data-indeterminate="true"] { opacity: .5; animation: bench-pulse 1.2s ease-in-out infinite alternate; }
+@keyframes bench-pulse { to { opacity: .15; } }
+.bench-modal__progress span { display: block; margin-top: 6px; color: var(--kit-ink-2); font-size: .78rem; }
+.bench-modal__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
 /* ---- window controls in the panel header ---------------------------------------- */
 .bench-panel__wctl { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
 .bench-wbtn {

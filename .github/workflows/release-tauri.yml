@@ -3,6 +3,11 @@ name: Release BenchMesh (Tauri)
 # Builds the self-contained desktop app (Rust + Tauri, no Python/Node runtime needed)
 # for Linux, Windows and macOS and attaches the installers to a DRAFT GitHub release.
 # Review the draft, then publish it manually.
+#
+# Updates: every bundle is signed with the updater key (secrets TAURI_SIGNING_PRIVATE_KEY /
+# _PASSWORD; public key in crates/benchmesh-app/tauri.conf.json) and a `latest.json` manifest is
+# attached. Installed apps read it from the latest *published* release at start
+# (crates/benchmesh-app/src/update.rs), so publishing the draft is what offers the update.
 
 on:
   push:
@@ -59,10 +64,10 @@ jobs:
           - os: windows-latest
             args: '--bundles nsis'
           - os: macos-latest
-            args: '--target aarch64-apple-darwin --bundles dmg'
+            args: '--target aarch64-apple-darwin --bundles app,dmg'  # app: the .app.tar.gz updates use
             rust_target: aarch64-apple-darwin
           - os: macos-latest  # Apple-silicon runner cross-builds Intel (macos-13 runners are retired)
-            args: '--target x86_64-apple-darwin --bundles dmg'
+            args: '--target x86_64-apple-darwin --bundles app,dmg'
             rust_target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
@@ -105,6 +110,8 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: crates/benchmesh-app
           tauriScript: cargo tauri
