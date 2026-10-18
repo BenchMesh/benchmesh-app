@@ -27,7 +27,7 @@ interface Device {
   serial?: string;
   // USB TMC transport fields
   device?: string;
-  // TCP/IP transport fields (future)
+  // TCP/IP (LAN) transport: name or address, optionally :port
   host?: string;
   model: string;
   // Identity: find the instrument on any USB port (ai_context/migration/IDENTITY.md);
@@ -359,7 +359,15 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
       } else {
         sanitized.device = device.device || '';
       }
+    } else if (sanitized.transport === 'tcpip') {
+      delete sanitized.port;
+      delete sanitized.baud;
+      delete sanitized.serial;
+      delete sanitized.device;
+      delete sanitized.match;
+      sanitized.host = (device.host || '').trim();
     }
+    if (sanitized.transport !== 'tcpip') delete sanitized.host;
 
     return sanitized;
   }
@@ -619,11 +627,22 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                   serial: undefined,
                   device: device.device || firstFreeUsbTmcDevice(),
                 });
+              } else if (newTransport === 'tcpip') {
+                updateDeviceMultiple(index, {
+                  transport: newTransport,
+                  port: undefined,
+                  baud: undefined,
+                  serial: undefined,
+                  device: undefined,
+                  match: undefined,
+                  host: device.host || '',
+                });
               }
             }}
           >
             <option value="serial">Serial (RS232/USB-Serial)</option>
             <option value="usbtmc">USB TMC (Test & Measurement)</option>
+            <option value="tcpip">LAN (TCP/IP)</option>
           </select>
           <span className="instrument-config__hint">Communication interface</span>
         </div>
@@ -711,6 +730,23 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               <span className="instrument-config__hint">Serial configuration</span>
             </div>
           </>
+        )}
+
+        {/* LAN (TCP/IP) Transport Fields */}
+        {device.transport === 'tcpip' && (
+          <div className="instrument-config__field">
+            <label>
+              Host<span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              value={device.host || ''}
+              onChange={(e) => updateDevice(index, 'host', e.target.value)}
+              placeholder="192.168.1.50 or scope.lan:5555"
+              data-testid="tcpip-host"
+            />
+            <span className="instrument-config__hint">Address or name; the instrument's default SCPI port is used unless you add :port</span>
+          </div>
         )}
 
         {/* USB TMC Transport Fields */}

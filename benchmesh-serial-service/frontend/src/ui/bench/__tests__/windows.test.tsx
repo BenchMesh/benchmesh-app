@@ -66,3 +66,12 @@ describe('PanelWindow (an instrument in its own window)', () => {
     expect(await screen.findByText('gone:PSU is no longer configured.')).toBeInTheDocument()
   })
 })
+
+describe('panel header support status', () => {
+  it('marks models that still await confirmation, not tested ones', () => {
+    const { rerender } = wrap(<InstrumentPanel instrument={{ ...tenma, model: '72-2540', support: 'tested' }} klass="PSU" registry={registry} />)
+    expect(screen.queryByTestId('support-awaiting')).toBeNull()
+    rerender(<RequestLogProvider><InstrumentPanel instrument={{ ...tenma, model: '72-2545', support: 'awaiting' }} klass="PSU" registry={registry} /></RequestLogProvider>)
+    expect(screen.getByTestId('support-awaiting').textContent).toBe('awaiting confirmation')
+  })
+})

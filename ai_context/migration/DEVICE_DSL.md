@@ -45,8 +45,16 @@ differences are listed with a reason in `NOT_REPRODUCED` (`crates/bm-devicedef/t
 | `vendor`, `family`, `version` | descriptive; version is semver |
 | `enabled` | default `true`; `false` hides it from the config UI |
 | `sources` | provenance: `{doc, pages}` manuals, `{capture}` sessions, `{note}` |
-| `models` | `{name, match (regex on identify reply), verified, note, features{CLS: {...}}, channels{CLS: n}}`; per-model overrides merge over the class binding |
+| `models` | `{name, match (regex on identify reply), support, note, features{CLS: {...}}, channels{CLS: n}}`; `support`: `tested` (maintainers' bench) · `confirmed` (a user's first-contact check passed) · `awaiting` (default: from the manual, not yet seen live); per-model overrides merge over the class binding |
 | `identify` | command whose reply is matched against `models` on connect |
+
+### `extends` (shared baselines)
+`extends: <base-id>` merges the definition over `devices/bases/<base-id>.yaml`, a partial
+definition (any keys, may itself `extends` another base; no `id`/`models`). Mappings merge key
+by key (override one field of a base command and keep the rest), lists and scalars replace,
+and `null` removes an inherited key (`commands: {beep: null}` for a model without a beeper).
+The merged result is validated like any definition. Bases hold what families share, e.g. a
+SCPI-99 PSU baseline; definitions then carry only identity, models and quirks.
 
 ### `link` (exactly one)
 - `serial: {baud, format: 8N1, flow: none|rts_cts|xon_xoff, dtr/rts: untouched|low|high, settle_ms, modem_control: best_effort|required}`
@@ -134,7 +142,7 @@ match the class contract types; required class status keys and operation directi
 bound; `effects` target declared state; `requires` messages present; unused commands warn.
 
 ## Authoring checklist (human or LLM)
-1. Identity: `*IDN?`-style command + per-model regex; mark `verified` only after a capture.
+1. Identity: `*IDN?`-style command + per-model regex; mark `support: tested` only after a bench test (`confirmed` after a user's check).
 2. Framing from observation, not the manual: run `scripts/wire_capture/` (or a probe) and read the transcript.
 3. Every setter: `reply: none` unless the device really answers; set `safety`.
 4. Numeric setters: explicit `format` with the decimals the device accepts.

@@ -207,7 +207,11 @@ pub fn validate_device(d: &DeviceDef, classes: &BTreeMap<String, ClassDef>) -> V
 }
 
 fn check_link_and_framing(d: &DeviceDef, cx: &mut Ctx) {
-    if let Link::Serial(s) = &d.link {
+    let links = d.link.all();
+    if links.is_empty() {
+        cx.err("link", "at least one link (serial, usbtmc, tcp) is required");
+    }
+    if let Some(s) = &d.link.serial {
         if !SERIAL_FORMAT.is_match(&s.format) {
             cx.err("link.serial.format", format!("invalid serial format `{}` (e.g. 8N1)", s.format));
         }
@@ -215,16 +219,34 @@ fn check_link_and_framing(d: &DeviceDef, cx: &mut Ctx) {
             cx.err("link.serial.baud", "baud must be > 0");
         }
     }
-    let rx = &d.framing.rx;
+    // the top-level framing serves every link without its own
+    let shared: Vec<&Link> = links.iter().filter(|l| l.own_framing().is_none()).collect();
+    let shared_usbtmc = !shared.is_empty() && shared.iter().all(|l| matches!(l, Link::Usbtmc(_)));
+    check_framing(&d.framing, "framing", shared_usbtmc, d, cx);
+    let own = [
+        ("link.serial.framing", d.link.serial.as_ref().and_then(|l| l.framing.as_ref()), false),
+        ("link.usbtmc.framing", d.link.usbtmc.as_ref().and_then(|l| l.framing.as_ref()), true),
+        ("link.tcp.framing", d.link.tcp.as_ref().and_then(|l| l.framing.as_ref()), false),
+    ];
+    for (at, f, usbtmc) in own {
+        if let Some(f) = f {
+            check_framing(f, at, usbtmc, d, cx);
+        }
+    }
+}
+
+/// `usbtmc`: the framing is used on a USBTMC link (where `message` mode belongs).
+fn check_framing(f: &Framing, at: &str, usbtmc: bool, d: &DeviceDef, cx: &mut Ctx) {
+    let rx = &f.rx;
     match rx.mode {
         RxMode::Terminator => {
             if rx.terminator.as_deref().unwrap_or("").is_empty() {
-                cx.err("framing.rx.terminator", "mode `terminator` requires a non-empty terminator");
+                cx.err(format!("{at}.rx.terminator"), "mode `terminator` requires a non-empty terminator");
             }
         }
         RxMode::Idle => {
             if rx.idle_ms.is_none() {
-                cx.err("framing.rx.idle_ms", "mode `idle` requires idle_ms");
+                cx.err(format!("{at}.rx.idle_ms"), "mode `idle` requires idle_ms");
             }
         }
         RxMode::Fixed => {
@@ -238,16 +260,16 @@ fn check_link_and_framing(d: &DeviceDef, cx: &mut Ctx) {
             }
         }
         RxMode::Message => {
-            if !matches!(d.link, Link::Usbtmc(_)) {
-                cx.warn("framing.rx.mode", "mode `message` is meant for message-based links (usbtmc)");
+            if !usbtmc {
+                cx.warn(format!("{at}.rx.mode"), "mode `message` is meant for message-based links (usbtmc)");
             }
         }
     }
     if rx.mode != RxMode::Terminator && rx.terminator.is_some() {
-        cx.warn("framing.rx.terminator", "terminator is ignored unless mode is `terminator`");
+        cx.warn(format!("{at}.rx.terminator"), "terminator is ignored unless mode is `terminator`");
     }
     if rx.timeout_ms == 0 {
-        cx.err("framing.rx.timeout_ms", "timeout must be > 0");
+        cx.err(format!("{at}.rx.timeout_ms"), "timeout must be > 0");
     }
 }
 

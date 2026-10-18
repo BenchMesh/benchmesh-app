@@ -1,4 +1,5 @@
-//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|match, baud?, serial?}]}`.
+//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|host|match, baud?, serial?}]}`
+//! (`host`: `tcpip` instruments, `name-or-address[:port]`).
 //! `match` = the instrument's identity (`ai_context/migration/IDENTITY.md`); `port`/`device` is
 //! then only the last known port.
 //! Device entries are kept as raw JSON objects (unknown keys survive round trips).
@@ -89,7 +90,40 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
                 return Err("usbtmc device needs `device` or `match`".into());
             }
         }
-        t => return Err(format!("unsupported transport {t:?} (serial, usbtmc)")),
+        "tcpip" => {
+            let host = str_field(d, "host").unwrap_or_default().trim();
+            if host.is_empty() || host.chars().any(|c| c.is_whitespace() || c == '/') {
+                return Err("tcpip device needs `host` (name or address, optionally :port)".into());
+            }
+            if identified {
+                return Err("`match` (USB identity) does not apply to a tcpip device".into());
+            }
+        }
+        t => return Err(format!("unsupported transport {t:?} (serial, usbtmc, tcpip)")),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(v: serde_json::Value) -> DeviceEntry {
+        v.as_object().unwrap().clone()
+    }
+
+    #[test]
+    fn tcpip_entries_need_a_host_and_no_usb_identity() {
+        let drivers = vec!["rigol_dp800".to_string()];
+        let ok = entry(serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "192.168.1.50:5555"}));
+        assert!(validate_entry(&ok, &drivers).is_ok());
+        for bad in [
+            serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip"}),
+            serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "a b"}),
+            serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "h",
+                               "match": {"usb": {"vid": "1ab1", "pid": "0e11"}}}),
+        ] {
+            assert!(validate_entry(&entry(bad.clone()), &drivers).is_err(), "{bad}");
+        }
+    }
 }

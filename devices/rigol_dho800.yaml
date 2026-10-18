@@ -9,7 +9,7 @@ version: 1.0.0
 sources:
   - {doc: "DHO800/DHO900 Programming Guide (DHO800-Series_programmingguide_EN.pdf)", pages: "CHANnel 3.6, TIMebase, TRIGger, ACQuire, MEASure, WAVeform 3.28 (pp. 404-414)"}
 models:
-  - {"name": "DHO804", "match": "^RIGOL TECHNOLOGIES,DHO804,", "verified": true}
+  - {"name": "DHO804", "match": "^RIGOL TECHNOLOGIES,DHO804,", "support": "tested"}
   - {"name": "DHO802", "match": "^RIGOL TECHNOLOGIES,DHO802,", "channels": {"OSC": 2}, "features": {"OSC": {"bandwidth_hz": 70e6}}}
   - {"name": "DHO814", "match": "^RIGOL TECHNOLOGIES,DHO814,", "features": {"OSC": {"bandwidth_hz": 100e6}}}
   - {"name": "DHO812", "match": "^RIGOL TECHNOLOGIES,DHO812,", "channels": {"OSC": 2}, "features": {"OSC": {"bandwidth_hz": 100e6}}}

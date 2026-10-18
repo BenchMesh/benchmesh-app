@@ -25,6 +25,9 @@ pub struct DeviceDef {
     pub schema: String,
     /// Unique definition id, also the config `driver` key (e.g. `tenma_72`).
     pub id: String,
+    /// Base definition (`devices/bases/<id>.yaml`) this one was merged over (see `DEVICE_DSL.md`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extends: Option<String>,
     pub vendor: String,
     pub family: String,
     /// Definition version (semver).
@@ -39,7 +42,7 @@ pub struct DeviceDef {
     pub models: Vec<Model>,
     /// Command used to identify the device on connect (its reply is matched against `models`).
     pub identify: String,
-    pub link: Link,
+    pub link: Links,
     pub framing: Framing,
     #[serde(default)]
     pub session: Session,
@@ -84,22 +87,134 @@ pub struct Model {
     /// Per-class channel count overrides.
     #[serde(default)]
     pub channels: BTreeMap<String, u8>,
-    /// Verified against real hardware (captures or bench test).
+    /// How far this model is known to work (`ai_context/migration/coverage/README.md`).
     #[serde(default)]
-    pub verified: bool,
+    pub support: Support,
     #[serde(default)]
     pub note: Option<String>,
 }
 
+/// Verification status of a model. The community status will come from the online service;
+/// a definition carries the status known when it was written.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Support {
+    /// Verified live on the maintainers' bench (`bm-probe verify` + setter checks).
+    Tested,
+    /// A user ran the first-contact check on the real instrument and it passed.
+    Confirmed,
+    /// Written from the manual (or shared with a tested family); not yet seen live.
+    #[default]
+    Awaiting,
+}
+
+impl Support {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Support::Tested => "tested",
+            Support::Confirmed => "confirmed",
+            Support::Awaiting => "awaiting",
+        }
+    }
+}
+
 // --- link ------------------------------------------------------------------------------
 
-/// Physical link. Exactly one variant, e.g. `link: {serial: {baud: 9600}}`.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case", deny_unknown_fields)]
+/// The physical links a family offers (at least one), e.g.
+/// `link: {usbtmc: {vid: "1ab1"}, tcp: {port: 5555}}`. A configured instrument uses one of them:
+/// its config `transport`, or the only one. Each may replace the top-level `framing`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Links {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub serial: Option<SerialLink>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usbtmc: Option<UsbtmcLink>,
+    /// Raw socket (SCPI over LAN, usually port 5025 or 5555).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tcp: Option<TcpLink>,
+}
+
+/// One link of a definition, the one an instrument is reached through.
+#[derive(Debug, Clone)]
 pub enum Link {
     Serial(SerialLink),
     Usbtmc(UsbtmcLink),
     Tcp(TcpLink),
+}
+
+impl Link {
+    /// Config `transport` name: `serial`, `usbtmc`, `tcpip`.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Link::Serial(_) => "serial",
+            Link::Usbtmc(_) => "usbtmc",
+            Link::Tcp(_) => "tcpip",
+        }
+    }
+
+    /// The link's own framing (replacing the top-level one), if any.
+    pub fn own_framing(&self) -> Option<&Framing> {
+        match self {
+            Link::Serial(l) => l.framing.as_ref(),
+            Link::Usbtmc(l) => l.framing.as_ref(),
+            Link::Tcp(l) => l.framing.as_ref(),
+        }
+    }
+}
+
+impl Links {
+    pub fn all(&self) -> Vec<Link> {
+        let mut out = Vec::new();
+        out.extend(self.serial.clone().map(Link::Serial));
+        out.extend(self.usbtmc.clone().map(Link::Usbtmc));
+        out.extend(self.tcp.clone().map(Link::Tcp));
+        out
+    }
+
+    /// Config `transport` names of the links offered.
+    pub fn kinds(&self) -> Vec<&'static str> {
+        self.all().iter().map(Link::kind).collect()
+    }
+
+    /// The link for `transport` (config name), or without one the only link (serial when
+    /// there are several, as configs without a transport have always meant serial).
+    pub fn choose(&self, transport: Option<&str>) -> Result<Link, String> {
+        let all = self.all();
+        let found = match transport {
+            Some(t) => all.into_iter().find(|l| l.kind() == t),
+            None if all.len() == 1 => all.into_iter().next(),
+            None => all.into_iter().find(|l| matches!(l, Link::Serial(_))),
+        };
+        found.ok_or_else(|| match transport {
+            Some(t) => format!("transport {t:?} is not offered (offered: {})", self.kinds().join(", ")),
+            None => format!("choose a transport ({})", self.kinds().join(", ")),
+        })
+    }
+
+    /// The only link; `Links` of a definition resolved with [`DeviceDef::for_transport`] have one.
+    pub fn single(&self) -> Option<Link> {
+        let all = self.all();
+        (all.len() == 1).then(|| all.into_iter().next()).flatten()
+    }
+}
+
+impl DeviceDef {
+    /// This definition as one configured instrument uses it: only the chosen link, and that
+    /// link's framing when it has its own.
+    pub fn for_transport(&self, transport: Option<&str>) -> Result<DeviceDef, String> {
+        let link = self.link.choose(transport)?;
+        let mut d = self.clone();
+        if let Some(f) = link.own_framing() {
+            d.framing = f.clone();
+        }
+        d.link = match link {
+            Link::Serial(l) => Links { serial: Some(l), ..Links::default() },
+            Link::Usbtmc(l) => Links { usbtmc: Some(l), ..Links::default() },
+            Link::Tcp(l) => Links { tcp: Some(l), ..Links::default() },
+        };
+        Ok(d)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -121,6 +236,9 @@ pub struct SerialLink {
     /// Whether failing to set DTR/RTS aborts the connection.
     #[serde(default)]
     pub modem_control: ModemControl,
+    /// Replaces the top-level `framing` on this link.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub framing: Option<Framing>,
 }
 
 fn default_serial_format() -> String {
@@ -162,12 +280,19 @@ pub struct UsbtmcLink {
     /// USB product id (hex), used for discovery.
     #[serde(default)]
     pub pid: Option<String>,
+    /// Replaces the top-level `framing` on this link.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub framing: Option<Framing>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TcpLink {
+    /// Default port (a config entry's `host` may carry another: `host:port`).
     pub port: u16,
+    /// Replaces the top-level `framing` on this link.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub framing: Option<Framing>,
 }
 
 // --- framing ---------------------------------------------------------------------------

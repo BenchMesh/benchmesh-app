@@ -16,7 +16,7 @@ use std::io::{self, Read, Write};
 use std::sync::Arc;
 use std::time::Duration;
 
-use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink};
+use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink, TcpLink};
 use bm_driver::actor::Attempt;
 use bm_driver::engine::Transport;
 
@@ -35,7 +35,7 @@ pub use usbtmc::UsbTmcTransport;
 /// Where a configured device is attached (from config.yaml).
 #[derive(Debug, Clone, Default)]
 pub struct Endpoint {
-    /// Serial port path or USBTMC device node.
+    /// Serial port path, USBTMC device node / `usb:` path / VISA resource, or TCP `host[:port]`.
     pub path: String,
     /// Baud rate override (else the definition's).
     pub baud: Option<u32>,
@@ -57,7 +57,7 @@ pub fn open(link: &Link, ep: &Endpoint) -> io::Result<Box<dyn Transport>> {
             let msg = format!("{}: not a USBTMC instrument path (use Detect, a `usb:` path or a VISA resource)", ep.path);
             return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
         }
-        Link::Tcp(_) => return Err(io::Error::new(io::ErrorKind::Unsupported, "TCP transport not implemented yet")),
+        Link::Tcp(t) => Box::new(TcpTransport::open(t, ep)?),
     };
     Ok(Box::new(Held { inner, _guard: guard }))
 }
@@ -108,6 +108,69 @@ pub fn attempts(link: &Link, ep: &Endpoint, id: Option<&identity::Identity>) -> 
     let check = id.clone();
     let accept: bm_driver::actor::Accept = Arc::new(move |idn: &str| check.check_idn(idn));
     Ok(found.into_iter().map(|p| attempt(&p.path, Some(accept.clone()))).collect())
+}
+
+/// Raw socket to a LAN instrument (SCPI over TCP, usually port 5025 or 5555): a byte stream
+/// like a serial port, framed by the definition's (or the tcp link's own) `framing`.
+pub struct TcpTransport {
+    stream: std::net::TcpStream,
+    buf: Vec<u8>,
+}
+
+/// Connect timeout of a TCP instrument (an absent host fails fast instead of hanging).
+const TCP_CONNECT: Duration = Duration::from_secs(3);
+
+impl TcpTransport {
+    /// `ep.path` is `host` or `host:port` (`[v6]:port`); without a port the link's is used.
+    pub fn open(link: &TcpLink, ep: &Endpoint) -> io::Result<Self> {
+        use std::net::ToSocketAddrs;
+        let target = tcp_target(&ep.path, link.port)?;
+        let addrs: Vec<_> = target.to_socket_addrs()?.collect();
+        let mut last = io::Error::new(io::ErrorKind::NotFound, format!("{target}: no address"));
+        for a in addrs {
+            match std::net::TcpStream::connect_timeout(&a, TCP_CONNECT) {
+                Ok(stream) => {
+                    stream.set_nodelay(true)?;
+                    return Ok(TcpTransport { stream, buf: vec![0; 65536] });
+                }
+                Err(e) => last = io::Error::new(e.kind(), format!("{target}: {e}")),
+            }
+        }
+        Err(last)
+    }
+}
+
+/// `host` → `host:port`; `host:port`, `[v6]:port` unchanged.
+fn tcp_target(path: &str, port: u16) -> io::Result<String> {
+    let p = path.trim();
+    if p.is_empty() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "TCP instrument needs a host"));
+    }
+    let has_port = if p.starts_with('[') { p.contains("]:") } else { p.matches(':').count() == 1 };
+    Ok(if has_port {
+        p.to_string()
+    } else if p.contains(':') {
+        format!("[{p}]:{port}")
+    } else {
+        format!("{p}:{port}")
+    })
+}
+
+impl Transport for TcpTransport {
+    fn write(&mut self, data: &[u8]) -> io::Result<()> {
+        self.stream.write_all(data)?;
+        self.stream.flush()
+    }
+
+    fn read(&mut self, timeout: Duration) -> io::Result<Vec<u8>> {
+        self.stream.set_read_timeout(Some(timeout.max(Duration::from_millis(1))))?;
+        match self.stream.read(&mut self.buf) {
+            Ok(0) => Err(io::Error::new(io::ErrorKind::ConnectionAborted, "the instrument closed the connection")),
+            Ok(n) => Ok(self.buf[..n].to_vec()),
+            Err(e) if matches!(e.kind(), io::ErrorKind::TimedOut | io::ErrorKind::WouldBlock) => Ok(Vec::new()),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 pub struct SerialTransport {
@@ -198,6 +261,39 @@ impl Transport for SerialTransport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tcp_targets_get_the_link_port_unless_they_name_one() {
+        assert_eq!(tcp_target("192.168.1.50", 5025).unwrap(), "192.168.1.50:5025");
+        assert_eq!(tcp_target("scope.lan:5555", 5025).unwrap(), "scope.lan:5555");
+        assert_eq!(tcp_target("fe80::1", 5025).unwrap(), "[fe80::1]:5025");
+        assert_eq!(tcp_target("[fe80::1]:5555", 5025).unwrap(), "[fe80::1]:5555");
+        assert!(tcp_target(" ", 5025).is_err());
+    }
+
+    #[test]
+    fn tcp_transport_exchanges_bytes_and_reports_silence_as_empty() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = std::thread::spawn(move || {
+            let (mut s, _) = listener.accept().unwrap();
+            let mut b = [0u8; 64];
+            let n = s.read(&mut b).unwrap();
+            assert_eq!(&b[..n], b"*IDN?\n");
+            s.write_all(b"RIGOL TECHNOLOGIES,DP832,DP8A0000,00.01.16\n").unwrap();
+            std::thread::sleep(Duration::from_millis(300));
+        });
+        let link = TcpLink { port, framing: None };
+        let mut t = TcpTransport::open(&link, &Endpoint { path: "127.0.0.1".into(), ..Endpoint::default() }).unwrap();
+        t.write(b"*IDN?\n").unwrap();
+        let mut got = Vec::new();
+        while !got.ends_with(b"\n") {
+            got.extend(t.read(Duration::from_millis(500)).unwrap());
+        }
+        assert!(got.starts_with(b"RIGOL TECHNOLOGIES,DP832"));
+        assert!(t.read(Duration::from_millis(50)).unwrap().is_empty(), "silence is an empty read");
+        server.join().unwrap();
+    }
 
     #[test]
     fn serial_formats() {

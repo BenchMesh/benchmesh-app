@@ -98,6 +98,12 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
         <h2 className="bench-panel__title">{title}</h2>
         <span className="bench-panel__name">{instrument.name ?? instrument.id}</span>
         <span className="bench-panel__model">{modelOf(idn)}</span>
+        {instrument.support === 'awaiting' && (
+          <span className="bench-panel__support" data-testid="support-awaiting"
+            title="Written from the manufacturer's manual and not yet confirmed on a real instrument. If something does not work, please tell us.">
+            awaiting confirmation
+          </span>
+        )}
         <span className="bench-panel__link" data-online={online}><i />{online ? 'connected' : 'offline'}</span>
         {win && (
           <span className="bench-panel__wctl">

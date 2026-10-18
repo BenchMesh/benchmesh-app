@@ -11,7 +11,7 @@ sources:
   - {capture: captures/20261016-201609, note: "read-only"}
   - {capture: captures/20261016-203514, note: "setters"}
 models:
-  - {"name": "SPM3103", "match": "^OWON,SPM3103,", "verified": true}
+  - {"name": "SPM3103", "match": "^OWON,SPM3103,", "support": "tested"}
 identify: idn
 link:
   serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}

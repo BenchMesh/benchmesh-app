@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-use bm_devicedef::{DeviceDef, Link};
+use bm_devicedef::DeviceDef;
 
 use crate::engine::{Engine, Output, StatusUpdate, Transport};
 use crate::metrics::Metrics;
@@ -128,11 +128,8 @@ impl DeviceHandle {
         let (tx, rx) = channel();
         let request_timeout = cfg.request_timeout;
         let pending = Arc::new(AtomicUsize::new(0));
-        let transport = match def.link {
-            Link::Serial(_) => "serial",
-            Link::Usbtmc(_) => "usbtmc",
-            Link::Tcp(_) => "tcpip",
-        };
+        // resolved definitions (`DeviceDef::for_transport`) have exactly one link
+        let transport = def.link.kinds().first().copied().unwrap_or("none");
         let metrics = Metrics::new(name, transport);
         let p = pending.clone();
         let join = std::thread::Builder::new()

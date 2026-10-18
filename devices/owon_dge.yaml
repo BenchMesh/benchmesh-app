@@ -12,12 +12,12 @@ sources:
   - {capture: captures/20261016-203514}
   - {capture: captures/20261016-204256-owon-dge2070-query_screenshot, note: "split-read failure mode"}
 models:
-  - {"name": "DGE2070", "match": "^OWON,DGE2070,", "verified": true}
-  - {"name": "DGE2035", "match": "^OWON,DGE2035,", "verified": false}
-  - {"name": "DGE3032", "match": "^OWON,DGE3032,", "verified": false, "note": "Not covered by the DGE2000 manuals; channel count unverified"}
-  - {"name": "DGE3062", "match": "^OWON,DGE3062,", "verified": false, "note": "Not covered by the DGE2000 manuals; channel count unverified"}
-  - {"name": "DGE3031", "match": "^OWON,DGE3031,", "verified": false, "note": "Not covered by the DGE2000 manuals; channel count unverified"}
-  - {"name": "DGE3061", "match": "^OWON,DGE3061,", "verified": false, "note": "Not covered by the DGE2000 manuals; channel count unverified"}
+  - {"name": "DGE2070", "match": "^OWON,DGE2070,", "support": "tested"}
+  - {"name": "DGE2035", "match": "^OWON,DGE2035,"}
+  - {"name": "DGE3032", "match": "^OWON,DGE3032,", "note": "Not covered by the DGE2000 manuals; channel count unverified"}
+  - {"name": "DGE3062", "match": "^OWON,DGE3062,", "note": "Not covered by the DGE2000 manuals; channel count unverified"}
+  - {"name": "DGE3031", "match": "^OWON,DGE3031,", "note": "Not covered by the DGE2000 manuals; channel count unverified"}
+  - {"name": "DGE3061", "match": "^OWON,DGE3061,", "note": "Not covered by the DGE2000 manuals; channel count unverified"}
 identify: idn
 link:
   usbtmc: {vid: "5345", pid: "1235"}

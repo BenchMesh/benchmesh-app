@@ -38,7 +38,7 @@ use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
-use bm_devicedef::{Link, Repr};
+use bm_devicedef::Repr;
 use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
 use tower::ServiceBuilder;
@@ -204,6 +204,10 @@ fn instrument_list(s: &AppState, class_filter: Option<&str>) -> Vec<Value> {
             h["last_error"] = json!(err);
         }
         item.insert("health".into(), h);
+        if let Some(m) = &model {
+            item.insert("model".into(), json!(m.name));
+            item.insert("support".into(), json!(m.support.as_str()));
+        }
         let classes: Vec<Value> = def
             .classes
             .iter()
@@ -347,12 +351,7 @@ async fn drivers(State(s): State<S>) -> Json<Value> {
         .values()
         .filter(|(_, d)| d.enabled)
         .map(|(_, d)| {
-            let t = match d.link {
-                Link::Serial(_) => "serial",
-                Link::Usbtmc(_) => "usbtmc",
-                Link::Tcp(_) => "tcpip",
-            };
-            (d.id.clone(), json!({"vendor": d.vendor, "family": d.family, "supported_transports": [t]}))
+            (d.id.clone(), json!({"vendor": d.vendor, "family": d.family, "supported_transports": d.link.kinds()}))
         })
         .collect();
     Json(Value::Object(m))

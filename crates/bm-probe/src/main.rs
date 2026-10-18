@@ -62,6 +62,7 @@ fn take_switch(rest: &mut Vec<String>, flag: &str) -> bool {
 struct Configured {
     id: String,
     driver: String,
+    transport: Option<String>,
     endpoint: Endpoint,
     /// `match`: found by identity on any port (see ai_context/migration/IDENTITY.md).
     identity: Option<bm_transport::identity::Identity>,
@@ -77,8 +78,9 @@ fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
         .map(|d| Configured {
             id: s(d, "id").unwrap_or_default(),
             driver: s(d, "driver").unwrap_or_default(),
+            transport: s(d, "transport"),
             endpoint: Endpoint {
-                path: s(d, "port").or_else(|| s(d, "device")).unwrap_or_default(),
+                path: s(d, "port").or_else(|| s(d, "device")).or_else(|| s(d, "host")).unwrap_or_default(),
                 baud: d.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
                 format: s(d, "serial"),
             },
@@ -88,8 +90,10 @@ fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
 }
 
 fn connect(cat: &Catalog, dev: &Configured) -> Result<(Engine, Arc<DeviceDef>), String> {
-    let def = Arc::new(cat.devices.get(&dev.driver).ok_or(format!("{}: no definition `{}`", dev.id, dev.driver))?.1.clone());
-    let attempts = bm_transport::attempts(&def.link, &dev.endpoint, dev.identity.as_ref()).map_err(|e| format!("{}: {e}", dev.id))?;
+    let def = cat.devices.get(&dev.driver).ok_or(format!("{}: no definition `{}`", dev.id, dev.driver))?.1.for_transport(dev.transport.as_deref());
+    let def = Arc::new(def.map_err(|e| format!("{}: {e}", dev.id))?);
+    let link = def.link.single().ok_or(format!("{}: no single link", dev.id))?;
+    let attempts = bm_transport::attempts(&link, &dev.endpoint, dev.identity.as_ref()).map_err(|e| format!("{}: {e}", dev.id))?;
     let mut errors = Vec::new();
     for a in attempts {
         let port = a.port.clone();

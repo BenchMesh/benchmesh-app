@@ -12,17 +12,17 @@ sources:
   - {capture: captures/20261016-203514, note: "setters"}
   - {note: "Bench probe 2026-10-16: replies in 30-45 ms; queries need no gap; setters need >= 50 ms; 3-decimal VSET and exponent forms are silently ignored"}
 models:
-  - {"name": "72-2535", "match": "^TENMA 72\\-2535( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
-  - {"name": "72-2540", "match": "^TENMA 72\\-2540( |$)", "verified": true}
-  - {"name": "72-2545", "match": "^TENMA 72\\-2545( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 2.0}, "power": {"unit": "W", "max": 120.0}}}}}
-  - {"name": "72-2550", "match": "^TENMA 72\\-2550( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 180.0}}}}}
-  - {"name": "72-2705", "match": "^TENMA 72\\-2705( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
-  - {"name": "72-2710", "match": "^TENMA 72\\-2710( |$)", "verified": false}
-  - {"name": "72-2930", "match": "^TENMA 72\\-2930( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 10.0}, "power": {"unit": "W", "max": 300.0}}}}}
-  - {"name": "72-2940", "match": "^TENMA 72\\-2940( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "power": {"unit": "W", "max": 300.0}}}}}
-  - {"name": "72-13320", "match": "^TENMA 72\\-13320( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 195.0}}}}, "channels": {"PSU": 3}, "note": "3-channel; channel addressing unverified"}
-  - {"name": "72-13330", "match": "^TENMA 72\\-13330( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"power": {"unit": "W", "max": 315.0}}}}, "channels": {"PSU": 3}, "note": "3-channel; channel addressing unverified"}
-  - {"name": "72-13360", "match": "^TENMA 72\\-13360( |$)", "verified": false, "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 15.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "72-2535", "match": "^TENMA 72\\-2535( |$)", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
+  - {"name": "72-2540", "match": "^TENMA 72\\-2540( |$)", "support": "tested"}
+  - {"name": "72-2545", "match": "^TENMA 72\\-2545( |$)", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 2.0}, "power": {"unit": "W", "max": 120.0}}}}}
+  - {"name": "72-2550", "match": "^TENMA 72\\-2550( |$)", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 180.0}}}}}
+  - {"name": "72-2705", "match": "^TENMA 72\\-2705( |$)", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 90.0}}}}}
+  - {"name": "72-2710", "match": "^TENMA 72\\-2710( |$)"}
+  - {"name": "72-2930", "match": "^TENMA 72\\-2930( |$)", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 10.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "72-2940", "match": "^TENMA 72\\-2940( |$)", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "power": {"unit": "W", "max": 300.0}}}}}
+  - {"name": "72-13320", "match": "^TENMA 72\\-13320( |$)", "features": {"PSU": {"absolute_limits": {"current": {"unit": "A", "max": 3.0}, "power": {"unit": "W", "max": 195.0}}}}, "channels": {"PSU": 3}, "note": "3-channel; channel addressing unverified"}
+  - {"name": "72-13330", "match": "^TENMA 72\\-13330( |$)", "features": {"PSU": {"absolute_limits": {"power": {"unit": "W", "max": 315.0}}}}, "channels": {"PSU": 3}, "note": "3-channel; channel addressing unverified"}
+  - {"name": "72-13360", "match": "^TENMA 72\\-13360( |$)", "features": {"PSU": {"absolute_limits": {"voltage": {"unit": "V", "max": 60.0}, "current": {"unit": "A", "max": 15.0}, "power": {"unit": "W", "max": 300.0}}}}}
 identify: idn
 link:
   serial: {baud: 9600, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}

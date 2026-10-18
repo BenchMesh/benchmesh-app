@@ -241,46 +241,43 @@
       ],
       "type": "string"
     },
-    "Link": {
-      "description": "Physical link. Exactly one variant, e.g. `link: {serial: {baud: 9600}}`.",
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "serial": {
+    "Links": {
+      "additionalProperties": false,
+      "description": "The physical links a family offers (at least one), e.g.\n`link: {usbtmc: {vid: \"1ab1\"}, tcp: {port: 5555}}`. A configured instrument uses one of them:\nits config `transport`, or the only one. Each may replace the top-level `framing`.",
+      "properties": {
+        "serial": {
+          "anyOf": [
+            {
               "$ref": "#/$defs/SerialLink"
+            },
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "serial"
-          ],
-          "type": "object"
+          ]
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "usbtmc": {
-              "$ref": "#/$defs/UsbtmcLink"
-            }
-          },
-          "required": [
-            "usbtmc"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "tcp": {
+        "tcp": {
+          "anyOf": [
+            {
               "$ref": "#/$defs/TcpLink"
+            },
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "tcp"
           ],
-          "type": "object"
+          "description": "Raw socket (SCPI over LAN, usually port 5025 or 5555)."
+        },
+        "usbtmc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UsbtmcLink"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
-      ]
+      },
+      "type": "object"
     },
     "Model": {
       "additionalProperties": false,
@@ -316,10 +313,10 @@
             "null"
           ]
         },
-        "verified": {
-          "default": false,
-          "description": "Verified against real hardware (captures or bench test).",
-          "type": "boolean"
+        "support": {
+          "$ref": "#/$defs/Support",
+          "default": "awaiting",
+          "description": "How far this model is known to work (`ai_context/migration/coverage/README.md`)."
         }
       },
       "required": [
@@ -883,6 +880,17 @@
           "description": "Data bits, parity, stop bits, e.g. `8N1`.",
           "type": "string"
         },
+        "framing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Framing"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Replaces the top-level `framing` on this link."
+        },
         "modem_control": {
           "$ref": "#/$defs/ModemControl",
           "default": "best_effort",
@@ -1034,10 +1042,42 @@
       ],
       "description": "A command invocation: `cmd_name` or `{cmd: name, args: {param: value}}`."
     },
+    "Support": {
+      "description": "Verification status of a model. The community status will come from the online service;\na definition carries the status known when it was written.",
+      "oneOf": [
+        {
+          "const": "tested",
+          "description": "Verified live on the maintainers' bench (`bm-probe verify` + setter checks).",
+          "type": "string"
+        },
+        {
+          "const": "confirmed",
+          "description": "A user ran the first-contact check on the real instrument and it passed.",
+          "type": "string"
+        },
+        {
+          "const": "awaiting",
+          "description": "Written from the manual (or shared with a tested family); not yet seen live.",
+          "type": "string"
+        }
+      ]
+    },
     "TcpLink": {
       "additionalProperties": false,
       "properties": {
+        "framing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Framing"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Replaces the top-level `framing` on this link."
+        },
         "port": {
+          "description": "Default port (a config entry's `host` may carry another: `host:port`).",
           "format": "uint16",
           "maximum": 65535,
           "minimum": 0,
@@ -1085,6 +1125,17 @@
     "UsbtmcLink": {
       "additionalProperties": false,
       "properties": {
+        "framing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Framing"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Replaces the top-level `framing` on this link."
+        },
         "pid": {
           "default": null,
           "description": "USB product id (hex), used for discovery.",
@@ -1156,6 +1207,13 @@
       "description": "Hide work-in-progress definitions from the configuration UI.",
       "type": "boolean"
     },
+    "extends": {
+      "description": "Base definition (`devices/bases/<id>.yaml`) this one was merged over (see `DEVICE_DSL.md`).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "family": {
       "type": "string"
     },
@@ -1171,7 +1229,7 @@
       "type": "string"
     },
     "link": {
-      "$ref": "#/$defs/Link"
+      "$ref": "#/$defs/Links"
     },
     "models": {
       "description": "Supported models, matched against the identify reply.",

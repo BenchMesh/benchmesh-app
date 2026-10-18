@@ -11,9 +11,9 @@ sources:
   - {capture: captures/20261016-201609, note: "read-only"}
   - {capture: captures/20261016-203514, note: "setters"}
 models:
-  - {"name": "XDM1241", "match": "^OWON,XDM1241,", "verified": true}
-  - {"name": "XDM1041", "match": "^OWON,XDM1041,", "verified": false}
-  - {"name": "XDM1141", "match": "^OWON,XDM1141,", "verified": false}
+  - {"name": "XDM1241", "match": "^OWON,XDM1241,", "support": "tested"}
+  - {"name": "XDM1041", "match": "^OWON,XDM1041,"}
+  - {"name": "XDM1141", "match": "^OWON,XDM1141,"}
 identify: idn
 link:
   serial: {baud: 115200, format: 8N1, flow: none, dtr: low, rts: low, settle_ms: 50}

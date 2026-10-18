@@ -43,10 +43,10 @@ pub type Probe<'a> = dyn Fn(&Port, &DeviceDef) -> Result<(String, String), Miss>
 
 /// Definitions worth trying on a port, most likely first.
 fn candidates<'a>(port: &Port, catalog: &'a Catalog) -> Vec<&'a DeviceDef> {
-    let fits = |d: &&DeviceDef| d.enabled && port_kind(&d.link) == Some(port.kind);
+    let fits = |d: &&DeviceDef| d.enabled && d.link.all().iter().any(|l| port_kind(l) == Some(port.kind));
     let mut defs: Vec<&DeviceDef> = catalog.devices.values().map(|(_, d)| d).filter(fits).collect();
-    let declared = |d: &DeviceDef| match &d.link {
-        bm_devicedef::Link::Usbtmc(u) => {
+    let declared = |d: &DeviceDef| match &d.link.usbtmc {
+        Some(u) => {
             let eq = |want: &Option<String>, have: &Option<String>| {
                 want.as_deref().map(str::to_ascii_lowercase) == have.as_deref().map(str::to_ascii_lowercase)
             };
@@ -116,7 +116,8 @@ pub fn detect(ports: &[Port], catalog: &Catalog, known: &[Known], probe: &Probe<
             let identity = found.as_ref().and_then(|f| Identity::of(port, Some(&f.idn)));
             let instrument = found.as_ref().map(|f| {
                 let def = catalog.devices.get(&f.driver).map(|(_, d)| d);
-                json!({"driver": f.driver, "model": f.model, "idn": f.idn,
+                let support = def.and_then(|d| d.models.iter().find(|m| m.name == f.model)).map(|m| m.support.as_str());
+                json!({"driver": f.driver, "model": f.model, "idn": f.idn, "support": support,
                        "vendor": def.map(|d| d.vendor.clone()), "family": def.map(|d| d.family.clone()),
                        "classes": def.map(|d| d.classes.keys().cloned().collect::<Vec<_>>()).unwrap_or_default()})
             });
@@ -152,9 +153,12 @@ pub fn run(devices: &Devices) -> Vec<Value> {
             .collect()
     };
     let probe = |port: &Port, def: &DeviceDef| {
-        let t = bm_transport::open(&def.link, &Endpoint { path: port.path.clone(), ..Endpoint::default() })
+        // the definition as reached through this kind of port (its link and that link's framing)
+        let def = def.for_transport(Some(port.kind.as_str())).map_err(Miss::Open)?;
+        let link = def.link.single().ok_or_else(|| Miss::Open("no link".into()))?;
+        let t = bm_transport::open(&link, &Endpoint { path: port.path.clone(), ..Endpoint::default() })
             .map_err(|e| Miss::Open(e.to_string()))?;
-        let e = Engine::open(Arc::new(def.clone()), t).map_err(|e| Miss::Identify(e.to_string()))?;
+        let e = Engine::open(Arc::new(def), t).map_err(|e| Miss::Identify(e.to_string()))?;
         Ok((e.idn.clone(), e.model.name.clone()))
     };
     detect(&bm_transport::discover::ports(), &devices.catalog, &known, &probe)

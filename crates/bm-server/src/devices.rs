@@ -20,14 +20,18 @@ pub type ConnectorFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Connector + 
 /// instrument is plugged in (re-resolved on every reconnect).
 pub fn hardware_connectors() -> ConnectorFactory {
     Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {
-        let link = def.link.clone();
+        // `def` is resolved for the entry's transport (`Devices::start`): it has one link
+        let link = def.link.single();
         let ep = Endpoint {
-            path: str_field(entry, "port").or_else(|| str_field(entry, "device")).unwrap_or_default().to_string(),
+            path: str_field(entry, "port").or_else(|| str_field(entry, "device")).or_else(|| str_field(entry, "host")).unwrap_or_default().to_string(),
             baud: entry.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
             format: str_field(entry, "serial").map(str::to_string),
         };
         let id = identity_of(entry);
-        Box::new(move || bm_transport::attempts(&link, &ep, id.as_ref()))
+        Box::new(move || match &link {
+            Some(link) => bm_transport::attempts(link, &ep, id.as_ref()),
+            None => Err("the definition offers no single link for this entry".to_string()),
+        })
     })
 }
 
@@ -179,7 +183,8 @@ impl Devices {
     pub fn start(&self, entry: DeviceEntry) -> Result<(), String> {
         let id = str_field(&entry, "id").unwrap_or_default().to_string();
         let driver = str_field(&entry, "driver").unwrap_or_default();
-        let def = Arc::new(self.catalog.devices.get(driver).ok_or(format!("unknown driver {driver:?}"))?.1.clone());
+        let def = self.catalog.devices.get(driver).ok_or(format!("unknown driver {driver:?}"))?.1.for_transport(str_field(&entry, "transport"))?;
+        let def = Arc::new(def);
         let connector = (self.connectors)(&entry, &def);
         let registry = self.registry.clone();
         let rid = id.clone();
