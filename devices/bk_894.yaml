@@ -18,6 +18,12 @@ models:
     match: '(?i)^B&K Precision,\s*895\b'
     features: {LCR: {frequency: {min: 20, max: 1000000, presets: [100, 120, 1000, 10000, 100000, 1000000]}}}
 link:
+  # LAN: VXI-11 only (PM p.76: raw socket not supported) — message-based like USB-TMC
+  vxi11:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\n", timeout_ms: 1000}
+      timing: {min_gap_ms: 20, gap_after_write_ms: 50}
   serial: {baud: 9600, format: 8N1}
   usbtmc:
     framing:

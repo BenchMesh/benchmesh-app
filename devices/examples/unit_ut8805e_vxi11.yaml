@@ -1,0 +1,15 @@
+# VXI-11 (LAN) check: the replies of unit_ut8805e.yaml, framed as VXI-11 delivers them (one message per read).
+# Replies from the UT8805E/UT8806E SCPI manuals. Spec: ai_context/migration/coverage/README.md.
+definition: unit_ut8805e
+transport: vxi11
+model: UT8805E
+replies:
+  - {send: '\*IDN\?', reply: "UNI-T UT8805E, UT1A13460051200, V0.01.0000", source: "UT8806E PM p.6 (prints UT8805A)"}
+  - {send: 'READ\?', reply: "+8.21650028E-03", source: "PM p.42 READ? typical"}
+  - {send: 'FUNC\?', reply: "VOLT: AC", source: "UT8806E PM p.26"}
+  - {send: 'VOLT:AC:RANG\?', reply: "+2.00000000E+00", source: "PM p.42 VOLT:AC:RANG 2"}
+  - {send: 'VOLT:AC:RANG:AUTO\?', reply: "0", source: "PM p.42 0 (OFF) or 1 (ON)"}
+  - {send: 'VOLT:AC:NPLC\?', reply: "SLOW", source: "PM p.43 (reply form not printed)"}
+expect:
+  DMM:
+    1: {MEAS: 8.21650028e-3, MODE: VOLT_AC, RANGE: "2", OVERLOAD: false}

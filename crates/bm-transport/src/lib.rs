@@ -1,6 +1,7 @@
 //! Physical transports for the BenchMesh engine.
 //!
 //! - [`SerialTransport`]: RS-232 / USB-serial via `serialport` (Linux, macOS, Windows).
+//! - [`TcpTransport`]: raw SCPI socket; [`vxi11`]: VXI-11 (ONC RPC) for LXI instruments without one.
 //! - USBTMC on Windows / macOS: userspace protocol ([`usbtmc_proto`]) over `nusb`
 //!   ([`usbtmc_nusb`], WinUSB on Windows), or an installed VISA ([`visa`]). [`winusb`] gives a
 //!   Windows instrument the WinUSB driver (one UAC prompt).
@@ -26,6 +27,7 @@ pub mod lock;
 pub mod usbtmc_nusb;
 pub mod usbtmc_proto;
 pub mod visa;
+pub mod vxi11;
 pub mod winusb;
 #[cfg(target_os = "linux")]
 mod usbtmc;
@@ -58,6 +60,7 @@ pub fn open(link: &Link, ep: &Endpoint) -> io::Result<Box<dyn Transport>> {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
         }
         Link::Tcp(t) => Box::new(TcpTransport::open(t, ep)?),
+        Link::Vxi11(v) => Box::new(vxi11::Vxi11Transport::open(&ep.path, &v.device)?),
     };
     Ok(Box::new(Held { inner, _guard: guard }))
 }
@@ -83,7 +86,7 @@ pub fn port_kind(link: &Link) -> Option<discover::PortKind> {
     match link {
         Link::Serial(_) => Some(discover::PortKind::Serial),
         Link::Usbtmc(_) => Some(discover::PortKind::Usbtmc),
-        Link::Tcp(_) => None,
+        Link::Tcp(_) | Link::Vxi11(_) => None,
     }
 }
 

@@ -28,7 +28,7 @@ export const SUPPORT_HINT: Record<Support, string> = {
   awaiting: 'Written from the manufacturer’s manual; not yet confirmed on a real instrument — help verify it',
 }
 
-export const TRANSPORT_LABEL: Record<string, string> = { serial: 'Serial', usbtmc: 'USB TMC', tcpip: 'LAN' }
+export const TRANSPORT_LABEL: Record<string, string> = { serial: 'Serial', usbtmc: 'USB TMC', tcpip: 'LAN', vxi11: 'LAN (VXI-11)' }
 
 export interface CatalogFilter { text: string; cls: string | null; support: Support | null }
 

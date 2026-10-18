@@ -35,7 +35,7 @@ one generic Rust driver — no per-device code.
 |---|---|
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
-| `bm-transport` | serial (`serialport`), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
+| `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
 | `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |

@@ -1,0 +1,15 @@
+# VXI-11 (LAN) check: the replies of siglent_sdm4000.yaml, framed as VXI-11 delivers them (one message per read).
+# Replies as the SDM4000A remote manual prints them (PDF pages; IDN format not printed).
+definition: siglent_sdm4000
+transport: vxi11
+model: SDM4065A
+replies:
+  - {send: '\*IDN\?', reply: "Siglent Technologies,SDM4065A,SDM4XXXXXXXXXX,2.01.01.00", source: "not printed; Siglent IDN pattern"}
+  - {send: 'READ\?', reply: "-5.75122019E-04", source: "p.15 READ? typical return (first of four)"}
+  - {send: 'FUNC\?', reply: '"VOLT"', source: "p.51 FUNCtion? quoted short form"}
+  - {send: 'VOLT:DC:RANG\?', reply: "+2.00000000E-01", source: "p.33 CONF? \"VOLT +2.00000000E-01,...\" range"}
+  - {send: 'VOLT:DC:RANG:AUTO\?', reply: "1", source: "p.59-70 0 (OFF) or 1 (ON)"}
+  - {send: 'VOLT:DC:NPLC\?', reply: "+1.00000000E+01", source: "p.70 NPLC? typical return"}
+expect:
+  DMM:
+    1: {MEAS: -5.75122019e-4, MODE: VOLT, RANGE: "AUTO", OVERLOAD: false}

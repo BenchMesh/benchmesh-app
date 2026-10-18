@@ -26,7 +26,7 @@ families:
     - {kind: unsupported, text: "GPIB only through Rigol's USB-GPIB converter."}
     - {kind: known_issue, text: "Measurement replies reported as two lines (library inventory); current range defaults to low (4 A / 6 A)."}
   rigol_dm3000:
-    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket) on DM3058/DM3068; DM3058E has no LAN or GPIB."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket) on DM3058/DM3068: supported since 2026-10-18, not yet confirmed on hardware. DM3058E has no LAN or GPIB."}
   rigol_dsa800:
     - {kind: unverified, text: "USB product id not documented: vendor id only."}
   rigol_dho1000:
@@ -43,9 +43,9 @@ families:
     - {kind: partial_interface, text: "LAN only on the B / H / X variants."}
     - {kind: unsupported, text: "RS-232/485 settings are not documented."}
   hantek_hdg2000b:
-    - {kind: unsupported, text: "LAN is VXI-11 / LXI (web control) only, no raw socket."}
+    - {kind: unverified, text: "LAN works through VXI-11 (LXI, no raw socket): supported, not yet confirmed on hardware."}
   bk_894:
-    - {kind: unsupported, text: "LAN is VXI-11 only (manual p.76: raw socket not supported)."}
+    - {kind: unverified, text: "LAN works through VXI-11 only (manual p.76): supported, not yet confirmed on hardware."}
   bk_4050b:
     - {kind: unverified, text: "LAN port 5025 assumed from the Siglent firmware this rebrand runs."}
     - {kind: known_issue, text: "LAN is on by default and must be switched off for USB-TMC to answer (manual p.85)."}
@@ -55,18 +55,18 @@ families:
     - {kind: unsupported, text: "GPIB not supported."}
     - {kind: unverified, text: "USB product id not documented (vendor 2ec7); 9600 baud assumed."}
   unit_ut8805e:
-    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket port documented)."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket): supported, not yet confirmed on hardware."}
   unit_ut8806e:
-    - {kind: unsupported, text: "LAN is VXI-11 only (no raw socket port documented)."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket): supported, not yet confirmed on hardware."}
     - {kind: known_issue, text: "The manual prints its identify reply as UT8805A."}
   unit_utg1000x:
-    - {kind: unsupported, text: "LAN is VXI-11 only."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket): supported, not yet confirmed on hardware."}
   unit_utg2000b:
-    - {kind: unsupported, text: "LAN is VXI-11 only."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket): supported, not yet confirmed on hardware."}
   unit_utg4000a:
-    - {kind: unsupported, text: "LAN is VXI-11 only."}
+    - {kind: unverified, text: "LAN works through VXI-11 (no raw socket): supported, not yet confirmed on hardware."}
   unit_upo2000:
-    - {kind: unsupported, text: "LAN is documented only through VISA / VXI-11."}
+    - {kind: unverified, text: "LAN through VXI-11 (documented via VISA): supported, not yet confirmed on hardware."}
   unit_uts:
     - {kind: unverified, text: "LAN port 5025 has no source."}
   gwinstek_gds1000b:
@@ -98,7 +98,7 @@ families:
   siglent_sdm3000:
     - {kind: unverified, text: "LAN port 5025 confirmed on hardware by a user; Siglent's app note says 5024."}
   siglent_sdm4000:
-    - {kind: unverified, text: "Documents VXI-11; raw socket 5025 unverified."}
+    - {kind: unverified, text: "Documents VXI-11 (supported); the raw socket 5025 is unverified — prefer VXI-11."}
   siglent_sdl1000x:
     - {kind: unverified, text: "USB product id not documented (vendor f4ec only)."}
   siglent_spd4000x:

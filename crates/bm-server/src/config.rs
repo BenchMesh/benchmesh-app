@@ -90,16 +90,16 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
                 return Err("usbtmc device needs `device` or `match`".into());
             }
         }
-        "tcpip" => {
+        "tcpip" | "vxi11" => {
             let host = str_field(d, "host").unwrap_or_default().trim();
             if host.is_empty() || host.chars().any(|c| c.is_whitespace() || c == '/') {
-                return Err("tcpip device needs `host` (name or address, optionally :port)".into());
+                return Err("a LAN device needs `host` (name or address, optionally :port)".into());
             }
             if identified {
-                return Err("`match` (USB identity) does not apply to a tcpip device".into());
+                return Err("`match` (USB identity) does not apply to a LAN device".into());
             }
         }
-        t => return Err(format!("unsupported transport {t:?} (serial, usbtmc, tcpip)")),
+        t => return Err(format!("unsupported transport {t:?} (serial, usbtmc, tcpip, vxi11)")),
     }
     Ok(())
 }

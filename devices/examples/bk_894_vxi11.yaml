@@ -1,0 +1,21 @@
+# VXI-11 (LAN) check: the replies of bk_894.yaml, framed as VXI-11 delivers them (one message per read).
+# Replies as the B&K Precision 894/895 programming manual documents them.
+# Spec: ai_context/migration/coverage/README.md ("Manual examples").
+definition: bk_894
+transport: vxi11
+model: "895"
+replies:
+  - {send: '\*IDN\?', reply: "B&K Precision,895,12-345-67890,VER1.0.0,Hardware Ver 01.0", source: "PM p.9"}
+  - {send: 'FETC\?', reply: "+1.00230E-08,+4.52000E-03,+0", source: "PM p.30 (SN.NNNNNeSNN,SN.NNNNNeSNN,SN)"}
+  - {send: 'FUNC:IMP\?', reply: "CPD", source: "PM p.21"}
+  - {send: 'FREQ\?', reply: "+1.00000E+03", source: "PM p.15 (<NR3>)"}
+  - {send: 'VOLT\?', reply: "+5.00000E-01", source: "PM p.16 (<NR3>)"}
+  - {send: 'APER\?', reply: "MED,55", source: "PM p.28 (<speed>,<NR1>)"}
+  - {send: 'FUNC:IMP:RANG:AUTO\?', reply: "0", source: "PM p.22 (<NR1>)"}
+  - {send: 'FUNC:IMP:RANG\?', reply: "1000", source: "PM p.21"}
+  - {send: 'TRIG:SOUR\?', reply: "BUS", source: "PM p.29"}
+  - {send: 'BIAS:STAT\?', reply: "0", source: "PM p.17 (<NR1>)"}
+  - {send: 'BIAS:VOLT\?', reply: "+0.00000E+00", source: "PM p.18 (<NR3>)"}
+expect:
+  LCR:
+    1: {PRIMARY: 1.0023e-8, SECONDARY: 0.00452, FUNC: CPD, FREQ: 1000, LEVEL: 0.5, SPEED: MED, RANGE: "1000", CIRCUIT: PAR, BIAS_ON: "OFF"}

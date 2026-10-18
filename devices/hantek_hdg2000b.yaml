@@ -18,6 +18,12 @@ models:
   - {"name": "HDG2082B", "match": "HDG2082B", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
   - {"name": "HDG2102B", "match": "HDG2102B", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6, "SQU": 30e6, "PUL": 15e6, "RAMP": 4e6}}}}
 link:
+  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  vxi11:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 2000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 20}
   usbtmc: {vid: "049f", pid: "505b"}
 commands:
   outp_q: {send: "OUTPut{ch}?", source: "PDF p26; reply ON/OFF"}

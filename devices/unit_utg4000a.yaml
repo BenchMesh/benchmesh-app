@@ -16,6 +16,9 @@ models:
   - {"name": "UTG4162A", "match": "^UNI-T Technologies, ?UTG4162A,", "features": {"AWG": {"max_freq_hz": {"SIN": 160e6}}}}
   - {"name": "UTG4202A", "match": "^UNI-T Technologies, ?UTG4202A,", "features": {"AWG": {"max_freq_hz": {"SIN": 200e6}}}}
   - {"name": "UTG4000A", "match": "^UNI-T Technologies, ?UTG4[0-9]{3}A?,", "note": "IDN reports the family (UTG4000); limits of the largest model (UTG4202A)"}
+link:
+  # LAN: VXI-11 (LXI; no raw socket) — uses the top-level message framing
+  vxi11: {}
 commands:
   shape_q: {source: "PM p13; reply SINe (also HARMonic → ARB)"}
   shape_set: {source: "PM p13"}

@@ -16,8 +16,14 @@ models:
   - name: UT8805E
     match: "(?i)^UNI-T,? *UT8805"
 link:
+  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  vxi11:
+    framing:
+      tx: {terminator: "\n"}
+      rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 3000}
+      timing: {min_gap_ms: 0, gap_after_write_ms: 10}
   serial: {baud: 9600, format: 8N1, flow: none}
-  # LAN is VXI-11 only (UT8805E data sheet (VXI11, USBTMC)): not supported, so the base's raw socket is removed
+  # LAN is VXI-11 only (UT8805E data sheet (VXI11, USBTMC)): the base's raw socket is removed
   tcp: null
 commands:
   func:

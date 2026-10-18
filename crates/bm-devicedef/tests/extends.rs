@@ -139,3 +139,12 @@ link:
     let errors: Vec<_> = validate_catalog(&cat).into_iter().filter(|(_, i)| i.severity == Severity::Error).collect();
     assert!(errors.is_empty(), "{errors:?}");
 }
+
+#[test]
+fn without_a_transport_a_family_uses_its_local_link_first() {
+    let l: bm_devicedef::Links = bm_devicedef::from_yaml("{usbtmc: {vid: '1ab1'}, tcp: {port: 5555}, vxi11: {}}").unwrap();
+    assert_eq!(l.choose(None).unwrap().kind(), "usbtmc", "LAN needs a host: never the default");
+    let l: bm_devicedef::Links = bm_devicedef::from_yaml("{tcp: {port: 5025}, vxi11: {}}").unwrap();
+    assert!(l.choose(None).unwrap_err().contains("choose a transport"));
+    assert_eq!(l.choose(Some("vxi11")).unwrap().kind(), "vxi11");
+}

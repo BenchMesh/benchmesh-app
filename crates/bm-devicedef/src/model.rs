@@ -133,6 +133,9 @@ pub struct Links {
     /// Raw socket (SCPI over LAN, usually port 5025 or 5555).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tcp: Option<TcpLink>,
+    /// VXI-11 (ONC RPC over LAN; LXI instruments without a raw socket). Message-based like USBTMC.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vxi11: Option<Vxi11Link>,
 }
 
 /// One link of a definition, the one an instrument is reached through.
@@ -141,6 +144,7 @@ pub enum Link {
     Serial(SerialLink),
     Usbtmc(UsbtmcLink),
     Tcp(TcpLink),
+    Vxi11(Vxi11Link),
 }
 
 impl Link {
@@ -150,6 +154,7 @@ impl Link {
             Link::Serial(_) => "serial",
             Link::Usbtmc(_) => "usbtmc",
             Link::Tcp(_) => "tcpip",
+            Link::Vxi11(_) => "vxi11",
         }
     }
 
@@ -159,6 +164,7 @@ impl Link {
             Link::Serial(l) => l.framing.as_ref(),
             Link::Usbtmc(l) => l.framing.as_ref(),
             Link::Tcp(l) => l.framing.as_ref(),
+            Link::Vxi11(l) => l.framing.as_ref(),
         }
     }
 }
@@ -169,6 +175,7 @@ impl Links {
         out.extend(self.serial.clone().map(Link::Serial));
         out.extend(self.usbtmc.clone().map(Link::Usbtmc));
         out.extend(self.tcp.clone().map(Link::Tcp));
+        out.extend(self.vxi11.clone().map(Link::Vxi11));
         out
     }
 
@@ -177,14 +184,18 @@ impl Links {
         self.all().iter().map(Link::kind).collect()
     }
 
-    /// The link for `transport` (config name), or without one the only link (serial when
-    /// there are several, as configs without a transport have always meant serial).
+    /// The link for `transport` (config name), or without one the only link — with several,
+    /// serial, then USB-TMC (configs without a transport have always meant the local link;
+    /// a LAN link needs a host and is only used when asked for).
     pub fn choose(&self, transport: Option<&str>) -> Result<Link, String> {
         let all = self.all();
         let found = match transport {
             Some(t) => all.into_iter().find(|l| l.kind() == t),
             None if all.len() == 1 => all.into_iter().next(),
-            None => all.into_iter().find(|l| matches!(l, Link::Serial(_))),
+            None => {
+                let local = |want: &str| all.iter().find(|l| l.kind() == want).cloned();
+                local("serial").or_else(|| local("usbtmc"))
+            }
         };
         found.ok_or_else(|| match transport {
             Some(t) => format!("transport {t:?} is not offered (offered: {})", self.kinds().join(", ")),
@@ -212,6 +223,7 @@ impl DeviceDef {
             Link::Serial(l) => Links { serial: Some(l), ..Links::default() },
             Link::Usbtmc(l) => Links { usbtmc: Some(l), ..Links::default() },
             Link::Tcp(l) => Links { tcp: Some(l), ..Links::default() },
+            Link::Vxi11(l) => Links { vxi11: Some(l), ..Links::default() },
         };
         Ok(d)
     }
@@ -293,6 +305,21 @@ pub struct TcpLink {
     /// Replaces the top-level `framing` on this link.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub framing: Option<Framing>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Vxi11Link {
+    /// Logical device name on the instrument (`inst0`; GPIB gateways: `gpib0,5`).
+    #[serde(default = "default_vxi11_device")]
+    pub device: String,
+    /// Replaces the top-level `framing` on this link (usually `rx.mode: message`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub framing: Option<Framing>,
+}
+
+fn default_vxi11_device() -> String {
+    "inst0".into()
 }
 
 // --- framing ---------------------------------------------------------------------------

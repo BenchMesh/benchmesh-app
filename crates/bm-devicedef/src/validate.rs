@@ -209,7 +209,7 @@ pub fn validate_device(d: &DeviceDef, classes: &BTreeMap<String, ClassDef>) -> V
 fn check_link_and_framing(d: &DeviceDef, cx: &mut Ctx) {
     let links = d.link.all();
     if links.is_empty() {
-        cx.err("link", "at least one link (serial, usbtmc, tcp) is required");
+        cx.err("link", "at least one link (serial, usbtmc, tcp, vxi11) is required");
     }
     if let Some(s) = &d.link.serial {
         if !SERIAL_FORMAT.is_match(&s.format) {
@@ -221,12 +221,13 @@ fn check_link_and_framing(d: &DeviceDef, cx: &mut Ctx) {
     }
     // the top-level framing serves every link without its own
     let shared: Vec<&Link> = links.iter().filter(|l| l.own_framing().is_none()).collect();
-    let shared_usbtmc = !shared.is_empty() && shared.iter().all(|l| matches!(l, Link::Usbtmc(_)));
+    let shared_usbtmc = !shared.is_empty() && shared.iter().all(|l| matches!(l, Link::Usbtmc(_) | Link::Vxi11(_)));
     check_framing(&d.framing, "framing", shared_usbtmc, d, cx);
     let own = [
         ("link.serial.framing", d.link.serial.as_ref().and_then(|l| l.framing.as_ref()), false),
         ("link.usbtmc.framing", d.link.usbtmc.as_ref().and_then(|l| l.framing.as_ref()), true),
         ("link.tcp.framing", d.link.tcp.as_ref().and_then(|l| l.framing.as_ref()), false),
+        ("link.vxi11.framing", d.link.vxi11.as_ref().and_then(|l| l.framing.as_ref()), true),
     ];
     for (at, f, usbtmc) in own {
         if let Some(f) = f {
@@ -261,7 +262,7 @@ fn check_framing(f: &Framing, at: &str, usbtmc: bool, d: &DeviceDef, cx: &mut Ct
         }
         RxMode::Message => {
             if !usbtmc {
-                cx.warn(format!("{at}.rx.mode"), "mode `message` is meant for message-based links (usbtmc)");
+                cx.warn(format!("{at}.rx.mode"), "mode `message` is meant for message-based links (usbtmc, vxi11)");
             }
         }
     }

@@ -1,0 +1,32 @@
+# VXI-11 (LAN) check: the replies of unit_upo2000.yaml, framed as VXI-11 delivers them (one message per read).
+# Replies as the MSO/UPO2000 Series Programming Manual V1.0 shows them (PDF pages): checks the
+# definition through the real engine without hardware. Spec: ai_context/migration/coverage/README.md.
+definition: unit_upo2000
+transport: vxi11
+model: UPO2104CS
+replies:
+  - {send: '\*IDN\?', reply: "UNI-T Technologies, UPO2104CS, MSO1000, 00.00.01", source: "p5 (example shows the family name MSO2000CS; a real model put in its place)"}
+  - {send: ':CHANnel[1-4]:DISPlay\?', reply: "1", source: "p14-15"}
+  - {send: ':CHANnel[1-4]:SCALe\?', reply: "2.000e001", source: "p16"}
+  - {send: ':CHANnel[1-4]:OFFSet\?', reply: "2.000e001", source: "p16"}
+  - {send: ':CHANnel[1-4]:COUPling\?', reply: "DC", source: "p14"}
+  - {send: ':CHANnel[1-4]:PROBe\?', reply: "1.000000e+01", source: "p15"}
+  - {send: ':CHANnel[1-4]:BWLimit\?', reply: "1", source: "p14"}
+  - {send: ':CHANnel[1-4]:INVert\?', reply: "0", source: "p15"}
+  - {send: ':TIMebase:SCALe\?', reply: "2.000e000", source: "p18"}
+  - {send: ':TIMebase:OFFSet\?', reply: "1.000e000", source: "p18"}
+  - {send: ':TRIGger:STATus\?', reply: "AUTO", source: "p42"}
+  - {send: ':TRIGger:SWEep\?', reply: "AUTO", source: "p41"}
+  - {send: ':TRIGger:SOURce\?', reply: "CHANnel1", source: "p43"}
+  - {send: ':TRIGger:EDGE:SLOPe\?', reply: "POSitive", source: "p44"}
+  - {send: ':TRIGger:LEVel\?', reply: "2.000e000", source: "p42"}
+  - {send: ':ACQuire:TYPE\?', reply: "AVERage", source: "p76"}
+  - {send: ':WAVeform:PREamble\?', reply: "1,0,0,1,8.000e-009,-6.000e-006,0,4.000e-002,0.000e000,100", source: "p83"}
+  - {send: ':WAVeform:DATA\?', reply: "#9000000008\x64\x7d\x96\xaf\x64\x4b\x32\x64\n", source: "p4 / p82 (IEEE block + LF, BYTE data)"}
+  - {send: ':MEASure:VPP\? CHANnel[1-4]', reply: "3.120e000", source: "p34"}
+  - {send: ':MEASure:VAVerage\? DISPlay,CHANnel[1-4]', reply: "1.120e000", source: "p35"}
+  - {send: ':MEASure:VRMS\? DISPlay,CHANnel[1-4]', reply: "1.230e000", source: "p36"}
+  - {send: ':MEASure:FREQuency\? CHANnel[1-4]', reply: "*", source: "p37 format, * = invalid (p4)"}
+expect:
+  OSC:
+    1: {DISPLAY: "ON", SCALE: 20.0, OFFSET: 20.0, COUPLING: "DC", PROBE: 10, BWLIMIT: "20M", INVERT: "OFF", TIMEBASE: 2.0, TIMEOFFSET: 1.0, TRIG_SWEEP: "AUTO", TRIG_SOURCE: "CHAN1", TRIG_SLOPE: "POS", TRIG_LEVEL: 2.0, ACQ_TYPE: "AVER", WAVE: [100, 125, 150, 175, 100, 75, 50, 100], WAVE_Y0: 100, WAVE_DY: 0.04, WAVE_X0: -6.0e-6, WAVE_DX: 8.0e-9, VPP: 3.12, VAVG: 1.12, VRMS: 1.23, FREQ: null}

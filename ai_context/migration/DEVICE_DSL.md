@@ -60,7 +60,10 @@ SCPI-99 PSU baseline; definitions then carry only identity, models and quirks.
 - `serial: {baud, format: 8N1, flow: none|rts_cts|xon_xoff, dtr/rts: untouched|low|high, settle_ms, modem_control: best_effort|required}`
   `best_effort` = DTR/RTS failures do not abort (pseudo-terminals, odd adapters).
 - `usbtmc: {vid, pid}`
-- `tcp: {port}`
+- `tcp: {port}` — raw SCPI socket (config `transport: tcpip`, `host[:port]`)
+- `vxi11: {device: inst0}` — VXI-11 / LXI over ONC RPC (portmapper 111; config `transport: vxi11`, `host`); message-based like USB-TMC
+
+`link` may list several of these at once, each with its own `framing`; the config entry's `transport` picks one (without one: serial, then USB-TMC — a LAN link needs a host).
 
 ### `framing`
 - `tx.terminator`: appended to every command (may be `""`).

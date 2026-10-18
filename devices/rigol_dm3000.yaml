@@ -28,6 +28,8 @@ models:
           CAP: [{value: AUTO, display: AUTO}, {value: "0", display: "2nF"}, {value: "1", display: "20nF"}, {value: "2", display: "200nF"}, {value: "3", display: "2µF"}, {value: "4", display: "20µF"}, {value: "5", display: "200µF"}, {value: "6", display: "2mF"}, {value: "7", display: "20mF"}, {value: "8", display: "100mF"}]
 identify: idn
 link:
+  # LAN: VXI-11 (LXI; no raw socket) — uses the top-level message framing
+  vxi11: {}
   # select RS-232 as the active interface on the front panel (Utility → I/O)
   serial:
     baud: 9600

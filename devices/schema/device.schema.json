@@ -296,6 +296,17 @@
               "type": "null"
             }
           ]
+        },
+        "vxi11": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Vxi11Link"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "VXI-11 (ONC RPC over LAN; LXI instruments without a raw socket). Message-based like USBTMC."
         }
       },
       "type": "object"
@@ -1408,6 +1419,28 @@
           "type": "string"
         }
       ]
+    },
+    "Vxi11Link": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "default": "inst0",
+          "description": "Logical device name on the instrument (`inst0`; GPIB gateways: `gpib0,5`).",
+          "type": "string"
+        },
+        "framing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Framing"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Replaces the top-level `framing` on this link (usually `rx.mode: message`)."
+        }
+      },
+      "type": "object"
     },
     "WordType": {
       "enum": [

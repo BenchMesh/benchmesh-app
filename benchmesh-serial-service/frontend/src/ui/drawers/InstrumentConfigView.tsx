@@ -359,7 +359,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
       } else {
         sanitized.device = device.device || '';
       }
-    } else if (sanitized.transport === 'tcpip') {
+    } else if (sanitized.transport === 'tcpip' || sanitized.transport === 'vxi11') {
       delete sanitized.port;
       delete sanitized.baud;
       delete sanitized.serial;
@@ -367,7 +367,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
       delete sanitized.match;
       sanitized.host = (device.host || '').trim();
     }
-    if (sanitized.transport !== 'tcpip') delete sanitized.host;
+    if (sanitized.transport !== 'tcpip' && sanitized.transport !== 'vxi11') delete sanitized.host;
 
     return sanitized;
   }
@@ -627,7 +627,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                   serial: undefined,
                   device: device.device || firstFreeUsbTmcDevice(),
                 });
-              } else if (newTransport === 'tcpip') {
+              } else if (newTransport === 'tcpip' || newTransport === 'vxi11') {
                 updateDeviceMultiple(index, {
                   transport: newTransport,
                   port: undefined,
@@ -643,6 +643,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
             <option value="serial">Serial (RS232/USB-Serial)</option>
             <option value="usbtmc">USB TMC (Test & Measurement)</option>
             <option value="tcpip">LAN (TCP/IP)</option>
+            <option value="vxi11">LAN (VXI-11)</option>
           </select>
           <span className="instrument-config__hint">Communication interface</span>
         </div>
@@ -733,7 +734,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
         )}
 
         {/* LAN (TCP/IP) Transport Fields */}
-        {device.transport === 'tcpip' && (
+        {(device.transport === 'tcpip' || device.transport === 'vxi11') && (
           <div className="instrument-config__field">
             <label>
               Host<span className="required">*</span>
@@ -745,7 +746,11 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               placeholder="192.168.1.50 or scope.lan:5555"
               data-testid="tcpip-host"
             />
-            <span className="instrument-config__hint">Address or name; the instrument's default SCPI port is used unless you add :port</span>
+            <span className="instrument-config__hint">
+              {device.transport === 'vxi11'
+                ? 'Address or name of the LXI / VXI-11 instrument'
+                : 'Address or name; the instrument\'s default SCPI port is used unless you add :port'}
+            </span>
           </div>
         )}
 
