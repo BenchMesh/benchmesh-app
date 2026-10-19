@@ -104,6 +104,52 @@ impl Recordings {
         }
     }
 
+    /// Start a recording with these series (`device_id`, `class`, `channel`, `field`,
+    /// `label?` objects) — for automation runs. Announced like an API-created one.
+    pub async fn start_with(&self, name: &str, interval_s: i64, series: &[Map<String, Value>]) -> Result<i64, String> {
+        let mut signals = Vec::new();
+        for b in series {
+            let (signal, default_label) = self.validate_signal(b).map_err(|e| e.1)?;
+            let label = b.get("label").and_then(|v| v.as_str()).filter(|l| !l.trim().is_empty()).map(str::to_string).unwrap_or(default_label);
+            signals.push((signal, label));
+        }
+        let store = self.store.clone();
+        let name = name.to_string();
+        let id = tokio::task::spawn_blocking(move || -> Result<i64, StoreError> {
+            let t = now_ms();
+            let r = store.create_recording(&name, "", interval_s, t)?;
+            for (signal, label) in &signals {
+                store.add_series(r.id, signal, label, "", t)?;
+            }
+            Ok(r.id)
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+        self.announce_id(id).await;
+        Ok(id)
+    }
+
+    /// Stop a recording (automation runs); a recording already stopped is fine.
+    pub async fn stop_id(&self, id: i64) -> Result<(), String> {
+        let store = self.store.clone();
+        let r = tokio::task::spawn_blocking(move || store.stop(id, now_ms())).await.map_err(|e| e.to_string())?;
+        match r {
+            Ok(_) | Err(StoreError::Conflict(_)) => {
+                self.announce_id(id).await;
+                Ok(())
+            }
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    async fn announce_id(&self, id: i64) {
+        let store = self.store.clone();
+        if let Ok(Ok(v)) = tokio::task::spawn_blocking(move || store.recording(id).and_then(|r| recording_json(&store, &r))).await {
+            self.publish(json!({"type": "recording", "recording": v}));
+        }
+    }
+
     /// Validate a series request against the configuration and the class contract.
     /// Returns the signal and the default label.
     fn validate_signal(&self, b: &Map<String, Value>) -> Result<(Signal, String), ApiError> {

@@ -17,6 +17,8 @@
 //! - Updates: one check per start, offered by the UI (`update.rs`).
 //! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
+//! - `benchmesh --mcp`: no window — a stdio bridge to the running app's MCP endpoint for AI
+//!   clients that start a process (Claude Desktop; `bm_server::mcp::stdio_bridge`).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -33,6 +35,11 @@ struct Server(Mutex<Option<RunningServer>>);
 
 fn env_path(var: &str) -> Option<PathBuf> {
     std::env::var_os(var).map(PathBuf::from)
+}
+
+/// Where `--mcp` finds the running app (`BENCHMESH_URL`, default the app's first port).
+fn mcp_base_url() -> String {
+    std::env::var("BENCHMESH_URL").unwrap_or_else(|_| "http://127.0.0.1:57666".into())
 }
 
 fn data_dir() -> PathBuf {
@@ -89,6 +96,9 @@ fn main() {
     if let Some(code) = bm_server::winusb_helper_main() {
         std::process::exit(code);
     }
+    if std::env::args().any(|a| a == "--mcp") {
+        std::process::exit(bm_server::mcp::stdio_bridge(&mcp_base_url()));
+    }
     #[cfg(target_os = "linux")]
     prefer_x11_for_keep_on_top();
     let app = tauri::Builder::default()
@@ -115,6 +125,7 @@ fn main() {
                 recordings_db: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.join("recordings.db")),
                 simulate: env_path("BENCHMESH_SIMULATE"),
                 ws_interval: Duration::from_millis(200),
+                data_dir: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.clone()),
             })?;
             for w in &server.warnings {
                 eprintln!("warning: {w}");

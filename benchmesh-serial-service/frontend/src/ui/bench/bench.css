@@ -250,3 +250,15 @@ html, body { background: var(--kit-ground); }
 .wire-console__line--rx { color: var(--kit-ink); }
 .wire-console__line--info { color: var(--kit-ink-3); font-style: italic; }
 .wire-console__empty { color: var(--kit-ink-3); font-style: italic; }
+
+/* ---- automation: run indicator in the top bar, wide drawer (automation/) --------- */
+.auto-indicator { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.auto-indicator__open {
+  background: none; border: 1px solid var(--kit-accent); border-radius: 999px; color: var(--kit-accent); cursor: pointer;
+  padding: 5px 10px; font: 700 .7rem/1 var(--kit-font-num); max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.bench-drawer__sheet--wide { width: min(1180px, 100vw); }
+
+.auto-btn--stop.auto-btn--stop { color: var(--kit-panel); background: var(--kit-alert); border-color: var(--kit-alert); }
+.auto-btn--stop.auto-btn--stop:hover { background: var(--kit-alert); filter: brightness(1.08); }

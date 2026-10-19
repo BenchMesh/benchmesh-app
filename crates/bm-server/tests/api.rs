@@ -107,9 +107,11 @@ fn fixture(name: &str) -> Fixture {
         devices.start(e).unwrap();
     }
     let recordings = bm_server::recordings::Recordings::new(Arc::new(bm_store::Store::in_memory().unwrap()), devices.clone());
+    let automation = bm_server::automation::Automation::new(devices.clone(), recordings.clone(), None);
     let state = Arc::new(AppState {
         devices,
         recordings,
+        automation,
         config: cfg,
         ui_dir: Some(dir.join("ui")),
         ws_interval: Duration::from_millis(50),
@@ -711,4 +713,261 @@ async fn other_websites_cannot_drive_instruments_through_the_browser() {
     let r = send("POST", "/instruments/PSU/t1/1/voltage/5", &[("host", "127.0.0.1:57666"), ("origin", "http://127.0.0.1:57666")]).await.unwrap();
     assert_eq!(r.status(), StatusCode::NO_CONTENT);
     assert_eq!(send("GET", "/instruments", &[("host", "localhost:57666")]).await.unwrap().status(), StatusCode::OK);
+}
+
+// ---- automation & MCP ------------------------------------------------------------------
+
+/// Poll the run until it is no longer active.
+async fn run_end(f: &Fixture) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(20);
+    loop {
+        let (_, v, _) = call(f, "GET", "/automation/run", None, None).await;
+        if !matches!(v["state"].as_str(), Some("running" | "waiting" | "cleanup")) || Instant::now() > deadline {
+            return v;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+async fn wait_state(f: &Fixture, state: &str) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let (_, v, _) = call(f, "GET", "/automation/run", None, None).await;
+        if v["state"] == state || Instant::now() > deadline {
+            return v;
+        }
+        tokio::time::sleep(Duration::from_millis(30)).await;
+    }
+}
+
+fn psu_output(f: &Fixture) -> Value {
+    f.state.devices.registry.lock().unwrap().to_json()["t1"]["PSU"]["status_ch1"]["OUTPUT"].clone()
+}
+
+fn msgs(run: &Value) -> Vec<String> {
+    run["events"].as_array().unwrap().iter().map(|e| e["msg"].as_str().unwrap().to_string()).collect()
+}
+
+fn psu_flow(steps: Value) -> Value {
+    json!({"schema": "benchmesh.flow/v1", "name": "PSU test", "params": [{"name": "v", "value": 7.5, "unit": "V", "max": 30}],
+           "setup": [{"do": "set", "device": "t1", "class": "PSU", "op": "voltage", "expr": "v"},
+                     {"do": "set", "device": "t1", "class": "PSU", "op": "output", "value": "ON"}],
+           "steps": steps,
+           "cleanup": [{"do": "set", "device": "t1", "class": "PSU", "op": "output", "value": "OFF"}]})
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_flow_sets_confirms_reads_decides_and_cleans_up() {
+    let f = fixture("flow-run");
+    let flow = psu_flow(json!([
+        {"do": "read", "device": "t1", "class": "PSU", "field": "VOUT", "into": "out"},
+        {"do": "if", "condition": "out > v - 0.1", "then": [{"do": "log", "message": "output at {out} V"}], "else": [{"do": "stop", "message": "no output"}]},
+        {"do": "sweep", "var": "x", "from": 1, "to": 2, "step": 0.5, "steps": [{"do": "set", "device": "t1", "class": "PSU", "op": "voltage", "expr": "x"}]},
+        {"do": "read", "device": "t1", "class": "PSU", "field": "VOUT", "into": "last"},
+        {"do": "check", "condition": "last == 2", "message": "sweep did not end at 2 V: {last}"}
+    ]));
+    // validation names what the run can switch on
+    let (code, v, _) = call(&f, "POST", "/automation/validate", Some(flow.clone()), None).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(v["ok"], true, "{v}");
+    assert_eq!(v["energizes"], json!([{"path": "setup[1]", "device": "t1", "class": "PSU", "channel": 1, "op": "output"}]));
+    // not armed → refused with that list
+    let (code, v, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow})), None).await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    assert_eq!(v["energizes"][0]["op"], "output");
+    // saved and run by id, armed
+    let (code, saved, _) = call(&f, "POST", "/automation/flows", Some(flow.clone()), None).await;
+    assert_eq!(code, StatusCode::CREATED, "{saved}");
+    assert_eq!(saved["id"], "psu-test");
+    let (code, v, _) = call(&f, "POST", "/automation/run", Some(json!({"flow_id": "psu-test", "arm": true})), None).await;
+    assert_eq!(code, StatusCode::ACCEPTED, "{v}");
+    assert_eq!(call(&f, "POST", "/automation/run", Some(json!({"flow_id": "psu-test", "arm": true})), None).await.0, StatusCode::CONFLICT, "one run at a time");
+    let run = run_end(&f).await;
+    assert_eq!(run["state"], "finished", "{run}");
+    let log = msgs(&run);
+    assert!(log.iter().any(|m| m == "t1 PSU voltage = 7.50"), "{log:?}");
+    assert!(log.iter().any(|m| m.starts_with("output at 7.5")), "{log:?}");
+    assert!(log.iter().any(|m| m == "t1 PSU voltage = 1.50"), "{log:?}");
+    assert_eq!(run["vars"]["last"], json!(2.0));
+    assert_eq!(run["flow"]["id"], "psu-test");
+    // the cleanup switched the output off again
+    assert!(log.iter().any(|m| m == "t1 PSU output = OFF"), "{log:?}");
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    assert_eq!(psu_output(&f), "OFF");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn abort_interrupts_a_wait_and_the_cleanup_still_runs() {
+    let f = fixture("flow-abort");
+    let flow = psu_flow(json!([{"do": "wait", "seconds": 60}]));
+    let (code, _, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "arm": true})), None).await;
+    assert_eq!(code, StatusCode::ACCEPTED);
+    let v = wait_state(&f, "running").await;
+    assert_eq!(v["state"], "running");
+    // wait until the output is on, then abort
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while psu_output(&f) != "ON" && Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert_eq!(psu_output(&f), "ON");
+    let t = Instant::now();
+    assert_eq!(call(&f, "POST", "/automation/run/abort", None, None).await.0, StatusCode::NO_CONTENT);
+    let run = run_end(&f).await;
+    assert!(t.elapsed() < Duration::from_secs(8), "abort did not wait for the 60 s wait");
+    assert_eq!(run["state"], "aborted", "{run}");
+    assert!(msgs(&run).iter().any(|m| m == "t1 PSU output = OFF"), "cleanup ran: {:?}", msgs(&run));
+    assert_eq!(call(&f, "POST", "/automation/run/abort", None, None).await.0, StatusCode::CONFLICT);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_failing_run_switches_what_it_energised_off_even_without_cleanup() {
+    let f = fixture("flow-fail");
+    let mut flow = psu_flow(json!([{"do": "check", "condition": "v > 100", "message": "too low: {v}"}]));
+    flow["cleanup"] = json!([]);
+    let (code, _, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "arm": true})), None).await;
+    assert_eq!(code, StatusCode::ACCEPTED);
+    let run = run_end(&f).await;
+    assert_eq!(run["state"], "failed");
+    assert_eq!(run["error"], "too low: 7.5");
+    assert!(msgs(&run).iter().any(|m| m == "safe state: t1 PSU output = OFF"), "{:?}", msgs(&run));
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    assert_eq!(psu_output(&f), "OFF");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn prompts_wait_for_the_user_and_parameters_are_checked() {
+    let f = fixture("flow-prompt");
+    let flow = json!({"schema": "benchmesh.flow/v1", "name": "Ask", "params": [{"name": "n", "value": 2, "min": 1, "max": 5}],
+        "steps": [{"do": "prompt", "message": "connect {n} probes"}, {"do": "repeat", "times": 3, "steps": [{"do": "let", "var": "k", "expr": "iteration * n"}]}]});
+    let (code, v, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "params": {"n": 9}})), None).await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(v["detail"].as_str().unwrap().contains("outside"));
+    let (code, _, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "params": {"n": 4}})), None).await;
+    assert_eq!(code, StatusCode::ACCEPTED);
+    let v = wait_state(&f, "waiting").await;
+    assert_eq!(v["prompt"], "connect 4 probes");
+    assert_eq!(call(&f, "POST", "/automation/run/continue", None, None).await.0, StatusCode::NO_CONTENT);
+    let run = run_end(&f).await;
+    assert_eq!(run["state"], "finished", "{run}");
+    assert_eq!(run["vars"]["k"], json!(12.0));
+    // incremental log
+    let last = run["last_seq"].as_u64().unwrap();
+    let (_, v, _) = call(&f, "GET", &format!("/automation/run?after={}", last - 1), None, None).await;
+    assert_eq!(v["events"].as_array().unwrap().len(), 1);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn flows_are_saved_listed_replaced_and_deleted() {
+    let f = fixture("flow-crud");
+    let flow = json!({"schema": "benchmesh.flow/v1", "name": "Log only", "steps": [{"do": "log", "message": "hi"}]});
+    let (code, v, _) = call(&f, "POST", "/automation/flows", Some(json!({"schema": "benchmesh.flow/v1", "name": "Bad", "steps": [{"do": "set", "device": "t1", "class": "PSU", "op": "volts", "value": 1}]})), None).await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(v["issues"][0]["path"], "steps[0]");
+    let (_, v, _) = call(&f, "POST", "/automation/flows", Some(flow.clone()), None).await;
+    let id = v["id"].as_str().unwrap().to_string();
+    let (_, list, _) = call(&f, "GET", "/automation/flows", None, None).await;
+    assert_eq!(list[0]["name"], "Log only");
+    let mut changed = flow.clone();
+    changed["description"] = json!("changed");
+    assert_eq!(call(&f, "PUT", &format!("/automation/flows/{id}"), Some(changed), None).await.0, StatusCode::OK);
+    assert_eq!(call(&f, "GET", &format!("/automation/flows/{id}"), None, None).await.1["description"], "changed");
+    assert_eq!(call(&f, "DELETE", &format!("/automation/flows/{id}"), None, None).await.0, StatusCode::NO_CONTENT);
+    assert_eq!(call(&f, "GET", &format!("/automation/flows/{id}"), None, None).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(call(&f, "GET", "/automation/flows/..%2Fx", None, None).await.0, StatusCode::NOT_FOUND);
+    // the vocabulary names what flows can address
+    let (_, v, _) = call(&f, "GET", "/automation/vocabulary", None, None).await;
+    let t1 = v["devices"].as_array().unwrap().iter().find(|d| d["id"] == "t1").unwrap();
+    assert_eq!(t1["classes"]["PSU"]["operations"]["output"]["energizes"], true);
+    assert!(t1["classes"]["PSU"]["fields"]["VOUT"].is_object());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn assistant_settings_never_return_the_key() {
+    let f = fixture("assistant");
+    let (_, v, _) = call(&f, "GET", "/automation/assistant", None, None).await;
+    assert_eq!(v["provider"], "anthropic");
+    assert_eq!(v["keys"]["anthropic"], Value::Null);
+    let (code, v, _) = call(&f, "PUT", "/automation/assistant", Some(json!({"api_key": "sk-ant-api03-secretsecretsecret9876"})), None).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(v["keys"]["anthropic"], "sk-…9876");
+    assert!(!v.to_string().contains("secretsecret"));
+    let (code, v, _) = call(&f, "PUT", "/automation/assistant", Some(json!({"provider": "openrouter", "model": "x/y"})), None).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!((v["provider"].as_str(), v["model"].as_str()), (Some("openrouter"), Some("x/y")));
+    assert_eq!(call(&f, "PUT", "/automation/assistant", Some(json!({"provider": "acme"})), None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
+    // without a key for openrouter the assistant explains what is missing
+    let (code, v, _) = call(&f, "POST", "/automation/assist", Some(json!({"instruction": "switch the PSU on"})), None).await;
+    assert_eq!(code, StatusCode::BAD_GATEWAY);
+    assert!(v["detail"].as_str().unwrap().contains("no API key for openrouter"), "{v}");
+    assert_eq!(call(&f, "POST", "/automation/assist", Some(json!({"instruction": " "})), None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+async fn mcp(f: &Fixture, method: &str, params: Value) -> Value {
+    let (code, v, _) = call(f, "POST", "/mcp", Some(json!({"jsonrpc": "2.0", "id": 7, "method": method, "params": params})), None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    assert_eq!(v["id"], 7);
+    v
+}
+
+async fn tool(f: &Fixture, name: &str, args: Value) -> (bool, String) {
+    let v = mcp(f, "tools/call", json!({"name": name, "arguments": args})).await;
+    (v["result"]["isError"] == true, v["result"]["content"][0]["text"].as_str().unwrap_or("").to_string())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn mcp_clients_read_by_default_and_control_only_when_allowed() {
+    let f = fixture("mcp");
+    let v = mcp(&f, "initialize", json!({"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "test", "version": "1"}})).await;
+    assert_eq!(v["result"]["protocolVersion"], "2025-06-18");
+    assert_eq!(v["result"]["serverInfo"]["name"], "benchmesh");
+    let (code, _, _) = call(&f, "POST", "/mcp", Some(json!({"jsonrpc": "2.0", "method": "notifications/initialized"})), None).await;
+    assert_eq!(code, StatusCode::ACCEPTED);
+    assert_eq!(call(&f, "GET", "/mcp", None, None).await.0, StatusCode::METHOD_NOT_ALLOWED);
+
+    let names = |v: &Value| v["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+    let read_tools = names(&mcp(&f, "tools/list", json!({})).await);
+    assert!(read_tools.contains(&"bench_overview".to_string()) && read_tools.contains(&"abort_run".to_string()));
+    assert!(!read_tools.contains(&"set_instrument".to_string()), "{read_tools:?}");
+
+    let (err, text) = tool(&f, "bench_overview", json!({})).await;
+    assert!(!err && text.contains("\"t1\"") && text.contains("VOUT"), "{text}");
+    let (err, text) = tool(&f, "read_instrument", json!({"device": "t1", "class": "PSU", "field": "VOUT"})).await;
+    assert!(!err, "{text}");
+    assert!(serde_json::from_str::<Value>(&text).unwrap()["value"].is_number(), "{text}");
+    let (err, text) = tool(&f, "set_instrument", json!({"device": "t1", "class": "PSU", "op": "voltage", "value": 3})).await;
+    assert!(err && text.contains("control"), "{text}");
+
+    assert_eq!(call(&f, "PUT", "/automation/mcp", Some(json!({"access": "control"})), None).await.0, StatusCode::OK);
+    assert!(names(&mcp(&f, "tools/list", json!({})).await).contains(&"set_instrument".to_string()));
+    let (err, text) = tool(&f, "set_instrument", json!({"device": "t1", "class": "PSU", "op": "voltage", "value": 3.3})).await;
+    assert!(!err && text.contains("confirmed"), "{text}");
+    let (err, text) = tool(&f, "set_instrument", json!({"device": "t1", "class": "PSU", "op": "output", "value": "ON"})).await;
+    assert!(err && text.contains("arm"), "energising needs confirm_energize: {text}");
+    let (err, text) = tool(&f, "save_flow", json!({"flow": {"schema": "benchmesh.flow/v1", "name": "From MCP", "steps": [{"do": "log", "message": "hi"}]}})).await;
+    assert!(!err && text.contains("from-mcp"), "{text}");
+    let (err, text) = tool(&f, "run_flow", json!({"id": "from-mcp"})).await;
+    assert!(!err, "{text}");
+    assert_eq!(run_end(&f).await["state"], "finished");
+
+    assert_eq!(call(&f, "PUT", "/automation/mcp", Some(json!({"access": "off"})), None).await.0, StatusCode::OK);
+    assert!(names(&mcp(&f, "tools/list", json!({})).await).is_empty());
+    let (err, text) = tool(&f, "bench_overview", json!({})).await;
+    assert!(err && text.contains("off"), "{text}");
+    let v = mcp(&f, "nope", json!({})).await;
+    assert_eq!(v["error"]["code"], -32601);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn mcp_refuses_browser_requests_from_other_sites() {
+    let f = fixture("mcp-guard");
+    let req = Request::builder()
+        .method("POST")
+        .uri("/mcp")
+        .header(header::HOST, "127.0.0.1:57666")
+        .header(header::ORIGIN, "https://evil.example")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}).to_string()))
+        .unwrap();
+    let resp = router(f.state.clone()).oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
 }

@@ -13,7 +13,7 @@ use std::time::Duration;
 use serde_json::{json, Value};
 
 /// The website (temporary domain until benchmesh.online is attached).
-pub const DEFAULT_URL: &str = "https://bench-mesh-online.vercel.app";
+pub const DEFAULT_URL: &str = "https://benchmesh.online";
 pub const SCHEMA: &str = "benchmesh.status/v1";
 const TIMEOUT: Duration = Duration::from_secs(8);
 

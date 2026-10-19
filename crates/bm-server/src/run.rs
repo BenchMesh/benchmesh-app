@@ -26,6 +26,8 @@ pub struct ServerOptions {
     /// Replay this capture session instead of opening real ports (no hardware needed).
     pub simulate: Option<PathBuf>,
     pub ws_interval: Duration,
+    /// Flows and automation settings (`flows/`, `automation.json`); `None` = in memory.
+    pub data_dir: Option<PathBuf>,
 }
 
 pub struct RunningServer {
@@ -109,6 +111,7 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         metrics_interval: Duration::from_secs(30),
         config_lock: Default::default(),
         community: Default::default(),
+        automation: crate::automation::Automation::new(devices.clone(), recordings.clone(), opts.data_dir.clone()),
     });
     // community status of the models (website, read-only); a simulation stays offline
     if opts.simulate.is_none() {

@@ -8,6 +8,8 @@
 //! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
 //! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
 //! traffic instead of opening ports — UI work and demos without hardware.
+//! `benchmesh-server mcp` bridges stdio to a running server's MCP endpoint (`$BENCHMESH_URL`,
+//! default `http://127.0.0.1:57666`) for AI clients that start a process.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -24,6 +26,10 @@ fn main() {
         std::process::exit(code);
     }
     let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("mcp") {
+        let url = std::env::var("BENCHMESH_URL").unwrap_or_else(|_| "http://127.0.0.1:57666".into());
+        std::process::exit(bm_server::mcp::stdio_bridge(&url));
+    }
     let home = std::env::var("HOME").unwrap_or_default();
     let config = arg(&args, "--config")
         .or_else(|| std::env::var("BENCHMESH_CONFIG").ok())
@@ -44,12 +50,13 @@ fn main() {
 
     let simulate = arg(&args, "--simulate").or_else(|| std::env::var("BENCHMESH_SIMULATE").ok()).map(PathBuf::from);
     let data_dir = std::env::var("BENCHMESH_DATA_DIR").ok().map(PathBuf::from);
-    // A simulation must not write into the user's real recordings unless a data dir is given.
-    let recordings_db = match (&simulate, data_dir) {
+    // A simulation must not write into the user's real data unless a data dir is given.
+    let data_dir = match (&simulate, data_dir) {
         (Some(_), None) => None,
-        (_, Some(d)) => Some(d.join("recordings.db")),
-        (None, None) => Some(PathBuf::from(&home).join(".benchmesh/recordings.db")),
+        (_, Some(d)) => Some(d),
+        (None, None) => Some(PathBuf::from(&home).join(".benchmesh")),
     };
+    let recordings_db = data_dir.as_ref().map(|d| d.join("recordings.db"));
     let server = match start(ServerOptions {
         config: config.clone(),
         devices_dir,
@@ -58,6 +65,7 @@ fn main() {
         recordings_db,
         ws_interval,
         simulate: simulate.clone(),
+        data_dir,
     }) {
         Ok(s) => s,
         Err(e) => {

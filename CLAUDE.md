@@ -62,11 +62,24 @@ literal, single-label / `.local` name or listed in `BENCHMESH_ALLOWED_HOSTS` (DN
 any request whose `Origin` is neither the server's own nor a loopback origin (form posts,
 `fetch`, WebSocket upgrades). There is no CORS layer: the UI is same-origin.
 
+**Automation, assistant, MCP** (contract `ai_context/AUTOMATION.md`): flows are JSON documents
+(`benchmesh.flow/v1`: params, setup / steps / cleanup-always-runs; steps set, read, wait, let,
+if, repeat, sweep, check, log, prompt, record, stop; CEL expressions) validated against the
+bench's vocabulary and run by one executor (`crates/bm-server/src/automation/`): one run at a
+time, energising steps need `arm`, every set confirmed by read-back within 6 s, status reads
+newer than the last set, abort interrupts waits, a failed/aborted run switches off what it
+switched on. Flows live in `<data dir>/flows/`, settings (assistant provider/model/API keys, MCP
+access) in `<data dir>/automation.json` (0600). The assistant (`assist.rs`) sends the user's
+description + vocabulary to the user's own provider (Anthropic / OpenAI / OpenRouter /
+OpenAI-compatible) and validates the returned flow (up to two self-corrections); it never runs
+it. `POST /mcp` (`mcp.rs`) is an MCP server (Streamable HTTP, JSON responses; access off / read
+(default) / control); `benchmesh --mcp` and `benchmesh-server mcp` are stdio bridges to it.
+
 **Website (BenchMeshOnline, `../BenchMeshOnline`):** the public instrument database is exported
 from the definitions (`cargo run -p bm-devicedef -- export devices --notes
 ai_context/website/instrument-notes.yaml`, schema `benchmesh.instruments/v1`, no wire details)
 by the site's `npm run sync`, which also copies the UI kit. At start the server reads the
-community status once (`GET {BENCHMESH_ONLINE_URL or bench-mesh-online.vercel.app}/api/v1/status`,
+community status once (`GET {BENCHMESH_ONLINE_URL or https://benchmesh.online}/api/v1/status`,
 `benchmesh.status/v1`, `crates/bm-server/src/community.rs`; `BENCHMESH_ONLINE=off` disables it,
 simulations stay offline); `/catalog` merges it per model (`community`; an `awaiting` model users
 confirmed counts as `confirmed`) and Instruments → Supported shows it with the confirming versions.
@@ -184,6 +197,7 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings (incl. **Detect**: `DetectView.tsx`, `detect.ts`), request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
+| `automation/` | Automation drawer (top bar **Automation**, contract `ai_context/AUTOMATION.md`): saved flows (new, duplicate, delete, import/export JSON), flow editor (parameter form, Setup / Steps / Cleanup step cards with vocabulary pickers, live validation shown at each step's path, JSON view; pure document model `flowModel.ts`), run panel (arm dialog for energising flows, live log, variables, prompt Continue, Abort / Escape), assistant (user's own LLM key, result loaded as unsaved), settings tab (provider, key — only its hint is ever shown, model, base URL; MCP access + connection snippets). `RunProvider.tsx` polls `/automation/run` for the whole UI: top-bar `▶ flow — state` + red **Stop** while a run is active |
 
 Panel **window controls** (header, top right): fold to the header line (saved with the layout;
 double-click the header works too) and **open in its own window**. A detached panel lives at

@@ -14,12 +14,14 @@
 //! unknown operation 404, refused precondition 409, device unreachable 503,
 //! device timeout 504, malformed device reply 502.
 
+pub mod automation;
 pub mod community;
 pub mod config;
 pub mod detect;
 pub mod ai;
 pub mod devices;
 pub mod guard;
+pub mod mcp;
 pub mod openapi;
 pub mod opspec;
 pub mod recordings;
@@ -62,6 +64,8 @@ pub struct AppState {
     pub config_lock: tokio::sync::Mutex<()>,
     /// Community status of the models, from the website (`community.rs`).
     pub community: Arc<community::Community>,
+    /// Flows, runs, the assistant and MCP settings (`automation/`).
+    pub automation: Arc<automation::Automation>,
 }
 
 pub(crate) type S = Arc<AppState>;
@@ -98,7 +102,9 @@ pub fn router(state: S) -> Router {
         .route("/openapi.yaml", get(openapi::yaml))
         .route("/docs", get(api_docs))
         .route("/redoc", get(api_docs))
-        .merge(recordings::routes());
+        .route("/mcp", get(mcp::get).post(mcp::post))
+        .merge(recordings::routes())
+        .merge(automation::routes());
     if let Some(ui) = &state.ui_dir {
         // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
         // stale index.html after an upgrade.

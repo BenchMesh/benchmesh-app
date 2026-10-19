@@ -49,6 +49,25 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/recordings/{id}/export", "recordings", "CSV: time_utc, time_ms, one column per series"),
     ("get", "/ai/context", "ai-assistant", "Installation description for AI assistants (`format=markdown|json`)"),
     ("get", "/ai/system-prompt", "ai-assistant", "Alias of /ai/context"),
+    ("get", "/automation/vocabulary", "automation", "What flows can address: configured devices with classes, channels, status fields and operations (setter value specs, energizes)"),
+    ("get", "/automation/flows", "automation", "Saved flows → [{id, name, description, updated_at}]"),
+    ("post", "/automation/flows", "automation", "Save a new flow (benchmesh.flow/v1) → 201 {id, flow, issues}; 422 {detail, issues} when it has errors"),
+    ("get", "/automation/flows/{id}", "automation", "One saved flow document"),
+    ("put", "/automation/flows/{id}", "automation", "Replace a saved flow → {id, flow, issues}; 422 when it has errors"),
+    ("delete", "/automation/flows/{id}", "automation", "Delete a saved flow (204)"),
+    ("post", "/automation/validate", "automation", "Check a flow against this bench → {ok, issues: [{path, level, message}], energizes: [{path, device, class, channel, op}]}"),
+    ("post", "/automation/run", "automation", "Start a run {flow_id | flow, params?, arm?} → 202 run status; 409 busy or needs arm {detail, energizes}; 422 invalid"),
+    ("get", "/automation/run", "automation", "Current / last run {id, flow, state: idle|running|waiting|cleanup|finished|failed|aborted, path, vars, error, prompt, recording_id, last_seq, events (after `after`)}"),
+    ("post", "/automation/run/abort", "automation", "Abort the run (cleanup still runs; a second abort stops the cleanup) → 204; 409 nothing running"),
+    ("post", "/automation/run/continue", "automation", "Continue a run waiting at a prompt → 204; 409 nothing waiting"),
+    ("get", "/automation/assistant", "automation", "Assistant settings {provider, model, models, base_url, keys: {provider: hint | null}, providers}"),
+    ("put", "/automation/assistant", "automation", "Update assistant settings {provider?, model?, base_url?, api_key? (\"\" removes)}"),
+    ("get", "/automation/assistant/models", "automation", "The provider's models [{id, name}]; 502 provider error"),
+    ("post", "/automation/assist", "automation", "Assemble or change a flow with the user's LLM {instruction, flow?} → {flow, explanation, issues, attempts}; 502 provider error"),
+    ("get", "/automation/mcp", "automation", "MCP access and how to connect {access: off|read|control, endpoint, command, args, env}"),
+    ("put", "/automation/mcp", "automation", "Set MCP access {access}"),
+    ("get", "/mcp", "ai-assistant", "MCP endpoint: 405 (no server stream; POST JSON-RPC)"),
+    ("post", "/mcp", "ai-assistant", "MCP endpoint (Streamable HTTP, JSON responses): initialize, tools/list, tools/call"),
     ("get", "/openapi.json", "system", "This specification (JSON)"),
     ("get", "/openapi.yaml", "system", "This specification (YAML)"),
     ("get", "/docs", "system", "API reference (redirects to the UI)"),
@@ -65,7 +84,8 @@ const TAGS: &[(&str, &str)] = &[
     ("instrument-control", "Read and set instrument operations"),
     ("monitoring", "Performance metrics"),
     ("recordings", "Data recording"),
-    ("ai-assistant", "AI assistant context"),
+    ("automation", "Flows, runs, the flow assistant and MCP settings"),
+    ("ai-assistant", "AI assistant context and the MCP endpoint"),
     ("websockets", "Real-time WebSocket streams"),
 ];
 
@@ -85,7 +105,7 @@ pub fn spec() -> Value {
             }
         });
         if matches!(*method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
-            && !path.ends_with("/resume") && !path.ends_with("/stop")
+            && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
         {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
         }
@@ -120,7 +140,7 @@ mod tests {
     /// Every `.route("path", method(...))` in the router source must be documented.
     #[test]
     fn every_router_route_is_documented() {
-        let sources = [include_str!("lib.rs"), include_str!("recordings.rs")];
+        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs")];
         let mut in_router = BTreeSet::new();
         for src in sources {
             for line in src.lines().filter(|l| l.trim_start().starts_with(".route(\"")) {
