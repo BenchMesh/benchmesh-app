@@ -14,7 +14,7 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/version", "system", "Application version"),
     ("get", "/drivers", "configuration", "Available device definitions"),
     ("get", "/drivers/{id}", "configuration", "Models supported by a device definition"),
-    ("get", "/catalog", "instruments", "Supported instruments: families with classes, transports, manuals and each model's support status (tested / confirmed / awaiting) → {families, models: {status: count}}"),
+    ("get", "/catalog", "instruments", "Supported instruments: families with classes, transports, manuals and each model's support status (tested / confirmed / awaiting) and community report (from the website) → {families, models: {status: count}, community: {source, fetched_at, error, models}}"),
     ("get", "/config", "configuration", "Configured devices"),
     ("post", "/config", "configuration", "Replace the device configuration (restarts devices)"),
     ("post", "/devices", "configuration", "Add a device (saved and started); `match` = identity {usb: {vid, pid, serial?, revision?, location?}, idn_serial?} instead of a fixed `port`/`device`"),

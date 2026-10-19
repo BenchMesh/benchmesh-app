@@ -17,7 +17,7 @@ export function ArmSwitch({ label, on, onChange, disabled }: {
   const [armed, setArmed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const confirm = useConfirmation(on)
 
   useEffect(() => () => clearTimeout(timer.current), [])

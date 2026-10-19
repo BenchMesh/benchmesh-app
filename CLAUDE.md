@@ -56,6 +56,15 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 (`frontend/src/ui/update/`). Releases are signed with the updater key (CI secrets
 `TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]`); losing that key means installed apps can no longer update.
 
+**Website (BenchMeshOnline, `../BenchMeshOnline`):** the public instrument database is exported
+from the definitions (`cargo run -p bm-devicedef -- export devices --notes
+ai_context/website/instrument-notes.yaml`, schema `benchmesh.instruments/v1`, no wire details)
+by the site's `npm run sync`, which also copies the UI kit. At start the server reads the
+community status once (`GET {BENCHMESH_ONLINE_URL or bench-mesh-online.vercel.app}/api/v1/status`,
+`benchmesh.status/v1`, `crates/bm-server/src/community.rs`; `BENCHMESH_ONLINE=off` disables it,
+simulations stay offline); `/catalog` merges it per model (`community`; an `awaiting` model users
+confirmed counts as `confirmed`) and Instruments → Supported shows it with the confirming versions.
+
 **Instrument identity:** a config entry may carry `match` (USB vid/pid + serial number or chip
 revision, port position as a tie-breaker, and the serial number from the identify reply) instead
 of a fixed `port`/`device`; the instrument is then found on whatever port it is plugged into, on

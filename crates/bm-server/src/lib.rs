@@ -14,6 +14,7 @@
 //! unknown operation 404, refused precondition 409, device unreachable 503,
 //! device timeout 504, malformed device reply 502.
 
+pub mod community;
 pub mod config;
 pub mod detect;
 pub mod ai;
@@ -59,6 +60,8 @@ pub struct AppState {
     pub metrics_interval: Duration,
     /// Serialises config changes (file + running devices).
     pub config_lock: tokio::sync::Mutex<()>,
+    /// Community status of the models, from the website (`community.rs`).
+    pub community: Arc<community::Community>,
 }
 
 pub(crate) type S = Arc<AppState>;
@@ -377,7 +380,10 @@ async fn catalog(State(s): State<S>) -> Json<Value> {
             let models: Vec<Value> = d
                 .models
                 .iter()
-                .map(|m| json!({"name": m.name, "support": m.support.as_str(), "note": m.note, "channels": m.channels}))
+                .map(|m| {
+                    let (community, support) = s.community.annotate(&d.id, &m.name, m.support.as_str());
+                    json!({"name": m.name, "support": support, "note": m.note, "channels": m.channels, "community": community})
+                })
                 .collect();
             let docs: Vec<&String> = d.sources.iter().filter_map(|src| src.doc.as_ref()).collect();
             json!({"driver": d.id, "vendor": d.vendor, "family": d.family, "classes": d.classes.keys().collect::<Vec<_>>(),
@@ -392,7 +398,7 @@ async fn catalog(State(s): State<S>) -> Json<Value> {
             counts.insert(k, json!(n));
         }
     }
-    Json(json!({"families": families, "models": counts}))
+    Json(json!({"families": families, "models": counts, "community": s.community.summary()}))
 }
 
 async fn driver_models(State(s): State<S>, Path(id): Path<String>) -> Response {

@@ -4,7 +4,7 @@
 schema: benchmesh.device/v1
 id: bk_4050b
 extends: siglent_sdg
-vendor: BK Precision
+vendor: B&K Precision
 family: 4050B series function/arbitrary waveform generator
 version: 0.1.0
 sources:

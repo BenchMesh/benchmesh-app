@@ -8,6 +8,7 @@
 //!   <definition-id>.yaml      benchmesh.device/v1 — one device family each
 //! ```
 
+pub mod export;
 pub mod model;
 pub mod template;
 pub mod validate;

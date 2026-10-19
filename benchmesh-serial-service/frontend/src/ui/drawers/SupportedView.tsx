@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiError } from './detect'
 import {
-  catalogClasses, filterCatalog, SUPPORT_HINT, SUPPORT_LABEL, TRANSPORT_LABEL,
+  catalogClasses, communitySourceText, communityText, filterCatalog, SUPPORT_HINT, SUPPORT_LABEL, TRANSPORT_LABEL,
   type Catalog, type CatalogFilter,
 } from './supported'
 import { getClassDescription } from '../instrumentClasses'
@@ -38,6 +38,7 @@ export function SupportedView({ apiBase }: { apiBase: string }) {
         Instruments BenchMesh has definitions for. Models <b>awaiting confirmation</b> were written from the
         manufacturer’s manual; if you own one, connecting it and reporting whether it works helps everyone.
       </p>
+      <p className="supported__source" data-testid="community-source">{communitySourceText(catalog.community)}</p>
       <div className="supported__counts">
         {STATUSES.map((s) => (
           <button key={s} type="button" className={`supported__count supported__count--${s}`} title={SUPPORT_HINT[s]}
@@ -66,8 +67,11 @@ export function SupportedView({ apiBase }: { apiBase: string }) {
             </div>
             <ul className="supported__models">
               {fam.models.map((m) => (
-                <li key={m.name} className={`supported__model supported__model--${m.support}`} title={m.note ? `${SUPPORT_HINT[m.support]} — ${m.note}` : SUPPORT_HINT[m.support]}>
+                <li key={m.name} className={`supported__model supported__model--${m.support}`}
+                  title={[SUPPORT_HINT[m.support], communityText(m.community), m.note].filter(Boolean).join(' — ')}>
                   {m.name}<i>{SUPPORT_LABEL[m.support]}</i>
+                  {m.community?.status === 'confirmed' && !!m.community.versions?.length && <i className="supported__ver">v{m.community.versions[0].replace(/^v/, '')}</i>}
+                  {m.community?.status === 'issues' && <i className="supported__issues">issues reported</i>}
                 </li>
               ))}
             </ul>

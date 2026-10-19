@@ -6,7 +6,7 @@ import { RefObject, useEffect, useLayoutEffect, useRef } from 'react'
  * passive and cannot stop the page scrolling while the control is being adjusted.
  * `onStep` gets +1 for wheel up, -1 for wheel down.
  */
-export function useFocusedWheel(ref: RefObject<HTMLElement>, onStep: (dir: number, e: WheelEvent) => void) {
+export function useFocusedWheel(ref: RefObject<HTMLElement | null>, onStep: (dir: number, e: WheelEvent) => void) {
   const cb = useRef(onStep)
   useLayoutEffect(() => { cb.current = onStep })
   useEffect(() => {

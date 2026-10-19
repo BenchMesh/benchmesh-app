@@ -894,6 +894,7 @@
 
 /* Supported instruments (catalog) */
 .supported { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.supported__source { margin: -4px 0 0; font-size: 10px; color: var(--kit-ink-3); }
 .supported__intro { margin: 0; font-size: 11px; color: var(--kit-ink-2); line-height: 1.45; }
 .supported__counts { display: flex; flex-wrap: wrap; gap: 6px; }
 .supported__count { padding: 4px 8px; font: 400 .68rem/1.2 var(--kit-font-num); color: var(--kit-ink-2); background: var(--kit-ctl); border: 1px solid var(--kit-panel-edge); border-radius: 4px; cursor: pointer; }
@@ -923,6 +924,8 @@
 .supported__model--tested i { color: var(--kit-ok); }
 .supported__model--confirmed i { color: var(--kit-accent); }
 .supported__model--awaiting i { color: var(--kit-warn); }
+.supported__model i.supported__ver { color: var(--kit-ink-3); }
+.supported__model i.supported__issues { color: var(--kit-alert); }
 
 /* Detect progress */
 .detect__summary { font: 400 10px/1 var(--kit-font-num); color: var(--kit-accent); margin-left: auto; }

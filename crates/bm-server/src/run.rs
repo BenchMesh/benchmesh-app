@@ -108,7 +108,13 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         ws_interval: opts.ws_interval,
         metrics_interval: Duration::from_secs(30),
         config_lock: Default::default(),
+        community: Default::default(),
     });
+    // community status of the models (website, read-only); a simulation stays offline
+    if opts.simulate.is_none() {
+        let c = state.community.clone();
+        rt.spawn(async move { c.refresh().await });
+    }
 
     let listener = rt.block_on(async {
         let mut last = String::from("no listen address given");

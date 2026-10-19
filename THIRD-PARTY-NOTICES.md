@@ -115,6 +115,11 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT
 - **URL**: https://github.com/tokio-rs/axum, https://github.com/tokio-rs/tokio, https://github.com/tower-rs/tower-http
 
+### reqwest, rustls with ring (bm-server: community status from the website)
+- **License**: MIT OR Apache-2.0 (reqwest, rustls); ring: Apache-2.0 AND ISC
+- **URL**: https://github.com/seanmonstar/reqwest, https://github.com/rustls/rustls, https://github.com/briansmith/ring
+- Already shipped with the desktop app through `tauri-plugin-updater`; now also a direct dependency of `bm-server`.
+
 ### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
 - **License**: Apache-2.0 OR MIT (used under MIT)
 - **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace

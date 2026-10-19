@@ -4,7 +4,9 @@
  */
 import type { Support } from '../types'
 
-export interface CatalogModel { name: string; support: Support; note?: string | null }
+/** What users reported on the website (`community.rs` in bm-server; schema benchmesh.status/v1). */
+export interface CommunityEntry { status: 'confirmed' | 'issues'; versions?: string[]; reports?: number; last?: string }
+export interface CatalogModel { name: string; support: Support; note?: string | null; community?: CommunityEntry | null }
 export interface CatalogFamily {
   driver: string
   vendor: string
@@ -14,7 +16,9 @@ export interface CatalogFamily {
   models: CatalogModel[]
   manuals?: string[]
 }
-export interface Catalog { families: CatalogFamily[]; models: Partial<Record<Support, number>> }
+/** Where the community status came from at app start (all null when it was not fetched yet / disabled). */
+export interface CommunitySource { source: string | null; fetched_at: string | null; error: string | null; models: number }
+export interface Catalog { families: CatalogFamily[]; models: Partial<Record<Support, number>>; community?: CommunitySource }
 
 export const SUPPORT_LABEL: Record<Support, string> = {
   tested: 'Bench-tested',
@@ -53,4 +57,20 @@ export function filterCatalog(families: CatalogFamily[], f: CatalogFilter): Cata
 /** Classes present in the catalog, in a stable order. */
 export function catalogClasses(families: CatalogFamily[]): string[] {
   return [...new Set(families.flatMap((f) => f.classes))].sort()
+}
+
+/** "Confirmed by 2 users on v0.1.5, v0.1.4" / "Issues reported by 1 user on v0.1.4"; null without a report. */
+export function communityText(c: CommunityEntry | null | undefined): string | null {
+  if (!c) return null
+  const n = c.reports ?? 0
+  const who = n > 0 ? ` by ${n} user${n === 1 ? '' : 's'}` : ''
+  const on = c.versions?.length ? ` on ${c.versions.map((v) => `v${v.replace(/^v/, '')}`).join(', ')}` : ''
+  return `${c.status === 'confirmed' ? 'Confirmed' : 'Issues reported'}${who}${on}`
+}
+
+/** One line about the website check: shown under the intro. */
+export function communitySourceText(c: CommunitySource | undefined): string {
+  if (!c?.source) return 'Community reports are not loaded (offline check disabled or still running).'
+  if (c.error) return `Community reports could not be loaded (${c.error}); showing the status of the definitions.`
+  return `Community reports for ${c.models} model${c.models === 1 ? '' : 's'} loaded from the BenchMesh website at start.`
 }

@@ -115,6 +115,7 @@ fn fixture(name: &str) -> Fixture {
         ws_interval: Duration::from_millis(50),
         metrics_interval: Duration::from_millis(100),
         config_lock: Default::default(),
+        community: Default::default(),
     });
     let f = Fixture { state, dir };
     // wait until both devices are connected and polled

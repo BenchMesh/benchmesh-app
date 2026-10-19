@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { filterCatalog, catalogClasses, type CatalogFamily } from '../supported'
+import { filterCatalog, catalogClasses, communityText, communitySourceText, type CatalogFamily } from '../supported'
 import { SupportedView } from '../SupportedView'
 
 const families: CatalogFamily[] = [
@@ -26,7 +26,36 @@ describe('filterCatalog', () => {
   })
 })
 
+describe('community reports', () => {
+  it('describe who confirmed a model on which versions', () => {
+    expect(communityText({ status: 'confirmed', versions: ['0.1.5', 'v0.1.4'], reports: 2 })).toBe('Confirmed by 2 users on v0.1.5, v0.1.4')
+    expect(communityText({ status: 'issues', reports: 1 })).toBe('Issues reported by 1 user')
+    expect(communityText(null)).toBeNull()
+  })
+  it('say where the reports came from, or why they are missing', () => {
+    expect(communitySourceText(undefined)).toMatch(/not loaded/)
+    expect(communitySourceText({ source: 'https://x/api/v1/status', fetched_at: 't', error: 'HTTP 500', models: 0 })).toMatch(/could not be loaded \(HTTP 500\)/)
+    expect(communitySourceText({ source: 'https://x/api/v1/status', fetched_at: 't', error: null, models: 3 })).toMatch(/3 models loaded/)
+  })
+})
+
 describe('SupportedView', () => {
+  it('marks community-confirmed models with the version they were confirmed on', async () => {
+    const withCommunity: CatalogFamily[] = [{ ...families[1], models: [
+      { name: 'DL3021', support: 'confirmed', community: { status: 'confirmed', versions: ['0.1.5'], reports: 1 } },
+      { name: 'DL3031', support: 'awaiting', community: { status: 'issues', versions: ['0.1.5'], reports: 1 } }] }]
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ families: withCommunity,
+      models: { confirmed: 1, awaiting: 1 }, community: { source: 's', fetched_at: 't', error: null, models: 2 } }), { status: 200 })))
+    render(<SupportedView apiBase="/api" />)
+    const dl = await screen.findByText('DL3021')
+    expect(dl.textContent).toContain('Community-confirmed')
+    expect(dl.textContent).toContain('v0.1.5')
+    expect(dl.getAttribute('title')).toContain('Confirmed by 1 user on v0.1.5')
+    expect(screen.getByText('DL3031').textContent).toContain('issues reported')
+    expect(screen.getByTestId('community-source').textContent).toMatch(/2 models loaded/)
+    vi.restoreAllMocks()
+  })
+
   afterEach(() => vi.restoreAllMocks())
   it('shows families with each model’s status and filters by status', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response(

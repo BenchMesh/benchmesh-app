@@ -16,7 +16,7 @@
 # KP = kelctl KEL103-protocol.md (https://github.com/vorbeiei/kelctl).
 schema: benchmesh.device/v1
 id: korad_kel10x
-vendor: Korad
+vendor: KORAD
 family: KEL10x DC electronic load (KEL102, KEL103; Tenma 72-132xx, RND 320-KEL10x)
 version: 0.1.0
 sources:
