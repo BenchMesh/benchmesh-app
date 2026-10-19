@@ -6,9 +6,13 @@ import { MetricsPage } from './ui/MetricsPage'
 import { PanelWindow } from './ui/bench/PanelWindow'
 import { SkinProvider } from './ui/kit/skin'
 import { RequestLogProvider } from './ui/RequestLogContext'
+import { suppressNativeContextMenu } from './ui/nativeMenu'
 
 // Simple routing: check URL path to determine which component to render
 const path = window.location.pathname
+
+// right-click opens the app's own menus only (e.g. add a reading to a recording)
+suppressNativeContextMenu()
 
 const root = createRoot(document.getElementById('root')!)
 

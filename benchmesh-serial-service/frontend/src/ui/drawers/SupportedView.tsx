@@ -29,8 +29,8 @@ export function SupportedView({ apiBase }: { apiBase: string }) {
 
   const families = useMemo(() => (catalog ? filterCatalog(catalog.families, filter) : []), [catalog, filter])
   const classes = useMemo(() => (catalog ? catalogClasses(catalog.families) : []), [catalog])
-  if (error) return <div className="instrument-config__inline-error">{error}</div>
-  if (!catalog) return <span className="detect__hint">Loading…</span>
+  if (error) return <section className="supported"><div className="instrument-config__inline-error">{error}</div></section>
+  if (!catalog) return <section className="supported"><span className="detect__hint">Loading…</span></section>
 
   return (
     <section className="supported" aria-label="Supported instruments" data-testid="supported-view">
