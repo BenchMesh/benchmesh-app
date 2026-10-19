@@ -148,15 +148,15 @@ every disagreement is decided against the manual (see the review section, if any
 Decided against the DMM6500 Reference Manual DMM6500-901-01 Rev. C (`BenchMeshDOC/keithley_dmm6500/doc`).
 
 - **Agreement**: `:SENS:FUNC "<fn>"` for all eight functions PyMeasure sets (incl. `FREQ:VOLT`, `PER:VOLT`),
-  `FUNC?` replies (`CURR:DC`, `VOLT:AC` unquoted — our parse accepts quoted and unquoted), `:READ?`
+  `FUNC?` replies (`CURR:DC`, `VOLT:AC` unquoted - our parse accepts quoted and unquoted), `:READ?`
   incl. overflow `9.9E+37`, `<fn>:RANG?`/`RANG:AUTO?`, `<fn>:RANG <n>` (ours `CURR:DC:RANG 10E-3` ≡
   `:SENS:CURR:RANG 0.01`), `RANG:AUTO 1` ≡ our `ON` (RM p.12-109 boolean).
-- **Our defect, not fixed — `nplc_q` parse failure on `2`**: RM p.12-105 allows any NPLC 0.0005…15
+- **Our defect, not fixed - `nplc_q` parse failure on `2`**: RM p.12-105 allows any NPLC 0.0005…15
   (12 at 50 Hz), so a meter set to 2 PLC on the front panel makes `GET …/rate` fail (`map: unexpected
   value "2.0"`). The base `scpi_dmm` maps the reply onto the rate list, and the DSL `map` has no
   pass-through for unlisted values. Needs a DSL decision (e.g. `map` with a pass-through default, or
-  `rate` as a number) — it affects every `scpi_dmm` definition, so it is left to the engine owner.
+  `rate` as a number) - it affects every `scpi_dmm` definition, so it is left to the engine owner.
 - `RANG:AUTO 0` / `NPLC 2`: values our enums do not offer (a fixed range already switches autorange off,
-  RM p.12-110) — not disagreements.
-- **Library bug**: `measure_voltage(ac=True)` sends `:SENS:VOLT:RANG:AUTO 0;:SENS:VOLT:AC:RANG 1` — it
+  RM p.12-110) - not disagreements.
+- **Library bug**: `measure_voltage(ac=True)` sends `:SENS:VOLT:RANG:AUTO 0;:SENS:VOLT:AC:RANG 1` - it
   switches off autorange of the *DC* function before setting the AC range (harmless, wrong function).

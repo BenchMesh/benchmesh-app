@@ -1,10 +1,10 @@
-//! USBTMC protocol (USB Test & Measurement Class 1.0, bulk messages) over any bulk pipe —
+//! USBTMC protocol (USB Test & Measurement Class 1.0, bulk messages) over any bulk pipe -
 //! the userspace USBTMC transports (nusb on Windows / macOS) speak it themselves instead of a
 //! kernel driver.
 //!
 //! One [`Transport::read`] returns one whole device message, like the Linux kernel transport.
 //! Replies carry the tag of the request they answer; a reply with an older tag (a late answer
-//! to a request that timed out) is discarded instead of being taken for the current one — the
+//! to a request that timed out) is discarded instead of being taken for the current one - the
 //! failure mode that left the DHO804 "one reply behind" on the kernel driver.
 
 use std::io;

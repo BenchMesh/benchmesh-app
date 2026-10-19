@@ -85,7 +85,7 @@ function Select({ label, value, options, onChange, wide }: {
     <Field label={label} wide={wide}>
       {(id) => (
         <select id={id} className="kit-input" value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={!known}>
-          {!known && <option value={value}>{value ? `${value} (unknown)` : '— choose —'}</option>}
+          {!known && <option value={value}>{value ? `${value} (unknown)` : '- choose -'}</option>}
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       )}
@@ -294,7 +294,7 @@ function StepFields({ step, set }: { step: Step; set: (patch: Record<string, unk
     case 'prompt': return <Text label="Message to the user" value={step.message} onChange={(message) => set({ message })} wide />
     case 'record': return <RecordFields step={step} set={(p) => set(p)} />
     case 'stop': return <Text label="Message" value={step.message} onChange={(message) => set({ message: message || undefined })} wide />
-    default: return <span className="bench-hint">Unknown step type — edit it in the JSON view.</span>
+    default: return <span className="bench-hint">Unknown step type - edit it in the JSON view.</span>
   }
 }
 
@@ -319,7 +319,7 @@ function AddStep({ list, index, label }: { list: string; index: number; label: s
     <select className="kit-input auto-add" aria-label={label} value=""
       onChange={(e) => { const t = e.target.value as StepType; if (t) update((d) => insertStep(d, list, index, newStep(t, vocab))) }}>
       <option value="">+ Add step…</option>
-      {STEP_TYPES.map((t) => <option key={t.type} value={t.type}>{t.label} — {t.hint}</option>)}
+      {STEP_TYPES.map((t) => <option key={t.type} value={t.type}>{t.label} - {t.hint}</option>)}
     </select>
   )
 }

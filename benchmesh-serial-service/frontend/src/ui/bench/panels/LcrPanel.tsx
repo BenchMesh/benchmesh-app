@@ -16,7 +16,7 @@ export function plainText(x: number | null, counts: number, overload = false): s
   return (x < 0 ? '-' : ' ') + ax.toFixed(decimals)
 }
 
-/** Values the UI derives from the pair (display only, never sent): Q = 1/D, ESR of Cs–D, Rs of Ls–Q. */
+/** Values the UI derives from the pair (display only, never sent): Q = 1/D, ESR of Cs-D, Rs of Ls-Q. */
 export function derived(fn: LcrFunction | null, primary: number | null, secondary: number | null, freq: number | null): { label: string; text: string }[] {
   if (!fn || secondary == null || !Number.isFinite(secondary) || secondary === 0) return []
   const out: { label: string; text: string }[] = []
@@ -171,7 +171,7 @@ export function LcrPanel({ status, profile, api, online }: {
     <div className="bench-lcr">
       <div className="kit-glass bench-lcr__glass">
         <Recordable field="PRIMARY" unit={pu} tag={fn?.primary}>
-          <Readout tag={fn?.primary ?? '—'} text={main.text} unit={`${main.prefix}${pu}`} label={fn ? `Primary ${fn.primary}` : 'Primary'} tone="meas" history={history} />
+          <Readout tag={fn?.primary ?? '-'} text={main.text} unit={`${main.prefix}${pu}`} label={fn ? `Primary ${fn.primary}` : 'Primary'} tone="meas" history={history} />
         </Recordable>
         {fn?.secondary && (
           <Recordable field="SECONDARY" unit={su} tag={fn.secondary}>
@@ -179,9 +179,9 @@ export function LcrPanel({ status, profile, api, online }: {
           </Recordable>
         )}
         <div className="kit-stats" aria-label="Statistics">
-          <span><b>MIN</b>{stats.n ? fmt(stats.min) : '—'}</span>
-          <span><b>MAX</b>{stats.n ? fmt(stats.max) : '—'}</span>
-          <span><b>AVG</b>{stats.n ? fmt(stats.sum / stats.n) : '—'}</span>
+          <span><b>MIN</b>{stats.n ? fmt(stats.min) : '-'}</span>
+          <span><b>MAX</b>{stats.n ? fmt(stats.max) : '-'}</span>
+          <span><b>AVG</b>{stats.n ? fmt(stats.sum / stats.n) : '-'}</span>
           <span><b>N</b>{stats.n}</span>
           {derived(fn, raw, sec, freq).map((d) => <span key={d.label}><b>{d.label}</b>{d.text}</span>)}
         </div>

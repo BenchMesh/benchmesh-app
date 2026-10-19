@@ -16,7 +16,7 @@ models:
   - {"name": "UTG2122B", "match": "^UNI-T Technologies, ?UTG2122B,", "features": {"AWG": {"max_freq_hz": {"SIN": 120e6}}}}
   - {"name": "UTG2000B", "match": "^UNI-T Technologies, ?UTG2[0-9]{3}B?,", "note": "IDN reports the family (UTG2000); limits of the largest model (UTG2122B)"}
 link:
-  # LAN: VXI-11 (LXI; no raw socket) — uses the top-level message framing
+  # LAN: VXI-11 (LXI; no raw socket) - uses the top-level message framing
   vxi11: {}
 commands:
   shape_q: {source: "PM p16; reply SINe (also HARMonic, EXP → ARB)"}

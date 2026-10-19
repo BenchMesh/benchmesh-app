@@ -34,9 +34,9 @@ Model limits in the manifest (V/A/W): 2535 30/3/90 · 2540 30/5/150 · 2545 60/2
 | Serial | 9600 8N1, no flow control (manual p.8) | same. DTR/RTS forced low by Python, ok=true (SET capture). Effect not tested. |
 | TX terminator | not specified | **none**. Commands are sent as bare ASCII. |
 | RX terminator | not specified | **none**. Replies have a fixed length per command (see §3). |
-| Reply latency | — | first byte ≈30 ms; whole exchange 30–45 ms (probe) |
-| Query→query gap | — | 0 ms is fine (0/30 failures), provided the full fixed-length reply has been read first (probe) |
-| Setter→next cmd | — | **≥50 ms**. At 20 ms the setter was lost 10/10 times (probe). |
+| Reply latency | - | first byte ≈30 ms; whole exchange 30-45 ms (probe) |
+| Query→query gap | - | 0 ms is fine (0/30 failures), provided the full fixed-length reply has been read first (probe) |
+| Setter→next cmd | - | **≥50 ms**. At 20 ms the setter was lost 10/10 times (probe). |
 | Setter reply | not specified | **none** (VSET/ISET/OUT: `no_reply`, SET capture) |
 | Remote mode | Entered automatically on USB connect: beep, then panel keys locked. Exit by closing the port or unplugging; a beep follows (manual p.8). | No explicit command. Panel locked during capture (assumed, consistent with STATUS bit5=0). |
 
@@ -48,22 +48,22 @@ DSL framing: `tx: {terminator: "", min_gap_after_set_ms: 50}`. For `rx: {mode: f
 
 | Command | Params | Reply (format, real example) | Side effects / preconditions | Ref |
 |---|---|---|---|---|
-| `*IDN?` | — | 18 B `TENMA 72-2540 V2.1` | — | protocol p.2 #10 |
+| `*IDN?` | - | 18 B `TENMA 72-2540 V2.1` | - | protocol p.2 #10 |
 | `VOUT<X>?` | X int | 5 B `NN.NN` V, actual terminal voltage: `00.00` (output off), `05.00` (on, VSET 5) | Reads 0 while output is off | protocol p.1 #6; RO/SET capture |
-| `IOUT<X>?` | X int | 5 B `N.NNN` A: `0.000` | — | protocol p.1 #5; capture |
-| `VSET<X>?` | X int | 5 B `NN.NN` V: `04.94`, `05.00` | — | protocol p.1 #4; capture |
-| `ISET<X>?` | X int | **6 B** `N.NNN␠`, trailing space: `0.988 `, `0.500 ` | — | protocol p.1 #2; capture |
+| `IOUT<X>?` | X int | 5 B `N.NNN` A: `0.000` | - | protocol p.1 #5; capture |
+| `VSET<X>?` | X int | 5 B `NN.NN` V: `04.94`, `05.00` | - | protocol p.1 #4; capture |
+| `ISET<X>?` | X int | **6 B** `N.NNN␠`, trailing space: `0.988 `, `0.500 ` | - | protocol p.1 #2; capture |
 | `VSET<X>:<v>` | v float, 0…V_max (30 V on 2540), **≤2 decimals**, 10 mV resolution (manual p.9) | none | Accepted: `5`, `5.0`, `05.10`, `4.94`. **Silently ignored:** `12.345` (3 dp), `1.5e1`. Wait ≥50 ms before the next command. Setting V above the OVP level turns the output off (manual p.7). | protocol p.1 #3; SET capture; probe |
 | `ISET<X>:<i>` | i float, 0…I_max (5 A on 2540), **≤3 decimals**, 1 mA resolution (manual p.9) | none | Accepted: `0.5`, `0.988`. Use `%.3f`. 4+ dp presumably ignored (not tested). ≥50 ms gap. | protocol p.1 #1; SET capture |
 | `OUT<b>` | b ∈ {0,1} | none | Global, no channel. `OUT1` → VOUT follows VSET; STATUS 0x10→0x51. `OUT0` → 0x11. ≥50 ms gap. | protocol p.2 #8; SET capture |
-| `STATUS?` | — | **1 B binary** bitfield (§4): `0x10`, `0x11`, `0x51` (=`'Q'`) | — | protocol p.2 #9; capture |
+| `STATUS?` | - | **1 B binary** bitfield (§4): `0x10`, `0x11`, `0x51` (=`'Q'`) | - | protocol p.2 #9; capture |
 | `OCP<b>` | b ∈ {0,1} | none (presumed) | Enables over-current protection. Trip level = ISET (manual p.9 FAQ Q4: OCP trips immediately if ISET is too small). The OCP LED lights (manual p.4). **Never sent on the wire** (Python `is` bug). The protocol text "Stores the panel setting" is a copy-paste error. | protocol p.2 #13; manual p.4, p.9 |
 | `OVP<b>` | b ∈ {0,1} | none (presumed) | Enables over-voltage protection. On trip the output cuts off and the OVP LED flashes (manual p.4). No command sets an OVP level; the level is presumably VSET or a panel value (open Q). Never sent. | protocol p.2 #14; manual p.4, p.7 |
 | `BEEP<b>` | b ∈ {0,1} | none (presumed) | Panel equivalent: hold OCP for 2 s (manual p.7). Reflected in STATUS bit4. Driver comment says "doesnt work". | protocol p.2 #7; manual p.5, p.7 |
 | `SAV<n>` | n int 1…5 | none (presumed) | Stores VSET/ISET/beep/knob mode. Output and lock are always stored as off (manual p.7). Driver comment: "doesnt work". | protocol p.2 #12; manual p.7 |
-| `RCL<n>` | n int 1…5 | none (presumed) | **Turns the output off** (manual p.7, p.8). The panel has M1–M4 buttons; M5 is reached via the knob (manual p.8). | protocol p.2 #11; manual p.7–8 |
-| LOCK / remote | — | — | **No documented command.** The panel locks automatically in remote mode (manual p.8). The panel LOCK key exists; unlock by holding it 2 s (manual p.7). | manual p.7–8 |
-| `*RST` | — | — | **Not supported** by the protocol, but DriverBase exposes `set_reset`. Exclude it from the definition. | protocol (absent) |
+| `RCL<n>` | n int 1…5 | none (presumed) | **Turns the output off** (manual p.7, p.8). The panel has M1-M4 buttons; M5 is reached via the knob (manual p.8). | protocol p.2 #11; manual p.7-8 |
+| LOCK / remote | - | - | **No documented command.** The panel locks automatically in remote mode (manual p.8). The panel LOCK key exists; unlock by holding it 2 s (manual p.7). | manual p.7-8 |
+| `*RST` | - | - | **Not supported** by the protocol, but DriverBase exposes `set_reset`. Exclude it from the definition. | protocol (absent) |
 
 Formatting rule for the definition: send `VSET1:%.2f` and `ISET1:%.3f`, clamped to the model limits. Reject values that would round to a different value, and never use exponent notation.
 
@@ -75,7 +75,7 @@ Per the manual (protocol p.2 #9):
 |---|---|---|
 | 0 | 0x01 | CH1: 0=CC, 1=CV |
 | 1 | 0x02 | CH2: 0=CC, 1=CV |
-| 2–3 | 0x0C | Tracking: 00 independent, 01 series, 11 parallel |
+| 2-3 | 0x0C | Tracking: 00 independent, 01 series, 11 parallel |
 | 4 | 0x10 | Beep: 1=on |
 | 5 | 0x20 | Lock: **0=Lock, 1=Unlock** |
 | 6 | 0x40 | Output: 1=on |
@@ -93,7 +93,7 @@ Resolution:
 - **OUTPUT = bit6.** Confirmed: it toggles with OUT1/OUT0, and VOUT follows.
 - **CV = bit0 (1=CV), CC = !bit0, valid only while bit6=1.** Confirmed CV=1 with no load. CC=1 under load is not yet observed (open Q1). While the output is off, bit0 is stale: 0 after power-up and latched after use. Derive `SBY = !bit6`, `CV = bit6 && bit0`, `CC = bit6 && !bit0`.
 - **bit5:** the manual's polarity (0=locked) matches the remote-mode panel lock, but this has not been toggled on hardware (open Q3). The Korad-family community driver (sigrok `korad-kaxxxxp`, unverified recollection) treats bit5 as OCP-enabled and bit7 as OVP-enabled on some firmwares. Do not map bit5 to `REMOTE` or `lock` until it is verified.
-- Bits 1–3 are meaningless on single-channel models (always 0).
+- Bits 1-3 are meaningless on single-channel models (always 0).
 - The RO capture has 1 `STATUS?` with no reply. It is the last line of the session (service stopped mid-read), so it is an artifact, not a device fault.
 
 ## 5. Recommended poll strategy
@@ -105,7 +105,7 @@ Minimum per cycle: **`VOUT1?` (5 B) → `IOUT1?` (5 B) → `STATUS?` (1 B)**, ba
 - `OUTPUT = bit6 ? "ON" : "OFF"`, `SBY = !bit6`, `CV = bit6 && bit0`, `CC = bit6 && !bit0`.
 - `REMOTE`: constant `"ON"` while the port is open (manual p.8: connecting USB enters remote). Do not expose `set_remote`, because no command exists. Drop it from this definition's operations, or reject it with a clear 4xx.
 - Optional extras: `BEEP = bit4`.
-- **Expected cycle ≈ 3 × 30–45 ms ≈ 100–130 ms** (Python today: 5 queries × ≈1 s ≈ 5 s). A 250–500 ms interval is comfortably feasible. Keep it ≥ ~150 ms so API setters can interleave with their 50 ms post-gap.
+- **Expected cycle ≈ 3 × 30-45 ms ≈ 100-130 ms** (Python today: 5 queries × ≈1 s ≈ 5 s). A 250-500 ms interval is comfortably feasible. Keep it ≥ ~150 ms so API setters can interleave with their 50 ms post-gap.
 - Setpoints (`VSET1?`, `ISET1?`) are not status keys. Query them on demand, or cache them and invalidate on `set_voltage`/`set_current`/`RCL`.
 
 ## 6. Discrepancies
@@ -117,7 +117,7 @@ Minimum per cycle: **`VOUT1?` (5 B) → `IOUT1?` (5 B) → `STATUS?` (1 B)**, ba
 4. Decimal limits are undocumented. `VSET` with 3 dp or exponent notation is **silently ignored**, with no error indication.
 5. STATUS bit0 latches while the output is off. The manual implies it is always a live mode.
 6. Protocol text errors: `OCP` described as "Stores the panel setting"; `*IDN?` "Returns the KA3005P identification".
-7. Memories: protocol says 1–5 (p.2); the manual has 4 buttons, with M5 via the knob (p.7–8). Manifest `memory_banks: 5` is consistent with the protocol.
+7. Memories: protocol says 1-5 (p.2); the manual has 4 buttons, with M5 via the knob (p.7-8). Manifest `memory_banks: 5` is consistent with the protocol.
 
 **Python driver bugs (do not replicate)**
 1. `query_output_voltage/current`: inverted cache check (`is not None`). On a miss it returns `si_to_value(None)`, and the API crashes with `could not convert string to float: 'None'`. On a hit it re-queries. As a result `poll_status` sends VOUT, IOUT, VOUT, IOUT, STATUS = 5 queries per cycle (RO/SET capture: 188 VOUT vs 97 STATUS).
@@ -141,7 +141,7 @@ Minimum per cycle: **`VOUT1?` (5 B) → `IOUT1?` (5 B) → `STATUS?` (1 B)**, ba
 | Q3 | Does bit5 change when the panel LOCK key is held 2 s while connected? Does the panel unlock at all in remote mode? | state-changing (panel only, no output change) |
 | Q4 | Are undocumented `LOCK0/LOCK1` or similar accepted? | **state-changing** |
 | Q5 | `BEEP0`/`BEEP1`: does bit4 follow? (Driver says "doesnt work".) | **state-changing** (harmless) |
-| Q6 | `SAV1`…`SAV5` / `RCL1`…`RCL5`: do they work, does RCL turn the output off, is `RCL5` valid, and does `SAV` need a gap before the next command? | **state-changing** (overwrites memory; record M1–M5 first) |
+| Q6 | `SAV1`…`SAV5` / `RCL1`…`RCL5`: do they work, does RCL turn the output off, is `RCL5` valid, and does `SAV` need a gap before the next command? | **state-changing** (overwrites memory; record M1-M5 first) |
 | Q7 | Minimum gap after `OUT`/`OCP`/`OVP`/`RCL` (50 ms was measured only for VSET/ISET). | **state-changing** |
 | Q8 | `ISET1:0.1234` (4 dp) and `VSET1:30.01` (over range): ignored, clamped or accepted? | **state-changing** |
 | Q9 | Reply widths at full scale: `VOUT1?` at 30 V (`30.00`?), and `IOUT1?`/`ISET1?` near 5 A. | read-only (needs setpoint/load to reach the values) |

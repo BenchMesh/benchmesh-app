@@ -119,7 +119,7 @@ jobs:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.event.inputs.version) }}
           releaseName: 'BenchMesh v__VERSION__'
           releaseBody: |
-            BenchMesh desktop app — Rust backend + Tauri. Self-contained: no Python or Node.js installation required.
+            BenchMesh desktop app - Rust backend + Tauri. Self-contained: no Python or Node.js installation required.
             Download page with install help: https://benchmesh.online/download
 
             ## Downloads
@@ -145,7 +145,7 @@ jobs:
                On macOS 14 and older, Control-click the app → **Open** → **Open** also works.
             This is needed once; later updates install from inside the app.
             USB instruments: USBTMC instruments need no driver; USB-serial adapters (CH340, CP210x,
-            FTDI) are supported by current macOS — older versions may need the chip vendor's driver.
+            FTDI) are supported by current macOS - older versions may need the chip vendor's driver.
 
             ### Linux
             AppImage: `chmod +x BenchMesh_*.AppImage` and run it. Serial instruments need your user in

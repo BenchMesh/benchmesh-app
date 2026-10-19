@@ -26,30 +26,30 @@ programming guide was not read either.
 
 | # | Family | Price band | Protocol | Doc quality | Confidence | DSL fit |
 |---|---|---|---|---|---|---|
-| 1 | **Korad KA/KD** + rebrands (Tenma 72-xxxx, RND 320, Velleman PS3005D, Stamos) | €80–250 | Korad ASCII, no terminators | medium | high | **works** (`tenma_72` exists; generalise) |
-| 2 | **Riden RD60xx** (RD6006/6006P/6012/6012P/6018/6024/6030) + RuiDeng DPS | $60–180 | Modbus RTU | community only | high (map) | **blocked**: Modbus |
-| 3 | **OWON SPE/SP/SPS** + Kiprim DC310S/DC605S | €90–300 | OWON SCPI (= `owon_spm` PSU half) | short, replies wrong | high | **works** (extend SPM) |
-| 4 | **Siglent SPD3303X/X-E/C** (RS PRO RSPD3303X) | $350–450 | Siglent legacy SCPI | medium | medium | **gap**: hex status |
-| 5 | **Rigol DP800** (DP832/A, DP831/A, DP821/A, DP811/A) | $450–900 | SCPI | excellent | high | **works** (USBTMC) |
-| 6 | **Manson HCS-3xxx** + B&K 1685B/1687B/1688B, Voltcraft PPS/DPPS, Peaktech 15xx | €120–350 | Manson ASCII, `OK\r` replies | good (B&K) | high | **gap**: implied-decimal ints |
-| 7 | **Uni-T UDP3305S/-E/-U** | $330–450 | SCPI | good | high | **works** (USBTMC/RS232) |
-| 8 | **GW Instek GPD-2303S/3303S/4303S** (+3303D) | €350–700 | Korad-like ASCII + line terminators | good | high | **works** (status via CEL arithmetic) |
-| 9 | **Rigol DP700** (DP711/DP712) | $300–400 | SCPI (DP800 subset), RS232 only | good | high | **works** |
-| 10 | **Keysight/Agilent/HP E3631A** family (used) | €150–400 used | SCPI over RS-232/GPIB | not downloaded | medium | mostly; `dsr_dtr` flow missing |
-| 11 | **Juntek DPM86xx** (Joy-IT JT-DPM86xx) | $40–150 | ASCII `:01r30=0,` or Modbus | fair | medium | **gap**: implied-decimal ints |
-| 12 | **Aim-TTi CPX400DP/CPX200DP, MX100TP/MX180TP** | £500–1500 | TTi ASCII | excellent | high | **works** (serial/USB-CDC) |
-| 13 | **Siglent SPD1000X** (SPD1168X/SPD1305X) | $300–400 | Siglent legacy SCPI | medium | medium | **gap**: hex status |
-| 14 | **Siglent SPD4000X** (4121X/4306X/4323X) | $700–1100 | modern SCPI | good | medium-high | **works** (USBTMC) |
-| 15 | **OWON ODP** (3032/3033/3063/6033/3122/6062) | €200–450 | OWON SCPI + `INST:NSEL` | good | medium | works (per-channel output awkward) |
-| 16 | **Uni-T UDP6720/6721/6730/6731** | $120–250 | SCPI, RS232 | medium | medium-high | **works** |
-| 17 | **Keysight E36300** (E36311A/12A/13A) | €1100–1600 | SCPI | not downloaded | medium | **works** (USBTMC) |
-| 18 | **Hantek PPS2116A/PPS2320A** | $150–250 | lowercase ASCII | poor | medium | **gap**: implied-decimal ints |
-| 19 | GW Instek GPP-1326/2323/3323/4323 | €650–1100 | SCPI + GPD legacy | good, no reply examples | medium | works (serial) |
-| 20 | OWON P4000 (P4305/P4603) | €150–250 | OWON SCPI subset | good | medium | works |
-| 21 | R&S HMC8041/42/43, NGE100/NGE102B/103B | €900–2500 | SCPI, stateful channel select | not downloaded | low | works (`before:` steps) |
-| 22 | B&K 9103/9104 | $500–1200 | Manson-like ASCII dialect | good | medium | gap: implied-decimal ints |
-| 23 | Keysight E36100B, ITECH IT6700/IT6720, B&K 9200 | €600–1500 | SCPI | not downloaded | low | works (`scpi_psu` base) |
-| 24 | Velleman LABPS3005DN ("QJE3005P"), Korad KWR102/103 | €100–300 | Korad-like, newline-terminated | poor / none | low | probably works, capture first |
+| 1 | **Korad KA/KD** + rebrands (Tenma 72-xxxx, RND 320, Velleman PS3005D, Stamos) | €80-250 | Korad ASCII, no terminators | medium | high | **works** (`tenma_72` exists; generalise) |
+| 2 | **Riden RD60xx** (RD6006/6006P/6012/6012P/6018/6024/6030) + RuiDeng DPS | $60-180 | Modbus RTU | community only | high (map) | **blocked**: Modbus |
+| 3 | **OWON SPE/SP/SPS** + Kiprim DC310S/DC605S | €90-300 | OWON SCPI (= `owon_spm` PSU half) | short, replies wrong | high | **works** (extend SPM) |
+| 4 | **Siglent SPD3303X/X-E/C** (RS PRO RSPD3303X) | $350-450 | Siglent legacy SCPI | medium | medium | **gap**: hex status |
+| 5 | **Rigol DP800** (DP832/A, DP831/A, DP821/A, DP811/A) | $450-900 | SCPI | excellent | high | **works** (USBTMC) |
+| 6 | **Manson HCS-3xxx** + B&K 1685B/1687B/1688B, Voltcraft PPS/DPPS, Peaktech 15xx | €120-350 | Manson ASCII, `OK\r` replies | good (B&K) | high | **gap**: implied-decimal ints |
+| 7 | **Uni-T UDP3305S/-E/-U** | $330-450 | SCPI | good | high | **works** (USBTMC/RS232) |
+| 8 | **GW Instek GPD-2303S/3303S/4303S** (+3303D) | €350-700 | Korad-like ASCII + line terminators | good | high | **works** (status via CEL arithmetic) |
+| 9 | **Rigol DP700** (DP711/DP712) | $300-400 | SCPI (DP800 subset), RS232 only | good | high | **works** |
+| 10 | **Keysight/Agilent/HP E3631A** family (used) | €150-400 used | SCPI over RS-232/GPIB | not downloaded | medium | mostly; `dsr_dtr` flow missing |
+| 11 | **Juntek DPM86xx** (Joy-IT JT-DPM86xx) | $40-150 | ASCII `:01r30=0,` or Modbus | fair | medium | **gap**: implied-decimal ints |
+| 12 | **Aim-TTi CPX400DP/CPX200DP, MX100TP/MX180TP** | £500-1500 | TTi ASCII | excellent | high | **works** (serial/USB-CDC) |
+| 13 | **Siglent SPD1000X** (SPD1168X/SPD1305X) | $300-400 | Siglent legacy SCPI | medium | medium | **gap**: hex status |
+| 14 | **Siglent SPD4000X** (4121X/4306X/4323X) | $700-1100 | modern SCPI | good | medium-high | **works** (USBTMC) |
+| 15 | **OWON ODP** (3032/3033/3063/6033/3122/6062) | €200-450 | OWON SCPI + `INST:NSEL` | good | medium | works (per-channel output awkward) |
+| 16 | **Uni-T UDP6720/6721/6730/6731** | $120-250 | SCPI, RS232 | medium | medium-high | **works** |
+| 17 | **Keysight E36300** (E36311A/12A/13A) | €1100-1600 | SCPI | not downloaded | medium | **works** (USBTMC) |
+| 18 | **Hantek PPS2116A/PPS2320A** | $150-250 | lowercase ASCII | poor | medium | **gap**: implied-decimal ints |
+| 19 | GW Instek GPP-1326/2323/3323/4323 | €650-1100 | SCPI + GPD legacy | good, no reply examples | medium | works (serial) |
+| 20 | OWON P4000 (P4305/P4603) | €150-250 | OWON SCPI subset | good | medium | works |
+| 21 | R&S HMC8041/42/43, NGE100/NGE102B/103B | €900-2500 | SCPI, stateful channel select | not downloaded | low | works (`before:` steps) |
+| 22 | B&K 9103/9104 | $500-1200 | Manson-like ASCII dialect | good | medium | gap: implied-decimal ints |
+| 23 | Keysight E36100B, ITECH IT6700/IT6720, B&K 9200 | €600-1500 | SCPI | not downloaded | low | works (`scpi_psu` base) |
+| 24 | Velleman LABPS3005DN ("QJE3005P"), Korad KWR102/103 | €100-300 | Korad-like, newline-terminated | poor / none | low | probably works, capture first |
 
 Dropped or out of scope:
 - **OWON SPE500** speaks Modbus only (`files.owon.com.cn/software/Application/SPE500_Modbus.pdf`).
@@ -80,7 +80,7 @@ outlines only, so pdftotext returns nothing; render the pages with `pdftoppm` to
 | KA3303P / KA3305P | 2× 30 V/3 or 5 A + fixed 5 V/3 A | 2 programmable | Tenma 72-13320/13330 (likely) |
 | Stamos S-LS-31 | 30/5 | 1 | IDN has no vendor |
 
-Settable: V 0–31 V (or 0–61 V) in 0.01 V steps; I 0–3.1 A (or 0–5.1 A) in 0.001 A steps.
+Settable: V 0-31 V (or 0-61 V) in 0.01 V steps; I 0-3.1 A (or 0-5.1 A) in 0.001 A steps.
 
 **Interfaces.**
 - USB CDC "Nuvoton USB Virtual COM", **0416:5011**. Rear RS232 also exists; only one of the two is active.
@@ -96,7 +96,7 @@ Settable: V 0–31 V (or 0–61 V) in 0.01 V steps; I 0–3.1 A (or 0–5.1 A) i
 
 Some firmware answers only the first `*IDN?` per power cycle. sigrok tolerates one trailing garbage byte (`\x01`, `\xbc`).
 
-**Commands** (KA33 pp.10–11 = TENMA pp.1–2; `X` = channel 1|2)
+**Commands** (KA33 pp.10-11 = TENMA pp.1-2; `X` = channel 1|2)
 
 | Operation | Send | Reply | Notes |
 |---|---|---|---|
@@ -110,7 +110,7 @@ Some firmware answers only the first `*IDN?` per power cycle. sigrok tolerates o
 | Memory / beep | `RCL1..5`, `SAV1..5`, `BEEP0/1` | none | |
 | Remote / local | (no command) | | Opening USB locks the panel; closing releases it (KA30 p.15) |
 
-**STATUS? bits.** KA33 p.11 documents bit0 = CH1 CV(1)/CC(0), bit1 = CH2, and bit6 = output. Community drivers disagree on bits 2–5 and 7 (tracking, beep, OCP/OVP/lock). **Only bits 0, 1 and 6 are safe to map.**
+**STATUS? bits.** KA33 p.11 documents bit0 = CH1 CV(1)/CC(0), bit1 = CH2, and bit6 = output. Community drivers disagree on bits 2-5 and 7 (tracking, beep, OCP/OVP/lock). **Only bits 0, 1 and 6 are safe to map.**
 
 **Timing.**
 - Bench (Tenma): queries need no gap; setters need at least 50 ms.
@@ -125,7 +125,7 @@ Some firmware answers only the first `*IDN?` per power cycle. sigrok tolerates o
 **DSL fit: works today.** Same framing as `tenma_72`.
 
 **Korad-like variants (capture first):**
-- **Velleman LABPS3005DN ("QJE3005P" firmware)**, `DOC/velleman_labps/doc/labps3005dn_communication_protocol.pdf` pp.1–2.
+- **Velleman LABPS3005DN ("QJE3005P" firmware)**, `DOC/velleman_labps/doc/labps3005dn_communication_protocol.pdf` pp.1-2.
   - Commands are `VSET1:`, `ISET1:`, `VOUT1?`, `IOUT1?`, `OUTPUT1`/`OUTPUT0` (not `OUT`) and `STATUS?`, each terminated by `\n`.
   - Forum reports: IDN `QJE3005PV1.0`; some units need the literal two characters `\n` as the terminator; the unit sometimes stops replying.
   - Confidence low.
@@ -145,17 +145,17 @@ sigrok `src/hardware/rdtech-dps/{api,protocol}.c`.
 
 | Model | ID | V/I/P max | V scale | I scale | P scale |
 |---|---|---|---|---|---|
-| RD6006 | 60060–60064 | 60/6/360 | 0.01 | 0.001 | 0.01 |
+| RD6006 | 60060-60064 | 60/6/360 | 0.01 | 0.001 | 0.01 |
 | RD6006P | 60065 | 60/6/360 | 0.001 | 0.0001 | 0.001 |
 | RK6006 | 60066 | 60/6/360 | 0.01 | 0.001 | 0.01 |
-| RD6012 | 60120–60124 | 60/12/720 | 0.01 | 0.01 | 0.01 |
-| RD6012P | 60125–60129 | 60/6 or 12 | 0.001 | **0.0001 if reg 20 = 0 (6 A range), 0.001 if reg 20 = 1** | 0.001 |
-| RD6018 | 60180–60189 | 60/18/1080 | 0.01 | 0.01 | 0.01 |
+| RD6012 | 60120-60124 | 60/12/720 | 0.01 | 0.01 | 0.01 |
+| RD6012P | 60125-60129 | 60/6 or 12 | 0.001 | **0.0001 if reg 20 = 0 (6 A range), 0.001 if reg 20 = 1** | 0.001 |
+| RD6018 | 60180-60189 | 60/18/1080 | 0.01 | 0.01 | 0.01 |
 | RD6024 | ≥ 60241 | 60/24/1440 | 0.01 | 0.01 | 0.01 |
 | RD6030 | 60301 | 60/30/~1800 | unverified | unverified | |
 
 **Link.**
-- On-board CH340 **1a86:7523**. This is a generic ID, so identify by register 0 and the serial in registers 1–2.
+- On-board CH340 **1a86:7523**. This is a generic ID, so identify by register 0 and the serial in registers 1-2.
 - **115200 8N1**, slave address **1** (both changeable in the menu).
 - The WiFi board makes the PSU a Modbus-TCP *client* to the vendor app, so it is unusable as a server.
 
@@ -164,32 +164,32 @@ sigrok `src/hardware/rdtech-dps/{api,protocol}.c`.
 | Reg | Meaning | Class mapping |
 |---|---|---|
 | 0 | Model ID | identify |
-| 1–2 | Serial (u32, high word first) | identity |
+| 1-2 | Serial (u32, high word first) | identity |
 | 3 | Firmware (128 = v1.28) | |
 | 8 / 9 | V / I setpoint (R/W) | `voltage`, `current` |
 | 10 / 11 | V / I measured | VOUT, IOUT |
-| 12–13 | Power (13 alone suffices up to 655 W) | POUT |
+| 12-13 | Power (13 alone suffices up to 655 W) | POUT |
 | 14 | Input voltage ×0.01 | |
 | 15 | Keypad lock | REMOTE |
 | 16 | Protection: 0 none, 1 OVP, 2 OCP | OVP / OCP / FAIL |
 | 17 | 0 CV, 1 CC | CV / CC |
 | 18 | Output enable (R/W) | OUTPUT, `output` |
 | 20 | RD6012P current range | scaling |
-| 80–83 | M0 active V, I, **OVP, OCP** levels | `voltage_limit` (82), `current_limit` (83) |
-| 55–62, 256 | calibration / bootloader | **never write** |
+| 80-83 | M0 active V, I, **OVP, OCP** levels | `voltage_limit` (82), `current_limit` (83) |
+| 55-62, 256 | calibration / bootloader | **never write** |
 
 Example frames:
-- Read registers 8–18: `01 03 00 08 00 0B <crc>`.
+- Read registers 8-18: `01 03 00 08 00 0B <crc>`.
 - Output on: `01 06 00 12 00 01 <crc>`. The reply echoes the request (8 bytes).
 
 **RuiDeng DPS3005/5005/5015/5020/8005 and DPH5005** (legacy):
 - Needs the USB/BT comms board: CH340, **9600 8N1**, address 1.
-- Registers: 0x00 U-SET, 0x01 I-SET, 0x02 UOUT, 0x03 IOUT, 0x04 POWER, 0x06 LOCK, 0x07 PROTECT (1 OVP, 2 OCP, 3 OPP), 0x08 CV/CC, 0x09 ONOFF, 0x0B MODEL (e.g. 5005), 0x50–0x53 M0 U/I/OVP/OCP.
+- Registers: 0x00 U-SET, 0x01 I-SET, 0x02 UOUT, 0x03 IOUT, 0x04 POWER, 0x06 LOCK, 0x07 PROTECT (1 OVP, 2 OCP, 3 OPP), 0x08 CV/CC, 0x09 ONOFF, 0x0B MODEL (e.g. 5005), 0x50-0x53 M0 U/I/OVP/OCP.
 - Scale: V 0.01. I 0.001 on 3005/5005/8005, 0.01 on 5015/5020.
 
 **Quirks.**
 - Recent stock firmware reportedly breaks Modbus; the community recommends the UniSoft firmware.
-- Libraries use reply timeouts of 0.25–0.5 s with retries.
+- Libraries use reply timeouts of 0.25-0.5 s with retries.
 - OVP/OCP are always-on levels, not switches.
 
 **Confidence** high (map, RD6006/6012/6018/6024 scaling), low (RD6030).
@@ -220,13 +220,13 @@ SP80xx · SPS (switching). Kiprim DC310S (30 V/10 A) and DC605S (60 V/5 A) are S
 
 | Op | Command | Reply (observed) | Page |
 |---|---|---|---|
-| Meas V / I / P | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?` | `0.000` | p.7–8 |
+| Meas V / I / P | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?` | `0.000` | p.7-8 |
 | Meas all | `MEAS:ALL?` | `0.000,0.000` (V,I; the manual wrongly shows spaces and P) | p.8 |
 | Status | `MEAS:ALL:INFO?` | `5.000,0.000,0.000,OFF,OFF,OFF,1`: V, I, P, OVP, OCP, OTP, mode (0 SBY, 1 CV, 2 CC, 3 fail) | p.9 |
-| Output | `OUTP ON\|OFF` / `OUTP?` | `ON`/`OFF` (the manual says 1/0) | p.9–10 |
-| V / I setpoint | `VOLT <v>` / `VOLT?`, `CURR <i>` / `CURR?` | `16.000` | p.10–11 |
-| OVP / OCP level | `VOLT:LIM <v>` / `?`, `CURR:LIM <i>` / `?` | `40.000` | p.10–12 |
-| Remote / local | `SYST:REM` / `SYST:LOC` | — | p.12 |
+| Output | `OUTP ON\|OFF` / `OUTP?` | `ON`/`OFF` (the manual says 1/0) | p.9-10 |
+| V / I setpoint | `VOLT <v>` / `VOLT?`, `CURR <i>` / `CURR?` | `16.000` | p.10-11 |
+| OVP / OCP level | `VOLT:LIM <v>` / `?`, `CURR:LIM <i>` / `?` | `40.000` | p.10-12 |
+| Remote / local | `SYST:REM` / `SYST:LOC` | - | p.12 |
 
 **Notes.**
 - There are no OVP/OCP enable commands: protection is always armed at the `*:LIM` level. There is no remote-state query.
@@ -241,7 +241,7 @@ SP80xx · SPS (switching). Kiprim DC310S (30 V/10 A) and DC605S (60 V/5 A) are S
 Local: `DOC/siglent_spd3303/doc/SPD3303X_QuickStart.pdf` (PDF pages).
 
 **Models.**
-- SPD3303X (1 mV/1 mA) and X-E (10 mV/10 mA): CH1/CH2 0–32 V / 0–3.2 A. CH3 is 2.5/3.3/5 V set by DIP switch, on/off only.
+- SPD3303X (1 mV/1 mA) and X-E (10 mV/10 mA): CH1/CH2 0-32 V / 0-3.2 A. CH3 is 2.5/3.3/5 V set by DIP switch, on/off only.
 - Series up to 64 V, parallel up to 6.4 A.
 - SPD3303C: USB only, 30 V/3 A.
 
@@ -254,10 +254,10 @@ Local: `DOC/siglent_spd3303/doc/SPD3303X_QuickStart.pdf` (PDF pages).
 | Op | Command | Reply | PDF p. |
 |---|---|---|---|
 | Meas V / I / P | `MEAS:VOLT? CH{ch}`, `MEAS:CURR? CH{ch}`, `MEAS:POWE? CH{ch}` | `30.000` | 36 |
-| V / I setpoint | `CH{ch}:VOLT {v}` / `CH{ch}:VOLT?`, `CH{ch}:CURR {i}` / `?` | `25.000` | 36–37 |
-| Output | `OUTP CH{ch},ON\|OFF` (CH1–CH3) | — | 37 |
+| V / I setpoint | `CH{ch}:VOLT {v}` / `CH{ch}:VOLT?`, `CH{ch}:CURR {i}` / `?` | `25.000` | 36-37 |
+| Output | `OUTP CH{ch},ON\|OFF` (CH1-CH3) | - | 37 |
 | Status | `SYST:STAT?` → **hex** `0x0224` | see bits below | 38 |
-| Tracking | `OUTP:TRACK 0\|1\|2` | — | 37 |
+| Tracking | `OUTP:TRACK 0\|1\|2` | - | 37 |
 | Select / errors | `INST CH1`, `SYST:ERR?`, `SYST:VERS?` | | 35, 38 |
 | Lock | `*LOCK` / `*UNLOCK` | | C guide p.29 |
 | OVP / OCP | none | | |
@@ -268,10 +268,10 @@ Local: `DOC/siglent_spd3303/doc/SPD3303X_QuickStart.pdf` (PDF pages).
 |---|---|
 | 0 | CH1 CC(1)/CV(0) |
 | 1 | CH2 CC(1)/CV(0) |
-| 2–3 | tracking mode |
+| 2-3 | tracking mode |
 | 4 | CH1 on |
 | 5 | CH2 on |
-| 6–7 | timers |
+| 6-7 | timers |
 
 CH3 state is not in the register.
 
@@ -289,7 +289,7 @@ Local: `DOC/rigol_dp800/doc/DP800_ProgrammingGuide_EN_2015.pdf` (PG2015, chapter
 
 | Model | Ch | Ratings | Settable |
 |---|---|---|---|
-| DP832/A | 3 | 30V/3A, 30V/3A, 5V/3A | 0–32 V / 0–3.2 A (CH3 5.3 V) |
+| DP832/A | 3 | 30V/3A, 30V/3A, 5V/3A | 0-32 V / 0-3.2 A (CH3 5.3 V) |
 | DP831/A | 3 | 8V/5A, 30V/2A, **−30V/2A** | CH3 is negative |
 | DP821/A | 2 | 60V/1A, 8V/10A | 63 V/1.05 A; 8.4 V/10.5 A |
 | DP811/A | 1 | ranges 20V/10A or 40V/5A (`:OUTP:RANG P20V\|P40V`, p.2-62) | |
@@ -355,13 +355,13 @@ Clones (the B&K match is inferred from identical ratings and command set):
 - B&K 1688B = HCS-3200, 1687B = HCS-3202, 1685B = HCS-3204.
 - Voltcraft PPS-11810/11360/11603/13610/16005/11815 and DPPS-32-15.
 - Peaktech 1565/1575/1580.
-- B&K 1696–1698 use the same set with a 2-digit RS-485 address (`GETD00`).
+- B&K 1696-1698 use the same set with a 2-digit RS-485 address (`GETD00`).
 
 **Link.** CP2102 **10c4:ea60** (generic ID), **9600 8N1**, no flow (BK PM p.2, p.11). The mode switch must be in "Normal".
 
 **Protocol.**
 - Commands end with `\r`.
-- **Every command is answered**: queries return `<data>\rOK\r`, setters return `OK\r` (MANSON p.1; BK PM p.11–13).
+- **Every command is answered**: queries return `<data>\rOK\r`, setters return `OK\r` (MANSON p.1; BK PM p.11-13).
 - There is no `*IDN?`. Identify with `GMOD` → `3202` or `HCS-3302` (sigrok), or with `GMAX` as a fingerprint (B&K: `180200` = 18.0 V/20.0 A).
 
 | Op | Command | Reply | Format | Page |
@@ -371,7 +371,7 @@ Clones (the B&K match is inferred from identical ratings and command set):
 | Set V / I | `VOLT<vvv>` / `CURR<iii>` | `OK` | `VOLT127` = 12.7 V, `%03d` | BK PM p.11 |
 | Output | `SOUT0` = **ON**, `SOUT1` = OFF (inverted) | `OK` | | BK PM p.12 |
 | Output state | none | | sigrok infers on from GETD V ≠ 0 | |
-| OVP / OCP level | `SOVP<vvv>` / `GOVP`, `SOCP<iii>` / `GOCP` | | | BK PM p.12–13 |
+| OVP / OCP level | `SOVP<vvv>` / `GOVP`, `SOCP<iii>` / `GOCP` | | | BK PM p.12-13 |
 | Max | `GMAX` | `VVVIII` | | BK PM p.13 |
 | Lock | `SESS` / `ENDS` | `OK` | reportedly times out after about 5 s | 1696 doc p.2 |
 
@@ -396,8 +396,8 @@ Status can be computed today with CEL arithmetic on `number` of the GETD reply: 
 Local: `DOC/unit_udp/doc/UDP3000S_Series_Programming_Manual_V1.1.pdf` (U3S, "n / 49" footer pages), plus the user manual in the same folder.
 
 **Models.**
-- CH1/CH2 0–30 V / 0–5 A (settable 33 V / 5.2 A).
-- CH3 0–6 V / 3 A, programmable.
+- CH1/CH2 0-30 V / 0-5 A (settable 33 V / 5.2 A).
+- CH3 0-6 V / 3 A, programmable.
 - CH4 fixed 5 V USB.
 - Series 60 V/5 A, parallel 30 V/10 A.
 - The -E model reads back with one fewer voltage decimal.
@@ -412,18 +412,18 @@ Local: `DOC/unit_udp/doc/UDP3000S_Series_Programming_Manual_V1.1.pdf` (U3S, "n /
 
 | Op | Command | Reply | Page |
 |---|---|---|---|
-| Meas V,I,P | `:MEAS:ALL? CH{ch}` | `05.10,0.089,00.45` | 18–19 |
+| Meas V,I,P | `:MEAS:ALL? CH{ch}` | `05.10,0.089,00.45` | 18-19 |
 | Meas V / I / P | `:MEAS:VOLT? CH{ch}`, `:MEAS:CURR? CH{ch}`, `:MEAS:POWE? CH{ch}` | | 19 |
-| V / I setpoint | `:SOUR{ch}:VOLT <v>` / `?`, `:SOUR{ch}:CURR <i>` / `?` | `25.00`, `5.000` | 13–15 |
+| V / I setpoint | `:SOUR{ch}:VOLT <v>` / `?`, `:SOUR{ch}:CURR <i>` / `?` | `25.00`, `5.000` | 13-15 |
 | Both | `:APPL CH1,15.00V,2.000A`; `:APPL? CH1,VOLT` → `CH1,15.00` | | 12 |
-| Output | `:OUTP:STAT CH{ch},ON\|OFF` (also `ALL`) / `:OUTP:STAT? CH{ch}` | `ON`/`OFF` | 16–17 |
+| Output | `:OUTP:STAT CH{ch},ON\|OFF` (also `ALL`) / `:OUTP:STAT? CH{ch}` | `ON`/`OFF` | 16-17 |
 | CV/CC | `:OUTP:CVCC? CH{ch}` | `CV`/`CC` | 17 |
-| OVP level / enable | `:SOUR{ch}:VOLT:PROT <v>` / `?`; `:SOUR{ch}:VOLT:PROT:STAT ON\|OFF` / `?` | | 14–15 |
-| OCP level / enable | `:SOUR{ch}:CURR:PROT <i>` / `?`; `…:CURR:PROT:STAT` | | 15–16 |
-| Tripped | `:STAT:QUES:INST:ISUM{ch}?` (latched event): bit0 CC, bit1 CV, **bit2 OVP, bit3 OCP** | integer | 9, 42–43 |
+| OVP level / enable | `:SOUR{ch}:VOLT:PROT <v>` / `?`; `:SOUR{ch}:VOLT:PROT:STAT ON\|OFF` / `?` | | 14-15 |
+| OCP level / enable | `:SOUR{ch}:CURR:PROT <i>` / `?`; `…:CURR:PROT:STAT` | | 15-16 |
+| Tripped | `:STAT:QUES:INST:ISUM{ch}?` (latched event): bit0 CC, bit1 CV, **bit2 OVP, bit3 OCP** | integer | 9, 42-43 |
 | OTP | `:STAT:QUES?` bit4 | | 6 |
 | Mode | `:SOUR:MODE NORM\|SER\|PARA`, then wait ≥500 ms | | 13 |
-| Lock | `:SYST:LOCK ON\|OFF` / `?`; `:SYST:RWL ON` | | 48–49 |
+| Lock | `:SYST:LOCK ON\|OFF` / `?`; `:SYST:RWL ON` | | 48-49 |
 
 **Quirks** (pnuding/udp3000s-control).
 - Only the latched ISUM event register shows OVP/OCP trips; the CONDition register clears within about 150 ms.
@@ -440,7 +440,7 @@ Local: `DOC/gwinstek_gpd/doc/GPD-X303S_User_Manual.pdf` (PDF pages) and `GPD-330
 - GPD-2303S: 2× 30 V/3 A.
 - GPD-3303S: 2× 30 V/3 A + CH3 2.5/3.3/5 V, not programmable.
 - GPD-4303S: 2× 30 V/3 A + CH3 5 V/1 A + CH4 5 V/3 A.
-- Settable range: 0–32.000 V, 0–3.200 A (p.48). Remote channels 1–2 (1–4 on the 4303S).
+- Settable range: 0-32.000 V, 0-3.200 A (p.48). Remote channels 1-2 (1-4 on the 4303S).
 - GPD-3303D: 10 mV/10 mA resolution.
 
 These are not Korad clones, but they use the same command style.
@@ -456,7 +456,7 @@ These are not Korad clones, but they use the same command style.
 | Op | Command | Reply | Page |
 |---|---|---|---|
 | I setpoint | `ISET<X>:<NR2>` / `ISET<X>?` | `2.234A` | 48 |
-| V setpoint | `VSET<X>:<NR2>` / `VSET<X>?` | `20.345V` | 48–49 |
+| V setpoint | `VSET<X>:<NR2>` / `VSET<X>?` | `20.345V` | 48-49 |
 | Meas I / V | `IOUT<X>?` / `VOUT<X>?` | `0.000A` / `12.000V` | 49 |
 | Output | `OUT1` / `OUT0` (global) | none | 50 |
 | Status | `STATUS?` | 8 ASCII `0/1` characters (see below) | 50 |
@@ -470,10 +470,10 @@ These are not Korad clones, but they use the same command style.
 |---|---|
 | 1 | CH1 CV(1)/CC(0) |
 | 2 | CH2 CV(1)/CC(0) |
-| 3–4 | tracking (01 indep, 11 series, 10 parallel) |
+| 3-4 | tracking (01 indep, 11 series, 10 parallel) |
 | 5 | beep |
 | 6 | output |
-| 7–8 | baud |
+| 7-8 | baud |
 
 Firmware older than 2.0 answers 3 lines in a different format.
 
@@ -501,7 +501,7 @@ Local: `DOC/rigol_dp700/doc/` (DP700 user guide, 105 pp.; chapter-page numbers).
 
 **Link.**
 - **RS232 only** (straight cable). No USB, no LAN (p.1-2).
-- **9600 8N1** by default; 7200–115200; no flow (p.2-31, p.5-1).
+- **9600 8N1** by default; 7200-115200; no flow (p.2-31, p.5-1).
 - TX **`\n`** (p.1-2).
 
 **Identify.** `RIGOL TECHNOLOGIES,DP711,<sn>,<fw>` (p.2-4).
@@ -522,14 +522,14 @@ Setpoint replies have 2 decimals (`5.00,1.00`). The USB-RS232 adapter's vid:pid 
 
 **Confidence** high. **DSL fit: works today**, as an extension of a shared `rigol_dp` base.
 
-### 2.10 Keysight/Agilent/HP E3631A (+ E3632A/33A/34A, E3640A–49A)
+### 2.10 Keysight/Agilent/HP E3631A (+ E3632A/33A/34A, E3640A-49A)
 
 **No manual downloaded.** Fetch the "E3631A User's Guide" by hand into `DOC/keysight_e3631a/doc/`.
 Commands are from python-ivi (`agilentE3600A.py`, `scpi/dcpwr.py`).
 
 **Models.**
 - E3631A: P6V 6 V/5 A, P25V 25 V/1 A, N25V 0 to −25 V/1 A (settable 6.18/5.15, 25.75/1.03). No OVP/OCP. ±25 V tracking.
-- E3632A–34A and E3640A–49A: single output with 2 ranges (`VOLT:RANG P15V|P30V`), plus OVP/OCP.
+- E3632A-34A and E3640A-49A: single output with 2 ranges (`VOLT:RANG P15V|P30V`), plus OVP/OCP.
 
 **Link.**
 - RS-232 (DTE, null-modem cable) + GPIB.
@@ -564,7 +564,7 @@ Local: `DOC/juntek_dpm86xx/doc/JT-DPM86XX_Communication-protocol_2025-07-22.pdf`
 
 **Models.** DPM8605 (60 V/5 A), 8608, 8616, 8624, 8650 (60 V/50 A).
 - `-485` variants come with a USB-RS485 dongle (typically CH340).
-- Baud 2400–115200, default 9600. Address 01–99.
+- Baud 2400-115200, default 9600. Address 01-99.
 - Protocol selected by menu or fn 15: 0 = simple ASCII, 1 = Modbus.
 - DPH8909/8920 buck-boost: not in this document; reportedly the same protocol (unverified).
 
@@ -583,7 +583,7 @@ Local: `DOC/juntek_dpm86xx/doc/JT-DPM86XX_Communication-protocol_2025-07-22.pdf`
 
 There is no OVP/OCP, lock or power command. The manual's examples contain typos.
 
-**Modbus mode** (PDF p.5–10):
+**Modbus mode** (PDF p.5-10):
 
 | Register | Meaning |
 |---|---|
@@ -610,7 +610,7 @@ Local: `DOC/tti_cpx/doc/CPX400D+DP_Instruction_Manual_EN_48511-1480_14.pdf` (CPX
 - MX180TP: 3 outputs up to 120 V/20 A (unverified).
 - Non-P models have no remote interface.
 
-**Link** (CPX PDF p.17–20).
+**Link** (CPX PDF p.17-20).
 - RS-232 **9600 8N1, XON/XOFF**.
 - USB CDC (baud ignored; vid:pid unknown, probably 103e:xxxx).
 - LAN raw socket **TCP 9221**. GPIB optional.
@@ -620,7 +620,7 @@ Local: `DOC/tti_cpx/doc/CPX400D+DP_Instruction_Manual_EN_48511-1480_14.pdf` (CPX
 - Setters do not reply.
 - Typical processing time is under 25 ms (PDF p.3).
 
-**Identify.** `*IDN?` → `THURLBY THANDAR,CPX400DP,279730,1.00 – 1.00` (PDF p.20). Newer units may report `TTi` or `Aim-TTi`.
+**Identify.** `*IDN?` → `THURLBY THANDAR,CPX400DP,279730,1.00 - 1.00` (PDF p.20). Newer units may report `TTi` or `Aim-TTi`.
 
 | Op | Command | Reply | CPX PDF p. |
 |---|---|---|---|
@@ -628,12 +628,12 @@ Local: `DOC/tti_cpx/doc/CPX400D+DP_Instruction_Manual_EN_48511-1480_14.pdf` (CPX
 | Get setpoint | `V{ch}?` / `I{ch}?` | `V1 12.50` → `split " " [1]` | 29 |
 | Measured | `V{ch}O?` / `I{ch}O?` | `12.003V` / `0.512A` → strip the unit | 29 |
 | Output | `OP{ch} 1\|0`, `OPALL 1\|0`; `OP{ch}?` | `1`/`0` | 29 |
-| OVP / OCP level | `OVP{ch} <nrf>` / `?` → `VP1 66.00`; `OCP{ch} <nrf>` / `?` → `CP1 22.00` | | 28–29 |
-| OVP / OCP enable | MX only: `OVP{ch} ON\|OFF` (MX p.35–36); on CPX always armed | | |
+| OVP / OCP level | `OVP{ch} <nrf>` / `?` → `VP1 66.00`; `OCP{ch} <nrf>` / `?` → `CP1 22.00` | | 28-29 |
+| OVP / OCP enable | MX only: `OVP{ch} ON\|OFF` (MX p.35-36); on CPX always armed | | |
 | Trip reset | `TRIPRST` | | 29 |
 | Status | `LSR{ch}?` (**read clears it**): bit0 CV, bit1 CC, bit2 OVP, bit3 OCP, bit4 power limit, bit6 hard trip | NR1 | 23 |
 | Remote / local | Any command enters remote; `LOCAL` returns to local | | 17, 30 |
-| Tracking / range | `CONFIG 0\|2` (CPX), `VRANGE{ch} <n>` (MX) | | 29–30 |
+| Tracking / range | `CONFIG 0\|2` (CPX), `VRANGE{ch} <n>` (MX) | | 29-30 |
 
 **Quirks.**
 - Entering remote resets both CPX ranges to 60V/20A (PDF p.17).
@@ -660,7 +660,7 @@ Local: `DOC/siglent_spd1000/doc/SPD1000X_UserManual_ProgrammingGuide.pdf` (PDF p
 | OVP / OCP level | `OVP {v}` / `OVP?`, `OCP {i}` / `OCP?` | 59 |
 | Sense | `MODE:SET 2W\|4W` | 59 |
 | Output | `OUTP CH1,ON\|OFF`; `OUTP:RESE:PROT` clears the trip pop-up | 60 |
-| Status | `SYST:STAT?` hex: bit0 CV/CC, bit4 output, bit5 4W | 61–62 |
+| Status | `SYST:STAT?` hex: bit0 CV/CC, bit4 output, bit5 4W | 61-62 |
 | Lock | `*LOCK` / `*UNLOCK` | 65 |
 
 There is no OVP/OCP enable and no trip query. Pace like the SPD3303X; a user waited 2 s after `OUTP ON`.
@@ -690,9 +690,9 @@ Local: `DOC/siglent_spd4000/doc/SPD4000X_UserManual_ProgrammingGuide.pdf` (PDF p
 |---|---|---|---|
 | Measure | `MEAS:VOLT? CH{ch}`, `MEAS:CURR? CH{ch}`, `MEAS:POWER? CH{ch}` | `2.991442` | 78 |
 | CV/CC | `MEAS:RUN:MODE? CH{ch}` | `CV`/`CC` | 78 |
-| Setpoints | `VOLT CH{ch},{v}` / `VOLT? CH{ch}`; `CURR CH{ch},{i}` / `CURR? CH{ch}` | `3.000000` | 61–62 |
+| Setpoints | `VOLT CH{ch},{v}` / `VOLT? CH{ch}`; `CURR CH{ch},{i}` / `CURR? CH{ch}` | `3.000000` | 61-62 |
 | OVP | `OVP CH{ch},{v}` / `?`; `OVP:PROT:STAT? CH{ch}` → `0`/`1` | | 62 |
-| OCP | `OCP CH{ch},{i}`; `OCP:STAT CH{ch},ON\|OFF` (`?`); `OCP:PROT:STAT? CH{ch}` | | 63–64 |
+| OCP | `OCP CH{ch},{i}`; `OCP:STAT CH{ch},ON\|OFF` (`?`); `OCP:PROT:STAT? CH{ch}` | | 63-64 |
 | Output | `OUTP CH{ch},ON\|OFF` / `OUTP? CH{ch}` → `0`/`1`; `OUTP:ALL` | | 64 |
 | Lock / clear | `LOCK ON\|OFF`; `RESET:PROT CH{ch}` | | 70 |
 
@@ -715,13 +715,13 @@ Local: `DOC/owon_odp/doc/ODP_Series_Power_Supply_Programming_Manual.pdf` (PDF pa
 
 | Op | Command | PDF p. |
 |---|---|---|
-| Channel select | `INST:NSEL 1\|2\|3` / `?` | 11–12 |
-| Measure (selected) | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?` | 9–10 |
-| Measure all channels | `MEAS:VOLT:ALL?`, `MEAS:CURR:ALL?` → `1.000, 2.000, 3.000` | 10–11 |
-| Setpoints | `VOLT`/`CURR` (selected), `APP:VOLT v1,v2,v3` / `APP:VOLT?` | 8–9, 16, 18 |
-| OVP / OCP level | `VOLT:LIM`, `CURR:LIM` (selected), `…:LIM:ALL` | 16–19 |
-| Output | `OUTP 0\|1` (all); `CHAN:OUTP:ALL 1,0,1` / `?` (per channel, list only) | 13, 15–16 |
-| Tracking / series / parallel | `OUTP:TRAC`, `OUTP:SER`, `OUTP:PAR` | 13–15 |
+| Channel select | `INST:NSEL 1\|2\|3` / `?` | 11-12 |
+| Measure (selected) | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?` | 9-10 |
+| Measure all channels | `MEAS:VOLT:ALL?`, `MEAS:CURR:ALL?` → `1.000, 2.000, 3.000` | 10-11 |
+| Setpoints | `VOLT`/`CURR` (selected), `APP:VOLT v1,v2,v3` / `APP:VOLT?` | 8-9, 16, 18 |
+| OVP / OCP level | `VOLT:LIM`, `CURR:LIM` (selected), `…:LIM:ALL` | 16-19 |
+| Output | `OUTP 0\|1` (all); `CHAN:OUTP:ALL 1,0,1` / `?` (per channel, list only) | 13, 15-16 |
+| Tracking / series / parallel | `OUTP:TRAC`, `OUTP:SER`, `OUTP:PAR` | 13-15 |
 
 There is no CV/CC or trip query.
 **Confidence** medium. **DSL fit: works today**, with `before: INST:NSEL {ch}` steps and the `*:ALL?` list queries split per channel.
@@ -742,10 +742,10 @@ Local: `DOC/unit_udp/doc/UDP6720_Series_Programming_Manual_V1.2.pdf` (U67) and `
 
 | Op | Command | Page |
 |---|---|---|
-| Measure | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?`, `MEAS:ALL?` → `v,i,p` | 11–12 |
-| Setpoints | `VOLT <v>` / `?`, `CURR <i>` / `?`, `APPL v,i`, `APPL:ALL v,i,ovp,ocp` | 8–11 |
-| OVP | `VOLT:PROT <v>`, `VOLT:PROT:STAT ON\|OFF`, `VOLT:PROT:TRIP?` → 0/1, `VOLT:PROT:CLE` | 9–10 |
-| OCP | `CURR:PROT …` (same pattern) | 8–9 |
+| Measure | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?`, `MEAS:ALL?` → `v,i,p` | 11-12 |
+| Setpoints | `VOLT <v>` / `?`, `CURR <i>` / `?`, `APPL v,i`, `APPL:ALL v,i,ovp,ocp` | 8-11 |
+| OVP | `VOLT:PROT <v>`, `VOLT:PROT:STAT ON\|OFF`, `VOLT:PROT:TRIP?` → 0/1, `VOLT:PROT:CLE` | 9-10 |
+| OCP | `CURR:PROT …` (same pattern) | 8-9 |
 | Output | `OUTP ON\|OFF` / `OUTP?` → `ON`/`OFF` | 7 |
 | CV/CC | `OUTP:CVCC?` → `CV`/`CC` | 7 |
 | Remote | `SYST:REM` | V1.0 manual p.3 |
@@ -760,7 +760,7 @@ Local: `DOC/unit_udp/doc/UDP6720_Series_Programming_Manual_V1.2.pdf` (U67) and `
 - E36312A: 6 V/5 A + 2× 25 V/1 A.
 - E36313A: 6 V/10 A + 2× 25 V/2 A.
 - E36311A: 6 V/5 A, +25 V/1 A, −25 V/1 A.
-- E36102B–06B, single output: 6 V/5 A, 20 V/2 A, 35 V/1 A, 60 V/0.6 A, 100 V/0.4 A (from memory).
+- E36102B-06B, single output: 6 V/5 A, 20 V/2 A, 35 V/1 A, 60 V/0.6 A, 100 V/0.4 A (from memory).
 
 **Link.**
 - USBTMC, VID **0x2A8D** (E36312A PID 0x1102, *unverified*).
@@ -807,7 +807,7 @@ Local: `DOC/hantek_pps/doc/hantek_power_supply_communication_protocol.pdf` (2 pp
 
 Other commands:
 - `o1` / `o0` switch the output.
-- `o2`–`o5` select independent, parallel, series or tracking mode.
+- `o2`-`o5` select independent, parallel, series or tracking mode.
 - `rm` reads the mode; `rl` reads the lock.
 - There are no OVP/OCP or remote commands.
 
@@ -820,7 +820,7 @@ Local: `DOC/gwinstek_gpp/doc/GPP_Series_User_Manual.pdf` (PDF pages).
 **Models** (p.199).
 - GPP-1326: 32 V/6 A.
 - GPP-2323: 2× 32 V/3 A.
-- GPP-3323: 2× 32 V/3 A + CH3 1.8–5 V/5 A (fixed steps).
+- GPP-3323: 2× 32 V/3 A + CH3 1.8-5 V/5 A (fixed steps).
 - GPP-4323: 2× 32 V/3 A + 5 V/1 A + 15 V/1 A.
 - All models have a load mode on CH1/CH2.
 
@@ -833,14 +833,14 @@ Local: `DOC/gwinstek_gpp/doc/GPP_Series_User_Manual.pdf` (PDF pages).
 
 | Op | Command | Page |
 |---|---|---|
-| Measure | `:MEAS{ch}:VOLT?`, `:MEAS{ch}:CURR?`, `:MEAS{ch}:POWE?`, `:MEAS{ch}:ALL?` | 124–125 |
-| Setpoints | `:SOUR{ch}:VOLT` / `?`, `:SOUR{ch}:CURR` / `?` | 132–134 |
+| Measure | `:MEAS{ch}:VOLT?`, `:MEAS{ch}:CURR?`, `:MEAS{ch}:POWE?`, `:MEAS{ch}:ALL?` | 124-125 |
+| Setpoints | `:SOUR{ch}:VOLT` / `?`, `:SOUR{ch}:CURR` / `?` | 132-134 |
 | CC state | `:SOUR{ch}:CURR:STAT?` → 1 when the current limit is reached | 133 |
-| Output | `:OUTP{ch} ON\|OFF` / `?`; `:ALLOUTON` / `:ALLOUTOFF` | 128–129 |
-| OVP | `:OUTP{ch}:OVP <v>`, `:OUTP{ch}:OVP:STAT` | 129–130 |
-| OCP | `:OUTP{ch}:OCP <a>`, `:OUTP{ch}:OCP:STAT` | 130–131 |
+| Output | `:OUTP{ch} ON\|OFF` / `?`; `:ALLOUTON` / `:ALLOUTOFF` | 128-129 |
+| OVP | `:OUTP{ch}:OVP <v>`, `:OUTP{ch}:OVP:STAT` | 129-130 |
+| OCP | `:OUTP{ch}:OCP <a>`, `:OUTP{ch}:OCP:STAT` | 130-131 |
 | Mode | `:MODE{ch}?` | 135 |
-| Remote / local | `:SYST:REM` / `:SYST:LOC` | 183–184 |
+| Remote / local | `:SYST:REM` / `:SYST:LOC` | 183-184 |
 
 The GPD legacy commands are also accepted.
 
@@ -851,7 +851,7 @@ The GPD legacy commands are also accepted.
 Local: `DOC/owon_p4000/doc/P4000_Series_DC_Power_Supply_Programming_Manual.pdf` (11 pp.) and `P4000_Single_Output_Power_Supply_USER_MANUAL.pdf`.
 
 **Link.**
-- RS-232 at **115200** by default (user manual p.16–17).
+- RS-232 at **115200** by default (user manual p.16-17).
 - Optional USBTMC (vid:pid unknown).
 
 **Commands.** The OWON base **minus** `MEAS:ALL?`, `MEAS:ALL:INFO?` and `SYST:REM`/`LOC`. IDN `OWON,P4305,1715040,FV:V1.0.2` (p.6). Same as sigrok's `owon_p4000_cmd`.
@@ -890,7 +890,7 @@ All three are natural users of the `scpi_psu` base.
 | Protocol owner | Same protocol |
 |---|---|
 | Korad KA/KD | Tenma 72-2535/2540/2545/2550/2705/2710/2930/2940/133xx, RND 320-KA/KD, Velleman PS3005D/LABPS3005D, Stamos S-LS-31, RS Pro RS-3005P (probable) |
-| Manson HCS-3xxx | B&K 1685B/1687B/1688B (+ 1696–1698 with address), Voltcraft PPS-xxxxx/DPPS, Peaktech 1565/1575/1580. B&K 9103/9104 is a dialect |
+| Manson HCS-3xxx | B&K 1685B/1687B/1688B (+ 1696-1698 with address), Voltcraft PPS-xxxxx/DPPS, Peaktech 1565/1575/1580. B&K 9103/9104 is a dialect |
 | OWON SPM/SPE/SP | Kiprim DC310S/DC605S. P4000 = subset. ODP = superset with channels |
 | Siglent SPD3303X | RS PRO RSPD3303X/-E/C; Uni-T UDP3303C/3305C use the same syntax (hex `SYST:STAT?`) |
 | Rigol DP800 | DP700 (subset); DP900 expected to be the same (unverified) |
@@ -906,7 +906,7 @@ All three are natural users of the `scpi_psu` base.
 2. **`owon_psu`**: the PSU half of `owon_spm.yaml`. `*IDN?`, `MEAS:VOLT?/CURR?/POW?`, `MEAS:ALL:INFO?`, `VOLT`/`VOLT?`, `CURR`/`CURR?`, `VOLT:LIM`/`CURR:LIM` (+`?`), `OUTP ON|OFF`/`OUTP?`, `SYST:REM`/`SYST:LOC`.
    - Users: SPM, SPE, SP, SPS, Kiprim. P4000 drops INFO/REM. ODP adds `INST:NSEL`.
 3. **`rigol_dp`**: explicit-channel forms (`:MEAS:ALL? CH{ch}`, `:SOUR{ch}:VOLT`, `:SOUR{ch}:CURR`, `:OUTP CH{ch},ON|OFF`, `:OUTP? CH{ch}`, `:OUTP:CVCC? CH{ch}`, `:OUTP:OVP|OCP[:VAL] CH{ch},…`, `:OUTP:OVP|OCP:QUES? CH{ch}`, `:SYST:REM/LOC`). DP700 and DP800 differ only in link and OTP.
-4. **`siglent_spd_legacy`**: SPD3303X/X-E/C and SPD1000X (+ Uni-T UDP3303C). `CH{ch}:VOLT`, `CH{ch}:CURR`, `MEAS:VOLT|CURR|POWE? CH{ch}`, `OUTP CH{ch},ON|OFF`, `SYST:STAT?` (hex), `*LOCK/*UNLOCK`, `\n`, 100–300 ms pacing. Blocked by the hex parse gap.
+4. **`siglent_spd_legacy`**: SPD3303X/X-E/C and SPD1000X (+ Uni-T UDP3303C). `CH{ch}:VOLT`, `CH{ch}:CURR`, `MEAS:VOLT|CURR|POWE? CH{ch}`, `OUTP CH{ch},ON|OFF`, `SYST:STAT?` (hex), `*LOCK/*UNLOCK`, `\n`, 100-300 ms pacing. Blocked by the hex parse gap.
 5. **`scpi_psu`** (common SCPI core: Keysight, Uni-T, Rigol, SPD4000X, GPP, ITECH, R&S, B&K 9200, OWON):
 
    | Purpose | Command |

@@ -34,7 +34,7 @@ commands:
   ampl_set:
     send: "VOLT {vpp}"
     params: {vpp: {type: number, min: 0.01, max: 20, format: "%.4f", unit: Vpp}}
-    description: "10 mVpp–10 Vpp into 50 Ω (20 Vpp at High-Z); conflicts are clipped with a 'Settings conflict' error"
+    description: "10 mVpp-10 Vpp into 50 Ω (20 Vpp at High-Z); conflicts are clipped with a 'Settings conflict' error"
     source: "PDF p183"
   offs_q: {send: "VOLT:OFFS?", source: "PDF p185"}
   offs_set: {send: "VOLT:OFFS {v}", source: "PDF p185; |offset| + Vpp/2 ≤ 5 V (50 Ω) / 10 V (High-Z)"}

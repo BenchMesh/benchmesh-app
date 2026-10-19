@@ -78,7 +78,7 @@ function FormView({ doc, onChange, issues }: { doc: FlowDoc; onChange: (d: FlowD
         <IssueList issues={issuesAt(issues, 'steps')} />
       </section>
       <section className="auto-section auto-section--cleanup" aria-label="Cleanup">
-        <StepList list="cleanup" title="Cleanup" note="always runs — after success, failure, stop or abort" />
+        <StepList list="cleanup" title="Cleanup" note="always runs - after success, failure, stop or abort" />
         <IssueList issues={issuesAt(issues, 'cleanup')} />
       </section>
     </>
@@ -97,7 +97,7 @@ function ParamsForm({ doc, onChange, issues }: { doc: FlowDoc; onChange: (d: Flo
   return (
     <section className="auto-section auto-params" aria-label="Parameters">
       <div className="auto-section__head">
-        <h4 className="auto-list__title">Parameters<span className="auto-list__note">the settings of this flow — use them by name in expressions</span></h4>
+        <h4 className="auto-list__title">Parameters<span className="auto-list__note">the settings of this flow - use them by name in expressions</span></h4>
         <button type="button" className="bench-btn" onClick={() => onChange({ ...doc, params: [...params, newParam(doc)] })}>+ Parameter</button>
       </div>
       {params.length === 0 && <span className="bench-hint">No parameters. Add one for every number a user may want to adjust (target voltage, step, limit…).</span>}

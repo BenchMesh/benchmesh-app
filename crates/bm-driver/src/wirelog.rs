@@ -1,5 +1,5 @@
 //! Per-instrument wire log: every byte written to and read from an instrument, with times, in a
-//! bounded ring — what the UI's console shows and users copy as troubleshooting evidence.
+//! bounded ring - what the UI's console shows and users copy as troubleshooting evidence.
 //!
 //! [`logged`] wraps a transport; reads are logged as the chunks the transport returns (a reply
 //! may arrive in several; the UI joins consecutive ones). Opening, failing to open and closing a

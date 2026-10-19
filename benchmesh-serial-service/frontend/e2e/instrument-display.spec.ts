@@ -26,7 +26,7 @@ test.describe('Instrument panels', () => {
     await expect(mockPage.getByRole('article', { name: PANELS.dmm }).locator('.bench-panel__link')).toHaveText('connected');
     const lcr = mockPage.getByRole('article', { name: PANELS.lcr });
     await expect(lcr.locator('.bench-panel__link')).toHaveText('offline');
-    await expect(lcr.getByText('Offline — reconnecting')).toBeVisible();
+    await expect(lcr.getByText('Offline - reconnecting')).toBeVisible();
   });
 
   test('an instrument goes offline when it disappears from the registry', async ({ mockPage }) => {

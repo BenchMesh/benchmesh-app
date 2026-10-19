@@ -1,5 +1,5 @@
 //! MCP server (Model Context Protocol, Streamable HTTP with JSON responses) at `POST /mcp`:
-//! AI clients read the bench, build and run flows, record — within the access the user set
+//! AI clients read the bench, build and run flows, record - within the access the user set
 //! (`off` / `read` / `control`, `/automation/mcp`). Contract: `ai_context/AUTOMATION.md`.
 //! [`stdio_bridge`] serves clients that only start processes (Claude Desktop).
 
@@ -78,11 +78,11 @@ fn tools() -> Vec<(&'static str, Access, &'static str, Value)> {
         ("get_recording", Access::Read, "Samples of a recording (t in ms since 1970, one value list per series), at most max_points rows.",
             schema(with(Map::new(), json!({"id": {"type": "integer"}, "max_points": {"type": "integer", "minimum": 10, "maximum": 5000, "default": 500}})), &["id"])),
         ("abort_run", Access::Read, "Abort the running flow now (its cleanup still runs; outputs it switched on are switched off).", none()),
-        ("set_instrument", Access::Control, "Call one setter and wait until the instrument reports the value. Setters that can switch an output on need confirm_energize: true — only after the user agreed.",
+        ("set_instrument", Access::Control, "Call one setter and wait until the instrument reports the value. Setters that can switch an output on need confirm_energize: true - only after the user agreed.",
             schema(with(addr_props(), json!({"op": {"type": "string"}, "value": {"type": ["number", "string", "boolean"]}, "confirm_energize": {"type": "boolean", "default": false}})), &["device", "class", "op", "value"])),
         ("save_flow", Access::Control, "Validate and save a flow (new, or replacing `id`). Returns its id. Saving never runs it.",
             schema(with(Map::new(), json!({"flow": {"type": "object"}, "id": {"type": "string"}})), &["flow"])),
-        ("run_flow", Access::Control, "Start a saved flow (id) or a flow document. Flows that can switch outputs on need arm: true — only after the user agreed. Follow with run_status.",
+        ("run_flow", Access::Control, "Start a saved flow (id) or a flow document. Flows that can switch outputs on need arm: true - only after the user agreed. Follow with run_status.",
             schema(with(Map::new(), json!({"id": {"type": "string"}, "flow": {"type": "object"}, "params": {"type": "object", "description": "Parameter overrides"}, "arm": {"type": "boolean", "default": false}})), &[])),
         ("continue_run", Access::Control, "Continue a run waiting at a prompt step (only after the user did what it asks).", none()),
         ("start_recording", Access::Control, "Start a recording of numeric status fields on the common time grid.",
@@ -172,10 +172,10 @@ async fn handle(s: &S, m: Value) -> Option<Value> {
             };
             let level = access(s);
             if level == Access::Off {
-                return Some(rpc_result(&id, text_result(&json!("MCP access is off — enable it in BenchMesh: Automation → Settings → MCP access"), true)));
+                return Some(rpc_result(&id, text_result(&json!("MCP access is off - enable it in BenchMesh: Automation → Settings → MCP access"), true)));
             }
             if need > level {
-                return Some(rpc_result(&id, text_result(&json!(format!("{name} needs MCP access \"control\" — the user can allow it in BenchMesh: Automation → Settings → MCP access")), true)));
+                return Some(rpc_result(&id, text_result(&json!(format!("{name} needs MCP access \"control\" - the user can allow it in BenchMesh: Automation → Settings → MCP access")), true)));
             }
             match call(s, name, &args).await {
                 Ok(v) => rpc_result(&id, text_result(&v, false)),
@@ -413,7 +413,7 @@ pub fn stdio_bridge(base: &str) -> i32 {
             match r {
                 Ok(r) if r.status() == StatusCode::ACCEPTED => None,
                 Ok(r) => r.text().await.ok().filter(|t| !t.trim().is_empty()),
-                Err(_) => (!id.is_null()).then(|| rpc_error(&id, -32000, format!("BenchMesh is not running (nothing answers at {url}) — start the BenchMesh app")).to_string()),
+                Err(_) => (!id.is_null()).then(|| rpc_error(&id, -32000, format!("BenchMesh is not running (nothing answers at {url}) - start the BenchMesh app")).to_string()),
             }
         });
         if let Some(text) = reply {

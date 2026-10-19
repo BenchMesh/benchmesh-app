@@ -1,4 +1,4 @@
-# Automation, assistant and MCP — design and contract
+# Automation, assistant and MCP - design and contract
 
 Status: implemented in `crates/bm-server/src/automation/` and `crates/bm-server/src/mcp.rs`
 (UI: `frontend/src/ui/automation/`). Replaces the Node-RED nodes as the built-in way to automate
@@ -6,14 +6,14 @@ a bench; Node-RED keeps working as an external REST client.
 
 ## Goals
 
-1. **Flows** — automations a user builds by hand: read instruments, decide (conditions), set
+1. **Flows** - automations a user builds by hand: read instruments, decide (conditions), set
    instruments, wait, loop, sweep, record. Example: *read the DMM; if the voltage is above the
    target raise the load current, else lower it; stop at 2 A*.
-2. **Assistant** — the user describes an automation in words and an LLM assembles the flow. The
+2. **Assistant** - the user describes an automation in words and an LLM assembles the flow. The
    user brings their own API key (Anthropic, OpenAI or OpenRouter, or any OpenAI-compatible
    endpoint such as a local Ollama) and pays the provider directly. The result is an ordinary
    flow: reviewed, edited and run like a hand-made one. The LLM never drives instruments.
-3. **MCP** — AI clients (Claude Code, Claude Desktop, Cursor, …) connect to the running app and
+3. **MCP** - AI clients (Claude Code, Claude Desktop, Cursor, …) connect to the running app and
    read instruments, build flows and (when the user allows it) run them.
 
 One runtime serves all three: the editor, the assistant and MCP all produce **flow documents**
@@ -39,7 +39,7 @@ that the same validator checks and the same executor runs.
 - `params` are the settings a user adjusts without touching the steps (form above the flow);
   names are expression variables. Values: number, string or bool. `min`/`max` are checked at run
   start. A run may override values (`params: {"target": 4.8}`).
-- `setup` runs first, then `steps`; **`cleanup` always runs** — after success, failure, a
+- `setup` runs first, then `steps`; **`cleanup` always runs** - after success, failure, a
   `stop` step and an abort (abort of cleanup itself is the only way to skip it).
 - `timeout_s` (optional) bounds the whole run (cleanup excluded).
 
@@ -59,7 +59,7 @@ Instrument address in every instrument step: `device` (config id), `class` (3-le
 | `sweep` | `var`, (`from`,`to`,`step`) *or* `values`, `steps` | For each value (inclusive `to`, float-tolerant) run `steps` with `var` set. |
 | `check` | `condition`, `message`, `fail` (`stop` default \| `warn`) | Assertion; `stop` fails the run (cleanup runs). |
 | `log` | `message` | Run log line; `{name}` is replaced by a variable's value. |
-| `prompt` | `message` | Pause until the user (UI or MCP) continues — "connect the battery". |
+| `prompt` | `message` | Pause until the user (UI or MCP) continues - "connect the battery". |
 | `record` | `action: start`, `name`, `interval_s?` (1), `series: [address + field + label?]` / `action: stop` | Starts/stops a recording (recordings v2, one time domain). A recording the run started is stopped when the run ends. |
 | `stop` | `message?` | End the main part successfully (cleanup still runs). |
 
@@ -90,7 +90,7 @@ error.
   spec's last decimal (or 1e-6 relative). Not confirmed → the step fails. Nothing to read back →
   logged as "sent (no read-back)".
 - **Fresh reads:** a `read` of a status field waits (max 5 s) for a status update newer than the
-  run's last `set` — a reading always reflects the change before it. Stale or offline → step
+  run's last `set` - a reading always reflects the change before it. Stale or offline → step
   fails.
 - **Safe state:** when a run fails or is aborted, after `cleanup` every energising op the run
   switched on is set to its safe value (`OFF` / `false`). A successful run leaves instruments as
@@ -140,7 +140,7 @@ Flows are files `<data dir>/flows/<id>.json`; settings `<data dir>/automation.js
   request is ambiguous instead of guessing a dangerous value.
 - Output tool `submit_flow {flow, explanation}`. The server validates the flow; on errors it
   sends them back and lets the model correct itself (max 2 retries). The response always carries
-  the final issues; the UI loads the flow into the editor — it is never run automatically.
+  the final issues; the UI loads the flow into the editor - it is never run automatically.
 
 ## MCP server (`POST /mcp`, Streamable HTTP, JSON responses)
 

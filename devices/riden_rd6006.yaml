@@ -1,4 +1,4 @@
-# Riden RD6006 / RK6006 (6 A) — Modbus RTU; protocol in devices/bases/riden_rd60xx.yaml.
+# Riden RD6006 / RK6006 (6 A) - Modbus RTU; protocol in devices/bases/riden_rd60xx.yaml.
 # Written from community register maps (no vendor manual); awaiting confirmation on hardware.
 # Note: recent stock firmware reportedly breaks Modbus; the community recommends UniSoft firmware.
 schema: benchmesh.device/v1

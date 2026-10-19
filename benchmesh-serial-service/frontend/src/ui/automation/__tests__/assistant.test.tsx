@@ -37,7 +37,7 @@ describe('assistant', () => {
   })
 
   it('shows a provider error with a link to the settings', async () => {
-    routeFetch({ 'POST /automation/assist': () => ({ status: 502, body: { detail: 'no API key for anthropic — add one in Automation → Assistant settings' } }) })
+    routeFetch({ 'POST /automation/assist': () => ({ status: 502, body: { detail: 'no API key for anthropic - add one in Automation → Assistant settings' } }) })
     render(<RunProvider><AutomationDrawer /></RunProvider>)
     const panel = await screen.findByRole('region', { name: 'Assistant' })
     fireEvent.change(within(panel).getByLabelText('Describe the automation…'), { target: { value: 'x' } })

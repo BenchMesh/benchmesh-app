@@ -3,13 +3,13 @@
 //! `fetch` needs no CORS permission to *send* (only to read the answer), and WebSockets ignore
 //! CORS entirely. Every request is checked instead:
 //!
-//! - `Host` must name this machine the way people reach it — a loopback name, an IP literal, a
+//! - `Host` must name this machine the way people reach it - a loopback name, an IP literal, a
 //!   single-label or `.local` name, or one listed in `BENCHMESH_ALLOWED_HOSTS` (comma separated).
 //!   A public domain name is refused, which stops DNS rebinding (an attacker's domain pointed at
 //!   127.0.0.1 is same-origin with itself).
 //! - A request carrying `Origin` (browsers send it on every cross-origin request, on POST/PUT/
-//!   DELETE and on WebSocket upgrades) must come from the page's own origin — the UI is served by
-//!   this server — or from a loopback origin (the Vite dev server proxies with its own origin).
+//!   DELETE and on WebSocket upgrades) must come from the page's own origin - the UI is served by
+//!   this server - or from a loopback origin (the Vite dev server proxies with its own origin).
 //!
 //! Requests without these headers (Node-RED, scripts, curl) are not browsers and pass.
 

@@ -92,7 +92,7 @@ class TenmaPSU(DriverBase):
             tracking = "Tracking Parallel"
         else:
             tracking = "Unknown"
-# Compute SBY (standby) first — if standby is True, CV and CC must both be False
+# Compute SBY (standby) first - if standby is True, CV and CC must both be False
         sby = not out
         if sby:
             cv = False

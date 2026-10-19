@@ -89,7 +89,7 @@ pub fn driver_problem(service: &str) -> String {
     format!(
         "{what}. Press \"Install driver\" in the Instruments drawer to give it Microsoft's generic WinUSB driver \
          (once, Windows asks for administrator approval), or install a VISA (NI-VISA, Keysight IO Libraries or \
-         Rigol UltraSigma) — BenchMesh then uses it"
+         Rigol UltraSigma) - BenchMesh then uses it"
     )
 }
 

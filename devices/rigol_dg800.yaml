@@ -40,7 +40,7 @@ commands:
   ampl_q: {source: "DG800 p152 / DG900 p147"}
   ampl_set:
     params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
-    description: "2 mVpp minimum; 20 Vpp at High-Z ≤10 MHz (10 Vpp into 50 Ω), less above — the instrument clamps"
+    description: "2 mVpp minimum; 20 Vpp at High-Z ≤10 MHz (10 Vpp into 50 Ω), less above - the instrument clamps"
     source: "DG800 p152 / DG900 p147"
   offs_q: {source: "DG800 p154 / DG900 p149"}
   offs_set: {source: "DG800 p154 / DG900 p149; ±10 V at High-Z (±5 V into 50 Ω)"}

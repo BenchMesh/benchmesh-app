@@ -1,4 +1,4 @@
-# Wire capture (Rust migration — Phase 1)
+# Wire capture (Rust migration - Phase 1)
 
 Records exactly what the existing Python service sends to and receives from each
 real instrument, so the Rust device-definition interpreter can be built and
@@ -20,7 +20,7 @@ USBTMC transport's `os` calls at runtime inside the traced process only.
 
 ## Capturing real instruments
 
-1. Stop the normal service (`start.sh` / Electron) — instrument ports must not be shared.
+1. Stop the normal service (`start.sh` / Electron) - instrument ports must not be shared.
    The runner refuses to start if another process holds a configured port.
 2. Terminal A (from repo root):
    ```bash

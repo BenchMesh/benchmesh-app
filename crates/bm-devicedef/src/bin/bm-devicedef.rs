@@ -1,6 +1,6 @@
-//! `bm-devicedef validate [DIR]` — validate all definitions (exit 1 on errors)
-//! `bm-devicedef schema device|class` — print the JSON Schema
-//! `bm-devicedef export [DIR] [--notes FILE]` — print the public instrument list (website database)
+//! `bm-devicedef validate [DIR]` - validate all definitions (exit 1 on errors)
+//! `bm-devicedef schema device|class` - print the JSON Schema
+//! `bm-devicedef export [DIR] [--notes FILE]` - print the public instrument list (website database)
 
 use std::path::PathBuf;
 use std::process::ExitCode;

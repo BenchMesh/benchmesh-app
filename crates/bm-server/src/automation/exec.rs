@@ -717,7 +717,7 @@ impl Exec {
     async fn safe_state(&mut self) {
         for (at, op) in std::mem::take(&mut self.energized) {
             let Some(safe) = self.op(&at, &op).and_then(|o| o.safe_value()) else {
-                self.run.event("warn", "", format!("{} {op}: no safe value known — check the instrument", at.device));
+                self.run.event("warn", "", format!("{} {op}: no safe value known - check the instrument", at.device));
                 continue;
             };
             let text = wire_text(&safe, None);

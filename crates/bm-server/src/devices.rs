@@ -17,7 +17,7 @@ use crate::config::{str_field, DeviceEntry};
 /// tests: simulators.
 pub type ConnectorFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Connector + Send + Sync>;
 
-/// Real ports: the entry's fixed `port`/`device`, or — with `match` — wherever the
+/// Real ports: the entry's fixed `port`/`device`, or - with `match` - wherever the
 /// instrument is plugged in (re-resolved on every reconnect).
 pub fn hardware_connectors() -> ConnectorFactory {
     Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {

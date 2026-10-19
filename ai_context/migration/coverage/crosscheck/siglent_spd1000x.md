@@ -56,5 +56,5 @@ every disagreement is decided against the manual (see the review section, if any
 Full agreement on everything both sides implement (SPD1000X User Manual/Programming Guide, printed
 p.54-63): `CH1:VOLT`, `CH1:CURR` (setters and queries, incl. SPD1168X 8 A within our limits),
 `OUTP CH1,ON|OFF`. PyMeasure additionally covers `MODE:SET 2W|4W`, `TIME…`, `*SAV`/`*RCL` and selects
-`INST CH1` before `OUTP` (not needed: `OUTPut <SOURce>,<state>` takes the channel as an argument, p.57-58) — features we do not offer,
+`INST CH1` before `OUTP` (not needed: `OUTPut <SOURce>,<state>` takes the channel as an argument, p.57-58) - features we do not offer,
 no disagreement. Our measurement/protection/status queries are not in its tests (ours unseen).

@@ -71,4 +71,4 @@ test('sets the voltage', async ({ mockPage, api }) => {
 
 - Empty bench "Add instrument" opens the drawer without the new form (config load race).
 - Switching the Instruments drawer tab discards an unsaved new instrument.
-- The "Offline — reconnecting" badge blocks the arrange controls of a narrow offline panel.
+- The "Offline - reconnecting" badge blocks the arrange controls of a narrow offline panel.

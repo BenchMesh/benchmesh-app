@@ -198,13 +198,13 @@ export const fields = (c: VocabClass | undefined) => Object.keys(c?.fields ?? {}
 export const firstField = (c: VocabClass | undefined) =>
   fields(c).find((f) => ['si', 'number', 'integer'].includes(c!.fields[f].type)) ?? fields(c)[0] ?? ''
 
-/** `0 – 60 V`, `OFF | ON`, … for a setter's value spec. */
+/** `0 - 60 V`, `OFF | ON`, … for a setter's value spec. */
 export function specHint(spec: ValueSpec | undefined): string {
   if (!spec) return ''
   if (spec.type === 'enum') return (spec.values ?? []).join(' | ')
   if (spec.type === 'bool') return 'true | false'
   const unit = spec.unit ? ` ${spec.unit}` : ''
-  if (spec.min != null && spec.max != null) return `${spec.min} – ${spec.max}${unit}`
+  if (spec.min != null && spec.max != null) return `${spec.min} - ${spec.max}${unit}`
   if (spec.min != null) return `≥ ${spec.min}${unit}`
   if (spec.max != null) return `≤ ${spec.max}${unit}`
   return unit.trim()

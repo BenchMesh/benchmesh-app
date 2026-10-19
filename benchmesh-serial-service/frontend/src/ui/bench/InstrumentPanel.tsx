@@ -181,7 +181,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
           ))}
         </div>
       )}</div>}
-      {!online && !folded && <div className="bench-panel__offline">Offline — reconnecting</div>}
+      {!online && !folded && <div className="bench-panel__offline">Offline - reconnecting</div>}
       {showConsole && !folded && (
         <WireConsole meta={{ instrument: instrument.id, klass, model: instrument.model ?? modelOf(idn), idn, support: instrument.support,
           link: instrument.port ? `${instrument.transport ?? ''} ${instrument.port}`.trim() : undefined }} />

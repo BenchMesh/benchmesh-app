@@ -10,7 +10,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cp–D"
+     "ui_name": "Cp-D"
     },
     "CPQ": {
      "primary": "Cp",
@@ -20,7 +20,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cp–Q"
+     "ui_name": "Cp-Q"
     },
     "CPRP": {
      "primary": "Cp",
@@ -30,7 +30,7 @@
       "F",
       "Ω"
      ],
-     "ui_name": "Cp–Rp"
+     "ui_name": "Cp-Rp"
     },
     "CSD": {
      "primary": "Cs",
@@ -40,7 +40,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cs–D"
+     "ui_name": "Cs-D"
     },
     "CSQ": {
      "primary": "Cs",
@@ -50,7 +50,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cs–Q"
+     "ui_name": "Cs-Q"
     },
     "CSRS": {
      "primary": "Cs",
@@ -60,7 +60,7 @@
       "F",
       "Ω"
      ],
-     "ui_name": "Cs–Rs"
+     "ui_name": "Cs-Rs"
     },
     "LPQ": {
      "primary": "Lp",
@@ -70,7 +70,7 @@
       "H",
       ""
      ],
-     "ui_name": "Lp–Q"
+     "ui_name": "Lp-Q"
     },
     "LSD": {
      "primary": "Ls",
@@ -80,7 +80,7 @@
       "H",
       ""
      ],
-     "ui_name": "Ls–D"
+     "ui_name": "Ls-D"
     },
     "LSQ": {
      "primary": "Ls",
@@ -90,7 +90,7 @@
       "H",
       ""
      ],
-     "ui_name": "Ls–Q"
+     "ui_name": "Ls-Q"
     },
     "LSRS": {
      "primary": "Ls",
@@ -100,7 +100,7 @@
       "H",
       "Ω"
      ],
-     "ui_name": "Ls–Rs"
+     "ui_name": "Ls-Rs"
     },
     "RX": {
      "primary": "R",
@@ -109,7 +109,7 @@
       "Ω",
       "Ω"
      ],
-     "ui_name": "R–X"
+     "ui_name": "R-X"
     },
     "ZTD": {
      "primary": "Z",
@@ -118,7 +118,7 @@
       "Ω",
       "°"
      ],
-     "ui_name": "Z–θ°"
+     "ui_name": "Z-θ°"
     },
     "ZTR": {
      "primary": "Z",
@@ -127,7 +127,7 @@
       "Ω",
       "rad"
      ],
-     "ui_name": "Z–θr"
+     "ui_name": "Z-θr"
     }
    },
    "frequency": {
@@ -375,7 +375,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cp–D"
+     "ui_name": "Cp-D"
     },
     "CPQ": {
      "primary": "Cp",
@@ -385,7 +385,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cp–Q"
+     "ui_name": "Cp-Q"
     },
     "CSD": {
      "primary": "Cs",
@@ -395,7 +395,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cs–D"
+     "ui_name": "Cs-D"
     },
     "CSQ": {
      "primary": "Cs",
@@ -405,7 +405,7 @@
       "F",
       ""
      ],
-     "ui_name": "Cs–Q"
+     "ui_name": "Cs-Q"
     },
     "LSQ": {
      "primary": "Ls",
@@ -415,7 +415,7 @@
       "H",
       ""
      ],
-     "ui_name": "Ls–Q"
+     "ui_name": "Ls-Q"
     },
     "LPQ": {
      "primary": "Lp",
@@ -425,7 +425,7 @@
       "H",
       ""
      ],
-     "ui_name": "Lp–Q"
+     "ui_name": "Lp-Q"
     },
     "LSD": {
      "primary": "Ls",
@@ -435,7 +435,7 @@
       "H",
       ""
      ],
-     "ui_name": "Ls–D"
+     "ui_name": "Ls-D"
     },
     "RX": {
      "primary": "R",
@@ -444,7 +444,7 @@
       "Ω",
       "Ω"
      ],
-     "ui_name": "R–X"
+     "ui_name": "R-X"
     },
     "ZTD": {
      "primary": "Z",
@@ -453,7 +453,7 @@
       "Ω",
       "°"
      ],
-     "ui_name": "Z–θ°"
+     "ui_name": "Z-θ°"
     },
     "CSESR": {
      "primary": "Cs",
@@ -463,7 +463,7 @@
       "F",
       "Ω"
      ],
-     "ui_name": "Cs–ESR"
+     "ui_name": "Cs-ESR"
     },
     "DCR": {
      "primary": "DCR",

@@ -216,8 +216,8 @@ decided against the EDU33210 User's Guide Ed4 (same Trueform SCPI tree) and the 
 - `OUTP<n> 0|1` vs our `ON|OFF`: both valid (`OUTPut[1|2] {ON|1|OFF|0}`, EDU33210 UG). Equivalent.
 - **`symm_set` rounds to 0.1 %** (`%.1f`: their 0.01 → `0.0`, 99.98 → `100.0`): neither available guide
   states the symmetry resolution (EDU33210 p.90 only gives `{<percent>|MIN|MAX|DEF}`); PyMeasure's
-  values are arbitrary test points, not a claim about resolution. Manual ambiguity — **no change**;
+  values are arbitrary test points, not a claim about resolution. Manual ambiguity - **no change**;
   confirm on hardware (front panel shows the set value).
-- `FUNC TRI|PRBS|ARB`: the class shape API has no such values (ARB needs a loaded waveform) — read back
+- `FUNC TRI|PRBS|ARB`: the class shape API has no such values (ARB needs a loaded waveform) - read back
   as TRI/PRBS/ARB, not settable. Coverage gap by design, not a disagreement.
 - QCoDeS sim replies (`OUTPut1:LOAD?` etc.) are simulator defaults; they parse.

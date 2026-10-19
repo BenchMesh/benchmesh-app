@@ -26,7 +26,7 @@ models:
           FRES: [{value: AUTO, display: AUTO}, {value: "200", display: "200Ω"}, {value: "2000", display: "2kΩ"}, {value: "20000", display: "20kΩ"}, {value: "200000", display: "200kΩ"}, {value: "2000000", display: "2MΩ"}, {value: "10000000", display: "10MΩ"}, {value: "100000000", display: "100MΩ"}]
           CAP: [{value: AUTO, display: AUTO}, {value: "0.000000002", display: "2nF"}, {value: "0.00000002", display: "20nF"}, {value: "0.0000002", display: "200nF"}, {value: "0.000002", display: "2µF"}, {value: "0.00002", display: "20µF"}, {value: "0.0002", display: "200µF"}, {value: "0.01", display: "10mF"}]
 link:
-  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  # LAN: VXI-11 (LXI) - message-based like USB-TMC
   vxi11:
     framing:
       tx: {terminator: "\n"}

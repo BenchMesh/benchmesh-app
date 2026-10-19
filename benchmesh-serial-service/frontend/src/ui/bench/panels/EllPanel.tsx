@@ -40,7 +40,7 @@ export function EllPanel({ status, profile, api, online }: {
         <Annunciators items={[
           { label: 'REM', on: remote },
           { label: 'INPUT', on: inputOn },
-          { label: m?.short ?? String(mode ?? '—'), on: true, title: m?.name },
+          { label: m?.short ?? String(mode ?? '-'), on: true, title: m?.name },
           { label: 'OVP', on: status.OVP === true, alert: true },
           { label: 'OCP', on: status.OCP === true, alert: true },
           { label: 'OPP', on: status.OPP === true, alert: true },

@@ -121,7 +121,7 @@ export const DigitEditor = forwardRef<DigitEditorHandle, Props>(function DigitEd
         className={cls.join(' ')}
         data-confirm={draft == null ? confirm.state : 'idle'}
         aria-busy={confirm.state === 'waiting' || status === 'busy'}
-        title={confirm.state === 'unconfirmed' && draft == null ? `${NOT_CONFIRMED} (sent ${confirm.target}, reads ${value ?? '—'})` : undefined}
+        title={confirm.state === 'unconfirmed' && draft == null ? `${NOT_CONFIRMED} (sent ${confirm.target}, reads ${value ?? '-'})` : undefined}
         tabIndex={disabled ? -1 : 0}
         role="spinbutton"
         aria-label={label}

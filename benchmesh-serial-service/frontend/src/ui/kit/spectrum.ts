@@ -41,7 +41,7 @@ export function maxHold(held: number[] | null, next: number[]): number[] {
 
 /** Frequency as an SA annotation: 433920000 → "433.920 MHz", 0 → "0 Hz". */
 export function freqText(hz: number | null | undefined, digits = 6): string {
-  if (hz == null || !Number.isFinite(hz)) return '—'
+  if (hz == null || !Number.isFinite(hz)) return '-'
   if (hz === 0) return '0 Hz'
   const p = prefixed(hz, digits)
   return `${p.text.trim()} ${p.prefix}Hz`
@@ -49,6 +49,6 @@ export function freqText(hz: number | null | undefined, digits = 6): string {
 
 /** Level as "−42.31 dBm" (one or two decimals, real minus sign). */
 export function dbText(db: number | null | undefined, unit = 'dBm', decimals = 2): string {
-  if (db == null || !Number.isFinite(db)) return '—'
+  if (db == null || !Number.isFinite(db)) return '-'
   return `${db < 0 ? '−' : ''}${Math.abs(db).toFixed(decimals)} ${unit}`
 }

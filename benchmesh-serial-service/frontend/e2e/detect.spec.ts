@@ -158,7 +158,7 @@ test.describe('Detect instruments', () => {
     const drawer = await openWithDetect(page, api, detect);
     await drawer.getByTestId('detect-btn').click();
     const cert = row(drawer, '/dev/ttyUSB0').locator('.detect__cert');
-    await expect(cert).toHaveText(/USB port position only — moving it to another port loses it/);
+    await expect(cert).toHaveText(/USB port position only - moving it to another port loses it/);
     await expect(cert).toHaveClass(/detect__cert--warn/);
   });
 });

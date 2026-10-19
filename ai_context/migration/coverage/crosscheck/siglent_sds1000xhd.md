@@ -173,7 +173,7 @@ printed page numbers). Every disagreement goes to the guide's side, which is our
 | `:CHANnel<n>:PROBe` | bare number `:CHANnel1:PROBe 10` | p.56: `<attenuation>[,<value>]`, `DEFault\|VALue`, e.g. `:CHANnel1:PROBe VALue,1.00E+02` | library bug; ours right |
 | `:MEASure:SIMPle:SOURce` | `CHANnel1`…, `FUNCtion1`… | p.302: `{C<n>\|Z<n>\|F<x>\|M<m>\|D<d>\|ZD<d>\|REF<r>}` | library bug; ours (`C{ch}`) right |
 | `:TRIGger:STATus?` reply | `STOP` (upper case) | p.418: `{Arm\|Ready\|Auto\|Trig'd\|Stop\|Roll}`, example `Stop` | library mock; ours maps the documented mixed case. Not hardened (would hide a real firmware difference); revisit on hardware |
-| `:WAVeform:POINt`, `:WAVeform:STARt`, `:MEASure`, `:MEASure:MODE`, `:WAVeform:SOURce D0/F1` | other values | — | not disagreements: our setters use one fixed value / analog channels only by design |
+| `:WAVeform:POINt`, `:WAVeform:STARt`, `:MEASure`, `:MEASure:MODE`, `:WAVeform:SOURce D0/F1` | other values | - | not disagreements: our setters use one fixed value / analog channels only by design |
 
 Ours unseen: `bwl_set` and `probe_set` never matched because PyMeasure spells them differently (above);
 `acq_*`, `srate_q`, measurement queries are not in its tests.

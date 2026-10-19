@@ -25,21 +25,21 @@ Research 2026-10-18. Class contract: `devices/classes/AWG.yaml`. Reference defin
 
 | # | Family | Price band | Protocol / link | Doc quality | Confidence | DSL fit |
 |---|---|---|---|---|---|---|
-| 1 | **Rigol DG1000Z** (DG1022Z/1032Z/1062Z), **DG800/DG900**, DG2000, DG4000 | €250–1500 | SCPI `:SOURn:` + `APPLy?`, USBTMC (+LAN) | excellent | high (DG4000 medium) | ✅ |
-| 2 | **Siglent SDG1000X / SDG2000X** (+ X Plus, SDG6000X), older SDG800/SDG1000 | €300–3000 | Siglent `C1:BSWV` key,value, USBTMC (+LAN) | good | high (X) / medium (old) | ✅ (6 exchanges/poll), ✅✅ with `pairs` |
-| 3 | **FeelTech/FeelElec FY6900 / FY6800 / FY6600 / FY2300** | €60–150 | proprietary ASCII `WMF…`/`RMF`, CH340 serial 115200 | poor (vendor PDF wrong) + good OSS | medium | FY6900 ⚠️, FY6600/6800 ⛔ (frequency in µHz) |
-| 4 | **JDS6600** (Juntek / Koolertron / Joy-IT), JDS2915 | €70–120 | proprietary ASCII `:w21=…`, CH340 serial 115200 | medium + sigrok | high (JDS2915 low) | ⛔ (value scaling, shared output register) |
-| 5 | **UNI-T UTG900E / UTG1000X** (+ UTG2000B, UTG4000A) | €150–1500 | UNI-T SCPI `:CHANn:BASE:*`, USBTMC | medium | medium | ✅ |
-| 6 | **OWON XDG / DGE** + **Tektronix AFG1000** (OWON OEM) | €200–700 | Tek-AFG SCPI `SOURn:FUNC:SHAP`, USBTMC | good | high | ✅ (DGE is Bench-tested) |
-| 7 | **Keysight EDU33210, 33500B/33600A, 33210A/33220A** (used market) | €600–5000 (33220A used €300) | Keysight SCPI + `APPLy?`, USBTMC/LAN/GPIB | excellent (33500B guide needs a login) | high (33500B medium) | ✅ |
-| 8 | **GW Instek AFG-2000/2100, AFG-2225**, AFG-3000 | €250–1000 | Keysight-33120-style SCPI, **USB CDC serial** (AFG-3000: RS-232) | good | high | ✅ |
-| 9 | **Rigol DG1022 / DG1022A** (old, non-Z; very common used) | used €100–200 | old Rigol SCPI with `:CH2` suffix, USBTMC 0400:09C4 | medium | medium | ✅ via computed channel suffix |
-| 10 | **BK Precision 4050B / 4060B** (Siglent dialect) | €500–1500 | Siglent `C1:BSWV`, USBTMC | good | high | ✅ (shares the Siglent base) |
-| 11 | **Hantek HDG2000B** | €250–400 | Keysight-33500-like SCPI, USBTMC 049F:505B | medium (typos) | medium | ✅ (no load control over SCPI) |
+| 1 | **Rigol DG1000Z** (DG1022Z/1032Z/1062Z), **DG800/DG900**, DG2000, DG4000 | €250-1500 | SCPI `:SOURn:` + `APPLy?`, USBTMC (+LAN) | excellent | high (DG4000 medium) | ✅ |
+| 2 | **Siglent SDG1000X / SDG2000X** (+ X Plus, SDG6000X), older SDG800/SDG1000 | €300-3000 | Siglent `C1:BSWV` key,value, USBTMC (+LAN) | good | high (X) / medium (old) | ✅ (6 exchanges/poll), ✅✅ with `pairs` |
+| 3 | **FeelTech/FeelElec FY6900 / FY6800 / FY6600 / FY2300** | €60-150 | proprietary ASCII `WMF…`/`RMF`, CH340 serial 115200 | poor (vendor PDF wrong) + good OSS | medium | FY6900 ⚠️, FY6600/6800 ⛔ (frequency in µHz) |
+| 4 | **JDS6600** (Juntek / Koolertron / Joy-IT), JDS2915 | €70-120 | proprietary ASCII `:w21=…`, CH340 serial 115200 | medium + sigrok | high (JDS2915 low) | ⛔ (value scaling, shared output register) |
+| 5 | **UNI-T UTG900E / UTG1000X** (+ UTG2000B, UTG4000A) | €150-1500 | UNI-T SCPI `:CHANn:BASE:*`, USBTMC | medium | medium | ✅ |
+| 6 | **OWON XDG / DGE** + **Tektronix AFG1000** (OWON OEM) | €200-700 | Tek-AFG SCPI `SOURn:FUNC:SHAP`, USBTMC | good | high | ✅ (DGE is Bench-tested) |
+| 7 | **Keysight EDU33210, 33500B/33600A, 33210A/33220A** (used market) | €600-5000 (33220A used €300) | Keysight SCPI + `APPLy?`, USBTMC/LAN/GPIB | excellent (33500B guide needs a login) | high (33500B medium) | ✅ |
+| 8 | **GW Instek AFG-2000/2100, AFG-2225**, AFG-3000 | €250-1000 | Keysight-33120-style SCPI, **USB CDC serial** (AFG-3000: RS-232) | good | high | ✅ |
+| 9 | **Rigol DG1022 / DG1022A** (old, non-Z; very common used) | used €100-200 | old Rigol SCPI with `:CH2` suffix, USBTMC 0400:09C4 | medium | medium | ✅ via computed channel suffix |
+| 10 | **BK Precision 4050B / 4060B** (Siglent dialect) | €500-1500 | Siglent `C1:BSWV`, USBTMC | good | high | ✅ (shares the Siglent base) |
+| 11 | **Hantek HDG2000B** | €250-400 | Keysight-33500-like SCPI, USBTMC 049F:505B | medium (typos) | medium | ✅ (no load control over SCPI) |
 | 12 | **FeelTech FY3200S / FY3224S** (old) | €40 | lowercase ASCII `bf…`, 9600 | none official | low | ⛔ (no output command, no CH2 read-back) |
-| — | OWON AG1022 / AG-F / AG-S | €150 | OWON-AG SCPI, stateful `:CHAN CH1`, replies to every command; USB uses OWON's own driver | medium | low (link) | ⚠️ RS-232 only |
-| — | Tektronix AFG31000 | €3000+ | Tek AFG3000 command set (not verified) | **not obtained** | — | — |
-| — | Fnirsi / handheld scope+AWG combos, JDS2800, JDS8000 | — | no documented remote protocol found (search budget ran out) | — | — | — |
+| - | OWON AG1022 / AG-F / AG-S | €150 | OWON-AG SCPI, stateful `:CHAN CH1`, replies to every command; USB uses OWON's own driver | medium | low (link) | ⚠️ RS-232 only |
+| - | Tektronix AFG31000 | €3000+ | Tek AFG3000 command set (not verified) | **not obtained** | - | - |
+| - | Fnirsi / handheld scope+AWG combos, JDS2800, JDS8000 | - | no documented remote protocol found (search budget ran out) | - | - | - |
 
 ---
 
@@ -71,9 +71,9 @@ Open source: QCoDeS `Rigol_DG1062.py` / `Rigol_DG4000.py`, sigrok `rigol-dg`.
 | DG1022Z | 2 | 25 MHz | 25 MHz | 15 MHz | 500 kHz |
 | DG1032Z | 2 | 30 MHz | 25 MHz | 15 MHz | 500 kHz |
 | DG1062Z | 2 | 60 MHz | 25 MHz | 25 MHz | 1 MHz |
-| DG4062 / 4102 / 4162 / 4202 | 2 | 60 / 100 / 160 / 200 MHz | 25 / 40 / 50 / 60 MHz | — | — |
+| DG4062 / 4102 / 4162 / 4202 | 2 | 60 / 100 / 160 / 200 MHz | 25 / 40 / 50 / 60 MHz | - | - |
 
-- **Amplitude into 50 Ω** (High-Z is ×2): 1 mVpp–10 Vpp up to 10 MHz, 5 Vpp up to 30 MHz, 2.5 Vpp up to 60 MHz, DG900 1 Vpp above 60 MHz.
+- **Amplitude into 50 Ω** (High-Z is ×2): 1 mVpp-10 Vpp up to 10 MHz, 5 Vpp up to 30 MHz, 2.5 Vpp up to 60 MHz, DG900 1 Vpp above 60 MHz.
   - DG4000: 10 Vpp ≤20 MHz, 5 Vpp ≤70 MHz.
   - The programming guides give a 2 mVpp minimum (DG1000Z p194).
 - **Offset:** ±5 V (50 Ω) / ±10 V (HiZ), bounded by \|offs\| + Vpp/2.
@@ -99,22 +99,22 @@ No RS-232 for control. The DB9 "RS232" on DG800/900/2000 is a waveform output.
 
 | Operation | Set | Query → reply | Pages |
 |---|---|---|---|
-| Output | `:OUTP<n> ON\|OFF` (also `:OUTP<n>:STAT`) | `:OUTP<n>?` → `ON` / `OFF` (**text**) | p70 / p58–59 |
-| Load | `:OUTP<n>:LOAD <1..10000>\|INF\|MIN\|MAX` (alias `:IMP`); default 50 Ω | `5.000000E+01`; High-Z → `9.900000E+37` | p68 / p57–58 |
+| Output | `:OUTP<n> ON\|OFF` (also `:OUTP<n>:STAT`) | `:OUTP<n>?` → `ON` / `OFF` (**text**) | p70 / p58-59 |
+| Load | `:OUTP<n>:LOAD <1..10000>\|INF\|MIN\|MAX` (alias `:IMP`); default 50 Ω | `5.000000E+01`; High-Z → `9.900000E+37` | p68 / p57-58 |
 | Polarity | `:OUTP<n>:POL NORM\|INV` | DG1000Z `NORMAL`/`INVERTED`, DG800 `NORM`/`INV` | p69 / p58 |
 | Shape | `:SOUR<n>:FUNC SIN\|SQU\|RAMP\|PULS\|NOIS\|DC\|USER\|HARM` (+ ~150 built-in arb names) | `SIN`, `SQU`, … (an arb returns its own name) | p121 / p101 |
 | Frequency | `:SOUR<n>:FREQ <Hz>` | `1.000000E+03` | p109 / p84 |
 | Amplitude | `:SOUR<n>:VOLT <v>` (current unit, default Vpp) | `5.000000E+00` | p194 / p152 |
 | Amplitude unit | `:SOUR<n>:VOLT:UNIT VPP\|VRMS\|DBM` (no dBm at HiZ) | `VPP` | p199 / p155 |
 | Offset | `:SOUR<n>:VOLT:OFFS <V>` | `1.000000E+00` | p195 / p154 |
-| High / low level | `:SOUR<n>:VOLT:HIGH` / `:LOW` | `%E` | — / p153 |
+| High / low level | `:SOUR<n>:VOLT:HIGH` / `:LOW` | `%E` | - / p153 |
 | Phase | `:SOUR<n>:PHAS <0..360>` (degrees) | `1.000000E+01` | p167 / p137 |
 | Square duty | `:SOUR<n>:FUNC:SQU:DCYC <pct>` (limit depends on frequency) | `%E` | p122 / p102 |
 | Ramp symmetry | `:SOUR<n>:FUNC:RAMP:SYMM <0..100>` | `%E` | p120 / p95 |
-| Pulse duty | `:SOUR<n>:FUNC:PULS:DCYC` | `%E` | — / p91 |
-| Apply (one shot) | `:SOUR<n>:APPL:SIN f,amp,offs,phase` (SQU, RAMP, PULS, USER, HARM have 4 args; `NOIS amp,offs`) | — | p85–93 / p66–72 |
-| **Complete state** | — | `:SOUR<n>:APPL?` → `"SQU,1.000000E+03,2.000000E+00,3.000000E+00,4.000000E+00"` | p84 / p65–66 |
-| Errors | — | `:SYST:ERR?` → `-113,"Undefined header; …"` | p211 / p164 |
+| Pulse duty | `:SOUR<n>:FUNC:PULS:DCYC` | `%E` | - / p91 |
+| Apply (one shot) | `:SOUR<n>:APPL:SIN f,amp,offs,phase` (SQU, RAMP, PULS, USER, HARM have 4 args; `NOIS amp,offs`) | - | p85-93 / p66-72 |
+| **Complete state** | - | `:SOUR<n>:APPL?` → `"SQU,1.000000E+03,2.000000E+00,3.000000E+00,4.000000E+00"` | p84 / p65-66 |
+| Errors | - | `:SYST:ERR?` → `-113,"Undefined header; …"` | p211 / p164 |
 
 **`APPL?` parsing**
 - Fields: shape, Hz, amplitude (current unit), offset V, phase °. Quotes are part of the reply. A field that does not apply is the literal `DEF`: `"NOISE,DEF,5.000000E+00,0.000000E+00,DEF"` (DG4000 p281).
@@ -127,8 +127,8 @@ No RS-232 for control. The DB9 "RS232" on DG800/900/2000 is a waveform output.
 
 **DG4000 differences** (DG4000 guide)
 - `[:SOURce<n>]` is optional (p199).
-- `:OUTP<n>:IMP?` answers the **text `INFINITY`** for HiZ (p199–200). The documented default is High-Z.
-- Square duty is limited to 20–80 % ≤10 MHz, 40–60 % ≤40 MHz, fixed 50 % above (p344).
+- `:OUTP<n>:IMP?` answers the **text `INFINITY`** for HiZ (p199-200). The documented default is High-Z.
+- Square duty is limited to 20-80 % ≤10 MHz, 40-60 % ≤40 MHz, fixed 50 % above (p344).
 - IDN `Rigol Technologies,DG4162,DG41620000,00.01.02` (p147).
 
 **Quirks**
@@ -157,14 +157,14 @@ Open source: QCoDeS contrib `sdg_channel.py` / `_sdg_response_fields.py`.
 **Models / features** (datasheets; HiZ values, halve for 50 Ω)
 | Model | Ch | Sine | Square | Amplitude (HiZ) | Offset |
 |---|---|---|---|---|---|
-| SDG805 / 810 / 830 | 1 | 5 / 10 / 30 MHz | — | 4 mVpp–20 Vpp (≤10 MHz), 10 Vpp above | ±10 V |
-| SDG1010 / 1025 / 1050 | 2 | 10 / 25 / 50 MHz | — | CH1 as SDG800; **CH2 ≤6 Vpp HiZ** | CH2 ±3 V |
-| SDG1032X / 1062X | 2 | 30 / 60 MHz | 30 / 60 MHz | 2 mVpp–20 Vpp (≤10 MHz), 10 Vpp above | DC ±10 V |
-| SDG1022X / 1032X / 1062X Plus | 2 | 25 / 30 / 60 MHz | 20 MHz | 2 mVpp–20 Vpp (≤20 MHz), 10 Vpp above | DC ±10 V |
-| SDG2042X / 2082X / 2122X | 2 | 40 / 80 / 120 MHz | 25 MHz | 2 mVpp–20 Vpp (≤20 MHz), 10 Vpp above | DC ±10 V |
-| SDG6022X / 6032X / 6052X | 2 | 200 / 350 / 500 MHz | — | 20 Vpp ≤40 MHz | DC ±10 V |
-| BK 4053B / 4054B / 4055B | 2 | 10 / 30 / 60 MHz | — | — | ±5 V @50 Ω |
-| BK 4062B / 4063B / 4064B | 2 | 40 / 80 / 120 MHz | 25 MHz | — | — |
+| SDG805 / 810 / 830 | 1 | 5 / 10 / 30 MHz | - | 4 mVpp-20 Vpp (≤10 MHz), 10 Vpp above | ±10 V |
+| SDG1010 / 1025 / 1050 | 2 | 10 / 25 / 50 MHz | - | CH1 as SDG800; **CH2 ≤6 Vpp HiZ** | CH2 ±3 V |
+| SDG1032X / 1062X | 2 | 30 / 60 MHz | 30 / 60 MHz | 2 mVpp-20 Vpp (≤10 MHz), 10 Vpp above | DC ±10 V |
+| SDG1022X / 1032X / 1062X Plus | 2 | 25 / 30 / 60 MHz | 20 MHz | 2 mVpp-20 Vpp (≤20 MHz), 10 Vpp above | DC ±10 V |
+| SDG2042X / 2082X / 2122X | 2 | 40 / 80 / 120 MHz | 25 MHz | 2 mVpp-20 Vpp (≤20 MHz), 10 Vpp above | DC ±10 V |
+| SDG6022X / 6032X / 6052X | 2 | 200 / 350 / 500 MHz | - | 20 Vpp ≤40 MHz | DC ±10 V |
+| BK 4053B / 4054B / 4055B | 2 | 10 / 30 / 60 MHz | - | - | ±5 V @50 Ω |
+| BK 4062B / 4063B / 4064B | 2 | 40 / 80 / 120 MHz | 25 MHz | - | - |
 
 On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 
@@ -175,7 +175,7 @@ On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 - BK 4050B/4060B: USBTMC, VID not documented (probably F4EC; verify).
 - LAN: raw socket **5025**, telnet 5024, VXI-11 (PDF 19). Not usable today (no TCP).
 
-**Identify** (PDF 24–25)
+**Identify** (PDF 24-25)
 - X series: `Siglent Technologies,SDG1062X Plus,SDG1XPLUS00041,V1P.1.1.1.40`. The model field **can contain a space**, and one example has a space after a comma (`, SDG6XBAX1R0034`), so trim.
 - Old SDG800/1000/5000: `*IDN SDG,SDG1025,<serial>,<fw>,<hw>` (header prefix, manufacturer `SDG`).
 - BK: `*IDN BK Precision,4050B,…` (4050B p8) or `BK,4063B,…,2.01.01.35R3B2` (4060B p7).
@@ -192,23 +192,23 @@ On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 
 | Operation | Set | Query → reply | Pages |
 |---|---|---|---|
-| Output | `C<n>:OUTP ON\|OFF` | `C<n>:OUTP?` → `C1:OUTP ON,LOAD,HZ,PLRT,NOR` | p15–16 |
-| Load | `C<n>:OUTP LOAD,50\|HZ\|<ohms>` (SDG800: 50 or HZ; SDG1000: 50–10000; X: 50–100000) | same reply, `LOAD,<v>` pair | p15–16 |
-| Polarity | `C<n>:OUTP PLRT,NOR\|INVT` | `PLRT,<v>` pair | p15–16 |
-| Shape | `C<n>:BSWV WVTP,SINE\|SQUARE\|RAMP\|PULSE\|NOISE\|ARB\|DC` (+PRBS, IQ on 6000X) | `WVTP,<v>` in BSWV? | p17–20 |
-| Frequency | `C<n>:BSWV FRQ,<Hz>` (plain number, `100E6` allowed) | `FRQ,100HZ` | p17–20 |
-| Amplitude | `C<n>:BSWV AMP,<Vpp>` (also AMPVRMS, AMPDBM) | `AMP,2V` | p17–20 |
-| Offset | `C<n>:BSWV OFST,<V>` | `OFST,0V` | p17–20 |
-| Phase | `C<n>:BSWV PHSE,<0..360>` (not NOISE, PULSE or DC) | `PHSE,0` (no unit) | p17–20 |
-| Duty | `C<n>:BSWV DUTY,<pct>` (SQUARE / PULSE) | `DUTY,50` (only when relevant) | p17–20 |
-| Symmetry | `C<n>:BSWV SYM,<pct>` (RAMP) | `SYM,50` (only when relevant) | p17–20 |
-| High / low level | `C<n>:BSWV HLEV,<V>` / `LLEV,<V>` | `HLEV,1V`, `LLEV,-1V` | p17–20 |
-| **Complete state** | — | `C<n>:BSWV?` → `C1:BSWV WVTP,SINE,FRQ,100HZ,PERI,0.01S,AMP,2V,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0` (+ `AMPVRMS,…`, `MAX_OUTPUT_AMP,…`; SQUARE adds DUTY, RAMP adds SYM, PULSE adds WIDTH/RISE/FALL/DLY) | p17–20 |
-| Both outputs | `OUT_BOTHCH ON\|OFF` (not on SDG800) | — | — |
-| Sync | `*OPC?` → `1` (X) / `*OPC 1` (old) | — | p13–14 |
+| Output | `C<n>:OUTP ON\|OFF` | `C<n>:OUTP?` → `C1:OUTP ON,LOAD,HZ,PLRT,NOR` | p15-16 |
+| Load | `C<n>:OUTP LOAD,50\|HZ\|<ohms>` (SDG800: 50 or HZ; SDG1000: 50-10000; X: 50-100000) | same reply, `LOAD,<v>` pair | p15-16 |
+| Polarity | `C<n>:OUTP PLRT,NOR\|INVT` | `PLRT,<v>` pair | p15-16 |
+| Shape | `C<n>:BSWV WVTP,SINE\|SQUARE\|RAMP\|PULSE\|NOISE\|ARB\|DC` (+PRBS, IQ on 6000X) | `WVTP,<v>` in BSWV? | p17-20 |
+| Frequency | `C<n>:BSWV FRQ,<Hz>` (plain number, `100E6` allowed) | `FRQ,100HZ` | p17-20 |
+| Amplitude | `C<n>:BSWV AMP,<Vpp>` (also AMPVRMS, AMPDBM) | `AMP,2V` | p17-20 |
+| Offset | `C<n>:BSWV OFST,<V>` | `OFST,0V` | p17-20 |
+| Phase | `C<n>:BSWV PHSE,<0..360>` (not NOISE, PULSE or DC) | `PHSE,0` (no unit) | p17-20 |
+| Duty | `C<n>:BSWV DUTY,<pct>` (SQUARE / PULSE) | `DUTY,50` (only when relevant) | p17-20 |
+| Symmetry | `C<n>:BSWV SYM,<pct>` (RAMP) | `SYM,50` (only when relevant) | p17-20 |
+| High / low level | `C<n>:BSWV HLEV,<V>` / `LLEV,<V>` | `HLEV,1V`, `LLEV,-1V` | p17-20 |
+| **Complete state** | - | `C<n>:BSWV?` → `C1:BSWV WVTP,SINE,FRQ,100HZ,PERI,0.01S,AMP,2V,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0` (+ `AMPVRMS,…`, `MAX_OUTPUT_AMP,…`; SQUARE adds DUTY, RAMP adds SYM, PULSE adds WIDTH/RISE/FALL/DLY) | p17-20 |
+| Both outputs | `OUT_BOTHCH ON\|OFF` (not on SDG800) | - | - |
+| Sync | `*OPC?` → `1` (X) / `*OPC 1` (old) | - | p13-14 |
 
 - SDG800 is single-channel and takes **no `C1:` prefix** (availability table). That needs a separate definition.
-- BK: `C1:OUTP …` and `C1:BSWV …` are identical (4050B p13–15, 4060B p9–11).
+- BK: `C1:OUTP …` and `C1:BSWV …` are identical (4050B p13-15, 4060B p9-11).
 
 **Parsing (today's DSL)**
 - `OUTP?` and `BSWV?` replies are `key,value` pairs whose **order and set vary** by series and waveform. The 1000X Plus and 6000X insert `POWERON_STATE,OFF` into `OUTP?`. **Parse by key, never by position.**
@@ -241,15 +241,15 @@ On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 | `D/feeltech_fy2300/doc/FY2300_Serial_communication_protocol.pdf` | Protocol Rev 1.2 |
 
 **The tested open-source drivers are the authority wherever they disagree with the PDFs:**
-- `github.com/mattwach/fygen` (fygen.py:276–365, 557–595, 1217–1336; wavedef.py:148–194)
-- `gitlab.com/adeuring/fy6x00` (fy6x00.py:50–186, 1013–1060, README "firmware bugs")
+- `github.com/mattwach/fygen` (fygen.py:276-365, 557-595, 1217-1336; wavedef.py:148-194)
+- `gitlab.com/adeuring/fy6x00` (fy6x00.py:50-186, 1013-1060, README "firmware bugs")
 - `github.com/katzenjens/fy6900commander` protocol.md
 - EEVblog FY6900 "Gotchas" post msg5542089
 
 **Models:** FY6900-20…100M, FY6800-…60M, FY6600-15…60M, FY2300 (all 2 channels).
 - Amplitude ≤20 Vpp, 1 mV resolution (≤5 Vpp above 20 MHz).
 - Offset: FY6900 ±12 V; FY6800 ±10 V below 20 MHz, ±2.5 V above.
-- Duty 0.01–99.99 %, phase 0.01° steps (FY6900 manual p5).
+- Duty 0.01-99.99 %, phase 0.01° steps (FY6900 manual p5).
 - The `UMO` reply suffix gives the frequency limit: `^FY\d{4}-(\d+)M`.
 - FY8300 (3 channels) has a different command set and is out of scope.
 
@@ -282,12 +282,12 @@ On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 - FY6900 CH1: 0 sine [SIN], 1 square [SQU], 2 rectangle, 3 trapezoid, 4 CMOS, 5 adj-pulse [PUL], 6 DC [DC], 7 triangle, 8 ramp [RAMP], 9 neg-ramp, …, 27 random, 32 AWGN [PRN], 35 chirp, 36+ arb (firmware-dependent; FW 1.8 shifts arb by +1/+2).
 - FY6900 CH2: identical minus adj-pulse, so everything ≥5 is −1 (5 DC, 6 tri, 7 ramp, 31 AWGN). **CH2 has no adjustable pulse.**
 - FY6600 / FY6800 / FY2300 (measured; the vendor PDFs are wrong): CH1 0 sine, 1 square, 2 CMOS, 3 adj-pulse, 4 DC, 5 triangle, 6 ramp, …, 30 AWGN, 34+ arb. CH2 drops adj-pulse, so 3 DC, 4 tri, 5 ramp, 29 AWGN.
-- Only the built-in waves (CH1 0–35 / CH2 0–34 on FY6900) are stable across firmware.
+- Only the built-in waves (CH1 0-35 / CH2 0-34 on FY6900) are stable across firmware.
 
 **Framing behaviour**
-- **Every setter answers a lone `\n`.** Queries sometimes return 1–2 empty lines before the data line.
+- **Every setter answers a lone `\n`.** Queries sometimes return 1-2 empty lines before the data line.
 - Today's DSL handles both with `rx: {mode: terminator, terminator: "\n", skip_leading: "\r\n", drain_idle_ms: 50}` and setters `reply: none` + `gap_after_write_ms: 100`. The stray `\n` ack is then consumed as leading noise of the next reply: `Framer` skips leading chars per exchange, and the engine never flushes input before a write.
-- Settings take 0.3–1 s to apply (waveform change). Confirm by read-back with a 6 s window, which the UI already does.
+- Settings take 0.3-1 s to apply (waveform change). Confirm by read-back with a 6 s window, which the UI already does.
 - fygen sends `\n\n\n` at open to resync. Do not auto-retry setters.
 
 **Channel-dependent wire text works today with a computed param:**
@@ -323,11 +323,11 @@ On all X models, \|offs\| + Vpp/2 ≤ 10 V at HiZ.
 | `D/juntek_jds6600/doc/JT-JDS6600_Datasheet-EN_2025-09-22.pdf` | Datasheet |
 | `D/joyit_jds2900/doc/JT-JDS29XX_Manual-EN_2025-01-16.pdf`, `JT-JDS2915_Datasheet_2023-09-13.pdf` | JDS29xx |
 
-Open source: sigrok `src/hardware/juntek-jds6600/protocol.c` (20–130, 588–800, 1504–1545), `github.com/on1arf/jds6600_python`.
+Open source: sigrok `src/hardware/juntek-jds6600/protocol.c` (20-130, 588-800, 1504-1545), `github.com/on1arf/jds6600_python`.
 
 **Models:** JDS6600-15/20/30/40/50/60 (`:r00=` → max MHz), 2 channels.
-- Amplitude 2 mVpp–20 Vpp below 11 MHz, ≤5 Vpp above 31 MHz.
-- Offset ±9.99 V. Phase 0–359.9°.
+- Amplitude 2 mVpp-20 Vpp below 11 MHz, ≤5 Vpp above 31 MHz.
+- Offset ±9.99 V. Phase 0-359.9°.
 - JDS2915: 15 MHz. Joy-IT points to the same protocol PDF; not verified.
 
 **Interface:** CH340G USB CDC, **115200 8N1**, no handshake.
@@ -342,7 +342,7 @@ Open source: sigrok `src/hardware/juntek-jds6600/protocol.c` (20–130, 588–80
 | Reg | Operation | Encoding |
 |---|---|---|
 | 20 | output | `:w20=<ch1>,<ch2>.`; read `:r20=1,1.`. **Both channels in one register** |
-| 21 / 22 | shape | 0 sine, 1 square, 2 pulse, 3 triangle, 4 partial-sine, 5 CMOS, 6 DC, 7 half-wave, 8 full-wave, 9 / 10 ladders, 11 noise, 12 / 13 exp, 14 multitone, 15 sinc, 16 Lorentz, 101–160 arb01–60 (same on both channels) |
+| 21 / 22 | shape | 0 sine, 1 square, 2 pulse, 3 triangle, 4 partial-sine, 5 CMOS, 6 DC, 7 half-wave, 8 full-wave, 9 / 10 ladders, 11 noise, 12 / 13 exp, 14 multitone, 15 sinc, 16 Lorentz, 101-160 arb01-60 (same on both channels) |
 | 23 / 24 | frequency | `:w23=<Hz×100>,0.` (unit field Y = 0). Read `X,Y`: f = X/100 × [1, 1, 1, 1e-3, 1e-6][Y] (on1arf; Y = 3/4 are mHz/µHz ranges) |
 | 25 / 26 | amplitude | mV |
 | 27 / 28 | offset | (X − 1000) / 100 V |
@@ -368,10 +368,10 @@ UTG1000A: no manual; assume UTG1000X.
 |---|---|---|---|
 | UTG932E / 962E | 2 | 30 / 60 MHz | 10 Vpp @50 Ω / 20 Vpp HiZ |
 | UTG1022X(-PA) / 1042X | 2 | 20 / 40 MHz | -PA has a 4 W amplifier; max Vpp = load·20/(50+load), 1000X p14 |
-| UTG2062B / 2082B / 2122B | 2 | 60 / 80 / 120 MHz | — |
-| UTG4082A … 4202A | 2 | 80 … 200 MHz | — |
+| UTG2062B / 2082B / 2122B | 2 | 60 / 80 / 120 MHz | - |
+| UTG4082A … 4202A | 2 | 80 … 200 MHz | - |
 
-**Interface:** USBTMC (900E p23–27). UTG2000B also has LAN.
+**Interface:** USBTMC (900E p23-27). UTG2000B also has LAN.
 - **VID:PID undocumented.** Candidates are 6656 or 5345 (UNI-T scopes); verify on hardware.
 
 **Identify:** `*IDN?` → `UNI-T Technologies, UTG900, 000000001, 00.00.01` (900E p5).
@@ -387,13 +387,13 @@ UTG1000A: no manual; assume UTG1000X.
 | Frequency | `:CHANnel<n>:BASE:FREQuency <Hz>` | `2e+3` | p12 / p13 / p16 / p13 |
 | Amplitude | `:CHANnel<n>:BASE:AMPLitude <v>` (unit from `:CHANnel<n>:AMPLitude:UNIT VPP\|VRMS\|DBM`) | `2e+0` | p13 / p14 / p17 / p14 |
 | Offset | `:CHANnel<n>:BASE:OFFSet <V>` | sci | p13 / p15 / p18 / p14 |
-| High / low level | `:CHANnel<n>:BASE:HIGH` / `:LOW` | sci | p13–14 |
+| High / low level | `:CHANnel<n>:BASE:HIGH` / `:LOW` | sci | p13-14 |
 | Phase | `:CHANnel<n>:BASE:PHASe <deg>` (−360…360) | `20` | p12 / p14 / p17 / p14 |
 | Duty | `:CHANnel<n>:BASE:DUTY <pct>` | `20` | p14 / p16 / p19 / p15 |
-| Symmetry | `:CHANnel<n>:RAMP:SYMMetry <pct>` | `20` | p14–15 / p16 / p19 / p16 |
+| Symmetry | `:CHANnel<n>:RAMP:SYMMetry <pct>` | `20` | p14-15 / p16 / p19 / p16 |
 | Load | `:CHANnel<n>:LOAD <Ω>` (1…10000, **10000 = HiZ**; 2000B up to 1 MΩ) | `50e+0` / `5.000000e+01` / `5e+1` | p11 / p12 / p10 / p11 |
-| Mode | 900E: `:CHANnel<n>:MODe CONTINUE\|AM\|PM\|FM\|FSK\|Line\|Log`; others: `:CHANnel<n>:MODE CONTinue\|MODulation\|SWEep\|BURSt` | — | p15–16 / p9 / p8 / p9 |
-| Key lock | `:SYSTem:LOCK ON\|OFF` | — | p5 |
+| Mode | 900E: `:CHANnel<n>:MODe CONTINUE\|AM\|PM\|FM\|FSK\|Line\|Log`; others: `:CHANnel<n>:MODE CONTinue\|MODulation\|SWEep\|BURSt` | - | p15-16 / p9 / p8 / p9 |
+| Key lock | `:SYSTem:LOCK ON\|OFF` | - | p5 |
 
 **Quirks**
 - Terminator LF (p3); setters are silent.
@@ -414,8 +414,8 @@ The XDG programmer manual is a near copy of the Tek AFG1000 one (same layout and
 | Model | Ch | Max output | Amplitude @50 Ω |
 |---|---|---|---|
 | XDG2035 … 2100 | 2 | 35 … 100 MHz | 10 Vpp ≤25 MHz, 5 Vpp ≤60 MHz, 2.5 Vpp ≤100 MHz |
-| XDG3162 … 3252 | 2 | 160 … 250 MHz | — |
-| AFG1022 / AFG1062 | 2 | 25 / 60 MHz | — |
+| XDG3162 … 3252 | 2 | 160 … 250 MHz | - |
+| AFG1022 / AFG1062 | 2 | 25 / 60 MHz | - |
 
 **Interface:** USBTMC.
 - XDG: Utility → I/O → USBDEV must be **USBTMC**; the factory default is PC (as on DGE).
@@ -428,14 +428,14 @@ The XDG programmer manual is a near copy of the Tek AFG1000 one (same layout and
 | Operation | Command | Reply | Pages |
 |---|---|---|---|
 | Output | `OUTPut{ch}[:STATe] ON\|OFF` | `1` / `0` | p19 / p28 |
-| Load | `OUTPut{ch}:IMPedance <Ω>\|INFinity\|MIN\|MAX` (1 Ω–10 kΩ) | `9.9E+37` = HiZ | p18 / p27 |
-| Shape | `SOURce{ch}:FUNCtion[:SHAPe] SINusoid\|SQUare\|PULSe\|RAMP\|PRNoise\|<builtin>\|USER<n>\|EMEMory` (built-in names are case-sensitive, not abbreviable) | `SIN SQU PULS RAMP PRN` | p45–46 / p52–54 |
-| Frequency | `SOURce{ch}:FREQuency[:FIXed] <f>` | — | p36 / p45 |
-| Amplitude | `SOURce{ch}:VOLTage[:LEVel][:IMMediate][:AMPLitude] <v>` | — | p66 / p70–71 |
-| Offset | `SOURce{ch}:VOLTage:OFFSet <v>` | — | p66 / p70 |
-| Phase | `SOURce{ch}:PHASe[:ADJust] <x>[RAD\|DEG]` (default **RAD**, query answers RAD) | — | p51 / p54–55 |
-| Symmetry | `SOURce{ch}:FUNCtion:RAMP:SYMMetry` | — | p45 / — |
-| Pulse duty | `SOURce{ch}:PULSe:DCYCle` (no square-duty command) | — | p58 / p62 |
+| Load | `OUTPut{ch}:IMPedance <Ω>\|INFinity\|MIN\|MAX` (1 Ω-10 kΩ) | `9.9E+37` = HiZ | p18 / p27 |
+| Shape | `SOURce{ch}:FUNCtion[:SHAPe] SINusoid\|SQUare\|PULSe\|RAMP\|PRNoise\|<builtin>\|USER<n>\|EMEMory` (built-in names are case-sensitive, not abbreviable) | `SIN SQU PULS RAMP PRN` | p45-46 / p52-54 |
+| Frequency | `SOURce{ch}:FREQuency[:FIXed] <f>` | - | p36 / p45 |
+| Amplitude | `SOURce{ch}:VOLTage[:LEVel][:IMMediate][:AMPLitude] <v>` | - | p66 / p70-71 |
+| Offset | `SOURce{ch}:VOLTage:OFFSet <v>` | - | p66 / p70 |
+| Phase | `SOURce{ch}:PHASe[:ADJust] <x>[RAD\|DEG]` (default **RAD**, query answers RAD) | - | p51 / p54-55 |
+| Symmetry | `SOURce{ch}:FUNCtion:RAMP:SYMMetry` | - | p45 / - |
+| Pulse duty | `SOURce{ch}:PULSe:DCYCle` (no square-duty command) | - | p58 / p62 |
 
 **Quirks**
 - SI suffixes are allowed (`15MHz`), a bare `15M` is rejected (AFG1000 p17). Send plain `%g` numbers.
@@ -459,10 +459,10 @@ Open source: pymeasure `agilent33500.py`, `agilent33220A.py`.
 **Models**
 | Model | Ch | Sine | Amplitude | Offset | Confidence |
 |---|---|---|---|---|---|
-| 33220A | 1 | 20 MHz | 10 mVpp–10 Vpp @50 Ω | \|offs\| + Vpp/2 ≤ 5 V (50 Ω) / 10 V (HiZ) (p180–183) | high |
-| 33210A | 1 | 10 MHz | same commands | — | — |
-| EDU33211A / EDU33212A | 1 / 2 | 20 MHz | Vmax ±5 V @50 Ω | — | high |
-| 33509B…33522B / 33611A…33622A | 1–2 | 20–120 MHz | 1 mVpp–10 Vpp @50 Ω | — | from memory / pymeasure, medium |
+| 33220A | 1 | 20 MHz | 10 mVpp-10 Vpp @50 Ω | \|offs\| + Vpp/2 ≤ 5 V (50 Ω) / 10 V (HiZ) (p180-183) | high |
+| 33210A | 1 | 10 MHz | same commands | - | - |
+| EDU33211A / EDU33212A | 1 / 2 | 20 MHz | Vmax ±5 V @50 Ω | - | high |
+| 33509B…33522B / 33611A…33622A | 1-2 | 20-120 MHz | 1 mVpp-10 Vpp @50 Ω | - | from memory / pymeasure, medium |
 
 **Interfaces (USBTMC)**
 | Model | VID:PID | Source |
@@ -482,15 +482,15 @@ LAN: socket 5025 / VXI-11 (no TCP in BenchMesh). The 33220A also has GPIB.
 | Operation | Command | Reply | Pages |
 |---|---|---|---|
 | Output | `OUTPut[1\|2] ON\|OFF` | `0` / `1` | 33220A p189 PDF; EDU PDF 93 |
-| Load | `OUTPut[1\|2]:LOAD <Ω>\|INFinity\|MIN\|MAX\|DEF` (1 Ω–10 kΩ) | ohms or `9.9E+37` (Trueform `+9.90000000000000E+37`): treat ≥ 9e37 as HIGHZ | 33220A p190 PDF |
+| Load | `OUTPut[1\|2]:LOAD <Ω>\|INFinity\|MIN\|MAX\|DEF` (1 Ω-10 kΩ) | ohms or `9.9E+37` (Trueform `+9.90000000000000E+37`): treat ≥ 9e37 as HIGHZ | 33220A p190 PDF |
 | Shape | Trueform/EDU: `FUNCtion SIN\|SQU\|TRI\|RAMP\|PULS\|PRBS\|NOIS\|ARB\|DC`; 33220A: `SINusoid\|SQUare\|RAMP\|PULSe\|NOISe\|DC\|USER` | `SIN SQU RAMP PULS NOIS DC USER` | EDU PDF 83; 33220A p180 PDF |
-| Frequency | `FREQuency <Hz>` | `+1.0000000000000E+03` | — |
-| Amplitude | `VOLTage <v>` (unit `VOLT:UNIT VPP\|VRMS\|DBM`) | — | 33220A p192 PDF |
-| Offset | `VOLTage:OFFSet <V>` | — | — |
-| Phase | `PHASe <deg>` | — | — |
-| Duty | `FUNCtion:SQUare:DCYCle <pct>` (EDU 0.01–99.99 %; 33220A 20–80 %) | — | — |
-| Symmetry | `FUNCtion:RAMP:SYMMetry <pct>` | — | EDU PDF 90–91 |
-| **Complete state** | `[SOUR<n>:]APPLy?` → `"SIN +5.0000000000000E+03,+3.0000000000000E+00,-2.5000000000000E+00"` (shape, Hz, amplitude, offset; quoted) | — | 33220A p179 PDF |
+| Frequency | `FREQuency <Hz>` | `+1.0000000000000E+03` | - |
+| Amplitude | `VOLTage <v>` (unit `VOLT:UNIT VPP\|VRMS\|DBM`) | - | 33220A p192 PDF |
+| Offset | `VOLTage:OFFSet <V>` | - | - |
+| Phase | `PHASe <deg>` | - | - |
+| Duty | `FUNCtion:SQUare:DCYCle <pct>` (EDU 0.01-99.99 %; 33220A 20-80 %) | - | - |
+| Symmetry | `FUNCtion:RAMP:SYMMetry <pct>` | - | EDU PDF 90-91 |
+| **Complete state** | `[SOUR<n>:]APPLy?` → `"SIN +5.0000000000000E+03,+3.0000000000000E+00,-2.5000000000000E+00"` (shape, Hz, amplitude, offset; quoted) | - | 33220A p179 PDF |
 
 - `APPLy?` parse: `[trim, unquote, {replace: {from: " ", to: ","}}, {fields: {sep: ",", names: [shape, freq, ampl, offs]}}]`.
 
@@ -505,22 +505,22 @@ LAN: socket 5025 / VXI-11 (no TCP in BenchMesh). The 33220A also has GPIB.
 
 ### 2.8 GW Instek AFG-2000/2100, AFG-2225, AFG-3000
 
-**Docs:** `D/gwinstek_afg2000/doc/AFG-2000_User_Manual_farnell_2713159.pdf` (newer EF1; remote chapter p87–138) and `…_2313573.pdf` (older), `D/gwinstek_afg2225/doc/AFG-2225_User_Manual_farnell_2344129.pdf` (remote p180–290), `D/gwinstek_afg3000/doc/AFG-3000_User_Manual_vF.pdf` (remote p182–290).
+**Docs:** `D/gwinstek_afg2000/doc/AFG-2000_User_Manual_farnell_2713159.pdf` (newer EF1; remote chapter p87-138) and `…_2313573.pdf` (older), `D/gwinstek_afg2225/doc/AFG-2225_User_Manual_farnell_2344129.pdf` (remote p180-290), `D/gwinstek_afg3000/doc/AFG-3000_User_Manual_vF.pdf` (remote p182-290).
 
 **Models**
 | Model | Ch | Sine | Amplitude | Offset |
 |---|---|---|---|---|
-| AFG-2005/2105 | 1 | 5 MHz | 1 mVpp–10 Vpp @50 Ω (half at 20–25 MHz) | ±5 Vpk @50 Ω (p142–143) |
+| AFG-2005/2105 | 1 | 5 MHz | 1 mVpp-10 Vpp @50 Ω (half at 20-25 MHz) | ±5 Vpk @50 Ω (p142-143) |
 | AFG-2012/2112 | 1 | 12 MHz | same | same |
 | AFG-2025/2125 | 1 | 25 MHz | same | same |
-| AFG-2225 | 2 | 25 MHz | — | ±4.99 V @50 Ω (p202) |
-| AFG-3051 / 3081 | 1 | 50 / 80 MHz | — | — |
+| AFG-2225 | 2 | 25 MHz | - | ±4.99 V @50 Ω (p202) |
+| AFG-3051 / 3081 | 1 | 50 / 80 MHz | - | - |
 
 The 21xx models add AM/FM/FSK/sweep/counter.
 
 **Interface**
 - AFG-2000 / AFG-2225: USB **CDC virtual COM** (GW driver .inf; the manual says to read the COM settings from Device Manager and gives no baud: p89, p181). For CDC the baud is ignored, so 115200 8N1 is a safe declaration. VID probably 2184 (GW), PID undocumented.
-- AFG-3000: also RS-232 DB9 null-modem, 9600–115200, 8N1 / 7O1 / 7E1 (p183–185), and GPIB.
+- AFG-3000: also RS-232 DB9 null-modem, 9600-115200, 8N1 / 7O1 / 7E1 (p183-185), and GPIB.
 
 **Identify:** `GW INSTEK,AFG-2025,SN:XXXXXXXX,Vm.mm` (AFG-2000 p98), `GW INSTEK,AFG-2225,…` (p193). Match `^GW INSTEK, ?AFG-(2[01](05|12|25)|2225|30[58]1),`.
 
@@ -528,16 +528,16 @@ The 21xx models add AM/FM/FSK/sweep/counter.
 | Operation | Command | Reply | Pages (2000 / 2225) |
 |---|---|---|---|
 | Output | `OUTPut ON\|OFF` (2000: **no channel suffix**) | `1` / `0` | p112 / p213 |
-| Load | `OUTPut:LOAD DEFault\|INFinity` (only 50 Ω or HiZ) | `DEF` / `INF` → map `DEF → "50"`, `INF → HIGHZ` | p113 / p213–214 |
+| Load | `OUTPut:LOAD DEFault\|INFinity` (only 50 Ω or HiZ) | `DEF` / `INF` → map `DEF → "50"`, `INF → HIGHZ` | p113 / p213-214 |
 | Shape | `SOUR1:FUNC SINusoid\|SQUare\|RAMP\|NOISe\|USER` (2225 adds PULSe; 3000 adds TRIAngle\|DC) | `SIN SQU RAMP PULS NOIS USER` | p107 / p207 |
 | Frequency | `SOUR1:FREQ <f>` | `+1.0000000000000E+03` | p108 / p208 |
-| Amplitude | `SOUR1:AMPL <v>` | `+5.0000E+00` | p109 / p209–210 |
-| Offset | `SOUR1:DCOffset <V>` | `+3.0000E+00` | p110 / p210–211 |
-| Duty | `SOUR1:SQUare:DCYCle <pct>` (1–99 % <100 kHz … 50 % fixed >10 MHz) | `+5.00E+01` | p110–111 / p211 |
-| Symmetry | `SOUR1:RAMP:SYMMetry <pct>` | `+1.0000E+02` | p111–112 / p212 |
-| Phase | AFG-2000: **none**; AFG-2225: `SOUR1:PHASe <deg>` (−180…180) | `26` | — / p267 |
-| Amplitude unit | `SOUR1:VOLTage:UNIT VPP\|VRMS\|DBM` | `VPP` | p113–114 / p214 |
-| **Complete state** | `SOUR1:APPLy?` → `SIN +5.0000000000000E+03,+3.0000E+00,-2.50E+00` (Keysight shape, **without quotes** as printed: accept both) | — | p105 / p205 |
+| Amplitude | `SOUR1:AMPL <v>` | `+5.0000E+00` | p109 / p209-210 |
+| Offset | `SOUR1:DCOffset <V>` | `+3.0000E+00` | p110 / p210-211 |
+| Duty | `SOUR1:SQUare:DCYCle <pct>` (1-99 % <100 kHz … 50 % fixed >10 MHz) | `+5.00E+01` | p110-111 / p211 |
+| Symmetry | `SOUR1:RAMP:SYMMetry <pct>` | `+1.0000E+02` | p111-112 / p212 |
+| Phase | AFG-2000: **none**; AFG-2225: `SOUR1:PHASe <deg>` (−180…180) | `26` | - / p267 |
+| Amplitude unit | `SOUR1:VOLTage:UNIT VPP\|VRMS\|DBM` | `VPP` | p113-114 / p214 |
+| **Complete state** | `SOUR1:APPLy?` → `SIN +5.0000000000000E+03,+3.0000E+00,-2.50E+00` (Keysight shape, **without quotes** as printed: accept both) | - | p105 / p205 |
 
 **Quirks**
 - Terminator LF or CRLF (p94). Setters are silent.
@@ -554,8 +554,8 @@ The 21xx models add AM/FM/FSK/sweep/counter.
 **Docs:** `D/rigol_dg1022/doc/DG1000_ProgrammingGuide_EN.pdf` (PGB06109, 100 pp; printed 2-n = PDF − 12).
 
 **Models:** DG1022 20 MHz / DG1022A 25 MHz sine; square 5 MHz, ramp 150 / 500 kHz.
-- CH1 2 mVpp–10 Vpp @50 Ω, ±5 V.
-- **CH2 2 mVpp–3 Vpp, ±1.5 V**: per-channel limits are needed (§5 F3).
+- CH1 2 mVpp-10 Vpp @50 Ω, ±5 V.
+- **CH2 2 mVpp-3 Vpp, ±1.5 V**: per-channel limits are needed (§5 F3).
 
 **Interface:** USBTMC **0400:09C4** (National Semiconductor VID; `usb.ids` "Rigol DG1022"), no LAN.
 
@@ -567,17 +567,17 @@ The 21xx models add AM/FM/FSK/sweep/counter.
 **Commands**
 | Operation | Command | Reply | Page |
 |---|---|---|---|
-| Output | `OUTP{sfx} ON\|OFF` | `ON` / `OFF` | p36–39 |
-| Load | `OUTP:LOAD{sfx} <Ω>\|INF` | ohms or `Infinity` | p37–39 |
-| Shape | `FUNC{sfx} SIN\|SQU\|RAMP\|PULS\|NOIS\|DC\|USER` | **prefixed** `CH1:SIN` (DC and USER both read back `ARB`) | p22–24 |
+| Output | `OUTP{sfx} ON\|OFF` | `ON` / `OFF` | p36-39 |
+| Load | `OUTP:LOAD{sfx} <Ω>\|INF` | ohms or `Infinity` | p37-39 |
+| Shape | `FUNC{sfx} SIN\|SQU\|RAMP\|PULS\|NOIS\|DC\|USER` | **prefixed** `CH1:SIN` (DC and USER both read back `ARB`) | p22-24 |
 | Frequency | `FREQ{sfx}` | `1.000000e-06`; CH2 `CH2:1.000000e-06` | p28 |
-| Amplitude | `VOLT{sfx}` | CH2 `CH2: 4.000000e-03` (note the space) | p32–34 |
-| Offset | `VOLT:OFFS{sfx}` | — | p33–34 |
-| Duty | `FUNC:SQU:DCYC{sfx}` | `50.000000` | p23–25 |
-| Symmetry | `FUNC:RAMP:SYMM{sfx}` | — | p23–25 |
+| Amplitude | `VOLT{sfx}` | CH2 `CH2: 4.000000e-03` (note the space) | p32-34 |
+| Offset | `VOLT:OFFS{sfx}` | - | p33-34 |
+| Duty | `FUNC:SQU:DCYC{sfx}` | `50.000000` | p23-25 |
+| Symmetry | `FUNC:RAMP:SYMM{sfx}` | - | p23-25 |
 | Phase | `PHAS{sfx}` **−180…180** | `90.000` | p75 |
-| **Complete state** | `APPL{sfx}?` → `CH1:"SIN,1.000000e+03,5.000000e+00,-1.500000e+00"` (4 fields, no phase) | — | p15–20 |
-| Remote/local | `SYST:LOC` / `SYST:REM` | — | p72 |
+| **Complete state** | `APPL{sfx}?` → `CH1:"SIN,1.000000e+03,5.000000e+00,-1.500000e+00"` (4 fields, no phase) | - | p15-20 |
+| Remote/local | `SYST:LOC` / `SYST:REM` | - | p72 |
 
 - Parse: `[trim, {regex: {pattern: '"(.*)"', group: 1}}, {fields: …}]`. For single values, `{regex: {pattern: "([-+0-9.eE]+)\\s*$", group: 1}}` strips the `CHn:` prefix.
 
@@ -599,12 +599,12 @@ The 21xx models add AM/FM/FSK/sweep/counter.
 | Output | `OUTPut<n> ON\|OFF` | `ON` / `OFF` | p26 |
 | Shape | `SOURce<n>:FUNCtion SINusoid\|SQUare\|RAMP\|PULSe\|NOISe\|DC\|USER\|HARMonic\|…` | **full words** (`SINusoid`): map `SINUSOID→SIN`, `SQUARE→SQU`, `PULSE→PUL`, `NOISE→PRN` after `upper` | p19 |
 | Frequency | `SOURce<n>:FREQuency` | `+1.000000000000000E+03` | p17 |
-| Amplitude | `SOURce<n>:VOLTage` | — | p40 |
-| Offset | `SOURce<n>:VOLTage:OFFSet` | — | p40 |
-| Phase | `SOURce<n>:PHASe` (0–360) | — | p26 |
-| Duty | `SOURce<n>:FUNCtion:SQUare:DCYCle` | — | p20 |
-| Symmetry | `SOURce<n>:FUNCtion:RAMP:SYMMetry` | — | p20 |
-| Load | **none over SCPI** (front panel only) | — | — |
+| Amplitude | `SOURce<n>:VOLTage` | - | p40 |
+| Offset | `SOURce<n>:VOLTage:OFFSet` | - | p40 |
+| Phase | `SOURce<n>:PHASe` (0-360) | - | p26 |
+| Duty | `SOURce<n>:FUNCtion:SQUare:DCYCle` | - | p20 |
+| Symmetry | `SOURce<n>:FUNCtion:RAMP:SYMMetry` | - | p20 |
+| Load | **none over SCPI** (front panel only) | - | - |
 
 **Quirks:** terminator LF (CRLF accepted, p3). No `*IDN?` example: match `^.*HDG20[3-9]2B` loosely and confirm. Doc has many typos; the product is labelled discontinued.
 
@@ -630,7 +630,7 @@ The 21xx models add AM/FM/FSK/sweep/counter.
 ### 2.12 Not pursued / blocked
 
 - **OWON AG1022/AG1012/AG-F/AG-S** (`D/owon_ag/doc/AG_Series_Waveform_Generator_SCPI_Protocol.pdf`, 2013)
-  - IDN `OWON,AG1022,AG10221331030,V_4.0.1` (p7). Stateful channel select `:CHANnel CH1|CH2` (p21), then `:FUNCtion:<shape>:FREQuency` etc. (p8–10). Output `:CHANnel:CH1 ON|OFF` → `ON` / `OFF`.
+  - IDN `OWON,AG1022,AG10221331030,V_4.0.1` (p7). Stateful channel select `:CHANnel CH1|CH2` (p21), then `:FUNCtion:<shape>:FREQuency` etc. (p8-10). Output `:CHANnel:CH1 ON|OFF` → `ON` / `OFF`.
   - **Every command is answered**: `->\n` accepted, `=?\n` not understood, `NULL\n` rejected (p4).
   - The USB port needs OWON's proprietary `ultrawave\USBDRV` driver (neither TMC nor CDC). Only RS-232 (baud undocumented) is reachable.
   - Per-channel commands need a `before: [chan_select]` step (that works today, as with the DHO800 `:WAV:SOUR`), and setters `reply: line` with `map: {"->": ok}`.
@@ -715,8 +715,8 @@ The contract exists. Additions supported by every SCPI family above:
 |---|---|---|---|
 | operation `load` | get/set, enum or string (`"50"`, `"HIGHZ"`, optionally numeric ohms) | Rigol, Siglent, Keysight, Tek-AFG, UNI-T, GW (50 / HiZ only) | status `LOAD` already exists |
 | operation `duty` + status `DUTY` | number % | Rigol, Siglent, Keysight, UNI-T, GW, FeelTech, JDS | not Tek-AFG: square is fixed 50 % |
-| `features.max_freq_hz` per shape (`{SIN: 6e7, SQU: 2.5e7, …}`) | — | — | lets the panel show limits; instruments clamp anyway |
-| make `output` `required: [set]` only (get optional) | — | — | would admit write-mostly units such as FY3200, but they also lack output on/off, so it is not worth changing for them |
+| `features.max_freq_hz` per shape (`{SIN: 6e7, SQU: 2.5e7, …}`) | - | - | lets the panel show limits; instruments clamp anyway |
+| make `output` `required: [set]` only (get optional) | - | - | would admit write-mostly units such as FY3200, but they also lack output on/off, so it is not worth changing for them |
 
 Panel: as today (shape buttons, frequency / amplitude / offset editors, output arm switch). Add a load toggle **50 Ω / HiZ** and a duty editor when the setters exist.
 
@@ -731,8 +731,8 @@ Panel: as today (shape buttons, frequency / amplitude / offset editors, output a
 | F3 | Per-channel limits in setter specs (`features`/`params` override per channel) | Rigol DG1022 and Siglent SDG1000 CH2 (3 Vpp / ±1.5 V @50 Ω) | `params.vpp.max_by_ch: {2: 6}` |
 | F4 | `usbtmc` with a list of PIDs (or VID-only + identify) | One Rigol definition across DG800 (0643) / DG1000Z (0642) / DG2000 / DG4000; Siglent 1101/1102 | `usbtmc: {vid: 1AB1, pid: [0642, 0643]}` |
 | F5 | Regex parse "no match → null" (like `on_empty: "null"`) | Siglent `DUTY` / `SYM` only present for some waveforms | `{regex: {…, missing: null}}` |
-| F6 | TCP transport (declared, not implemented) | LAN-only use of Rigol DG1000Z/DG2000/DG4000, Siglent X, Keysight, UNI-T UTG2000B (all also have USB, so not blocking) | — |
-| — | Binary framing | not needed for the class (only arb upload and screenshots) | — |
+| F6 | TCP transport (declared, not implemented) | LAN-only use of Rigol DG1000Z/DG2000/DG4000, Siglent X, Keysight, UNI-T UTG2000B (all also have USB, so not blocking) | - |
+| - | Binary framing | not needed for the class (only arb upload and screenshots) | - |
 
 Already possible today and worth knowing:
 - Channel-dependent wire text via `from: "ch == 1 ? 'M' : 'F'"` (FeelTech `WM*` / `WF*`, DG1022 `:CH2`, JDS registers 21 / 22).

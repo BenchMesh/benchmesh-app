@@ -3,10 +3,10 @@
 Exercise a running traced service so the wire capture covers every behaviour.
 
 Phases:
-  1. passive  — record /ws/registry snapshots while only background polling runs
+  1. passive  - record /ws/registry snapshots while only background polling runs
                 (pairs raw poll bytes with the parsed values the UI receives)
-  2. queries  — call every GET (query_*) method of every device/class/channel
-  3. setters  — ONLY from an explicit scenario file (--setters), never automatic,
+  2. queries  - call every GET (query_*) method of every device/class/channel
+  3. setters  - ONLY from an explicit scenario file (--setters), never automatic,
                 because setters can energise outputs
 
 Results go to <session>/api.jsonl (request, status, body, timing). The tracer

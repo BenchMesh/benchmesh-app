@@ -4,7 +4,7 @@
 # (see ai_context/migration/coverage/OSC.md §3) and set models, links and features.
 #
 # Screen trace: `:WAVeform:MODE NORMal` + `FORMat BYTE` (one unsigned byte per point, about
-# 1000–1400 points), scaled by the text preamble: volts = (code - yorigin - yreference) * yincrement.
+# 1000-1400 points), scaled by the text preamble: volts = (code - yorigin - yreference) * yincrement.
 link:
   usbtmc:
     framing:

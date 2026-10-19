@@ -84,7 +84,7 @@ impl Automation {
         let arm = b.get("arm").and_then(|v| v.as_bool()).unwrap_or(false);
         match self.runner.start(&doc, flow_id, params, arm) {
             Ok(run) => Ok(run.json(0)),
-            Err(StartError::Busy) => Err((StatusCode::CONFLICT, json!({"detail": "a flow is already running — abort it first"}))),
+            Err(StartError::Busy) => Err((StatusCode::CONFLICT, json!({"detail": "a flow is already running - abort it first"}))),
             Err(StartError::Invalid(issues)) => Err((StatusCode::UNPROCESSABLE_ENTITY, json!({"detail": "the flow has errors", "issues": issues}))),
             Err(StartError::Params(m)) => Err((StatusCode::UNPROCESSABLE_ENTITY, json!({"detail": m}))),
             Err(StartError::NeedsArm(list)) => Err((
@@ -221,7 +221,7 @@ async fn assistant(State(s): State<S>) -> Json<Value> {
     Json(s.automation.assistant_json())
 }
 
-/// `{provider?, model?, base_url?, api_key?}` — the key is stored for the (new) provider;
+/// `{provider?, model?, base_url?, api_key?}` - the key is stored for the (new) provider;
 /// `""` removes it.
 async fn put_assistant(State(s): State<S>, body: Bytes) -> Response {
     let b = match object(&body) {

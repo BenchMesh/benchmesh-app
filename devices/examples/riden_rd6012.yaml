@@ -1,4 +1,4 @@
-# RD6018 (id 60181): 10 mA registers — output off, OCP tripped (protection = 2).
+# RD6018 (id 60181): 10 mA registers - output off, OCP tripped (protection = 2).
 definition: riden_rd6012
 model: RD6018
 modbus:

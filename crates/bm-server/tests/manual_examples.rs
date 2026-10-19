@@ -1,5 +1,5 @@
 //! Speculative coverage check: every `devices/examples/<definition>.yaml` drives its definition
-//! through the real engine with replies quoted from the instrument's manual — identify, one
+//! through the real engine with replies quoted from the instrument's manual - identify, one
 //! poll of every class (required status keys present and typed), every readable operation and
 //! every setter with a valid value. No hardware; this is what "Awaiting confirmation"
 //! definitions are tested with before a user confirms them.

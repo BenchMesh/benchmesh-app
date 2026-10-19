@@ -8,7 +8,7 @@
 #   volts = code * SCALe / code_per_div - OFFSet   (p759; SCALe/OFFSet include the probe, p59)
 #   time  = DELay - SCALe_t * 10 / 2 + i * k / SRATe   (p760, grid 10)
 # code_per_div is 30 for 8-bit BYTE data (p759 example); 12-bit HD models must use WORD (p754),
-# data left-aligned in 16 bits (p759), so 30 * 256 = 7680 here — inferred, confirm on hardware.
+# data left-aligned in 16 bits (p759), so 30 * 256 = 7680 here - inferred, confirm on hardware.
 link:
   usbtmc:
     vid: "f4ec"
@@ -57,7 +57,7 @@ commands:
     params: {v: {type: number, min: 0.0001, max: 10000, format: "%g", unit: "V/div"}}
     reply: none
     safety: configure
-    description: "500 µV/div–10 V/div at probe 1X on most models (p59 'varies from the models'), times the probe ratio; the scope clamps"
+    description: "500 µV/div-10 V/div at probe 1X on most models (p59 'varies from the models'), times the probe ratio; the scope clamps"
   offset_set:
     send: ":CHANnel{ch}:OFFSet {v}"
     params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}

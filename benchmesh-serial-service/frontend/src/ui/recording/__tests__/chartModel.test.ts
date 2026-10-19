@@ -40,7 +40,7 @@ describe('chart data shaping', () => {
       { axisValue: T0, seriesId: 's1', value: [T0, 4.9] }, { axisValue: T0, seriesId: 's2', value: [T0, null] },
     ])
     expect(html).toContain('4.9 V')
-    expect(html).toContain('—')
+    expect(html).toContain('-')
   })
 
   it('live window and zoom go to the axis and data zoom', () => {

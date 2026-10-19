@@ -47,7 +47,7 @@ export function PsuPanel({ status, profile, api, online }: {
           <div className="kit-field">
             <span className="kit-label">Headroom to current limit</span>
             <Bargraph tone="amp" label="Output current as a fraction of the current limit"
-              fraction={iset ? (iout ?? 0) / iset : 0} marks={['0', '50%', iset != null ? `${iset.toFixed(iDig.decimals)} A` : '—']} />
+              fraction={iset ? (iout ?? 0) / iset : 0} marks={['0', '50%', iset != null ? `${iset.toFixed(iDig.decimals)} A` : '-']} />
           </div>
         )}
         {(profile.voltageLimit || profile.currentLimit) && (

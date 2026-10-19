@@ -6,19 +6,19 @@ Works the same on Linux, Windows and macOS without root/admin rights and without
 
 ## Two layers
 
-1. **USB fingerprint** — which port to open. Read from the OS device tree (no rights needed):
+1. **USB fingerprint** - which port to open. Read from the OS device tree (no rights needed):
 
    | field | meaning | Linux | Windows | macOS |
    |---|---|---|---|---|
    | `vid`, `pid` | USB vendor / product id (4 lowercase hex) | sysfs `idVendor`/`idProduct` | hardware id `USB\VID_xxxx&PID_xxxx` | IORegistry `idVendor`/`idProduct` |
    | `serial` | adapter/instrument USB serial number (absent on e.g. CH340) | sysfs `serial` | instance id `USB\VID_..&PID_..\<serial>` (ids containing `&` are synthesized by Windows = no serial) | `USB Serial Number` |
-   | `revision` | `bcdDevice` (4 lowercase hex) — tells apart serial-less adapters of different chip revisions | sysfs `bcdDevice` | hardware id `REV_xxxx` | `bcdDevice` |
+   | `revision` | `bcdDevice` (4 lowercase hex) - tells apart serial-less adapters of different chip revisions | sysfs `bcdDevice` | hardware id `REV_xxxx` | `bcdDevice` |
    | `location` | physical port position, OS-specific text, *soft*: only orders candidates | sysfs USB device name (`1-1.3.2.2.4`) | `CM_DRP_LOCATION_PATHS` first entry | `locationID` (`0x14320000`) |
 
    `vid`, `pid`, `serial` and `revision` must all match when present in the identity;
    `location` and the last known `port` only order the candidates.
 
-2. **Instrument identity** — confirmed after opening: the definition's identify reply must match
+2. **Instrument identity** - confirmed after opening: the definition's identify reply must match
    one of its models (as always) and, when the identity has `idn_serial`, contain that serial
    number as a whole token (`OWON,XDM1241,24512010,V4.3.0,3` → `24512010`). This is checked
    **before** the session starts (no `on_connect` traffic to the wrong instrument) and catches a
@@ -47,7 +47,7 @@ Fingerprint built by Detect: `vid`, `pid`, `serial` if the device has one, other
 ## Connecting (every connect and reconnect, ~2 s while offline)
 
 1. List the USB ports of the definition's link kind (`serial` → USB serial ports, `usbtmc` →
-   USBTMC instruments) — `bm_transport::discover::ports()`.
+   USBTMC instruments) - `bm_transport::discover::ports()`.
 2. Keep those matching the fingerprint and not in use by another instrument of this process
    (in-process port lock: one open per path).
 3. Order: same `location`, then same last `port`, then the rest.
@@ -57,7 +57,7 @@ Fingerprint built by Detect: `vid`, `pid`, `serial` if the device has one, other
 
 Unrelated ports (no fingerprint match) are never opened.
 
-## Detect — `POST /devices/detect`
+## Detect - `POST /devices/detect`
 
 Lists USB serial ports and USBTMC instruments and identifies them:
 
@@ -72,14 +72,14 @@ Lists USB serial ports and USBTMC instruments and identifies them:
   does not return within 5 s abandons the port ("the port stopped responding").
 
 It runs in the background: `POST` starts it (202; a run in progress is not restarted) and
-`GET /devices/detect` returns its state — `{running, elapsed_ms, ports}` where each port also has
+`GET /devices/detect` returns its state - `{running, elapsed_ms, ports}` where each port also has
 `progress: {state: queued|probing|done, tried, total, current}` (`current`: the probe on the wire,
 e.g. `*IDN? · 115200 8N1 · owon_xdm and 3 more`). The Instruments drawer polls it and shows
 per-port progress. On the 6-instrument bench (2026-10-19): 16.7 s for 39 probes per serial port
 (was several minutes with one exchange per definition).
 
 Serial ports with RTS/CTS flow control: a device that never raises CTS would otherwise hold the
-port — the transport does not wait for output to drain with flow control, and switches flow
+port - the transport does not wait for output to drain with flow control, and switches flow
 control off and discards pending output before closing (else Linux waits 30 s in `close()`).
 
 Result (the final `GET`, each port):
@@ -104,7 +104,7 @@ Result (the final `GET`, each port):
 - `instrument`/`match` are `null` when nothing answered (`error` says why).
 - `certainty`: `instrument` (identify reply has a serial number) · `adapter` (USB serial number) ·
   `chip` (no serial, but the vid/pid/revision is unique among the detected ports) · `position`
-  (only the USB port position separates it from an identical device — the UI warns).
+  (only the USB port position separates it from an identical device - the UI warns).
 
 ## Code
 
@@ -129,7 +129,7 @@ clippy-checked for both targets, built and run natively in CI, not yet run with 
 |---|---|---|---|
 | Linux | kernel `usbtmc` driver | `/dev/usbtmcN` | access to `/dev/usbtmc*` (generic rule, installer) |
 | Windows | own USBTMC protocol over `nusb` | `usb:1ab1:044d:DHO8A272907001` | the instrument needs the **WinUSB** driver: **Install driver** in the Instruments drawer / Detect (one UAC prompt), unless … |
-| Windows with a VISA (NI-VISA, Keysight IO Libraries, Rigol UltraSigma) | that VISA, loaded at run time | `USB0::0x1AB1::0x044D::DHO8A272907001::INSTR` | none — the VISA's driver stays |
+| Windows with a VISA (NI-VISA, Keysight IO Libraries, Rigol UltraSigma) | that VISA, loaded at run time | `USB0::0x1AB1::0x044D::DHO8A272907001::INSTR` | none - the VISA's driver stays |
 | macOS | own USBTMC protocol over `nusb` | `usb:…` | none |
 
 Discovery picks the right path per instrument (on Windows: WinUSB-bound → `usb:`, else the VISA
@@ -146,12 +146,12 @@ run to `winusb::helper_main()` first thing in `main`. The helper opens the instr
 node (the USBTMC interface node on a composite device), makes it a *Universal Serial Bus
 devices* class device if it has no or another class, builds the class driver list from the
 in-box `%WINDIR%\INF\winusb.inf` only (`DI_ENUMSINGLEINF`, `DI_FLAGSEX_ALLOWEXCLUDEDDRVS`) and
-installs its *WinUsb Device* driver with `DiInstallDevice` — what Device Manager's "Let me pick"
+installs its *WinUsb Device* driver with `DiInstallDevice` - what Device Manager's "Let me pick"
 does. Nothing is shipped, downloaded or self-signed. A declined prompt → 403. The instrument
 re-enumerates, the UI re-reads the lists after 2 s, and configured instruments reconnect on
 their own. Undo: Device Manager → Uninstall device (delete the driver). Replacing a vendor
 driver this way hides the instrument from that vendor's software.
-(First Windows test, 2026-10-18: neither the Rigol DHO800 nor the OWON DGE2070 was listed —
+(First Windows test, 2026-10-18: neither the Rigol DHO800 nor the OWON DGE2070 was listed -
 most likely because neither had a driver; not yet confirmed.)
 
 The USBTMC protocol (`usbtmc_proto.rs`) discards replies whose bTag belongs to an earlier

@@ -23,7 +23,7 @@ models:
   - {name: MSO2104CS, match: "^UNI-T Technologies, ?MSO2104CS,", features: {OSC: {bandwidth_hz: 100e6}}}
 identify: idn
 link:
-  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  # LAN: VXI-11 (LXI) - message-based like USB-TMC
   vxi11:
     framing:
       tx: {terminator: "\n"}

@@ -218,12 +218,12 @@ fn every_captured_reply_parses() {
     assert!(unexpected.is_empty(), "replies that do not parse:\n{}", unexpected.join("\n"));
 }
 
-/// (driver.command, max occurrences, reason) — replies that legitimately fail to parse.
+/// (driver.command, max occurrences, reason) - replies that legitimately fail to parse.
 const KNOWN_BAD_REPLIES: &[(&str, usize, &str)] = &[
     // The Python service read after XDM setters and timed out during the CONF:TEMP stall,
     // so later replies were recorded one command late (a FUNCtion? exchange holding a
     // measurement, MEAS1? holding the IDN). The definition's parsers reject these foreign
-    // replies instead of publishing garbage — the behaviour the Rust engine relies on to
+    // replies instead of publishing garbage - the behaviour the Rust engine relies on to
     // detect and drain a desynced stream.
     ("owon_xdm.func", 19, "reply stream shifted by Python (read-after-setter / TEMP stall)"),
     ("owon_xdm.meas", 18, "reply stream shifted by Python (read-after-setter / TEMP stall)"),
@@ -274,7 +274,7 @@ fn same(python: &Value, ours: &Value) -> bool {
     }
 }
 
-/// (driver, operation, max occurrences, reason) — GETs whose Python result is known to differ.
+/// (driver, operation, max occurrences, reason) - GETs whose Python result is known to differ.
 const KNOWN_API_DIFFS: &[(&str, &str, usize, &str)] = &[
     ("owon_xdm", "function", 1, "wire reply shifted by Python (see KNOWN_BAD_REPLIES); Python answered from its cache"),
 ];
@@ -356,7 +356,7 @@ fn python_get_results_match_definitions() {
 // 3. every registry status value Python published is produced by the definitions
 // --------------------------------------------------------------------------------------
 
-/// (driver, class, key, reason) — registry keys whose Python values are known to differ.
+/// (driver, class, key, reason) - registry keys whose Python values are known to differ.
 const KNOWN_STATUS_DIFFS: &[(&str, &str, &str, &str)] = &[];
 
 #[test]

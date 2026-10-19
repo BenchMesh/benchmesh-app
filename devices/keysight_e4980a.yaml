@@ -1,4 +1,4 @@
-# Keysight (Agilent) E4980A / E4980AL precision LCR meters — the reference "E4980 dialect".
+# Keysight (Agilent) E4980A / E4980AL precision LCR meters - the reference "E4980 dialect".
 # Written from the QCoDeS driver (keysight_e4980a/doc/qcodes_e4980a.py, citing User's Guide
 # E4980-90230; the Keysight PDF itself was not downloadable). See ai_context/migration/coverage/LCR.md §2.8.
 schema: benchmesh.device/v1

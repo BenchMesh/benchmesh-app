@@ -10,7 +10,7 @@ version: 0.1.0
 sources:
   - {doc: "HP 34401A User's Guide", pages: "59, 90, 94, 106-121, 148-153, 159"}
   - {doc: "Migrating 34401A RS-232 programs to the 34461A (5992-1455)"}
-  - {note: "RS-232: DTE DB-9, 300-9600 baud, 2 stop bits fixed; None/8 (p.148) or Even/7 (p.94 says factory Even/7: the manual contradicts itself — use 7E2 in the config `serial` if 8N2 garbles). DTR/DSR handshake: the meter only sends while DSR (its pin 6) is asserted — a null-modem cable with DTR of the PC to DSR of the meter and dtr high, or tie DSR high (p.151). SYST:REM is required before any RS-232 I/O (p.111)"}
+  - {note: "RS-232: DTE DB-9, 300-9600 baud, 2 stop bits fixed; None/8 (p.148) or Even/7 (p.94 says factory Even/7: the manual contradicts itself - use 7E2 in the config `serial` if 8N2 garbles). DTR/DSR handshake: the meter only sends while DSR (its pin 6) is asserted - a null-modem cable with DTR of the PC to DSR of the meter and dtr high, or tie DSR high (p.151). SYST:REM is required before any RS-232 I/O (p.111)"}
 models:
   - name: 34401A
     match: "(?i)^(hewlett-packard|agilent technologies|keysight technologies),34401A,"

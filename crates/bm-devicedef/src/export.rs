@@ -1,6 +1,6 @@
 //! The public instrument list (`bm-devicedef export`, schema `benchmesh.instruments/v1`): every
-//! enabled definition as the website shows it — vendor, family, models with their status,
-//! classes with what can be read and set, links, manuals — plus the instrument classes.
+//! enabled definition as the website shows it - vendor, family, models with their status,
+//! classes with what can be read and set, links, manuals - plus the instrument classes.
 //! No wire details (commands, framing): those stay in the definitions.
 
 use serde_json::{json, Map, Value};

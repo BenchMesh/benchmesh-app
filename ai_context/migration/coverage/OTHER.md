@@ -1,4 +1,4 @@
-# OTHER — further instrument classes (coverage research)
+# OTHER - further instrument classes (coverage research)
 
 Status: research report, 2026-10-18. No contract or definition written yet; every family below is
 **Awaiting confirmation** at best. Classes covered elsewhere: PSU, DMM, ELL, AWG, OSC (contracts in
@@ -11,7 +11,7 @@ Limits of this research: prevalence is judged from forum/marketplace presence se
 phase (EEVblog threads, AliExpress/Amazon listings, used-market availability) plus domain knowledge;
 the session's web-search budget ran out before every candidate could be re-checked, so the ranking
 is a reasoned judgement, not a count. Two programming manuals could not be downloaded (Rigol
-DSG800: the vendor link now redirects; Windfreak: site behind a bot challenge) — those families are
+DSG800: the vendor link now redirects; Windfreak: site behind a bot challenge) - those families are
 marked low/medium confidence.
 
 ---
@@ -20,13 +20,13 @@ marked low/medium confidence.
 
 | # | Class (proposed code) | Why hobbyists/small labs connect it | Top families | Protocol | DSL today |
 |---|---|---|---|---|---|
-| 1 | **VNA** — vector network analyzer | NanoVNA is the most-discussed RF instrument in the hobby (EEVblog "NanoVNA Custom Software" thread > 550 k reads); every ham owns one | NanoVNA-H/H4/-D fw; (LiteVNA/V2 blocked) | text shell over USB CDC | settings yes, traces need `numbers` |
-| 2 | **PWR** — power meter / power analyzer | Mains power/standby/efficiency measurement; PZEM-004T is a top-selling hobby module; GPM-8213/WT310E are the small-lab standard | Yokogawa WT300E, GW Instek GPM-8213, (PZEM-004T blocked) | SCPI-like `:NUMeric` (shared baseline), Modbus RTU | WT300E/GPM-8213 **yes**; PZEM no |
-| 3 | **CNT** — frequency counter | Few standalone counters with PC links in hobby hands, **but the counter built into the AWGs they already own** (FY6900, SDG1000X/2000X, DG800/900/1000Z) is the same class | AWG built-ins (bind CNT in the AWG definition), Keysight 53220A/53230A | SCPI / FeelTech ASCII | **yes** |
-| 4 | **SMU** — source-measure unit | Used Keithley 2400 is the classic EEVblog bargain for I-V curves, LED/diode/solar-cell work; 2450/B2900 in labs | Keithley 2400 series, Keithley 2450, Keysight B2900A — all speak the **2400 command set** | SCPI | **yes** (one safety caveat, §5.4) |
-| 5 | **RFG** — RF signal generator | Receiver alignment, filter tests, ham projects; Siglent SSG3021X is the cheapest SCPI RF generator | Siglent SSG3000X, Rigol DSG800, Windfreak SynthHD | SCPI / single-letter ASCII | **yes** (SynthHD needs a computed channel param) |
-| 6 | **DAQ** — data acquisition / multi-channel logger | Temperature logging, battery/thermal tests; 34970A is ubiquitous on the used market, DAQ970A its successor | Keysight DAQ970A/DAQ973A (34970A/34972A compatible) | SCPI | single channel yes; scan list needs `numbers` |
-| 7 | **BAT** — battery internal-resistance tester (AC mΩ + V) | Li-ion cell sorting/matching (18650 packs, e-bike builders) | Hioki BT3561A/BT3562A/BT3563A; cheap RC3563/YR1035+ (no documented protocol) | SCPI over RS-232 | Hioki **yes**; cheap ones unknown/blocked |
+| 1 | **VNA** - vector network analyzer | NanoVNA is the most-discussed RF instrument in the hobby (EEVblog "NanoVNA Custom Software" thread > 550 k reads); every ham owns one | NanoVNA-H/H4/-D fw; (LiteVNA/V2 blocked) | text shell over USB CDC | settings yes, traces need `numbers` |
+| 2 | **PWR** - power meter / power analyzer | Mains power/standby/efficiency measurement; PZEM-004T is a top-selling hobby module; GPM-8213/WT310E are the small-lab standard | Yokogawa WT300E, GW Instek GPM-8213, (PZEM-004T blocked) | SCPI-like `:NUMeric` (shared baseline), Modbus RTU | WT300E/GPM-8213 **yes**; PZEM no |
+| 3 | **CNT** - frequency counter | Few standalone counters with PC links in hobby hands, **but the counter built into the AWGs they already own** (FY6900, SDG1000X/2000X, DG800/900/1000Z) is the same class | AWG built-ins (bind CNT in the AWG definition), Keysight 53220A/53230A | SCPI / FeelTech ASCII | **yes** |
+| 4 | **SMU** - source-measure unit | Used Keithley 2400 is the classic EEVblog bargain for I-V curves, LED/diode/solar-cell work; 2450/B2900 in labs | Keithley 2400 series, Keithley 2450, Keysight B2900A - all speak the **2400 command set** | SCPI | **yes** (one safety caveat, §5.4) |
+| 5 | **RFG** - RF signal generator | Receiver alignment, filter tests, ham projects; Siglent SSG3021X is the cheapest SCPI RF generator | Siglent SSG3000X, Rigol DSG800, Windfreak SynthHD | SCPI / single-letter ASCII | **yes** (SynthHD needs a computed channel param) |
+| 6 | **DAQ** - data acquisition / multi-channel logger | Temperature logging, battery/thermal tests; 34970A is ubiquitous on the used market, DAQ970A its successor | Keysight DAQ970A/DAQ973A (34970A/34972A compatible) | SCPI | single channel yes; scan list needs `numbers` |
+| 7 | **BAT** - battery internal-resistance tester (AC mΩ + V) | Li-ion cell sorting/matching (18650 packs, e-bike builders) | Hioki BT3561A/BT3562A/BT3563A; cheap RC3563/YR1035+ (no documented protocol) | SCPI over RS-232 | Hioki **yes**; cheap ones unknown/blocked |
 
 Dropped / out of scope:
 
@@ -42,7 +42,7 @@ Dropped / out of scope:
 
 ---
 
-## 2. VNA — vector network analyzer
+## 2. VNA - vector network analyzer
 
 `SAL.md` §2.5 documents the NanoVNA transport/framing (identical to tinySA) and §6 recommends a
 separate VNA class; this section gives the contract and the family table. Docs:
@@ -92,8 +92,8 @@ annunciator. No energize controls (output power is tiny; `power` setter is `conf
 
 ### 2.3 Families
 
-**NanoVNA-H / H4, NanoVNA-D firmware (DiSlord), hugen firmware** — 30–80 €; by far #1.
-- Interface: USB CDC-ACM **0483:5740** (`usbcfg.c` l.45-46) — shared with tinySA and every
+**NanoVNA-H / H4, NanoVNA-D firmware (DiSlord), hugen firmware** - 30-80 €; by far #1.
+- Interface: USB CDC-ACM **0483:5740** (`usbcfg.c` l.45-46) - shared with tinySA and every
   ChibiOS STM32 VCP, so identity comes from the `info` reply (`SAL.md` §2.5). Baud ignored.
 - Framing: line ends `\r` (`\r\n` harmless), every char echoed (`main.c` l.3205), output lines
   end `\r\n` (l.42), then prompt `ch> ` (l.44). `rx.terminator: "ch> "`, strip the echo line
@@ -115,22 +115,22 @@ annunciator. No energize controls (output power is tiny; `power` setter is `conf
 
 - Quirks: `CMD_WAIT_MUTEX` commands (scan, data, sweep, freq) execute at the next sweep point
   and break the running sweep (cmd table l.2919-2926); 101 points (H, F072) / 401 (H4).
-  `capture` has no length prefix — the size is fixed by the LCD (`320×240×2` or `480×320×2`), so
+  `capture` has no length prefix - the size is fixed by the LCD (`320×240×2` or `480×320×2`), so
   `reply: {bytes: N}` per model works.
 - Confidence: **high** (firmware is the protocol). DSL: framing, sweep get/set, pause/resume
   today; `data 0/1` and `frequencies` need **`numbers`** (whitespace/newline separated → list);
   binary `scan … 0x80` would need `samples: f32le` + 4-byte header skip.
 
-**NanoVNA-F (BH5HNU), NanoVNA V2 / SAA-2 / LiteVNA** — NanoVNA-F speaks a compatible text shell
+**NanoVNA-F (BH5HNU), NanoVNA V2 / SAA-2 / LiteVNA** - NanoVNA-F speaks a compatible text shell
 (not verified here, medium). V2/LiteVNA use a **binary register protocol** (`zeenko_litevna`
 folder, see `SAL.md` §2.12) → blocked (needs binary register read/write framing).
 
-**Siglent SVA1000X (VNA mode)** — SCPI, documented in the SAL research (`siglent_sva1000x`); one
+**Siglent SVA1000X (VNA mode)** - SCPI, documented in the SAL research (`siglent_sva1000x`); one
 definition can bind SAL and VNA.
 
 ---
 
-## 3. PWR — power meter / power analyzer
+## 3. PWR - power meter / power analyzer
 
 ### 3.1 Proposed contract
 
@@ -171,8 +171,8 @@ operations:
 
 ### 3.2 Panel
 
-As on WT310E/GPM-8213 fronts: four stacked segment readouts (default V, A, W, PF — each
-selectable from the status keys, like the FUNCTION keys of display areas a–d), annunciators
+As on WT310E/GPM-8213 fronts: four stacked segment readouts (default V, A, W, PF - each
+selectable from the status keys, like the FUNCTION keys of display areas a-d), annunciators
 V-RANGE/A-RANGE (AUTO), OL, HOLD, INTEG RUN, harmonic/THD when present; controls: MODE select
 (RMS/MEAN/DC or DC/AC/ACDC), V and A range steppers with AUTO, integration START/STOP/RESET
 buttons with elapsed time readout, update-rate selector. Energy/time row below. No energize
@@ -188,34 +188,34 @@ baseline: on connect set ASCII + a fixed item list, poll `:NUM:VAL?` and split w
 
 ### 3.4 Families
 
-**Yokogawa WT300E (WT310E, WT310EH, WT332E, WT333E)** — 2–5 k€, small-lab reference. Docs:
+**Yokogawa WT300E (WT310E, WT310EH, WT332E, WT333E)** - 2-5 k€, small-lab reference. Docs:
 `/home/marek/project/BenchMeshDOC/yokogawa_wt300e/doc/IMWT310E-17EN.pdf`.
 - Interfaces: USB **USBTMC-USB488** (p9; Yokogawa vid 0b21, pid not in the manual), RS-232
-  (1200–57600 baud, p21/p27), GP-IB, Ethernet (TCP — not implemented). Response message
+  (1200-57600 baud, p21/p27), GP-IB, Ethernet (TCP - not implemented). Response message
   terminator NL^END (p33); send LF or CR+LF (p27).
 - Identify: `*IDN?` → `YOKOGAWA,WT310E,123456789A,F1.01` (p74, 6-34).
 
 | Operation | Command | Notes | Page |
 |---|---|---|---|
 | data format | `:NUMeric:FORMat ASCii` | FLOat gives `#N` blocks | p59 (6-19) |
-| items | `:NUMeric:NORMal:PRESet 2` + `:NUMeric:NORMal:NUMber 9` | pattern 2 = U,I,P,S,Q,LAMBda,PHI,FU,FI of element 1, then element 2/3/SIGMA at 11–19/21–29/31–39 | p59, p66 (6-26) |
+| items | `:NUMeric:NORMal:PRESet 2` + `:NUMeric:NORMal:NUMber 9` | pattern 2 = U,I,P,S,Q,LAMBda,PHI,FU,FI of element 1, then element 2/3/SIGMA at 11-19/21-29/31-39 | p59, p66 (6-26) |
 | readings | `:NUMeric:NORMal:VALue?` | `103.79E+00,1.0143E+00,…`, `NAN` = no data | p59 |
 | one item | `:NUMeric:NORMal:ITEM1 U,1` / `:VALue? 1` | | p60 (6-20) |
 | headers off | `:COMMunicate:HEADer OFF`, `:COMMunicate:VERBose OFF` | keep replies bare | p47 (6-7) |
 | remote/local | `:COMMunicate:REMote ON|OFF` | | p47 |
-| update rate | `:RATE <time>` | 100 ms–20 s | p43 (6-29 index) |
+| update rate | `:RATE <time>` | 100 ms-20 s | p43 (6-29 index) |
 
-- Quirks: data update interval — poll no faster than `:RATE`; check bit 0 of the extended event
+- Quirks: data update interval - poll no faster than `:RATE`; check bit 0 of the extended event
   register to see "updated" (p40) if exact sync matters. `:NUMeric:LIST` (harmonics) only with
   /G5 option.
 - Confidence **high**. DSL: **today** (`usbtmc` or `serial`, `rx: message|terminator`,
   `fields` on `:NUM:VAL?`, CEL `num()` maps `NAN` to null; per-element channels via item
   offsets in separate commands).
 
-**GW Instek GPM-8213 (+ GPM-8213G with GPIB)** — ~700–900 €, popular in small labs and with
+**GW Instek GPM-8213 (+ GPM-8213G with GPIB)** - ~700-900 €, popular in small labs and with
 EEVblog reviewers. Docs: `/home/marek/project/BenchMeshDOC/gwinstek_gpm8213/doc/GPM-8213_User_Manual_G.pdf`.
-- Interfaces: USB **CDC virtual COM** (8 data, 1 stop, no flow; p65), RS-232 1200–115200 8N1
-  (p65), LAN (TCP — not implemented). EOL **CR+LF** (p72). vid:pid not in manual (GW Instek
+- Interfaces: USB **CDC virtual COM** (8 data, 1 stop, no flow; p65), RS-232 1200-115200 8N1
+  (p65), LAN (TCP - not implemented). EOL **CR+LF** (p72). vid:pid not in manual (GW Instek
   usually 2184:xxxx).
 - Identify: `*IDN?` → `GWINSTEK,GPM-8213,GXXXXXXXX,V1.00` (p75).
 
@@ -224,32 +224,32 @@ EEVblog reviewers. Docs: `/home/marek/project/BenchMeshDOC/gwinstek_gpm8213/doc/
 | mode | `:INPut:MODE {DC|ACDC|AC}` | | p85 |
 | V range | `:INPut:VOLTage:RANGe {15|30|60|150|300|600}` (CF3; CF6 halves) / `:INPut:VOLTage:AUTO ON` | reply `600.0E+00` | p86 |
 | I range | `:INPut:CURRent:RANGe {5m…500m,1,2,5,10,20}` | | p87 |
-| items | `:NUMeric:NORMal:ITEM<x> {U|I|P|S|Q|LAMBda|PHI|FU|FI|UTHD|ITHD|WH|AH|TIME|URANge|IRANge…}` (1–34) | default NUMBer is **3** (not 10 as on WT) | p97-98 |
+| items | `:NUMeric:NORMal:ITEM<x> {U|I|P|S|Q|LAMBda|PHI|FU|FI|UTHD|ITHD|WH|AH|TIME|URANge|IRANge…}` (1-34) | default NUMBer is **3** (not 10 as on WT) | p97-98 |
 | preset | `:NUMeric:NORMal:PRESet {1..4}` | pattern 1 = U,I,P | p99 |
 | readings | `:NUMeric:NORMal:VALue?` | NR3 list, `NAN` for "-----" | p96-97 |
 
-- Quirks: queries echo the header (`->:INPUT:MODE DC`, p85) — strip with `{split: {sep: " ", index: -1}}`
+- Quirks: queries echo the header (`->:INPUT:MODE DC`, p85) - strip with `{split: {sep: " ", index: -1}}`
   or regex; numeric `VALue?` is bare. Manual typo: `CFV` row means current crest factor (p98).
 - Confidence **high**. DSL: **today** (`serial` 115200 or the CDC port; extends the WT baseline).
 
-**Peacefair PZEM-004T v3.0 (10 A / 100 A CT), PZEM-014/016, PZEM-017 (DC)** — 5–15 €, extremely
+**Peacefair PZEM-004T v3.0 (10 A / 100 A CT), PZEM-014/016, PZEM-017 (DC)** - 5-15 €, extremely
 common with ESP32/Arduino/Home-Assistant users, connected to a PC via a USB-TTL adapter (CH340/
 CP2102). Docs: `/home/marek/project/BenchMeshDOC/peacefair_pzem004t/doc/PZEM-004T_V3.0_datasheet.pdf`.
-- Link: UART 9600 8N1 (p2), **Modbus RTU**, slave 0x01–0xF7, 0xF8 = general address for a single
+- Link: UART 9600 8N1 (p2), **Modbus RTU**, slave 0x01-0xF7, 0xF8 = general address for a single
   device (p2).
-- Read: function 0x04, registers 0x0000–0x0009: U 0.1 V, I 32-bit **low word first** 0.001 A,
+- Read: function 0x04, registers 0x0000-0x0009: U 0.1 V, I 32-bit **low word first** 0.001 A,
   P 32-bit low word first 0.1 W, energy 32-bit 1 Wh, f 0.1 Hz, PF 0.01, alarm 0xFFFF (p3).
   Params: function 0x03/0x06 registers 0x0001 alarm threshold (W), 0x0002 address (p4). Reset
   energy: custom function 0x42 (p5).
 - Quirks: datasheet says "CRC high byte + low byte", real devices send standard Modbus order
-  (low first) — confirm on hardware; 32-bit values are word-swapped relative to the usual big-endian
+  (low first) - confirm on hardware; 32-bit values are word-swapped relative to the usual big-endian
   convention; forum reports some units refuse multi-register reads (esp32.com thread).
-- Confidence: medium-high (protocol clear, quirks need a capture). DSL: **blocked** — needs Modbus
+- Confidence: medium-high (protocol clear, quirks need a capture). DSL: **blocked** - needs Modbus
   RTU (§10 F2).
 
 ---
 
-## 4. CNT — frequency counter
+## 4. CNT - frequency counter
 
 ### 4.1 Proposed contract
 
@@ -287,7 +287,7 @@ operations:
 
 ### 4.2 Panel
 
-Like a 53220A / the counter page of an AWG: one large 10–12 digit segment readout (FREQ by
+Like a 53220A / the counter page of an AWG: one large 10-12 digit segment readout (FREQ by
 default, unit autoscaled), secondary row PERIOD · DUTY · +W · −W, MODE selector (FREQ / PERIOD /
 TOTALIZE / PULSE), GATE 1-2-5 stepper (or the instrument's gate enum), input block with
 AC/DC and 50 Ω/1 MΩ micro switches, trigger-level knob, HF-REJECT switch, RUN/STOP, annunciators
@@ -296,7 +296,7 @@ show (FY6900: gate only).
 
 ### 4.3 Families
 
-**AWG built-in counters** — owned by most hobbyists who own an AWG; bind `CNT` in the existing AWG
+**AWG built-in counters** - owned by most hobbyists who own an AWG; bind `CNT` in the existing AWG
 definitions (one definition, two classes, like SVA1000X for SAL/VNA).
 
 | Family | Enable | Read | Reply | Settings | Source |
@@ -305,15 +305,15 @@ definitions (one definition, two classes, like SVA1000X for SAL/VNA).
 | Siglent SDG1000X/2000X/5000/6000X (not SDG800/7000A) | `FCNT STATE,ON` | `FCNT?` | `FCNT STATE,ON,FRQ,10000000HZ,DUTY,59.8568,REFQ,1e+07HZ,TRG,0V,PW,5.98568e-08S,NW,…,FRQDEV,0ppm,MODE,AC,HFR,OFF` | `FCNT REFQ,…`, `TRG`, `MODE AC|DC`, `HFR ON|OFF` | `siglent_sdg/doc/SDG_Programming_Guide_PG02-E05C.pdf` p74-75 (62-63) |
 | FeelTech FY6900 (also FY6800, rebrands) | always on | `RCF` freq, `RCT` period ns, `RC+`/`RC-` widths ns, `RCD` duty ‰, `RCC` count | 10-digit integers, **freq scaled by gate** (1 s → Hz, 10 s → 0.1 Hz) | `WCG` gate, `WCZ0` reset, `WCP0` pause | `feeltech_fy6900/doc/FY6900_Serial_communication_protocol.pdf` p25-26, 115200 baud LF (p1-2) |
 
-- DSL: **today** — Rigol `fields`; Siglent `regex` per key (`FRQ,([-+0-9.eE]+)`); FY6900 CEL
+- DSL: **today** - Rigol `fields`; Siglent `regex` per key (`FRQ,([-+0-9.eE]+)`); FY6900 CEL
   with a cached gate query (`num(rcf) / gate_factor`).
 
-**Keysight 53220A / 53230A (and 53210A)** — 2–5 k€ new, used ~1 k€; small labs, time-nuts.
+**Keysight 53220A / 53230A (and 53210A)** - 2-5 k€ new, used ~1 k€; small labs, time-nuts.
 Docs: `/home/marek/project/BenchMeshDOC/keysight_53200/doc/53220-90001_UsersGuide.pdf` (the full
 Programmer's Reference is on the product CD and was not found online).
 - Interfaces: USBTMC, example address `USB0::2391::1287::…` → **0957:0507** (p63), LAN, GPIB.
 - Identify: `*IDN?` → `Agilent|Keysight Technologies,53220A,<serial>,<fw>` (format per IEEE 488.2;
-  example not in the user's guide — confirm).
+  example not in the user's guide - confirm).
 
 | Operation | Command | Notes | Page |
 |---|---|---|---|
@@ -324,14 +324,14 @@ Programmer's Reference is on the product CD and was not found online).
 | mode | `SENS:FREQ:MODE AUTO|REC|CONT` | | p83 |
 | input | `INP:IMP 50|1E6`, `INP:COUP AC|DC`, `INP:LEV <V>`, `INP:FILT ON|OFF` | per channel `INP2:` | p134-141 |
 
-- Quirks: `READ?` blocks for the gate time (+ setup) — set `timeout_ms` ≥ gate + 1 s and poll
+- Quirks: `READ?` blocks for the gate time (+ setup) - set `timeout_ms` ≥ gate + 1 s and poll
   every ≥ 2 × gate; `9.91E37` → null via CEL. 531xxA programs run in emulation mode
   (`53200_Programming_Comparison_Guide_5990-6570.pdf`).
 - Confidence: medium-high (command set clear; reference manual not local). DSL: **today**.
 
 ---
 
-## 5. SMU — source-measure unit
+## 5. SMU - source-measure unit
 
 ### 5.1 Proposed contract
 
@@ -389,13 +389,13 @@ commands ch. 6, p346+). One `extends` baseline = 2400; native 2450/B2900 SCPI as
 
 ### 5.4 Families
 
-**Keithley 2400 series (2400, 2400-C, 2401, 2410, 2420, 2425, 2430, 2440)** — used 1–3 k€, the
+**Keithley 2400 series (2400, 2400-C, 2401, 2410, 2420, 2425, 2430, 2440)** - used 1-3 k€, the
 classic used-market SMU. Docs: `/home/marek/project/BenchMeshDOC/keithley_2400/doc/2400S-900-01_K_User.pdf`.
 - Models (ranges p60-62): 2400 ±210 V / ±1.05 A (20 W); 2401 ±21 V / 1.05 A; 2410 ±1.1 kV /
   ±21 mA (1 A at 20 V); 2420 ±63 V / ±3.15 A; 2425 ±105 V / 3 A; 2430 pulse 10.5 A; 2440 ±42 V / 5 A.
-- Interfaces: **RS-232** (DB-9; 300–57600 baud, factory 9600, 8N1 or 7/8 bit with parity, flow
+- Interfaces: **RS-232** (DB-9; 300-57600 baud, factory 9600, 8N1 or 7/8 bit with parity, flow
   none/XON-XOFF, terminator CR / CR+LF / LF / LF+CR selectable in menu; p270-271, 14-13/14-14)
-  and GPIB. No USB — hobbyists use a USB-RS232 cable (or a Prologix/AR488 GPIB adapter, §10 F6).
+  and GPIB. No USB - hobbyists use a USB-RS232 cable (or a Prologix/AR488 GPIB adapter, §10 F6).
 - Identify: `*IDN?` → `KEITHLEY INSTRUMENTS INC.,MODEL 2400,<serial>,<rev>` (p297).
 
 | Operation | Command | Notes | Page |
@@ -413,19 +413,19 @@ classic used-market SMU. Docs: `/home/marek/project/BenchMeshDOC/keithley_2400/d
 
 - Quirks: **`:READ?` requires the output on** when auto output-off is disabled; with
   `:SOUR:CLE:AUTO ON` *any* `:READ?`/`:MEAS?` switches the output on for each reading (p209,
-  11-11) — so a poll must never use `:MEAS?` and must not run `:READ?` while OUTPUT is OFF
+  11-11) - so a poll must never use `:MEAS?` and must not run `:READ?` while OUTPUT is OFF
   (needs a conditional poll, §10 F5; workaround: poll `:OUTP?` + `:SOUR:*:LEV?` only and read
   `:READ?` on demand). Commands queue while a trigger model runs; `^C`/`^X` on RS-232 clears
   (p271). Rule 2: read the complete reply before the next command (p270).
 - Confidence **high**. DSL: **today** (serial), with the poll caveat.
 
-**Keithley 2450 (and 2460/2461 with the same SCPI tree)** — 5–8 k€ new; universities, labs.
+**Keithley 2450 (and 2460/2461 with the same SCPI tree)** - 5-8 k€ new; universities, labs.
 Docs: `/home/marek/project/BenchMeshDOC/keithley_2450/doc/2450-901-01_D_Ref.pdf`.
 - Models: 2450 ±210 V / ±1.05 A (p429, 6-80); 2460 100 V / 7 A; 2461 pulse 10 A (same tree,
-  separate manuals — not local).
-- Interfaces: USBTMC (Keithley vid 05e6; pid expected 2450 — confirm), LAN (VXI-11/raw 5025,
+  separate manuals - not local).
+- Interfaces: USBTMC (Keithley vid 05e6; pid expected 2450 - confirm), LAN (VXI-11/raw 5025,
   not implemented), GPIB. Command set selectable SCPI / TSP / SCPI2400 (`*LANG`, p105).
-- Identify: `*IDN?` → `KEITHLEY INSTRUMENTS,MODEL 2450,<serial>,<fw>` (format — confirm).
+- Identify: `*IDN?` → `KEITHLEY INSTRUMENTS,MODEL 2450,<serial>,<fw>` (format - confirm).
 
 | Operation | Command | Notes | Page |
 |---|---|---|---|
@@ -441,10 +441,10 @@ Docs: `/home/marek/project/BenchMeshDOC/keithley_2450/doc/2450-901-01_D_Ref.pdf`
   >±21 V needs the interlock (p390). Changing `*LANG` needs a reboot.
 - Confidence **high**. DSL: **today** (usbtmc).
 
-**Keysight B2900A (B2901A/B2902A/B2911A/B2912A; B2900B/BL similar)** — 5–15 k€; labs.
+**Keysight B2900A (B2901A/B2902A/B2911A/B2912A; B2900B/BL similar)** - 5-15 k€; labs.
 Docs: `/home/marek/project/BenchMeshDOC/keysight_b2900/doc/B2900A_SCPI_Reference_9018-01705.pdf`
 (+ Programming Guide 9018-01707).
-- Interfaces: USBTMC (Keysight 0957/2a8d, pid not in manual), LAN, GPIB. Channels 1–2 as `[c]`
+- Interfaces: USBTMC (Keysight 0957/2a8d, pid not in manual), LAN, GPIB. Channels 1-2 as `[c]`
   suffix (`:OUTP2`, `:SOUR2:…`) or `(@1,2)` channel lists.
 - Identify: `*IDN?` → `Keysight Technologies,<model>,<serial>,<revision>` (p124).
 
@@ -464,7 +464,7 @@ Cheap SMUs: none with a PC protocol of note found (Kickstarter-class devices use
 
 ---
 
-## 6. RFG — RF signal generator
+## 6. RFG - RF signal generator
 
 ### 6.1 Proposed contract
 
@@ -514,7 +514,7 @@ stacked rows in one panel.
 
 ### 6.3 Families
 
-**Siglent SSG3000X (SSG3021X, SSG3032X, -IQ variants; SSG5000X likely same tree)** — 1.5–4 k€,
+**Siglent SSG3000X (SSG3021X, SSG3032X, -IQ variants; SSG5000X likely same tree)** - 1.5-4 k€,
 the cheapest SCPI RF generator; many hobby/lab reviews. Docs:
 `/home/marek/project/BenchMeshDOC/siglent_ssg3000x/doc/SSG3000X_ProgrammingGuide_E01B.pdf`.
 - Interfaces: USBTMC (Siglent f4ec), LAN raw **5025** / telnet 5024 (p8; TCP not implemented).
@@ -527,19 +527,19 @@ the cheapest SCPI RF generator; many hobby/lab reviews. Docs:
 | level | `:POW <dBm>` / `:POW?` | −110…+20 dBm (≤ +9 dBm below 100 kHz, ≤ +15 below 1 MHz); IQ on: −100…+10 | p30 |
 | level offset / ALC | `:POW:OFFS`, `:POW:ALC ON|OFF|AUTO` | | p31 |
 | modulation | `:MOD ON|OFF` | master | p50 |
-| AM | `:AM:STAT`, `:AM:DEPT 0.1–100`, `:AM:FREQ`, `:AM:SOUR INT|EXT` | | p51-53 |
-| FM / PM | `:FM:STAT`, `:FM:DEV 0.01 Hz–1 MHz`, `:FM:FREQ`; `:PM:…` | | p53-58 |
+| AM | `:AM:STAT`, `:AM:DEPT 0.1-100`, `:AM:FREQ`, `:AM:SOUR INT|EXT` | | p51-53 |
+| FM / PM | `:FM:STAT`, `:FM:DEV 0.01 Hz-1 MHz`, `:FM:FREQ`; `:PM:…` | | p53-58 |
 | pulse | `:PULM:STAT`, train list | | p59-67 |
 
 - Confidence **high**. DSL: **today** (usbtmc, `message` framing).
 
-**Rigol DSG800 (DSG815, DSG821, DSG830) / DSG3000** — 1–3 k€. Manual **not downloaded** (the
+**Rigol DSG800 (DSG815, DSG821, DSG830) / DSG3000** - 1-3 k€. Manual **not downloaded** (the
 eu.rigol.com URL now redirects; scribd copy only). From Rigol's DSG command tree: `:FREQ`, `:LEV`
-(level is `:LEVel`, not `:POWer`), `:OUTP`, `:MOD:STAT`, `:AM:DEPT`, `:FM:DEV` — **verify**
+(level is `:LEVel`, not `:POWer`), `:OUTP`, `:MOD:STAT`, `:AM:DEPT`, `:FM:DEV` - **verify**
 against the guide before writing. USBTMC 1ab1. Confidence **low** until the guide is fetched.
 
-**Windfreak SynthHD v2 / SynthHD PRO v2 (10 MHz–15 GHz, 2 channels), SynthNV/SynthUSB** —
-~1–2 k€; popular with hams, microwave and quantum-optics labs. Official manual not downloadable;
+**Windfreak SynthHD v2 / SynthHD PRO v2 (10 MHz-15 GHz, 2 channels), SynthNV/SynthUSB** -
+~1-2 k€; popular with hams, microwave and quantum-optics labs. Official manual not downloadable;
 command set from the MIT driver `windfreak-python` (`/home/marek/project/BenchMeshDOC/windfreak_synthhd/doc/`).
 - Link: USB CDC (vid:pid not documented), baud irrelevant; **no tx terminator**, replies end LF
   (`device.py` l.45-75).
@@ -566,7 +566,7 @@ command set from the MIT driver `windfreak-python` (`/home/marek/project/BenchMe
 
 ---
 
-## 7. DAQ — data acquisition / scanning logger
+## 7. DAQ - data acquisition / scanning logger
 
 ### 7.1 Proposed contract
 
@@ -603,8 +603,8 @@ cards as a grid of arm-to-enable micro switches.
 
 ### 7.3 Families
 
-**Keysight DAQ970A / DAQ973A (and 34970A/34972A, SCPI-compatible)** — DAQ970A ~2 k€ + cards;
-34970A used ~400–800 €, very common. Docs:
+**Keysight DAQ970A / DAQ973A (and 34970A/34972A, SCPI-compatible)** - DAQ970A ~2 k€ + cards;
+34970A used ~400-800 €, very common. Docs:
 `/home/marek/project/BenchMeshDOC/keysight_daq970a/doc/DAQ970A_ProgrammingGuide_9018-04756.pdf`.
 - Interfaces: DAQ970A USBTMC + LAN; 34970A RS-232 + GPIB (34970A manual not local; same SCPI).
 - Identify: `*IDN?` → `Keysight Technologies,DAQ970A,MY12345678,A.02.04-…` (p149).
@@ -619,18 +619,18 @@ cards as a grid of arm-to-enable micro switches.
 | trigger | `TRIG:SOUR TIM`, `TRIG:TIM <s>`, `TRIG:COUN` | | p332 |
 | relays | `ROUT:CLOS (@201)` / `ROUT:OPEN` | | p201 |
 
-- Quirks: `READ?` duration = channels × integration — set `timeout_ms` from the scan list; card
+- Quirks: `READ?` duration = channels × integration - set `timeout_ms` from the scan list; card
   type via `SYST:CTYP? <slot>` (p298) for `features`.
 - Confidence **high**. DSL: single-channel `MEAS?`/`READ?` today; the scan reply into per-channel
   status needs **`numbers`** (or `split` by index per channel, which works today for a fixed
   scan list declared in the definition).
 
 Other loggers seen: Pico TC-08 (driver DLL only), UNI-T UT325/UT320 (USB HID), cheap MAX31855
-boards (ad-hoc firmware) — out of scope.
+boards (ad-hoc firmware) - out of scope.
 
 ---
 
-## 8. BAT — battery internal-resistance tester
+## 8. BAT - battery internal-resistance tester
 
 ### 8.1 Proposed contract
 
@@ -663,7 +663,7 @@ Panel: two segment readouts (mΩ and V) like the BT3562 LCD, comparator HI/IN/LO
 
 ### 8.2 Families
 
-**Hioki BT3561A / BT3562A / BT3563A (+ BT3562, BT3563, -01 GPIB variants)** — 2–4 k€ new, the
+**Hioki BT3561A / BT3562A / BT3563A (+ BT3562, BT3563, -01 GPIB variants)** - 2-4 k€ new, the
 reference cell tester in battery workshops. Docs:
 `/home/marek/project/BenchMeshDOC/hioki_bt356x/doc/BT3562A981-12.pdf`.
 - Models: max input BT3561A ±60 V, BT3562(-01) ±60 V, BT3562A ±100 V, BT3563 ±300 V (p11, 6);
@@ -676,7 +676,7 @@ reference cell tester in battery workshops. Docs:
 | Operation | Command | Notes | Page |
 |---|---|---|---|
 | mode | `:FUNC RV|RESistance|VOLTage` / `:FUNC?` | | p126, p137 |
-| ranges | `:RES:RANG <0–3100>`, `:VOLT:RANG <−300–300>`, `:AUT ON|OFF` | | p126 |
+| ranges | `:RES:RANG <0-3100>`, `:VOLT:RANG <−300-300>`, `:AUT ON|OFF` | | p126 |
 | zero adjust | `:ADJ?` (→ `0|1`), `:ADJ:CLEA` | | p126 |
 | rate | `:SAMP:RATE EXF|FAST|MED|SLOW` | | p126 |
 | reading | `:FETC?` → `288.02E-3,1.3921E+0` (ΩV) | no trigger; use in polls | p162 (157) |
@@ -689,7 +689,7 @@ reference cell tester in battery workshops. Docs:
   changing conditions (p163). Accepts all Hioki 3560 commands (p165).
 - Confidence **high**. DSL: **today** (serial).
 
-**Cheap testers (YR1035+, RC3563, SM8124…)** — 20–60 €, extremely popular for 18650 sorting.
+**Cheap testers (YR1035+, RC3563, SM8124…)** - 20-60 €, extremely popular for 18650 sorting.
 YR1035+: forum reports the USB port only charges (akkudoktor.net). RC3563 "serial" version:
 CH340/CP210x USB link, protocol only in a community wiki (not fetched); believed to stream frames
 → unknown. Not definable until someone captures the wire (scripts/wire_capture).

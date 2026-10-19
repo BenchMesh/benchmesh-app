@@ -1,6 +1,6 @@
 //! The flow assistant: the user describes an automation, an LLM of their choice (their own
 //! API key) assembles a flow document, the server validates it and lets the model correct
-//! its own mistakes. The result is only ever loaded into the editor — never run.
+//! its own mistakes. The result is only ever loaded into the editor - never run.
 
 use std::time::Duration;
 
@@ -65,7 +65,7 @@ A variable must be set before a step uses it.
 Safety: a set that can switch an output/input on ("energizes": true) requires the user to arm
 the run. If the run fails or is aborted, every output it switched on is switched off again.
 
-Example — hold 5 V at the DMM by moving the electronic load's current:
+Example - hold 5 V at the DMM by moving the electronic load's current:
 {
   "schema": "benchmesh.flow/v1", "name": "Hold 5 V with the load",
   "params": [{"name":"target","value":5.0,"unit":"V"}, {"name":"step","value":0.05,"unit":"A"}, {"name":"limit","value":2.0,"unit":"A"}],
@@ -157,7 +157,7 @@ fn key(s: &Settings) -> Result<Option<String>, String> {
         Some(k) => Ok(Some(k.trim().to_string())),
         // a local endpoint may need no key
         None if s.provider == "custom" => Ok(None),
-        None => Err(format!("no API key for {} — add one in Automation → Settings", s.provider)),
+        None => Err(format!("no API key for {} - add one in Automation → Settings", s.provider)),
     }
 }
 

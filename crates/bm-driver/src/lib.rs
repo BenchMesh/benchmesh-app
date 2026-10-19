@@ -1,4 +1,4 @@
-//! BenchMesh generic instrument driver — the interpreter of `devices/*.yaml`.
+//! BenchMesh generic instrument driver - the interpreter of `devices/*.yaml`.
 //!
 //! Framing, parsing, expressions, wire rendering and class status are pure functions,
 //! tested against the recorded wire captures. [`engine::Engine`] executes a definition

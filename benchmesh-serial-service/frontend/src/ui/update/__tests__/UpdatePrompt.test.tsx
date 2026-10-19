@@ -35,7 +35,7 @@ describe('UpdatePrompt', () => {
   it('offers the newer version and can be dismissed', async () => {
     fakeTauri(async () => available)
     render(<UpdatePrompt />)
-    expect(await screen.findByRole('dialog')).toHaveTextContent('BenchMesh 0.2.0 is available — you have 0.1.1')
+    expect(await screen.findByRole('dialog')).toHaveTextContent('BenchMesh 0.2.0 is available - you have 0.1.1')
     fireEvent.click(screen.getByText('Later'))
     expect(screen.queryByRole('dialog')).toBeNull()
   })

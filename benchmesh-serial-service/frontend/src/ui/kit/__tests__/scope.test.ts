@@ -46,6 +46,6 @@ describe('siText', () => {
     expect(siText(0.00272, 'V')).toBe('2.72 mV')
     expect(siText(-0.00071333, 'V')).toBe('-713.3 µV')
     expect(siText(0, 'V')).toBe('0 V')
-    expect(siText(null, 'Hz')).toBe('—')
+    expect(siText(null, 'Hz')).toBe('-')
   })
 })

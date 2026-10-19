@@ -47,9 +47,9 @@ classes:
   LCR:
     features:
       functions:
-        RPQ: {primary: Rp, secondary: Q, circuit: PAR, units: ["Ω", ""], ui_name: "Rp–Q"}
-        RSQ: {primary: Rs, secondary: Q, circuit: SER, units: ["Ω", ""], ui_name: "Rs–Q"}
-        ZQ:  {primary: Z,  secondary: Q, units: ["Ω", ""], ui_name: "Z–Q"}
+        RPQ: {primary: Rp, secondary: Q, circuit: PAR, units: ["Ω", ""], ui_name: "Rp-Q"}
+        RSQ: {primary: Rs, secondary: Q, circuit: SER, units: ["Ω", ""], ui_name: "Rs-Q"}
+        ZQ:  {primary: Z,  secondary: Q, units: ["Ω", ""], ui_name: "Z-Q"}
       ranges:
         - {value: AUTO, display: AUTO}
         - {value: "3", display: "3 Ω"}

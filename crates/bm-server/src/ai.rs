@@ -1,5 +1,5 @@
 //! `GET /ai/context` (alias `/ai/system-prompt`): a description of this BenchMesh
-//! installation for AI assistants — configured instruments, their live state and the
+//! installation for AI assistants - configured instruments, their live state and the
 //! operations they support (from the device definitions: value types, ranges, units,
 //! which setters can energise outputs).
 //!
@@ -120,7 +120,7 @@ fn markdown(v: &Value) -> String {
         md += "## Instruments\n\n";
         for i in list {
             let dot = if i["status"] == "online" { "🟢" } else { "🔴" };
-            md += &format!("### {dot} {} (`{}`) — {} {}\n\n", i["name"].as_str().unwrap_or(""), i["id"].as_str().unwrap_or(""),
+            md += &format!("### {dot} {} (`{}`) - {} {}\n\n", i["name"].as_str().unwrap_or(""), i["id"].as_str().unwrap_or(""),
                 i["vendor"].as_str().unwrap_or(""), i["family"].as_str().unwrap_or(""));
             for c in i["classes"].as_array().into_iter().flatten() {
                 md += &format!("- **{}** ({} channel(s))\n", c["class"].as_str().unwrap_or(""), c["channels"]);
@@ -131,7 +131,7 @@ fn markdown(v: &Value) -> String {
                         _ => "set",
                     };
                     let warn = if o.get("energizes").is_some() { " ⚠ energizes" } else { "" };
-                    let val = o.get("value").map(|v| format!(" — value {v}")).unwrap_or_default();
+                    let val = o.get("value").map(|v| format!(" - value {v}")).unwrap_or_default();
                     md += &format!("  - `{}` ({rw}){warn}{val}\n", o["name"].as_str().unwrap_or(""));
                 }
             }

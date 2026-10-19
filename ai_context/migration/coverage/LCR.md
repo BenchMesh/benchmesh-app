@@ -1,4 +1,4 @@
-# LCR — LCR / impedance meters and component testers
+# LCR - LCR / impedance meters and component testers
 
 Research 2026-10-18 for definitions written before we own the hardware (status **Awaiting
 confirmation**). LCR has **no class contract yet**; section 4 proposes one (`devices/classes/LCR.yaml`
@@ -22,24 +22,24 @@ ranking with what is known, to be researched later.
 
 | # | Family | Typical models | Price band | Interface → protocol | DSL fit today |
 |---|---|---|---|---|---|
-| 1 | **Cyrustek ES51919 handhelds** | DER EE DE-5000, UNI-T UT612, Mastech MS5308, PeakTech 2170 | €70–150 | IR/USB cable, one-way **binary 17-byte stream** | **No** (stream + binary framing) |
-| 2 | **East Tester ET44/ET45** (+ RuoShui/Victor 4090/4091, Mustool ET4410) | ET4401, ET4402, ET4410, ET4501, ET4502, ET4510 | €100–250 | USB-CDC / RS-232, text SCPI-like | **Yes** |
-| 3 | **Tonghui TH28xx** (+ OEM B&K 894/895) | TH2810B+, TH2817B+, TH2830, TH2832, TH2838; BK 894, 895 | €250–2000 | RS-232, USB-CDC, USBTMC, (LAN/GPIB), SCPI "E4980 dialect" | **Yes** (serial, USBTMC) |
-| 4 | **B&K Precision 878B/879B/880 handhelds** | 880 (879B/878B believed same) | €200–350 | mini-USB virtual COM, text SCPI-like | **Yes** |
-| 5 | **UNI-T UTR28xx benchtop** | UTR2810E+ (UTR2830/UTR2832 not verified) | €150–400 | RS-232/USB-CDC, own SCPI-like dialect | **Yes** |
-| 6 | **Applent AT28xx / AT810A** (+ OEM GW Instek LCR-6000, RS PRO LCR-6000) | AT810A, AT2816A/B, AT2817(A), AT2818; LCR-6002/6020/6100/6200/6300 | €300–1500 | RS-232 / USB virtual COM (FTDI), SCPI "Applent dialect" | **Yes** (serial) |
+| 1 | **Cyrustek ES51919 handhelds** | DER EE DE-5000, UNI-T UT612, Mastech MS5308, PeakTech 2170 | €70-150 | IR/USB cable, one-way **binary 17-byte stream** | **No** (stream + binary framing) |
+| 2 | **East Tester ET44/ET45** (+ RuoShui/Victor 4090/4091, Mustool ET4410) | ET4401, ET4402, ET4410, ET4501, ET4502, ET4510 | €100-250 | USB-CDC / RS-232, text SCPI-like | **Yes** |
+| 3 | **Tonghui TH28xx** (+ OEM B&K 894/895) | TH2810B+, TH2817B+, TH2830, TH2832, TH2838; BK 894, 895 | €250-2000 | RS-232, USB-CDC, USBTMC, (LAN/GPIB), SCPI "E4980 dialect" | **Yes** (serial, USBTMC) |
+| 4 | **B&K Precision 878B/879B/880 handhelds** | 880 (879B/878B believed same) | €200-350 | mini-USB virtual COM, text SCPI-like | **Yes** |
+| 5 | **UNI-T UTR28xx benchtop** | UTR2810E+ (UTR2830/UTR2832 not verified) | €150-400 | RS-232/USB-CDC, own SCPI-like dialect | **Yes** |
+| 6 | **Applent AT28xx / AT810A** (+ OEM GW Instek LCR-6000, RS PRO LCR-6000) | AT810A, AT2816A/B, AT2817(A), AT2818; LCR-6002/6020/6100/6200/6300 | €300-1500 | RS-232 / USB virtual COM (FTDI), SCPI "Applent dialect" | **Yes** (serial) |
 | 7 | **B&K Precision 891** | 891 | €1400 | USB virtual COM, RS-232, GPIB, LAN, own SCPI dialect | **Yes** (serial); LAN needs TCP |
 | 8 | **Keysight E4980A/AL** (+ HP 4284A, reference dialect) | E4980A, E4980AL | €8k+ (used €3k) | USBTMC, LAN, GPIB, SCPI | **Yes** (USBTMC); LAN needs TCP |
 | 9 | **B&K Precision 889B** (legacy) | 889B (also "Model 4090" text in manual) | €600 (used) | USB virtual COM, own ASCII commands | Partly (values in display units) |
 | 10 | **Voltcraft 4080 / PeakTech 2165** | LCR 4080, PeakTech 2165 | €80 (used) | RS-232/USB 1200 baud, polled **fixed 39-char ASCII** packet | Yes, awkward (range tables in CEL) |
-| – | Keysight U1731C/U1733C | handheld, IR-USB cable | €300–500 | text over IR serial (not researched) | unknown |
-| – | Hioki IM3523/IM3536 | benchtop | €3k+ | USB/LAN/RS-232/GPIB, Hioki command set (not researched) | unknown |
+| - | Keysight U1731C/U1733C | handheld, IR-USB cable | €300-500 | text over IR serial (not researched) | unknown |
+| - | Hioki IM3523/IM3536 | benchtop | €3k+ | USB/LAN/RS-232/GPIB, Hioki command set (not researched) | unknown |
 
 ---
 
 ## 2. Families
 
-### 2.1 Cyrustek ES51919 handhelds — DER EE DE-5000, UNI-T UT612, Mastech MS5308, PeakTech 2170
+### 2.1 Cyrustek ES51919 handhelds - DER EE DE-5000, UNI-T UT612, Mastech MS5308, PeakTech 2170
 
 - **Models / clones**: libsigrok `serial-lcr` registers exactly these four on the ES51919 parser
   (`cyrustek_es51919/doc/serial-lcr-api.c` l.395-399). DE-5000 is by far the most popular hobby
@@ -50,7 +50,7 @@ ranking with what is known, to be researched later.
   (`libsigrok-internal.h` `ES51919_COMM_PARAM`; RTS/DTR high power the IR receiver).
 - **Protocol**: **one-way**. The meter streams a 17-byte binary packet per measurement; there is
   no request, no identify ("No supported device provides a means to identify yet … they all just
-  send", `serial-lcr-api.c` l.103-104). **No remote control at all** — read-only.
+  send", `serial-lcr-api.c` l.103-104). **No remote control at all** - read-only.
 - **Packet** (`cyrustek_es51919/doc/es51919.c` l.33-124, reverse-engineered):
 
 | Byte | Meaning |
@@ -73,14 +73,14 @@ ranking with what is known, to be researched later.
 - **Front panel (DE-5000)**: dual LCD (primary L/C/R + unit, secondary D/Q/θ/ESR); keys power,
   L/C/R (auto), D/Q/θ/ESR, FREQ, SER/PAR, RANGE/AUTO, HOLD, REL (Δ), SORT (tolerance), CAL
   (open/short), backlight, PC-link (IR).
-- **Docs**: no official protocol; libsigrok source (GPL) — `cyrustek_es51919/doc/`. **Confidence:
+- **Docs**: no official protocol; libsigrok source (GPL) - `cyrustek_es51919/doc/`. **Confidence:
   high** for the packet (sigrok ships it), low for USB IDs.
-- **DSL fit: blocked.** What the DSL would need — concrete:
+- **DSL fit: blocked.** What the DSL would need - concrete:
   1. **Unsolicited stream reading**: a poll command with no `send` (or `send: ""` explicitly
      allowed with `reply` only), where the engine reads the *latest complete* packet and discards
      older buffered ones (today the engine drains stray input as "late replies").
   2. **Packet framing**: `rx.mode: packet` with `header: "\x00\r"`, `length: 17`,
-     `trailer: "\r\n"` — resync by sliding until header+trailer match at the right distance.
+     `trailer: "\r\n"` - resync by sliding until header+trailer match at the right distance.
   3. **Byte-level parse** after framing: `{samples: u8}` already turns a raw reply into a list
      and CEL can index it, but CEL has no bitwise operators; either add `bits` over an indexed
      byte (`{bits: {byte: 2, b7: "7", freq: "5..7"}}`) or CEL helpers `bit(x, n)`,
@@ -100,11 +100,11 @@ ranking with what is known, to be researched later.
 | ET4401 / 4090A | 100, 120, 200, 400, 800, 1k, 2k, 4k, 8k, 10k | 100, 300, 600, 1000, 1500, 2000 |
 | ET4402 / 4090B | as 4401 + 15k, 20k | same |
 | ET4410 / 4090C | as 4402 + 40k, 50k, 80k, 100k | same |
-| ET4501 / 4091A | 10 – 10 000, any integer | 10 – 2000 any integer |
-| ET4502 / 4091B | 10 – 20 000 | same |
-| ET4510 / 4091C | 10 – 100 000 | same |
+| ET4501 / 4091A | 10 - 10 000, any integer | 10 - 2000 any integer |
+| ET4502 / 4091B | 10 - 20 000 | same |
+| ET4510 / 4091C | 10 - 100 000 | same |
 
-  Primary L/C/R/Z/DCR/ECAP, secondary X/D/Q/θ/ESR, 5-digit both (UM p.2); DC bias 0–1500 mV; source
+  Primary L/C/R/Z/DCR/ECAP, secondary X/D/Q/θ/ESR, 5-digit both (UM p.2); DC bias 0-1500 mV; source
   resistance 30/100 Ω; open/short correction; comparator; list sweep (7 points).
 - **Interfaces**: USB = **CDC-ACM** (`/dev/ttyACM0` in ET44.py examples, vid:pid unknown);
   RS-232 DB9 (UM p.17; firmware updates go over RS-232 with a PL2303 cable). **9600 8N1**, no
@@ -121,7 +121,7 @@ ranking with what is known, to be researched later.
 | equivalent circuit | `FUNC:IMP:EQU {SER\|PAL}` | `FUNC:IMP:EQU?` → `SERIAL` / `PALLEL` (ET44.py l.245-262) | 6 |
 | frequency | `FREQ <Hz>` (PM: `FREQuency:CW`) | `FREQ?` → NR3 Hz | 5 |
 | level | `VOLT <mV>` (PM: `VOLTage:LEVel`, unit **mV**) | `VOLT?` → NR3 mV | 5 |
-| DC bias | `BIAS:VOLT <mV>` 0–1500 | `BIAS:VOLT?` → NR3 mV | 4 |
+| DC bias | `BIAS:VOLT <mV>` 0-1500 | `BIAS:VOLT?` → NR3 mV | 4 |
 | source resistance | `OUT:RES {0\|1}` (0=100 Ω, 1=30 Ω) | `OUT:RES?` | 4 |
 | speed | `APER {FAST\|MEDium\|SLOW}` | `APER?` → token | 3-4 |
 | range | `FUNC:IMP:RANG:AUTO {ON\|OFF}` (OFF = hold current range; no manual range) | `…AUTO?` → NR1 | 7 |
@@ -130,13 +130,13 @@ ranking with what is known, to be researched later.
 | trigger source | `SYST:SOUR {INT\|MAN\|EXT}` | `SYST:SOUR?` | 11 |
 | trigger | `*TRG` | | 3 |
 | correction | `CORR:EXEC` (open **or** short decided by the hardware; countdown on screen) | | 7 |
-| read | — | `FETC?` → `<NR3>,<NR3>` e.g. `1e-3, 0.1025` | 8 |
+| read | - | `FETC?` → `<NR3>,<NR3>` e.g. `1e-3, 0.1025` | 8 |
 | comparator | `COMP:STAT {ON\|OFF}`, `COMP:TOL:NOM <v>`, `COMP:TOL:RANG:1L -0.1` | `COMP:TOL:BIN?` → NR1 | 8-9 |
 | remote/local | `SYST:REM` / `SYST:LOC` | | 11 |
 
 - **Quirks** (from ET44.py, verified by its author on an ET4410):
   - **Every setter replies a line**: `exec success`, `cmd err` (unknown command) or `execu err`
-    (failed) — `instrument.py` `write()` l.122-136. Setters must be `reply: line` with
+    (failed) - `instrument.py` `write()` l.122-136. Setters must be `reply: line` with
     `parse: [trim, {map: {"exec success": OK}}]` so errors surface (unmapped → error).
   - Failed query replies `Rcmd err`.
   - Terminators: write `\r\n`, replies end `\r\n` (ET44.py defaults; PM says "0A frame tail",
@@ -151,19 +151,19 @@ ranking with what is known, to be researched later.
   "\n" strip "\r"`. The pair-based `function` operation maps onto three setters with a step list
   (sketch in 4.4). `VOLT`/`BIAS` in mV → definition converts (`from:` or CEL `/1000`).
 
-### 2.3 Tonghui TH28xx (+ OEM B&K Precision 894/895) — "E4980 dialect"
+### 2.3 Tonghui TH28xx (+ OEM B&K Precision 894/895) - "E4980 dialect"
 
-- **Models**: TH2810B+ (≤10 kHz), TH2817B+ (50 Hz–100 kHz) documented
-  (`tonghui_th28xx/doc/TH2810B+_TH2817B+_operation_manual_cn_v1.1.pdf`); B&K 894 (20 Hz–500 kHz)
-  and 895 (–1 MHz) documented (`bk_894/doc/894_895_programming_manual.pdf`) — same command tree,
-  manual wording and FETC format as Tonghui, i.e. a Tonghui OEM. TH2830 (50 Hz–100 kHz,
-  RS232/RS485/USB/HANDLER/GPIB per DirectIndustry), TH2832, TH2838 **not documented here** —
+- **Models**: TH2810B+ (≤10 kHz), TH2817B+ (50 Hz-100 kHz) documented
+  (`tonghui_th28xx/doc/TH2810B+_TH2817B+_operation_manual_cn_v1.1.pdf`); B&K 894 (20 Hz-500 kHz)
+  and 895 (-1 MHz) documented (`bk_894/doc/894_895_programming_manual.pdf`) - same command tree,
+  manual wording and FETC format as Tonghui, i.e. a Tonghui OEM. TH2830 (50 Hz-100 kHz,
+  RS232/RS485/USB/HANDLER/GPIB per DirectIndustry), TH2832, TH2838 **not documented here** -
   same dialect assumed (Tonghui uses one SCPI tree across its 28xx line; TH2851 is advertised as
   E4980A/4284A command compatible).
 - **Interfaces**: TH2817B+: bus selectable RS232C / USBTMC / USBCDC / GPIB / RS485, baud
-  9 600–115 200, protocol selectable **SCPI / MODBUS / TH2810B** (legacy, fixed 19 200) — must
+  9 600-115 200, protocol selectable **SCPI / MODBUS / TH2810B** (legacy, fixed 19 200) - must
   be SCPI (UM p.60-62). BK 894/895: RS-232 + USBCDC + USBTMC + LAN (+GPIB 895), baud 9600, 19200,
-  28800, 38400, 48000, 57600, 115200, 8N1, **no flow control — pace commands** (PM p.6-7).
+  28800, 38400, 48000, 57600, 115200, 8N1, **no flow control - pace commands** (PM p.6-7).
   USBTMC vid:pid not documented.
 - **Identify** `*IDN?`: Tonghui `<manufacturer>,<model>,<firmware>,<HW_version>` e.g.
   `Tonghui,TH2817B+,VER1.0.0,HardWare Ver A5.0` (UM p.115); BK `B&K Precision,895,<SN>,VER1.0.0,Hardware Ver XX.X` (PM p.9).
@@ -174,13 +174,13 @@ ranking with what is known, to be researched later.
 | function (pair) | `FUNC:IMP {CPD\|CPQ\|CPG\|CPRP\|CSD\|CSQ\|CSRS\|LPQ\|LPD\|LPG\|LPRP\|LSD\|LSQ\|LSRS\|RX\|ZTD\|ZTR\|GB\|YTD\|YTR}` (TH adds `RPQ RSQ ZQ`) | `FUNC:IMP?` → token | TH 92-94, BK 21 |
 | range | `FUNC:IMP:RANG <Ω>` (turns AUTO off), values 3/10/30/100/300/1k/3k/10k/30k/100k (TH; BK from 10), suffix `OHM`/`KOHM` | `FUNC:IMP:RANG?` → value | TH 94, BK 21 |
 | auto range | `FUNC:IMP:RANG:AUTO {ON\|OFF}` | NR1 | TH 94, BK 22 |
-| frequency | `FREQ <v>[HZ\|KHZ\|MHZ]`, `MIN`/`MAX` (TH 50 Hz–100 kHz; BK 20 Hz–500 kHz/1 MHz) | NR3 | TH 90-91, BK 15 |
-| level | `VOLT <v>[V\|MV]` (TH 100 mV–1 V; BK 5 mV–2 V); current level `CURR <v>MA` (BK 50 µA–) | NR3 | TH 91, BK 16 |
+| frequency | `FREQ <v>[HZ\|KHZ\|MHZ]`, `MIN`/`MAX` (TH 50 Hz-100 kHz; BK 20 Hz-500 kHz/1 MHz) | NR3 | TH 90-91, BK 15 |
+| level | `VOLT <v>[V\|MV]` (TH 100 mV-1 V; BK 5 mV-2 V); current level `CURR <v>MA` (BK 50 µA-) | NR3 | TH 91, BK 16 |
 | source resistance | `ORES {10\|100}` (TH), `{30\|50\|100}` (BK) | NR1 | TH 91, BK 17 |
 | speed + averaging | `APER {FAST\|MED\|SLOW}[,<1-255>]` (TH: 53/12/3 meas/s) | `FAST,<NR1>` | TH 100, BK 28 |
 | trigger source | `TRIG:SOUR {INT\|EXT\|BUS\|HOLD}` | token | TH 101, BK 29 |
 | trigger | `TRIG` / `*TRG` | | TH 101, BK 9/28 |
-| trigger delay | `TRIG:DEL <s>` 0–60 s | NR3 | TH 102, BK 29 |
+| trigger delay | `TRIG:DEL <s>` 0-60 s | NR3 | TH 102, BK 29 |
 | read | `FETC?` → `SN.NNNNNESNN,SN.NNNNNESNN,SN[,SN]` = A, B, status, [bin if comparator on] | | TH 102-103, BK 30 |
 | correction | `CORR:OPEN`, `CORR:SHOR` (sweep all preset points), `CORR:OPEN:STAT {ON\|OFF}`, `CORR:SHOR:STAT …`, `CORR:LOAD:…`, `CORR:SPOT<n>:…`, `CORR:LENG 0M` | | TH 104-106, BK 32-39 |
 | DC bias (BK) | `BIAS:STAT {ON\|OFF}`, `BIAS:VOLT <v>` ±2 V, `BIAS:CURR <v>MA` ±50 mA | | BK 17-19 |
@@ -195,22 +195,22 @@ ranking with what is known, to be researched later.
 - **Quirks**: no setter replies documented → `reply: none`; buffer overruns without pacing (BK
   PM p.6) → `timing.gap_after_write_ms ≥ 50`. Measurement page must be shown or FETC returns the
   list-sweep format. TH2810B+ correction covers 4 preset points, TH2817B+ 11.
-- **Front panel** (TH2817B+/TH2830 class): 3.5–4.3" LCD with soft keys; MEAS DISPLAY page shows
+- **Front panel** (TH2817B+/TH2830 class): 3.5-4.3" LCD with soft keys; MEAS DISPLAY page shows
   FUNC, FREQ, LEVEL, RANGE, SPEED, BIAS fields, large A/B readouts, Vm/Im monitor, comparator
   BIN; keys MEAS, SETUP, SYSTEM, FILE, KEYLOCK (lit in remote), TRIGGER, RESET, numeric pad.
 - **Docs**: TH manual Chinese (complete, 130 p.); BK programming manual English (complete).
   **Confidence: high** for TH2810B+/TH2817B+ and BK 894/895, **medium** for TH2830/2832/2838.
 - **DSL fit: yes** (serial, USBTMC). LAN on BK 894 needs TCP.
 
-### 2.4 B&K Precision 880 (878B/879B believed same) — handheld "impa/impb dialect"
+### 2.4 B&K Precision 880 (878B/879B believed same) - handheld "impa/impb dialect"
 
 - **Model**: 880: 100 Hz, 120 Hz, 1 kHz, 10 kHz, 100 kHz; level 0.3/0.6/1 V; primary L/C/R/Z/DCR,
   secondary D/Q/θ/ESR, SER/PAL, AUTO-LCR, tolerance 1/5/10/20 %, recording MIN/MAX/AVG
   (`bk_880/doc/880_manual.pdf` UM p.28-29). 878B/879B (more common, older) not documented here;
-  same dialect expected — **verify** before reusing.
+  same dialect expected - **verify** before reusing.
 - **Interface**: mini-USB virtual COM, **9600 8N1**, no flow control (UM p.46); chip/vid:pid not
   stated (BK supplies its own driver installer, p.45).
-- **Identify**: `*IDN?` → `<model>,<firmware>,<serial number>` (UM p.49) — no manufacturer field.
+- **Identify**: `*IDN?` → `<model>,<firmware>,<serial number>` (UM p.49) - no manufacturer field.
 - **Commands** (UM p.49-53):
 
 | Operation | Command | Reply |
@@ -226,7 +226,7 @@ ranking with what is known, to be researched later.
 | lock | `*LLO` / `*GTL`; `*TRG` exists but is useless (continuous) | |
 
 - **Quirks**: any command switches to remote (RMT) and **disables auto-fetch** (meter otherwise
-  streams `A,B,bin\r\n` after every measurement when auto-fetch is on, p.46) — send a harmless
+  streams `A,B,bin\r\n` after every measurement when auto-fetch is on, p.46) - send a harmless
   query in `session.on_connect`. Terminator CR, LF or CRLF accepted; replies `…\r\n` (p.47-48).
   Errors only shown on LCD (E10/E11/E12, p.54) → setters `reply: none`. No speed command
   (FAST/SLOW only on the keypad), no open/short command.
@@ -236,10 +236,10 @@ ranking with what is known, to be researched later.
 - **Docs**: English, complete for what exists. **Confidence: high** (880), low (878B/879B).
 - **DSL fit: yes.** Frequency/level replies need a `map` parse to numbers.
 
-### 2.5 UNI-T UTR2810E+ — own SCPI-like dialect
+### 2.5 UNI-T UTR2810E+ - own SCPI-like dialect
 
 - **Model**: UTR2810E+: 100 Hz, 120 Hz, 1 kHz, 10 kHz; 0.1/0.3/1.0 V; source 30/100 Ω; ranges
-  3 Ω–300 kΩ; 42 parameter combinations (`unit_utr2810e/doc/…programming_manual_cn_v1.0.pdf`).
+  3 Ω-300 kΩ; 42 parameter combinations (`unit_utr2810e/doc/…programming_manual_cn_v1.0.pdf`).
   UTR2830/UTR2832 (100 kHz) not documented here.
 - **Interface**: "RS232C commands" (p.3); baud not stated in the programming manual.
 - **Identify**: `*IDN?` → `UNIT,UTR2810E+, CDB2024140001,REVA2.7` (p.12; manufacturer is `UNIT`).
@@ -265,17 +265,17 @@ ranking with what is known, to be researched later.
 - **Docs**: official Chinese, short (12 p.), incomplete. **Confidence: medium-low.**
 - **DSL fit: yes.**
 
-### 2.6 Applent AT28xx / AT810A (+ OEM GW Instek LCR-6000, RS PRO LCR-6000) — "Applent dialect"
+### 2.6 Applent AT28xx / AT810A (+ OEM GW Instek LCR-6000, RS PRO LCR-6000) - "Applent dialect"
 
 - **Models**: Applent AT810A, AT2816A/B, AT2817(A), AT2818 share one user's guide
   (ManualsLib 1767875); GW Instek LCR-6002/6020/6100/6200/6300 are documented by the RS PRO
   LCR-6000 manual (ManualsLib 2964523) whose command reference is the Applent one (same
   subsystems, page names, FETC format, error codes). Model number = max frequency
-  (6002 = 2 kHz … 6300 = 300 kHz) — **not verified**.
+  (6002 = 2 kHz … 6300 = 300 kHz) - **not verified**.
 - **Interface**: RS-232 DB9 or USB virtual COM (Applent installs an **FTDI** driver, AT2818 UM
   p.60-61 *online*); baud 1200, 9600, 38400, 57600, 115200, 8N1 (LCR-6000 UM p.72 *online*);
   terminator LF (p.73, 99).
-- **Identify**: `*IDN?` → `<model>,<firmware>,<serial no.>,<manufacturer>` — **manufacturer
+- **Identify**: `*IDN?` → `<model>,<firmware>,<serial no.>,<manufacturer>` - **manufacturer
   last** (LCR-6000 UM p.140 *online*).
 - **Commands** (LCR-6000 UM *online*; AT2818 UM *online* where different):
 
@@ -295,7 +295,7 @@ ranking with what is known, to be researched later.
 | page | `DISP:PAGE {MEAS\|…}`; FREQ/LEV refused on LIST and CORRECTION pages | | 106, 112 |
 
 - **Quirks**: SYSTEM CONFIG "RESULT" must be **FETCH**, not AUTO (AUTO streams a result after each
-  measurement, p.75); "ERROR CODE" ON makes the meter answer `*E00`…`*E11` (p.74) — choose OFF
+  measurement, p.75); "ERROR CODE" ON makes the meter answer `*E00`…`*E11` (p.74) - choose OFF
   with `reply: none`, or ON and parse (needs a capture). Replies lower case (`on`, `slow`).
   Comparator token in FETC (`BIN1`, `AUX`, `OUT`, `NG`) must be split off.
 - **Docs**: no freely downloadable command reference (applent.com blocked, ICP filing); ManualsLib
@@ -303,12 +303,12 @@ ranking with what is known, to be researched later.
   tokens to be confirmed against a PDF/capture).
 - **DSL fit: yes.**
 
-### 2.7 B&K Precision 891 — own SCPI dialect
+### 2.7 B&K Precision 891 - own SCPI dialect
 
-- **Model**: 20 Hz–300 kHz (resolution 0.01 Hz <100 Hz … 100 Hz ≥100 kHz), AC level 0.5 or 1 Vrms,
-  DCR 1 VDC, ranges AUTO/HOLD only, speed SLOW/FAST, 2–4 display digits (`bk_891/doc/891_manual.pdf`
+- **Model**: 20 Hz-300 kHz (resolution 0.01 Hz <100 Hz … 100 Hz ≥100 kHz), AC level 0.5 or 1 Vrms,
+  DCR 1 VDC, ranges AUTO/HOLD only, speed SLOW/FAST, 2-4 display digits (`bk_891/doc/891_manual.pdf`
   UM p.21-24, 75-76). Pairs Cs-Q/D/R, Cp-Q/D/R/G, Ls-Q/D/R, Lp-Q/D/R/G, Z-θ, Y-θ, R-X, G-B, DCR (p.23).
-- **Interface**: USB virtual COM (9600/19200/38400/57600, N/E/O 8, 1/2 stop, no flow — **add
+- **Interface**: USB virtual COM (9600/19200/38400/57600, N/E/O 8, 1/2 stop, no flow - **add
   delays**, p.58-59), RS-232, GPIB, LAN (web UI, telnet 5024, raw socket **5025**, ≥100 ms between
   writes, p.64).
 - **Identify**: `*IDN?` → `<Manufacturer>,<model>,<serial number>,<firmware>` (p.66).
@@ -323,9 +323,9 @@ ranking with what is known, to be researched later.
 
 ### 2.8 Keysight E4980A / E4980AL (reference "E4980 dialect", also HP 4284A)
 
-- **Model**: 20 Hz–2 MHz (E4980AL: to 1 MHz / 300 kHz options), level 0–2 V / 0–20 mA (option 001:
-  0–20 V / 0–100 mA), ranges 1, 10, 100, 300, 1k, 3k, 10k, 30k, 100k Ω (opt 001 adds 0.1), DC bias
-  0/1.5/2 V (opt 001 ±40 V) — `keysight_e4980a/doc/qcodes_e4980a.py` l.218-242 (QCoDeS, citing
+- **Model**: 20 Hz-2 MHz (E4980AL: to 1 MHz / 300 kHz options), level 0-2 V / 0-20 mA (option 001:
+  0-20 V / 0-100 mA), ranges 1, 10, 100, 300, 1k, 3k, 10k, 30k, 100k Ω (opt 001 adds 0.1), DC bias
+  0/1.5/2 V (opt 001 ±40 V) - `keysight_e4980a/doc/qcodes_e4980a.py` l.218-242 (QCoDeS, citing
   User's Guide E4980-90230 p.353; the Keysight PDF is behind a bot wall).
 - **Interface**: USBTMC (vid 0x0957; pid **not verified**, commonly reported 0x0909), LAN (raw
   SCPI 5025), GPIB.
@@ -340,9 +340,9 @@ ranking with what is known, to be researched later.
 - The Tonghui tree (2.3) is this tree without the leading colon, with `FAST|MED|SLOW` speed tokens
   and Tonghui-specific extras → shared baseline A (section 3).
 
-### 2.9 B&K Precision 889B (legacy) — own ASCII commands
+### 2.9 B&K Precision 889B (legacy) - own ASCII commands
 
-- **Model**: 100 Hz–200 kHz, 1 Vrms / 250 mVrms / 50 mVrms / 1 VDC, plus DCV/ACV/DCA/ACA
+- **Model**: 100 Hz-200 kHz, 1 Vrms / 250 mVrms / 50 mVrms / 1 VDC, plus DCV/ACV/DCA/ACA
   (`bk_889b/doc/889B_manual.pdf` UM p.17-24). The manual's syntax section says "Models 4090".
 - **Interface**: USB, 9600 8N1, half duplex, no handshake (p.20). Terminator CR or LF (p.20).
 - **Identify**: `*IDN?` → `B&K PRECISION CORP. MODEL889B,123456789,4.096` (p.21).
@@ -352,12 +352,12 @@ ranking with what is known, to be researched later.
   → `OK`, `FREQ?` → `1KHz` (with `ASC ON`); `LEV {1VDC|1Vrms|250mVrms|50mVrms}`; `CORR OPEN` /
   `CORR SHORT` → `OK` after completion; `*RST` replies the IDN (p.20-23).
 - **Quirks**: readings are in the **display unit** (default `CpD uF`, p.21) with no unit in the
-  reply — the range/unit must be tracked; the binary "Remote Binning" mode (`MOD <24-bit code>`,
+  reply - the range/unit must be tracked; the binary "Remote Binning" mode (`MOD <24-bit code>`,
   11-byte `02 09 <float32 LE ×2> <checksum>` frames, p.17-19) must be avoided.
 - **Confidence: medium** (English manual, but unit handling unclear). **DSL fit: partly** (text is
   fine; scaling needs a unit query that the manual does not document).
 
-### 2.10 Voltcraft LCR 4080 / PeakTech 2165 — polled fixed ASCII packet
+### 2.10 Voltcraft LCR 4080 / PeakTech 2165 - polled fixed ASCII packet
 
 - **Protocol** (`voltcraft_4080/doc/vc4080.c` l.37-118): request `N` (single char, l.635-641) →
   39-char ASCII packet ending `\r\n`: `[0]` L/C/R, `[1]` Q/D/R, `[2]` freq A=1 kHz/B=120 Hz,
@@ -366,7 +366,7 @@ ranking with what is known, to be researched later.
   `[17:21]` D, `[22:26]` Q, `[27:36]` flags (SETUP, FUSE, HOLD, MAX/MIN/AVG, REL, LIMITS, TOL,
   backlight, adapter, low battery). Serial 1200 baud; manual says 7E1, sigrok uses 8N1 and strips
   the parity bit (l.76-79).
-- **DSL fit: yes but awkward** — `rx terminator "\n"`, `format: 7E1` is supported by the transport;
+- **DSL fit: yes but awkward** - `rx terminator "\n"`, `format: 7E1` is supported by the transport;
   value = digits × a range-code table that depends on L/C/R, frequency and circuit (CEL map
   literal). **Confidence: medium** (sigrok, two vendors' docs referenced in the source).
 
@@ -379,8 +379,8 @@ ranking with what is known, to be researched later.
 | **A. E4980 / Tonghui** | Keysight E4980A/AL, HP 4284A, Tonghui TH2810B+/TH2817B+ (TH2830/2832/2838 assumed), B&K 894/895 | `FUNC:IMP <CPD…>`, `FUNC:IMP?`, `FUNC:IMP:RANG[:AUTO]`, `FREQ`, `VOLT[:LEV]`, `CURR[:LEV]`, `APER <spd>[,avg]`, `TRIG:SOUR`, `TRIG`, `FETC?` → `A,B,status[,bin]`, `CORR:OPEN/SHOR[:STAT]`, `BIAS:STAT/VOLT`, `*IDN?` | speed tokens (`SHOR/MED/LONG` vs `FAST/MED/SLOW`), leading colon, limits, FETC subnode (`:FETC:IMP:FORM?` vs `FETC?`), extra pairs (RPQ, RSQ, ZQ, LPRD, VDID) |
 | **B. Applent** | Applent AT810A/AT2816/AT2817/AT2818, GW Instek LCR-6000, RS PRO LCR-6000 | `FUNC <Cp-D…>`, `FUNC:IMP:RANG <0-8>`, `FREQ` (no Hz), `LEV:VOLT` (no V), `APER {SLOW,MED,FAST}`, `FETC?` → `A,B,compare`, `TRIG:SOUR {INT,MAN,EXT,BUS}`, `*IDN?` (manufacturer last) | auto-range syntax, MED1/MED2, error-code/result-mode settings |
 | **C. A/B parameter handhelds** | East Tester ET44/ET45 (+RuoShui/Victor), B&K 880 (878B/879B?) | primary and secondary set separately (`FUNC:IMP:A`/`FUNC:impa`, `…:B`/`impb`), `…:EQU {SER\|PAL}`, `FREQ`, `VOLT`, `FETC?` → `A,B[,bin]` | ET44 setters reply `exec success`; BK 880 replies unit text (`1kHz`, `0.6V`); ET44 level in mV |
-| D. own dialects | B&K 891 (`MEAS:FUNC CSQ`, `LEV:AC`), UNI-T UTR2810E+ (`FUNC C_D`, `MODE SER`, `SPEED`), B&K 889B (`CpD?`) | — | — |
-| E. one-way streams | ES51919 (binary), VC4080 (ASCII, polled) | — | needs DSL stream/packet support (ES51919) |
+| D. own dialects | B&K 891 (`MEAS:FUNC CSQ`, `LEV:AC`), UNI-T UTR2810E+ (`FUNC C_D`, `MODE SER`, `SPEED`), B&K 889B (`CpD?`) | - | - |
+| E. one-way streams | ES51919 (binary), VC4080 (ASCII, polled) | - | needs DSL stream/packet support (ES51919) |
 
 The canonical **function keys** of the proposed contract are the baseline-A tokens (CPD, CSRS,
 ZTD …): they are the de-facto standard and map 1:1 to B (`Cp-D`), to D (`CSQ`, `C_D`, `CpD`) and,
@@ -390,7 +390,7 @@ via three setters, to C.
 
 ## 4. Proposed LCR class contract and panel
 
-### 4.1 Contract (proposal — not created as a file)
+### 4.1 Contract (proposal - not created as a file)
 
 ```yaml
 schema: benchmesh.class/v1
@@ -437,7 +437,7 @@ operations:
 Open point for read-only meters (ES51919): `function`/`frequency` setters are `required` above;
 either make the contract allow a read-only binding (e.g. `features.read_only: true` exempts
 required setters) or drop `required` and let the panel hide missing controls. Recommended:
-required **get-side** status only (PRIMARY, SECONDARY, FUNC, FREQ), setters optional — the UI
+required **get-side** status only (PRIMARY, SECONDARY, FUNC, FREQ), setters optional - the UI
 already builds controls from `/methods`.
 
 ### 4.2 Features (what the panel is driven by)
@@ -445,12 +445,12 @@ already builds controls from `/methods`.
 ```yaml
 features:
   functions:                       # allowed pairs, in front-panel order
-    CPD:  {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp–D"}
-    CSD:  {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs–D"}
-    CSRS: {primary: Cs, secondary: Rs,  circuit: SER, units: [F, "Ω"], ui_name: "Cs–Rs"}
-    LSQ:  {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls–Q"}
-    RX:   {primary: R,  secondary: X,                 units: ["Ω", "Ω"], ui_name: "R–X"}
-    ZTD:  {primary: Z,  secondary: θ,                 units: ["Ω", "°"], ui_name: "Z–θ"}
+    CPD:  {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp-D"}
+    CSD:  {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs-D"}
+    CSRS: {primary: Cs, secondary: Rs,  circuit: SER, units: [F, "Ω"], ui_name: "Cs-Rs"}
+    LSQ:  {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls-Q"}
+    RX:   {primary: R,  secondary: X,                 units: ["Ω", "Ω"], ui_name: "R-X"}
+    ZTD:  {primary: Z,  secondary: θ,                 units: ["Ω", "°"], ui_name: "Z-θ"}
     DCR:  {primary: DCR,                              units: ["Ω"],      ui_name: "DCR"}
   frequency: {list: [100, 120, 1000, 10000, 100000]}   # or {min: 20, max: 300000} (+ optional list of presets)
   level:     {list: [0.3, 0.6, 1.0]}                   # or {min: 0.005, max: 2.0}; unit V
@@ -465,26 +465,26 @@ features:
 
 ### 4.3 Panel (modelled on the front panels)
 
-Every instrument above — handheld or benchtop — shows the same thing: a **large primary readout**
+Every instrument above - handheld or benchtop - shows the same thing: a **large primary readout**
 with its parameter letter and unit, a **smaller secondary readout** below, and a strip of setup
 annunciators (frequency, level, SER/PAR, AUTO/HOLD, speed). Benchtops add a setup field row
 (FUNC · FREQ · LEVEL · RANGE · SPEED · BIAS) and a comparator BIN result. Proposed `LcrPanel`
 (kit components, one panel for all LCR meters):
 
 - **Display (kit-glass)**
-  - Primary `Readout` — tag = primary glyph (Cs, Lp, R, Z, DCR), value with SI prefix from
+  - Primary `Readout` - tag = primary glyph (Cs, Lp, R, Z, DCR), value with SI prefix from
     `features.counts`, unit from `functions[FUNC].units[0]`; `Recordable field="PRIMARY"`.
-  - Secondary `Readout` (smaller) — tag D/Q/θ/Rs/ESR/X/G/B; D and Q shown without unit, θ in °;
+  - Secondary `Readout` (smaller) - tag D/Q/θ/Rs/ESR/X/G/B; D and Q shown without unit, θ in °;
     `Recordable field="SECONDARY"`. Hidden for DCR.
   - Annunciators: `SER`/`PAR` (from CIRCUIT), `AUTO`/`HOLD` (RANGE), frequency (`1 kHz`), level
     (`0.6 V`), speed (`SLOW`), `BIAS` (BIAS_ON, alert colour), `OL` (alert), BIN result,
     client-side `HOLD`, `REL Δ`, `RMT`.
   - Statistics row MIN/MAX/AVG/N (reuse `useStats` from `DmmPanel`) and a sparkline of PRIMARY.
   - Optional "component view": derived values the UI can compute from the pair (e.g. ESR = D/(2πfC)
-    for Cs-D, Q = 1/D) — only display, never sent.
+    for Cs-D, Q = 1/D) - only display, never sent.
 - **Controls** (each waits for confirmation through `kit/confirm.ts` against the reported status)
-  - **Function**: two chip rows built from `features.functions` — primary L / C / R / Z / DCR,
-    then secondary filtered to the pairs allowed for that primary — plus a `SER | PAR` toggle when
+  - **Function**: two chip rows built from `features.functions` - primary L / C / R / Z / DCR,
+    then secondary filtered to the pairs allowed for that primary - plus a `SER | PAR` toggle when
     both circuits exist for the pair; the chosen combination resolves to one `function` key
     (`api.set('function', 'CSD')`). This mirrors the handheld keys (L/C/R, D/Q/θ/ESR, SER/PAR) and
     the benchtop FUNC soft-key list at once.
@@ -494,14 +494,14 @@ annunciators (frequency, level, SER/PAR, AUTO/HOLD, speed). Benchtops add a setu
   - **Range**: `Selector` AUTO + `features.ranges` (HOLD-only meters show AUTO/HOLD).
   - **Speed**: `Selector` from `features.speeds`.
   - **Correction**: OPEN and SHORT buttons with an instruction dialog ("open the clips", "short the
-    clips") — long-running, so the button pulses until the next normal reading; ET44 shows one
+    clips") - long-running, so the button pulses until the next normal reading; ET44 shows one
     "Correct" button (hardware decides).
   - **Trigger**: source selector + a "Single" button when the source is BUS/MAN; HOLD (client-side
     freeze) and REL Δ micro switches as on the DMM panel.
   - **Bias**: setpoint editor + arm-to-enable switch (`bias_output` energizes: two presses).
   - **Comparator** (later): nominal + tolerance → BIN annunciator; not needed for a first version.
 
-### 4.4 Binding sketch for an A/B instrument (ET44) — shows the contract fits
+### 4.4 Binding sketch for an A/B instrument (ET44) - shows the contract fits
 
 ```yaml
 commands:
@@ -527,6 +527,6 @@ Gaps found while sketching (worth a DSL decision before writing the definitions)
    `imp_b_set` have no mapping for them. Needs either a per-step condition (`when: CEL`) or an enum
    value meaning "skip this step".
 2. Reading FUNC back from three queries works with a CEL map literal over `a + b + equ`.
-3. `features.functions` units drive both the UI and SI display — same pattern as DMM `modes`.
+3. `features.functions` units drive both the UI and SI display - same pattern as DMM `modes`.
 </content>
 </invoke>

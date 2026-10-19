@@ -37,7 +37,7 @@ There is no class-level schema in the Python code; this document is the first on
 - `GET /instruments/{C}/{dev}` → raw `instrument_class.C.features`.
 - `ui_component` dispatch: `ClassPods.tsx:17-28`.
 
-## PSU — `GenericPSU` (tenma_72), `GenericOWONPSU` (owon_spm)
+## PSU - `GenericPSU` (tenma_72), `GenericOWONPSU` (owon_spm)
 - **Status read:** `VOUT`,`IOUT`,`POUT` (SI); `OUTPUT`,`REMOTE` ("ON"/"OFF").
 - 💤 `CV`,`CC`,`SBY`,`FAIL` (bool); SPM `OVP`,`OCP`,`OTP`,`OM` (raw); Tenma `ch1Mode`,`ch2Mode`,`Tracking`,`BeepEnabled`,`lockEnabled`,`outEnabled`.
 - **Ops:** GET `voltage`,`current` (reads `.value.val`); OWON also `voltage_limit`,`current_limit`. POST `voltage/{n}`,`current/{n}`,`output/ON|OFF`,`remote/ON|OFF`; OWON also `voltage_limit/{n}`,`current_limit/{n}`. Tooltips: GET `output_voltage`,`output_current`,`output_power`.
@@ -46,10 +46,10 @@ There is no class-level schema in the Python code; this document is the first on
 - ⚠️ Tenma `POUT` = `_parse_numeric` on SI-dict repr → wrong when a prefix is present.
 - ⚠️ Tenma `query_output_*` inverted cache → returns None on miss (confirmed in simulated capture: `could not convert string to float: 'None'`) and doubles poll traffic (VOUT/IOUT queried twice per poll).
 - ⚠️ Tenma `set_ocp`/`set_ovp` use `is` → never send.
-- ⚠️ `MeasurementStatusBar.tsx:61-96` looks for `output_voltage_num`/`voltage_num`/… — no driver produces them.
+- ⚠️ `MeasurementStatusBar.tsx:61-96` looks for `output_voltage_num`/`voltage_num`/… - no driver produces them.
 - ⚠️ `TimeSeriesGraph` in GenericPSU plots the setpoint input, not readings (`GenericPSU.tsx:325`).
 
-## DMM — `GenericDMM` (owon_xdm, owon_spm[DMM])
+## DMM - `GenericDMM` (owon_xdm, owon_spm[DMM])
 - **Status read:** `MEAS` (SI). 💤 `MODE` (e.g. `VOLT_DC`), `RANGE` (string|null; SPM always null).
 - **Ops:** POST `mode/{modeKey}` (manifest `modes` key), `range/{v}`, `set_temp_sensor/{v}`, `set_temp_scale/{sym}`. Node-RED: `query_measurement`.
 - **Features read:** `modes{key:{symbol,unit,note,ui_name,ui_component}}`, `RANGe[modeKey]:[{value,display}]`, `RANGe.TEMP.Sensor`, `RANGe.TEMP.Scale`. 💤 `techname`,`hold`,`delta`,`rate`,`lock`,`DB:REFerence`,`DBM:REFerence`.
@@ -58,23 +58,23 @@ There is no class-level schema in the Python code; this document is the first on
 - ⚠️ UI ignores registry `MODE` → dropdown doesn't track the instrument.
 - ⚠️ XDM `query_measurement`/`query_function` inverted cache.
 
-## ELL — `OwonOELELL` (owon_oel)
+## ELL - `OwonOELELL` (owon_oel)
 - **Status read:** `VIN`,`IIN`,`PIN` (SI); `REMOTE`,`INPUT` ("ON"/"OFF"); `MODE` ∈ `CURR|VOLT|RES|POW|DYN` (must match `features.modes` key). Legacy fallback numeric `VOUT`,`IOUT`,`POUT`. 💤 `OVP`,`OCP`,`OTP`.
 - **Ops:** GET `curr|volt|res|pow` (parseFloat raw string). POST `mode/{KEY}`, `input/ON|OFF`, `remote/ON|OFF`, `{mode}/{n}`.
 - **Features read:** `modes{KEY:{ui_name, setpoint:{min,max,symbol,unit}}}`, `lock`, `compulsory_lock`. 💤 `absolute_limits`, `setpoint.step`, `slew_presets`, `dynamic_list`, `remote_sense`, `parallel`.
-- ⚠️ `REMOTE` hardcoded "ON". `INPUT` is the raw `INP?` reply (possibly "1"/"0" — verify by capture) while UI compares to "ON". `query_mode` returns None on unknown reply.
+- ⚠️ `REMOTE` hardcoded "ON". `INPUT` is the raw `INP?` reply (possibly "1"/"0" - verify by capture) while UI compares to "ON". `query_mode` returns None on unknown reply.
 - ⚠️ Node-RED calls `set_current/voltage/power`; OEL has `set_curr/volt/pow`.
 
-## AWG — `GenericAWG` (owon_dge)
+## AWG - `GenericAWG` (owon_dge)
 - Driver emits `{"OUTPUT":"ON"|"OFF"}` per channel (2). UI renders placeholders only; no ops used. Features: `channel_colors`.
 
-## OSC — `GenericOSC` (rigol_dho800)
+## OSC - `GenericOSC` (rigol_dho800)
 - **Status read:** `SCALE`,`OFFSET`,`TIMEBASE` (SI), `COUPLING` (raw, unstripped). 💤 `CHANNEL` (int). 4 channels. No ops from UI.
 
 ## LCR / SAL (contracts 2026-10-18: `devices/classes/LCR.yaml`, `SAL.yaml`)
 Written from the coverage reports (`coverage/LCR.md` §4, `coverage/SAL.md` §4); panels `LcrPanel`, `SalPanel`.
 
-**LCR** — status PRIMARY, SECONDARY (si), FUNC (string), FREQ (si) required; LEVEL, CIRCUIT, SPEED, RANGE,
+**LCR** - status PRIMARY, SECONDARY (si), FUNC (string), FREQ (si) required; LEVEL, CIRCUIT, SPEED, RANGE,
 OVERLOAD, BIN, BIAS, BIAS_ON, REMOTE optional. **No setter is required** (read-only meters bind only the
 status; the panel hides controls whose operation is missing from `/methods`). Conventions:
 - `FUNC` / `function` values are canonical E4980 tokens (CPD, CSRS, LSQ, RX, ZTD, DCR, …). `features.functions`
@@ -88,7 +88,7 @@ status; the panel hides controls whose operation is missing from `/methods`). Co
   `correction` OPEN|SHORT (AUTO where the meter decides), `trigger` ONCE, `bias_output` `safety: energize`.
 - `features.counts`: display digits (or a count such as 20000).
 
-**SAL** — required status CENTER, SPAN, START, STOP, RBW (si) and REF_LEVEL (number, dBm); required operations
+**SAL** - required status CENTER, SPAN, START, STOP, RBW (si) and REF_LEVEL (number, dBm); required operations
 start/stop/rbw/ref_level (get+set), center/span (set; the tinySA reports only start/stop, so its CENTER/SPAN status is computed in CEL) and sweep (set). The generator control appears only with `features.tg` (definitions bind `tg_output` family-wide). Frequencies/times are si; levels plain
 numbers (dBm, dB). TRACE is a `list` of levels from START to STOP. Setter vocabularies: sweep
 CONT|SINGLE|HOLD|RESTART, trace_mode WRITE|MAXHOLD|MINHOLD|AVERAGE|VIEW, detector POS|NEG|NORM|SAMP|RMS|AVER|QPE,

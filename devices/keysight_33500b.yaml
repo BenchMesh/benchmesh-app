@@ -10,7 +10,7 @@ family: 33500B/33600A Trueform waveform generator
 version: 0.1.0
 sources:
   - {doc: "EDU33210 Series User's Guide EDU33212-90002 Ed4 (Trueform command forms)", pages: "83-93"}
-  - {note: "33500B/33600A guide (asset 9018-03714) not obtained (login). USB ids from memory: 33500B 0957:2C07, 33600A 0957:5707 — the link names the vendor only. Model limits from datasheets; confidence medium."}
+  - {note: "33500B/33600A guide (asset 9018-03714) not obtained (login). USB ids from memory: 33500B 0957:2C07, 33600A 0957:5707 - the link names the vendor only. Model limits from datasheets; confidence medium."}
 models:
   - {"name": "33509B", "match": "^(Agilent|Keysight) Technologies,33509B,", "channels": {"AWG": 1}, "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}
   - {"name": "33510B", "match": "^(Agilent|Keysight) Technologies,33510B,", "features": {"AWG": {"max_freq_hz": {"SIN": 20e6}}}}

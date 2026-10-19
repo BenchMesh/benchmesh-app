@@ -15,7 +15,7 @@ models:
   - name: UT8806E
     match: "(?i)^UNI-T,? *UT8806"
 link:
-  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  # LAN: VXI-11 (LXI) - message-based like USB-TMC
   vxi11:
     framing:
       tx: {terminator: "\n"}

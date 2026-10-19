@@ -1,4 +1,4 @@
-# Riden RD60xx bench supplies — Modbus RTU over the on-board CH340 (115200 8N1, slave 1).
+# Riden RD60xx bench supplies - Modbus RTU over the on-board CH340 (115200 8N1, slave 1).
 # No official document: register map from three independent implementations that agree
 # (Baldanos/rd6006 registers.md, ShayBox/Riden register.py, sigrok rdtech-dps), see
 # ai_context/migration/coverage/PSU.md §2.2. Scales differ per model: each definition sets the

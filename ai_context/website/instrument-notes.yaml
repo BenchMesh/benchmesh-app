@@ -1,11 +1,11 @@
 # Per-family notes for the public instrument list (online service / website).
 # Collected 2026-10-18 from the interface sweep, the coverage research and the library
 # inventory (ai_context/migration/coverage/*.md). One entry per definition id; kinds:
-#   partial_interface   — only some models of the family have this interface
-#   unsupported         — an interface the instrument has that BenchMesh cannot use (yet)
-#   unverified          — a port / USB id / reply not taken from the manual: confirm on first contact
-#   prefer              — which interface works better, and why
-#   known_issue         — reported by users / libraries (firmware, timing, quirks)
+#   partial_interface   - only some models of the family have this interface
+#   unsupported         - an interface the instrument has that BenchMesh cannot use (yet)
+#   unverified          - a port / USB id / reply not taken from the manual: confirm on first contact
+#   prefer              - which interface works better, and why
+#   known_issue         - reported by users / libraries (firmware, timing, quirks)
 # The website shows these next to each model's status (Bench-tested / Community-confirmed /
 # Awaiting confirmation); a user's first-contact report can resolve `unverified` items.
 schema: benchmesh.notes/v1
@@ -98,7 +98,7 @@ families:
   siglent_sdm3000:
     - {kind: unverified, text: "LAN port 5025 confirmed on hardware by a user; Siglent's app note says 5024."}
   siglent_sdm4000:
-    - {kind: unverified, text: "Documents VXI-11 (supported); the raw socket 5025 is unverified — prefer VXI-11."}
+    - {kind: unverified, text: "Documents VXI-11 (supported); the raw socket 5025 is unverified - prefer VXI-11."}
   siglent_sdl1000x:
     - {kind: unverified, text: "USB product id not documented (vendor f4ec only)."}
   siglent_spd4000x:

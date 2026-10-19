@@ -6,7 +6,7 @@
 //!   ([`usbtmc_nusb`], WinUSB on Windows), or an installed VISA ([`visa`]). [`winusb`] gives a
 //!   Windows instrument the WinUSB driver (one UAC prompt).
 //! - [`UsbTmcTransport`]: Linux kernel `usbtmc` driver (`/dev/usbtmcN`); one `read()`
-//!   returns one whole device message — never split a message into several reads
+//!   returns one whole device message - never split a message into several reads
 //!   (split reads strand data on the device and desync the USBTMC tags; see the DGE
 //!   screenshot capture).
 //!
@@ -90,7 +90,7 @@ pub fn port_kind(link: &Link) -> Option<discover::PortKind> {
     }
 }
 
-/// The ports to try for a configured instrument: its fixed path, or — with an identity —
+/// The ports to try for a configured instrument: its fixed path, or - with an identity -
 /// every attached port matching it (best first), each accepted only if the identify reply
 /// carries the identity's serial number. `ep.path` is then the last known port (a hint).
 pub fn attempts(link: &Link, ep: &Endpoint, id: Option<&identity::Identity>) -> Result<Vec<Attempt>, String> {
@@ -243,7 +243,7 @@ impl SerialTransport {
 impl Drop for SerialTransport {
     fn drop(&mut self) {
         // With flow control, bytes the device never accepted would hold close() for the kernel's
-        // closing_wait (30 s on Linux) — and the port with it. Without, the output has drained.
+        // closing_wait (30 s on Linux) - and the port with it. Without, the output has drained.
         // Turning flow control off first lets the adapter release bytes it holds back for CTS.
         if !self.drain {
             let _ = self.port.set_flow_control(serialport::FlowControl::None);

@@ -1,11 +1,11 @@
 # tinySA (ZS-304) and tinySA Ultra / Ultra+ (ZS-405, ZS-406, ZS-407) spectrum analyzers: the
-# ChibiOS text shell over USB CDC (0483:5740, shared with every ChibiOS VCP — identity comes from
+# ChibiOS text shell over USB CDC (0483:5740, shared with every ChibiOS VCP - identity comes from
 # `version`). Written from the firmware source and wiki, not yet seen live ("awaiting
 # confirmation"). Coverage report: ai_context/migration/coverage/SAL.md §2.1.
 #
 # Framing: a line ends on CR; every typed character is echoed, then the output lines (CRLF), then
 # the prompt `ch> `. A reply is therefore `<echo>\r\n<output>` up to the prompt; parses drop the
-# echo line. Every command — setters too — answers at least echo + prompt, so setters read their
+# echo line. Every command - setters too - answers at least echo + prompt, so setters read their
 # reply (`reply: line`). The connect banner (`tinySA Shell\r\nch> `) is drained before identify.
 # Polling a sweep-thread command (data, sweep, rbw, …) restarts the running sweep: settings are
 # polled slowly. The generator mode (`mode low output`) turns the analyzer into a generator and

@@ -32,7 +32,7 @@ export function tracePoints(codes: number[], t: TraceScale, w: number, h: number
 
 /** Compact engineering text: 0.05 V → "50 mV", 312.5e6 Sa/s → "312.5 MSa/s". */
 export function siText(x: number | null | undefined, unit: string, digits = 4): string {
-  if (x == null || !Number.isFinite(x)) return '—'
+  if (x == null || !Number.isFinite(x)) return '-'
   if (x === 0) return `0 ${unit}`
   const p = prefixed(x, digits)
   const num = p.text.trim().replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')

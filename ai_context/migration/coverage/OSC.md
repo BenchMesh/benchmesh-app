@@ -20,21 +20,21 @@ implemented since 2026-10-18; every scope definition with a LAN socket offers it
 
 | # | Family | Price band (new) | Protocol | Waveform transfer | Doc | Confidence | DSL fit |
 |---|---|---|---|---|---|---|---|
-| 1 | Rigol DS1000Z (DS1054Z, DS1104Z, MSO1000Z, DS1202Z-E) | €300–600 (used €200) | SCPI, USBTMC + LAN | IEEE block, BYTE, Rigol preamble | very good | high | **works today** |
-| 2 | Siglent SDS1000X-E (SDS1104X-E, SDS1202X-E …) | €350–600 | legacy Siglent SCPI (`C1:VDIV`, `C1:WF? DAT2`) | prefixed block `C1:WF DAT2,#9…`, i8 | good | medium | **blocked**: block reply with text prefix |
-| 3 | Rigol DHO800/DHO900 | €300–900 | SCPI, USBTMC | IEEE block, BYTE | very good | **bench-tested** | works (`rigol_dho800.yaml`) |
-| 4 | Siglent SDS800X HD / SDS1000X HD / SDS2000X Plus / SDS2000X HD | €400–2500 | Siglent SCPI tree (`:CHANnel1:SCALe`, `:WAVeform:…`) | IEEE block (i8 / i16le), **binary** 346-byte preamble | very good | medium-high | **mostly works**; scaling from text queries + per-model `code_per_div` (binary preamble needs a struct step) |
-| 5 | Rigol DHO1000 / DHO4000 | €700–2000 | SCPI (DHO800 dialect) | IEEE block, BYTE/WORD | very good | high | works (≈ DHO800 definition) |
-| 6 | Keysight InfiniiVision 1000X / 1200X (EDUX1052G, DSOX1204G), 2000X, 3000T | €600–6000 | Keysight SCPI (Rigol's ancestor) | IEEE block, BYTE/WORD, 10-field text preamble | excellent | high | **works today** |
-| 7 | Rigol MSO5000 / DS2000A | €700–1500 (used) | SCPI (DS1000Z dialect) | IEEE block, BYTE | very good | high | works today |
-| 8 | Tektronix TBS1000C / TBS1000B / TBS2000B | €500–1500 (schools) | Tek SCPI (`CH1:SCAle`, `CURVe?`) | IEEE block, RI (i8), `WFMOutpre?` | good | medium-high (TBS1000C) / low (TBS2000B, no manual fetched) | **works today** (`HEADer OFF`) |
-| 9 | UNI-T MSO/UPO2000 (UPO2000CS/E), MSO2000X/3000X, UPO1000 | €300–900 | Rigol-like SCPI | IEEE block, BYTE (UPO2000), WORD (MSO2000X), Rigol preamble | fair (translated) | medium | works today (byte order of WORD unconfirmed) |
-| 10 | GW Instek GDS-1000B (GDS-1054B/1072B/1102B) | €350–700 | GW SCPI over **USB CDC-ACM (virtual COM)** | `#<n><len>` block, i16be, text settings header | good | medium | works today (serial link) |
-| 11 | OWON XDS2000/3000, TAO3000, SDS(-E), HDS200 handheld | €150–600 | OWON SCPI (USB vendor bulk / LAN) | **4-byte length prefix** + i16le, JSON header | poor | low | **blocked**: non-IEEE length prefix, string values with units, unknown transport |
-| 12 | Hantek DSO2000 (DSO2C10/2C15/2D10/2D15) | €150–250 | Hantek SCPI subset (USBTMC) | custom `#9…` multi-packet frame, all channels | poor | low | **blocked**: custom framing, no RUN/STOP or measurement commands |
-| – | Hantek 6022BE/BL | €60 | raw USB (Cypress FX2, needs firmware upload) | – | none (sigrok) | – | not SCPI; out of scope |
-| – | Micsig TO/STO/ATO tablet scopes | €400–1500 | not verified (no manual obtained) | – | none found | – | unknown |
-| – | FNIRSI (1013D, DPOX180H, 2C23T, DSO152) | €50–150 | no remote control interface (USB = mass storage / charging) | – | – | – | none |
+| 1 | Rigol DS1000Z (DS1054Z, DS1104Z, MSO1000Z, DS1202Z-E) | €300-600 (used €200) | SCPI, USBTMC + LAN | IEEE block, BYTE, Rigol preamble | very good | high | **works today** |
+| 2 | Siglent SDS1000X-E (SDS1104X-E, SDS1202X-E …) | €350-600 | legacy Siglent SCPI (`C1:VDIV`, `C1:WF? DAT2`) | prefixed block `C1:WF DAT2,#9…`, i8 | good | medium | **blocked**: block reply with text prefix |
+| 3 | Rigol DHO800/DHO900 | €300-900 | SCPI, USBTMC | IEEE block, BYTE | very good | **bench-tested** | works (`rigol_dho800.yaml`) |
+| 4 | Siglent SDS800X HD / SDS1000X HD / SDS2000X Plus / SDS2000X HD | €400-2500 | Siglent SCPI tree (`:CHANnel1:SCALe`, `:WAVeform:…`) | IEEE block (i8 / i16le), **binary** 346-byte preamble | very good | medium-high | **mostly works**; scaling from text queries + per-model `code_per_div` (binary preamble needs a struct step) |
+| 5 | Rigol DHO1000 / DHO4000 | €700-2000 | SCPI (DHO800 dialect) | IEEE block, BYTE/WORD | very good | high | works (≈ DHO800 definition) |
+| 6 | Keysight InfiniiVision 1000X / 1200X (EDUX1052G, DSOX1204G), 2000X, 3000T | €600-6000 | Keysight SCPI (Rigol's ancestor) | IEEE block, BYTE/WORD, 10-field text preamble | excellent | high | **works today** |
+| 7 | Rigol MSO5000 / DS2000A | €700-1500 (used) | SCPI (DS1000Z dialect) | IEEE block, BYTE | very good | high | works today |
+| 8 | Tektronix TBS1000C / TBS1000B / TBS2000B | €500-1500 (schools) | Tek SCPI (`CH1:SCAle`, `CURVe?`) | IEEE block, RI (i8), `WFMOutpre?` | good | medium-high (TBS1000C) / low (TBS2000B, no manual fetched) | **works today** (`HEADer OFF`) |
+| 9 | UNI-T MSO/UPO2000 (UPO2000CS/E), MSO2000X/3000X, UPO1000 | €300-900 | Rigol-like SCPI | IEEE block, BYTE (UPO2000), WORD (MSO2000X), Rigol preamble | fair (translated) | medium | works today (byte order of WORD unconfirmed) |
+| 10 | GW Instek GDS-1000B (GDS-1054B/1072B/1102B) | €350-700 | GW SCPI over **USB CDC-ACM (virtual COM)** | `#<n><len>` block, i16be, text settings header | good | medium | works today (serial link) |
+| 11 | OWON XDS2000/3000, TAO3000, SDS(-E), HDS200 handheld | €150-600 | OWON SCPI (USB vendor bulk / LAN) | **4-byte length prefix** + i16le, JSON header | poor | low | **blocked**: non-IEEE length prefix, string values with units, unknown transport |
+| 12 | Hantek DSO2000 (DSO2C10/2C15/2D10/2D15) | €150-250 | Hantek SCPI subset (USBTMC) | custom `#9…` multi-packet frame, all channels | poor | low | **blocked**: custom framing, no RUN/STOP or measurement commands |
+| - | Hantek 6022BE/BL | €60 | raw USB (Cypress FX2, needs firmware upload) | - | none (sigrok) | - | not SCPI; out of scope |
+| - | Micsig TO/STO/ATO tablet scopes | €400-1500 | not verified (no manual obtained) | - | none found | - | unknown |
+| - | FNIRSI (1013D, DPOX180H, 2C23T, DSO152) | €50-150 | no remote control interface (USB = mass storage / charging) | - | - | - | none |
 
 Price bands are street prices in 2026, indicative only.
 
@@ -48,21 +48,21 @@ Price bands are street prices in 2026, indicative only.
 260 pp.), `DOC/rigol_ds1000z/doc/DS1000ZE_ProgrammingGuide_EN.pdf` (DS1000Z-E, Apr 2020, 218 pp.).
 Pages = PDF (printed `2-N` = PDF N+16). Very good, old.
 **Models:** DS1054Z (50 MHz), DS1074Z(-S)(Plus) (70 MHz), DS1104Z(-S)(Plus) (100 MHz), MSO1074Z/1104Z(-S)
-(+16 digital), all 4 ch (p4); DS1102Z-E/DS1202Z-E 2 ch 100/200 MHz (E guide p4). V/div 1 mV–10 V at 1X
-(p30); offset ±2 V below 500 mV/div, ±100 V above (p27). Timebase 5 ns–50 s, **12 horizontal
+(+16 digital), all 4 ch (p4); DS1102Z-E/DS1202Z-E 2 ch 100/200 MHz (E guide p4). V/div 1 mV-10 V at 1X
+(p30); offset ±2 V below 500 mV/div, ±100 V above (p27). Timebase 5 ns-50 s, **12 horizontal
 divisions** (p173, p23). Memory 12 Mpts (24 Mpts option), split by active channels (p21).
 **Interfaces:** USBTMC **`1ab1:04ce`** (p14; Z-E the same), LAN VXI-11/LXI; raw socket 5555
 (community/sigrok, not in the guide). Terminator `\n`; blocks `#9…<data>\n`.
 **Identify:** `RIGOL TECHNOLOGIES,DS1104Z,DS1ZA…,00.04.04.SP4` (format; regex
 `^RIGOL TECHNOLOGIES,(DS1\d{3}Z|MSO1\d{3}Z)`). Some units report `RIGOL TECHNOLOGIES,DS1104Z Plus,…`.
 
-**Commands — same as `rigol_dho800.yaml` except:**
+**Commands - same as `rigol_dho800.yaml` except:**
 | Item | DS1000Z | Page |
 |---|---|---|
 | channel | `:CHANnel{ch}:DISPlay/SCALe/OFFSet/COUPling AC\|DC\|GND/PROBe 0.01…1000/BWLimit 20M\|OFF/INVert`; replies like `1.000000e+01` | p25-30 |
 | timebase | `:TIMebase[:MAIN]:SCALe/OFFSet` | p172-173 |
 | trigger | `:TRIGger:STATus?` TD/WAIT/RUN/AUTO/STOP; `:TRIGger:SWEep AUTO\|NORMal\|SINGle` | p175 |
-| edge source | `:TRIGger:EDGe:SOURce CHANnel1-4\|D0-D15\|AC` — **`AC`**, not `ACLine` | p178-179 |
+| edge source | `:TRIGger:EDGe:SOURce CHANnel1-4\|D0-D15\|AC` - **`AC`**, not `ACLine` | p178-179 |
 | acquire | `:ACQuire:TYPE NORMal\|AVERages\|PEAK\|HRESolution`, `:ACQuire:SRATe?` | p22-23 |
 | run | `:RUN :STOP :SINGle :AUToscale :CLEar` | p18-19 |
 | measure | `:MEASure:ITEM? VPP,CHANnel{ch}`; `9.9E37` = invalid (shown for cursors p47; ds1054z library treats it as no value) | p141 |
@@ -78,7 +78,7 @@ NORMal-mode **YREF = 127** (DHO800: 128). `volts = (code − yorig − yref)·yi
 output buffer (sigrok sleeps 100 ms below 15 k points, else 1 s); `*OPC?` between commands helps (EEVblog,
 DS1074Z Linux usbtmc timeouts). The python `ds1054z` library stops the scope for RAW reads and uses
 `:DISP:DATA? ON,OFF,PNG`.
-**Confidence:** high. **DSL fit:** works today — copy `rigol_dho800.yaml`, change edge source `AC`, YREF
+**Confidence:** high. **DSL fit:** works today - copy `rigol_dho800.yaml`, change edge source `AC`, YREF
 comes from the preamble anyway, features (12 div, 1 mV min, 50 s max), screenshot command.
 
 ### 2.2 Rigol DHO1000 / DHO4000
@@ -87,10 +87,10 @@ comes from the preamble anyway, features (12 div, 1 mV min, 50 s max), screensho
 copy in `DOC/rigol_dho4000/doc/`). Pages = PDF (printed = PDF − 22). Same tree as the DHO800/900 guide.
 **Models:** DHO1072/1074 (70 MHz), DHO1102/1104 (100 MHz), DHO1202/1204 (200 MHz), 2/4 ch + EXT, 2 GSa/s,
 12-bit, 50 Mpts (100 Mpts option); DHO4204/4404/4804 (200/400/800 MHz, 4 ch, 4 GSa/s, 250/500 Mpts).
-V/div: DHO1000 500 µV–10 V (1 MΩ only); DHO4000 100 µV–10 V at 1 MΩ, 100 µV–1 V at 50 Ω (p98).
+V/div: DHO1000 500 µV-10 V (1 MΩ only); DHO4000 100 µV-10 V at 1 MΩ, 100 µV-1 V at 50 Ω (p98).
 Offset DHO1000: ±1 V ≤ 65 mV/div, ±10 V ≤ 270 mV, ±20 V ≤ 2.75 V, ±100 V above (p96-97). Timebase
-DHO1000 2 ns (200 MHz) / 5 ns – 1 ks; DHO4000 500 ps – 1 ks.
-**Interfaces:** USBTMC vid `1ab1` (**pid not found**; DHO800 is `044d` — match on vid), LAN VXI-11/LXI.
+DHO1000 2 ns (200 MHz) / 5 ns - 1 ks; DHO4000 500 ps - 1 ks.
+**Interfaces:** USBTMC vid `1ab1` (**pid not found**; DHO800 is `044d` - match on vid), LAN VXI-11/LXI.
 **Same as `rigol_dho800.yaml` except:** `:CHANnel{ch}:BWLimit OFF|20M|250M` (p92; 250M presumably
 DHO4000), `:CHANnel{ch}:IMPedance OMEG|FIFTy` (DHO4000), `:ACQuire:TYPE` adds `HRESolution` and `ULTRa`
 (p40), edge source includes `ACLine`/`EXT` (reply `ACL`, p305), `:AUToset` (p31; DHO800 definition uses
@@ -98,15 +98,15 @@ DHO4000), `:CHANnel{ch}:IMPedance OMEG|FIFTy` (DHO4000), `:ACQuire:TYPE` adds `H
 `:MEASure:ITEM` (p196), `:DISPlay:DATA? BMP|PNG|JPG` (p138). Waveform section identical: NORMal 1000
 points, preamble up to 50 000 000 points, YREF depends on format (p430-442), no per-read RAW limit stated.
 `9.9E37` is not documented in either DHO guide (seen on the DHO804 bench).
-**Confidence:** high (USB pid unknown). **DSL fit:** works today — the DHO800 definition with extra
+**Confidence:** high (USB pid unknown). **DSL fit:** works today - the DHO800 definition with extra
 models/features (12-bit data still read as BYTE in NORMal mode; WORD would need `u16le`).
 
 ### 2.3 Rigol MSO5000 and DS2000A / MSO2000A
 
-**MSO5000** — `DOC/rigol_mso5000/doc/MSO5000_ProgrammingGuide_EN.pdf` (PGA25105-1110, May 2025, 282 pp.;
-printed `2-N` = PDF N+16). MSO5072/5102 (2 ch), MSO5074/5104/5204/5354 (4 ch), 70–350 MHz, 8 GSa/s,
-16 digital, 100/200 Mpts (p3-4). V/div 500 µV–10 V (p65); offset ±1 V (1–50 mV/div), ±30 V (51–260 mV),
-±100 V (p64). Timebase 1/2/5 ns – 1000 s, 10 div (p189-190). USBTMC **`1ab1:0514`** (p269; sigrok
+**MSO5000** - `DOC/rigol_mso5000/doc/MSO5000_ProgrammingGuide_EN.pdf` (PGA25105-1110, May 2025, 282 pp.;
+printed `2-N` = PDF N+16). MSO5072/5102 (2 ch), MSO5074/5104/5204/5354 (4 ch), 70-350 MHz, 8 GSa/s,
+16 digital, 100/200 Mpts (p3-4). V/div 500 µV-10 V (p65); offset ±1 V (1-50 mV/div), ±30 V (51-260 mV),
+±100 V (p64). Timebase 1/2/5 ns - 1000 s, 10 div (p189-190). USBTMC **`1ab1:0514`** (p269; sigrok
 udev rules list `0515`). Same as the DHO800 definition except: BWLimit per model (5354 `20M|100M|200M|OFF`,
 5204 `20M|100M|OFF`, others `20M|OFF`, p62), probe from 0.0001 (p65), edge source `ACLine` (reply
 `ACL`, p197), `:ACQuire:TYPE NORM|AVER|PEAK|HRES` (p21), `:AUToscale :CLEar :RUN :STOP :SINGle` (p18-19),
@@ -114,12 +114,12 @@ udev rules list `0515`). Same as the DHO800 definition except: BWLimit per model
 screenshot **`:DISPlay:DATA?` without argument, BMP only** (p88; raise `max_bytes`). Confidence high;
 works today.
 
-**DS2000A / MSO2000A** — `DOC/rigol_ds2000a/doc/MSODS2000A_ProgrammingGuide_EN.pdf` (PGA18106-1110,
+**DS2000A / MSO2000A** - `DOC/rigol_ds2000a/doc/MSODS2000A_ProgrammingGuide_EN.pdf` (PGA18106-1110,
 May 2019, 410 pp.). DS/MSO2102A, 2202A, 2302A(-S): 100/200/300 MHz, **2 ch** (p4-5; DS2072A not in this
-edition, sigrok lists it). V/div 500 µV–10 V (1 MΩ), 500 µV–1 V (50 Ω), `:CHANnel{ch}:IMPedance OMEG|FIFTy`
-(p101-103). Timebase 1/2/5 ns – 1 ks (p292), **14 horizontal divisions**. 14 Mpts (56 Mpts option).
+edition, sigrok lists it). V/div 500 µV-10 V (1 MΩ), 500 µV-1 V (50 Ω), `:CHANnel{ch}:IMPedance OMEG|FIFTy`
+(p101-103). Timebase 1/2/5 ns - 1 ks (p292), **14 horizontal divisions**. 14 Mpts (56 Mpts option).
 USBTMC **`1ab1:04b0`** (p394, p403). Differences from the DHO800 definition: BWLimit `20M|100M|OFF` (p98);
-edge source `CHANnel1|2|EXT|ACLine|D0-15` (p319); **no `:MEASure:ITEM`** — use `:MEASure:VPP? CHANnel{ch}`,
+edge source `CHANnel1|2|EXT|ACLine|D0-15` (p319); **no `:MEASure:ITEM`** - use `:MEASure:VPP? CHANnel{ch}`,
 `:MEASure:VAVG? CHANnel{ch}`, `:MEASure:VRMS? CHANnel{ch}`, `:MEASure:FREQuency? CHANnel{ch}`, each
 `9.9e37` when invalid (p188, p218, p226, p228); waveform NORMal **1400 points**, YREF always 127, WORD =
 8 valid bits (p377-390); RAW ≤ 250 000/125 000/15 625 points per read (p382) or a streaming mode
@@ -133,11 +133,11 @@ around single-shot captures on this generation. Guide has typos. Confidence high
 
 **Models:** SDS1052X-E/1102X-E/1202X-E (2 ch, 50/100/200 MHz), SDS1104X-E/1204X-E (4 ch, 100/200 MHz);
 same legacy guide covers SDS2000X-E, SDS1000X/X+, SDS1000X-U, SDS2000X (older). 8-bit ADC,
-**14 horizontal divisions** (time formula uses grid = 14), 8 vertical; V/div 500 µV–10 V (p49);
-timebase 1 ns–100 s (p173); memory 14 Mpts.
+**14 horizontal divisions** (time formula uses grid = 14), 8 vertical; V/div 500 µV-10 V (p49);
+timebase 1 ns-100 s (p173); memory 14 Mpts.
 **Interfaces:** USBTMC `f4ec:ee38` (SDS1104X-E, per sigrok udev rules; some units `f4ed:ee3a`),
 LAN VXI-11, raw socket 5025, telnet 5024. Terminator `\n`.
-**Doc:** `DOC/siglent_sds1000xe/doc/Oscilloscope_ProgrammingGuide_legacy.pdf` — *Digital Oscilloscope
+**Doc:** `DOC/siglent_sds1000xe/doc/Oscilloscope_ProgrammingGuide_legacy.pdf` - *Digital Oscilloscope
 Series Programming Guide EN02E*, 336 pp. Good, many examples. Not in the "Supported Models" list
 of the new EN11x guide (SDS1000X-E stays on the legacy set).
 
@@ -161,8 +161,8 @@ format p.30 of the new guide is identical). Regex: `^Siglent Technologies,SDS1\d
 | timebase_offset | `TRDL?` / `TRDL <t>` | seconds | p174 |
 | trigger_sweep | `TRMD?` / `TRMD AUTO\|NORM\|SINGLE` (query can also return `STOP`) | | p187-188 |
 | trigger_source | `TRSE?` → `EDGE,SR,C1,HT,OFF` → `{split: {sep: ",", index: 2}}`; set `TRSE EDGE,SR,C{n},HT,OFF` | | p190-191 |
-| trigger_slope | `<src>:TRSL?` / `<src>:TRSL POS\|NEG\|WINDOW` — **prefixed by the trigger source** | | p194 |
-| trigger_level | `<src>:TRLV?` / `<src>:TRLV <v>` — prefixed by the trigger source | | p185 |
+| trigger_slope | `<src>:TRSL?` / `<src>:TRSL POS\|NEG\|WINDOW` - **prefixed by the trigger source** | | p194 |
+| trigger_level | `<src>:TRLV?` / `<src>:TRLV <v>` - prefixed by the trigger source | | p185 |
 | trigger_status | `SAST?` → `Trig'd`, `Ready`, `Auto`, `Stop`, `Arm`, `Roll` | | p34 |
 | sample_rate | `SARA?` → `5.00E+08` | | p35 |
 | acquire_type | `ACQW?` / `ACQW SAMPLING\|PEAK_DETECT\|AVERAGE,<n>\|HIGH_RES` | | p30 |
@@ -172,13 +172,13 @@ format p.30 of the new guide is identical). Regex: `^Siglent Technologies,SDS1\d
 | screenshot | `SCDP` → raw BMP (**no block header**) | | p143 |
 
 Trigger level/slope need the source as prefix: a computed param `from: tsrc_q` (CEL over the cached
-`TRSE?` split) gives `{src}:TRLV?` — but computed params are for setters; for the *query* use a
+`TRSE?` split) gives `{src}:TRLV?` - but computed params are for setters; for the *query* use a
 `before` that refreshes `tsrc_q`, or simply poll `C1:TRLV?` … per channel (`{ch}`) and pick the one
 matching the source in CEL (works today, 4 small queries).
 
 **Waveform (p247-254):** `C1:WF? DAT2` returns
 `C1:WF DAT2,#9000000070<70 bytes>\n\n` (header text, then an IEEE block, then two LF). With
-`CHDR OFF` community reports the prefix shrinks to `DAT2,#9…` (not documented) — **either way the
+`CHDR OFF` community reports the prefix shrinks to `DAT2,#9…` (not documented) - **either way the
 block does not start with `#`** → today's framer rejects it. Samples are **signed 8-bit** ("if > 127
 subtract 256", p249). Conversion (p248-249):
 `volts = code · (VDIV / 25) − OFST`; `time = −(TDIV · 14 / 2) + i / SARA` (the guide ignores TRDL;
@@ -193,14 +193,14 @@ long timeout. SDS1000X-E firmware 1.3.27+ fixed several SCPI bugs (EEVblog); old
 headers even with CHDR OFF on some queries.
 **Confidence:** medium (well documented, prefix + CHDR behaviour must be captured).
 **DSL fit:** everything except waveform and screenshot works today (session `CHDR OFF`, `split`,
-`map`). Waveform needs **`reply: {block: {skip_to: "#"}}`** (scan for `#` before the IEEE header) —
+`map`). Waveform needs **`reply: {block: {skip_to: "#"}}`** (scan for `#` before the IEEE header) -
 small framer change; screenshot needs a "read until idle / BMP length from header" reply.
 
 ### 2.5 Siglent SDS800X HD, SDS1000X HD, SDS2000X Plus, SDS2000X HD (and SDS3000X HD, SDS5000X)
 
 **Models:** SDS804X HD/814X HD/824X HD (4 ch, 70/100/200 MHz, 12-bit); SDS1102X HD…SDS1204X HD
 (2/4 ch, 100/200 MHz, 12-bit); SDS2104X Plus/2204X Plus/2354X Plus (4 ch, 8-bit, 10-bit mode);
-SDS2104X HD…2504X HD (12-bit). 10 horizontal divisions (p760), 8 vertical. V/div 500 µV–10 V
+SDS2104X HD…2504X HD (12-bit). 10 horizontal divisions (p760), 8 vertical. V/div 500 µV-10 V
 (HD: 500 µV/div at 1X; model dependent, p59 "varies from the models").
 **Firmware:** new command set from SDS2000X Plus 1.3.5R3, SDS2000X HD 1.2.0.2, SDS1000X HD 1.1.0.2,
 SDS800X HD 1.1.3.1 (Supported Models table, `sig_new` p18).
@@ -242,7 +242,7 @@ Excellent structure; replies are plain values (no headers, no units).
 Measurements read the *simple measurement's* source, so per channel use `before:
 [meas_src]` (`:MEASure:SIMPle:SOURce C{ch}`), like DHO800's `:WAVeform:SOURce`. This changes the
 on-screen measurement source each poll (visible to the user); alternative is `:MEASure:ADVanced:P<n>`
-slots (p339-347), one per channel×item — more setup, no flicker.
+slots (p339-347), one per channel×item - more setup, no flicker.
 
 **Waveform (p748-762):**
 - `:WAVeform:SOURce C{ch}` (p749), `:WAVeform:WIDTh BYTE|WORD` (p754; **WORD required when ADC > 8 bit**,
@@ -260,13 +260,13 @@ slots (p339-347), one per channel×item — more setup, no flicker.
 - Conversion (p759-760): `volts = code · (vdiv / code_per_div) − voffset`,
   `time = delay − timebase · 10/2 + i · interval`. Example: 8-bit `code_per_div = 30`. For 12-bit WORD
   data left-aligned in 16 bits the effective `code_per_div = 30 · 256 = 7680` (inferred from the
-  left alignment; confirm on hardware — the preamble reports it).
+  left alignment; confirm on hardware - the preamble reports it).
 - Status today without parsing the binary preamble: `WAVE_DY = SCALe / cpd`, `WAVE_Y0 = OFFSet · cpd / SCALe`,
   `WAVE_X0 = DELay − 5 · TIMebase:SCALe`, `WAVE_DX = k / ACQuire:SRATe` with `cpd` a per-model
   feature constant (30 or 7680). `:CHANnel:SCALe?` includes the probe ratio, so volts come out at the
   probe tip (what the user wants).
 **Quirks:** the guide shows `" #9…"` with a leading space in one place (p755) and the example code
-searches for `#` (`recv_all.find(b'#')`, PDF p840) — capture first. Large default transfers will time
+searches for `#` (`recv_all.find(b'#')`, PDF p840) - capture first. Large default transfers will time
 out if `POINt` is not set. `:CHANnel:SWITch OFF` + `:WAVeform:SOURce` on that channel → error; use
 `requires: disp == 'ON'` as in DHO800.
 **Confidence:** medium-high (excellent manual; preamble constants and the leading-space question need
@@ -278,9 +278,9 @@ binary preambles would make it exact (and also serves the legacy WAVEDESC).
 ### 2.6 Keysight InfiniiVision 1000X / 1200X, 2000X, 3000T
 
 **Models:** EDUX1002A/G, EDUX1052A/G (2 ch, 50 MHz), DSOX1102A/G (2 ch, 70/100 MHz), DSOX1202A/G,
-DSOX1204A/G (4 ch, 70–200 MHz); DSOX/MSOX2002A…2024A (70–200 MHz); DSOX/MSOX3000T (100 MHz–1 GHz).
-V/div 500 µV–10 V (1000X), 1 mV–5 V (2000X); timebase 5 ns–50 s (1000X).
-**Interfaces:** USBTMC (Keysight vid `2a8d`, older Agilent units `0957`; pids not confirmed — match on
+DSOX1204A/G (4 ch, 70-200 MHz); DSOX/MSOX2002A…2024A (70-200 MHz); DSOX/MSOX3000T (100 MHz-1 GHz).
+V/div 500 µV-10 V (1000X), 1 mV-5 V (2000X); timebase 5 ns-50 s (1000X).
+**Interfaces:** USBTMC (Keysight vid `2a8d`, older Agilent units `0957`; pids not confirmed - match on
 vid), LAN VXI-11 + raw socket **5025** (5024 = telnet prompt; binary data over 5024 is corrupted, p630).
 Terminator `\n`; every reply ends `\n` (block too).
 **Docs:** `DOC/keysight_1000x/doc/1000X_ProgrammersGuide_v01.20_akmetron.pdf` (v01.20, 2019, 934 pp.,
@@ -317,13 +317,13 @@ fetched (same command tree). Excellent quality.
 **unsigned** by default (`:WAVeform:UNSigned`, p648) → `u8`; WORD is MSB-first unless
 `:WAVeform:BYTeorder LSBFirst` (p628, p632) → `u16be`. Special codes: `0x00` hole, `0x01` clipped low,
 `0xFF` clipped high (p630). Preamble (p637-638): text
-`format,type,points,count,xincrement,xorigin,xreference,yincrement,yorigin,yreference` — **the same 10
+`format,type,points,count,xincrement,xorigin,xreference,yincrement,yorigin,yreference` - **the same 10
 fields as Rigol**. Conversion (p631): `volts = (code − yreference) · yincrement + yorigin`,
 `time = (i − xreference) · xincrement + xorigin`. Status: `WAVE_Y0 = yref − yorig / yinc`, `WAVE_DY = yinc`,
 `WAVE_X0 = xorig − xref · xinc`, `WAVE_DX = xinc`. NORMal mode ≤ 1000 points (screen, "measurement
 record" up to 62 500, p635); RAW/MAXimum only when stopped (≤ 100 000 points on 1000X, p635).
 **Quirks:** a hidden channel → `:WAV:DATA?` error (use `requires`). Booleans reply `1/0` (map like
-DHO800). `:TER?` clears on read — do not poll it in two groups.
+DHO800). `:TER?` clears on read - do not poll it in two groups.
 **Confidence:** high. **DSL fit:** works today; the DHO800 definition is a near drop-in
 (`:TIMebase:MAIN:SCALe` → `:TIMebase:SCALe`, measurement syntax, status register for trigger state,
 no GND coupling).
@@ -332,9 +332,9 @@ no GND coupling).
 
 ### 2.7 Tektronix TBS1000C (and TBS1000B/EDU, TBS2000B)
 
-**Models:** TBS1052C/1072C/1102C/1202C (2 ch, 50–200 MHz, 1 GS/s, record 2000 or 20 000 points,
+**Models:** TBS1052C/1072C/1102C/1202C (2 ch, 50-200 MHz, 1 GS/s, record 2000 or 20 000 points,
 p98). TBS1000B/TBS1000B-EDU and TDS2000C use the older Tek "TDS2000" command set (`TRIGger:MAIn`,
-`WFMPre`), TBS2000B (TBS2072B/2104B…) is closer to the TBS1000C (`TRIGger:A`, `WFMOutpre`) —
+`WFMPre`), TBS2000B (TBS2072B/2104B…) is closer to the TBS1000C (`TRIGger:A`, `WFMOutpre`) -
 **neither manual was fetched** (web search budget exhausted; tek.com URLs for those manuals not
 resolved), so they are listed as low confidence.
 **Interfaces:** USBTMC (Tek vid `0699`, pid per model not confirmed), USB host; TBS2000B adds LAN.
@@ -350,10 +350,10 @@ printed + 1. Good, terse.
 | scale | `CH{ch}:SCAle <v>` (3 significant digits) | `1.0000` | p44 |
 | offset | `CH{ch}:OFFSet <v>` (volts); `CH{ch}:POSition` is in **divisions** (±5) | | p40-41 |
 | coupling | `CH{ch}:COUPling AC\|DC` | | p38 |
-| probe | `CH{ch}:PRObe:GAIN <g>` — **gain = 1/ratio** (10X probe = 0.1) | `0.1000E+00` | p41-42 |
+| probe | `CH{ch}:PRObe:GAIN <g>` - **gain = 1/ratio** (10X probe = 0.1) | `0.1000E+00` | p41-42 |
 | bwlimit | `CH{ch}:BANdwidth TWEnty\|FULl` | `FULL` | p38 |
 | invert | `CH{ch}:INVert ON\|OFF` | | p39 |
-| timebase | `HORizontal:MAIn:SCAle <s>` (2 ns–100 s) | | p96 |
+| timebase | `HORizontal:MAIn:SCAle <s>` (2 ns-100 s) | | p96 |
 | timebase_offset | `HORizontal:MAIn:DELay:TIMe <s>` (+ `…:DELay:STATe ON`) | | p95 |
 | trigger_sweep | `TRIGger:A:MODe AUTO\|NORMal`; single = `ACQuire:STOPAfter SEQuence` | | p152, p25 |
 | trigger_status | `TRIGger:STATE?` → `ARMED\|AUTO\|READY\|SAVE\|TRIGGER` | | p160 |
@@ -371,7 +371,7 @@ printed + 1. Good, terse.
 (`BYT_Nr 2` → 16-bit, MSB first by default, LSB always 0 → `i16be`). A hidden source returns
 **nothing** + events 2244/420 (p55) → must use `requires`. Preamble `WFMOutpre?` (p170) with HEADer
 OFF: `BYT_NR;BIT_NR;ENCDG;BN_FMT;BYT_OR;WFID;NR_PT;PT_FMT;XUNIT;XINCR;XZERO;PT_OFF;YUNIT;YMULT;YOFF;YZERO`
-— `fields: {sep: ";"}` works (WFID is quoted and contains commas but no `;`), or query
+- `fields: {sep: ";"}` works (WFID is quoted and contains commas but no `;`), or query
 `WFMOutpre:YMUlt?/YOFf?/YZEro?/XINcr?/XZEro?` separately (p174-177). Conversion (standard Tek):
 `volts = (code − YOFF) · YMULT + YZERO`, `time = XZERO + (i − PT_OFF) · XINCR`. Status:
 `WAVE_Y0 = YOFF − YZERO/YMULT`, `WAVE_DY = YMULT`, `WAVE_X0 = XZERO − PT_OFF·XINCR`, `WAVE_DX = XINCR`.
@@ -387,7 +387,7 @@ changes take time; doc recommends a single sequence + `*OPC?` before `CURVe?` (p
 
 ### 2.8 UNI-T MSO/UPO2000 (UPO2102CS, UPO2104CS, MSO2000CS), UPO2000E/3000E, MSO2000X/3000X, UPO1000
 
-**Models:** UPO2072CS/2102CS/2104CS, MSO2102CS/2104CS (70–100 MHz, 1 GS/s, 8-bit); UPO2000E/3000E;
+**Models:** UPO2072CS/2102CS/2104CS, MSO2102CS/2104CS (70-100 MHz, 1 GS/s, 8-bit); UPO2000E/3000E;
 MSO2000X/3000X (newer, 12-bit?); UPO1000(CS), UPO1002. Screen trace **1400 points** (NORMal,
 `:WAVeform:STARt/STOP 1…1400`, upo p80-81).
 **Interfaces:** USBTMC (vid `5656`, Uni-Trend; pid not confirmed), LAN (on MSO models). Terminator `\n`.
@@ -408,16 +408,16 @@ Commands (MSO/UPO2000, page = PDF): `:CHANnel{ch}:DISPlay 1|0` (p14), `:CHANnel{
 (WORD = low byte valid), `:WAVeform:DATA?` (IEEE block), `:WAVeform:PREamble?` →
 `format,type,points,count,xinc,xor,xref,yinc,yor,yref` (example `1,0,0,1,8.000e-009,-6.000e-006,0,4.000e-002,0.000e000,100`).
 MSO2000X: `:WAVeform:FORMat WORD|DWORD|ASCII` only (umso p227) and the conversion is stated
-explicitly (umso p231): **`volts = (code − yreference − yorigin) · yincrement`** — the DHO800 formula
+explicitly (umso p231): **`volts = (code − yreference − yorigin) · yincrement`** - the DHO800 formula
 (`WAVE_Y0 = yorig + yref`). Byte signedness and WORD byte order are not stated → capture.
 **Quirks:** NORMal XINC = TimeScale/… the manual is self-contradictory (says "/50" but 1400 points over 14 div);
-use the preamble's xinc. Real values are returned as `1.230e000` (3 decimals) — fine for `number`.
+use the preamble's xinc. Real values are returned as `1.230e000` (3 decimals) - fine for `number`.
 **Confidence:** medium. **DSL fit:** works today (Rigol clone); samples type to confirm.
 
 ### 2.9 GW Instek GDS-1000B (GDS-1054B, GDS-1072B, GDS-1074B, GDS-1102B, GDS-1104B)
 
 **Models:** 2/4 ch, 50/70/100 MHz, 1 GS/s, 10 Mpts, 8-bit.
-**Interface:** USB device port is **USB CDC-ACM (virtual COM)** (p16 "USB CDC_ACM compatible") — a
+**Interface:** USB device port is **USB CDC-ACM (virtual COM)** (p16 "USB CDC_ACM compatible") - a
 serial link in the DSL (`link.serial`, baud irrelevant). GW Instek vid `2184` (pid not confirmed). LAN
 on some variants. Terminator LF (p17).
 **Doc:** `DOC/gwinstek_gds1000b/doc/GDS-1000B_Programming_Manual.pdf` (169 pp.). Pages below printed
@@ -435,9 +435,9 @@ text settings string (`Vertical Scale,5.000e+00;…;Waveform Data;#520000…`). 
 `volts = code / 25 · vertical_scale` (AD factor fixed 25; example 0x001C = 28 → 28/25·0.5 = 0.56 V); position
 handling not stated (probably relative to screen centre → subtract `:CHANnel:POSition`; capture).
 `:ACQuire{ch}:STATe?` = 1 when raw data is ready (p40). **Returns the full record length** (≥ 1000 points;
-`:ACQuire:RECOrdlength 1e+3` sets the minimum, p40) — 1000 points only if the user accepts the
+`:ACQuire:RECOrdlength 1e+3` sets the minimum, p40) - 1000 points only if the user accepts the
 record length change; 10 Mpts at default would take minutes over CDC.
-**Screenshot:** `:DISPlay:OUTPut?` → `#5<len>` block of 16-bit RGB **run-length encoded** data (p72) —
+**Screenshot:** `:DISPlay:OUTPut?` → `#5<len>` block of 16-bit RGB **run-length encoded** data (p72) -
 needs a decoder.
 **Confidence:** medium. **DSL fit:** works today over serial (block reply, `i16be`); record length is the
 practical problem.
@@ -450,7 +450,7 @@ practical problem.
 `DOC/owon_hds/doc/HDS200_Series_SCPI_Protocol.pdf`. Poor: no transport details, no conversion formula.
 **Identify:** `OWON,<model>,<serial>,X.XX.XX` (SDS doc). HDS200: `<Manufacturer>,<model>,…`.
 **Interfaces:** "USB port or LAN" (XDS p3). OWON scopes enumerate as `5345:1234` (usb.ids "Owon
-PDS6062T") — a **vendor-specific bulk** interface, not USBTMC (community; not in the doc); LAN raw
+PDS6062T") - a **vendor-specific bulk** interface, not USBTMC (community; not in the doc); LAN raw
 socket (port set by `:LAN:PORT`, default 3000 per community). HDS200 handhelds use USB CDC serial
 (community, unconfirmed).
 **Commands (XDS 4ch):** `:CH{ch}:DISPlay ON|OFF`, `:CH{ch}:COUPling AC|DC|GND`, `:CH{ch}:PROBe 10X`,
@@ -465,7 +465,7 @@ sample rate, per-channel scale/offset/probe strings); `:DATA:WAVE:SCREen:CH{ch}?
 length + 16-bit LE samples (12-bit on XDS, 8-bit-in-16 on HDS), ~1520 points;
 `:DATA:WAVE:SCREen:BMP?` (XDS) screenshot. Volts conversion is not documented (offset in JSON is
 an integer in screen units).
-**Confidence:** low. **DSL fit:** blocked — needs a length-prefixed binary reply (`reply: {prefix:
+**Confidence:** low. **DSL fit:** blocked - needs a length-prefixed binary reply (`reply: {prefix:
 u32le}`), a JSON parse step, an SI-suffix parse step (`"200us"` → 2e-4), and the vendor-bulk USB
 transport or TCP.
 
@@ -481,7 +481,7 @@ the doc). No LAN.
 **Waveform (p42):** `:WAVeform:DATA:ALL?` → first call returns a 128-byte ASCII header
 `#9<9 len><9 total><9 uploaded><run><trig><4×4 offsets><4×7 volts/div><4 enables><9 srate><6 multiple>…`;
 repeated calls return `#9<len><total><uploaded>` + interleaved data until `uploaded == total`.
-**Confidence:** low. **DSL fit:** blocked — multi-packet stateful read with a custom header (looks like
+**Confidence:** low. **DSL fit:** blocked - multi-packet stateful read with a custom header (looks like
 IEEE but the 9-digit length is followed by more ASCII fields). Settings/trigger subset would work today.
 
 ### 2.12 Not supported / no remote interface
@@ -558,7 +558,7 @@ UNI-T MSO/UPO2000, Keysight 1000X/2000X/3000T (overrides: timebase, trigger stat
 - Always guard waveform/measurement reads with `requires: <display> == 'ON'` (Rigol/Keysight/Siglent
   error, Tek returns nothing).
 - Poll groups as in DHO800: 250 ms trace (status, preamble, data), 1 s measurements, 3 s settings.
-- Keep screen-size transfers (≈ 1000–1400 points); full-memory reads need chunked reads (not modelled).
+- Keep screen-size transfers (≈ 1000-1400 points); full-memory reads need chunked reads (not modelled).
 - The class contract's `WAVE_Y0/DY/X0/DX` linear form covers all families above:
   Rigol/UNI-T `Y0 = yorig + yref`; Keysight `Y0 = yref − yorig/yinc`; Tek `Y0 = YOFF − YZERO/YMULT`;
   Siglent `Y0 = offset·cpd/scale`, `DY = scale/cpd`; GW Instek `DY = scale/25`.

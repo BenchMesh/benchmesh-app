@@ -55,7 +55,7 @@ def test_identify_empty_and_partial_responses_do_not_set_idn(manual_clock):
         m = SerialManager(devices, clock=manual_clock)
         dev = devices[0]
         dev_id = dev['id']
-        # Initial call — not enough time elapsed; no write yet
+        # Initial call - not enough time elapsed; no write yet
         m._open_or_identify(dev)
         ser = getattr(getattr(m.connections[dev_id], 't', None), '_ser', None)
         # Recent open may prevent immediate identify write; it is acceptable if no write yet

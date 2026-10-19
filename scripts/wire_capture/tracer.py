@@ -182,7 +182,7 @@ def _patch_usbtmc():
 def install(session_dir: str, devices: list, tolerate_pty_ctl: bool = False) -> None:
     """Install all patches. `devices` is the config.yaml device list.
 
-    tolerate_pty_ctl: simulation only — ignore ENOTTY from DTR/RTS on pseudo-terminals.
+    tolerate_pty_ctl: simulation only - ignore ENOTTY from DTR/RTS on pseudo-terminals.
     """
     global _session_dir, _tolerate_pty_ctl
     _session_dir = session_dir

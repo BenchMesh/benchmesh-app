@@ -3,9 +3,9 @@
 //! Layout on disk:
 //! ```text
 //! devices/
-//!   classes/<CLASS>.yaml      benchmesh.class/v1  — instrument class contracts
+//!   classes/<CLASS>.yaml      benchmesh.class/v1  - instrument class contracts
 //!   bases/<base-id>.yaml      partial definitions a definition can `extends` (e.g. a SCPI baseline)
-//!   <definition-id>.yaml      benchmesh.device/v1 — one device family each
+//!   <definition-id>.yaml      benchmesh.device/v1 - one device family each
 //! ```
 
 pub mod export;

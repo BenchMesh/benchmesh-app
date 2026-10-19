@@ -18,7 +18,7 @@ Steps
    - npm run dev (dev server at http://localhost:52892)
 
 UI access
-- Navigate to http://localhost:57665/ — you’ll be redirected to UI (either built /ui or dev server)
+- Navigate to http://localhost:57665/ - you’ll be redirected to UI (either built /ui or dev server)
 
 Endpoints used by UI
 - GET /instruments -> list of instruments with IDN and class channels

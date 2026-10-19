@@ -3,7 +3,7 @@
 //! devices → WinUsb Device. Nothing ships with BenchMesh, nothing is downloaded or self-signed.
 //!
 //! Installing a driver needs administrator rights, so [`install`] (called by the server, which
-//! runs as the user) starts the running executable again elevated — one UAC prompt — with
+//! runs as the user) starts the running executable again elevated - one UAC prompt - with
 //! [`HELPER_FLAG`]. Every binary's `main` hands such a start to [`helper_main`] before anything
 //! else. The helper writes its error text into a result file named on its command line.
 

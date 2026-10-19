@@ -10,10 +10,10 @@ An exchange is a TX followed by every RX until the next TX. Timing note: the
 tracer stamps each event when the underlying call returns. "latency" is the time
 from TX completion until the first read that returned data (for timeout-framed
 devices this includes the read timeout). End reasons:
-  timeout   — the last read returned fewer bytes than requested (reply framed by timeout)
-  complete  — the last read was satisfied (terminator / requested size reached)
-  no_reply  — no bytes received before the next TX
-  message   — USBTMC: the read returned one complete device message
+  timeout   - the last read returned fewer bytes than requested (reply framed by timeout)
+  complete  - the last read was satisfied (terminator / requested size reached)
+  no_reply  - no bytes received before the next TX
+  message   - USBTMC: the read returned one complete device message
 
 Usage:
     python3 scripts/wire_capture/summarize.py [SESSION_DIR]

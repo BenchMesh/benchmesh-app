@@ -1,4 +1,4 @@
-# KORAD KA/KD series and rebrands (RND 320, Velleman PS3005D) — the Korad protocol that
+# KORAD KA/KD series and rebrands (RND 320, Velleman PS3005D) - the Korad protocol that
 # devices/tenma_72.yaml implements for the TENMA 72-series (bench-tested there). Written from
 # the manuals before testing on a Korad-branded unit; see ai_context/migration/coverage/PSU.md §2.1.
 schema: benchmesh.device/v1
@@ -7,7 +7,7 @@ vendor: KORAD
 family: KA/KD series programmable DC power supply (Korad protocol; RND 320, Velleman PS3005D)
 version: 0.1.0
 sources:
-  - {doc: "KORAD KA3000-Series (KA3303P/KA3305P) User Manual V3.12 — KA3000 Series Remote Control Syntax V2.0", pages: "9-13 (printed)"}
+  - {doc: "KORAD KA3000-Series (KA3303P/KA3305P) User Manual V3.12 - KA3000 Series Remote Control Syntax V2.0", pages: "9-13 (printed)"}
   - {doc: "KORAD KA3000/6000-Series User Manual V3.41", pages: "14 (COM setting, *IDN? reply)"}
   - {doc: "TENMA Series Protocol V2.0 of Remote Control (same command set)", pages: "1-2"}
   - {note: "Model limits from sigrok korad-kaxxxxp api.c and KA33 p.12; USB CDC 0416:5011 (Nuvoton); IDN variants and the 80 ms pacing from sigrok"}

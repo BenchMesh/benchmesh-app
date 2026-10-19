@@ -26,12 +26,12 @@ Reviewed against the manuals: `keysight_33500b`, `keithley_dmm6500`, `siglent_sd
 `siglent_spd1000x` (+ `rigol_dg800`, thin overlap; spot check `keysight_33220a`). Review sections at the
 end of each report.
 
-- **No definition change**: every command-level disagreement was decided by the manual in our favour —
+- **No definition change**: every command-level disagreement was decided by the manual in our favour -
   PyMeasure SDS1000X-HD driver bugs (`BWLimit ON/OFF`, bare `PROBe <n>`, `SIMPle:SOURce CHANnel<n>`,
   `TRIG:STAT?` case), InstrumentKit 33220A mock (`LOAD?` → `INF` instead of `9.9E+37`).
 - **One real defect of ours (not fixed, DSL decision)**: `scpi_dmm` `nplc_q` maps the NPLC reply onto the
   rate list, so any front-panel NPLC outside it (DMM6500 allows 0.0005…15) fails `GET rate`.
-- **Open ambiguity**: 33500B ramp symmetry resolution (`%.1f` in ours) — the gated Trueform guide would
+- **Open ambiguity**: 33500B ramp symmetry resolution (`%.1f` in ours) - the gated Trueform guide would
   decide; confirm on hardware.
 - **Tool lessons**: the loose pass must not drop `SCAL` (SCALar ≡ SCALe short form; produced false
   matches on InfiniiVision `:CHAN1?`); mappings across sibling models (33220A ↔ 33250A) make limit

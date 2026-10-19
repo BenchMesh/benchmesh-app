@@ -1,6 +1,6 @@
 /**
  * Class profiles: what one class panel needs to know about a particular instrument, derived
- * from the API alone — features (`GET /instruments/{CLS}/{id}`) and the setters' value specs
+ * from the API alone - features (`GET /instruments/{CLS}/{id}`) and the setters' value specs
  * (`GET /instruments/{CLS}/{id}/methods`). Every PSU uses the same panel; only these limits,
  * steps and optional controls differ between manufacturers.
  */
@@ -242,7 +242,7 @@ export function lcrFunction(key: string, f: any = {}): LcrFunction {
   const circuit = f?.circuit === 'SER' || f?.circuit === 'PAR' ? f.circuit : f?.circuit === undefined ? c[2] : null
   const units: [string, string] = Array.isArray(f?.units) ? [String(f.units[0] ?? c[3]), String(f.units[1] ?? c[4])] : [c[3], c[4]]
   const group = primary.toUpperCase() === 'DCR' ? 'DCR' : primary.charAt(0).toUpperCase()
-  return { key, primary, secondary, circuit, units, name: f?.ui_name ?? (secondary ? `${primary}–${secondary}` : primary), group }
+  return { key, primary, secondary, circuit, units, name: f?.ui_name ?? (secondary ? `${primary}-${secondary}` : primary), group }
 }
 
 /** A discrete list (chips) or a continuous range (digit editor + presets) for frequency / level. */

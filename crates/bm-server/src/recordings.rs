@@ -105,7 +105,7 @@ impl Recordings {
     }
 
     /// Start a recording with these series (`device_id`, `class`, `channel`, `field`,
-    /// `label?` objects) — for automation runs. Announced like an API-created one.
+    /// `label?` objects) - for automation runs. Announced like an API-created one.
     pub async fn start_with(&self, name: &str, interval_s: i64, series: &[Map<String, Value>]) -> Result<i64, String> {
         let mut signals = Vec::new();
         for b in series {

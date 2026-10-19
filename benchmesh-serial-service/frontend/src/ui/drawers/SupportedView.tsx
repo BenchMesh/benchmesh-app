@@ -62,13 +62,13 @@ export function SupportedView({ apiBase }: { apiBase: string }) {
             <div className="supported__head">
               <span className="supported__name">{fam.vendor} {fam.family}</span>
               <span className="supported__meta">
-                {fam.classes.map((c) => getClassDescription(c)).join(' · ')} — {fam.transports.map((t) => TRANSPORT_LABEL[t] ?? t).join(', ')}
+                {fam.classes.map((c) => getClassDescription(c)).join(' · ')} - {fam.transports.map((t) => TRANSPORT_LABEL[t] ?? t).join(', ')}
               </span>
             </div>
             <ul className="supported__models">
               {fam.models.map((m) => (
                 <li key={m.name} className={`supported__model supported__model--${m.support}`}
-                  title={[SUPPORT_HINT[m.support], communityText(m.community), m.note].filter(Boolean).join(' — ')}>
+                  title={[SUPPORT_HINT[m.support], communityText(m.community), m.note].filter(Boolean).join(' - ')}>
                   {m.name}<i>{SUPPORT_LABEL[m.support]}</i>
                   {m.community?.status === 'confirmed' && !!m.community.versions?.length && <i className="supported__ver">v{m.community.versions[0].replace(/^v/, '')}</i>}
                   {m.community?.status === 'issues' && <i className="supported__issues">issues reported</i>}

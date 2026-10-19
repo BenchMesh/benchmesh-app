@@ -1,5 +1,5 @@
 //! VISA (NI-VISA, Keysight IO Libraries, Rigol UltraSigma, R&S VISA …), loaded at run time when
-//! one is installed — no SDK needed to build. On Windows a VISA's driver owns the instrument,
+//! one is installed - no SDK needed to build. On Windows a VISA's driver owns the instrument,
 //! so this is how BenchMesh reaches USBTMC instruments there without changing drivers.
 //!
 //! Port path: the VISA resource string, e.g. `USB0::0x1AB1::0x044D::DHO8A272907001::INSTR`.

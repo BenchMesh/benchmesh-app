@@ -34,7 +34,7 @@ reports cite them by that path and page.
 
 Every definition whose models are all *Awaiting confirmation* needs `devices/examples/<id>.yaml`:
 replies quoted from its manual (page cited), which `crates/bm-server/tests/manual_examples.rs`
-feeds through the real engine — identify must select the model, one poll of every class must
+feeds through the real engine - identify must select the model, one poll of every class must
 fill every required status key with the contract's type, every readable operation must answer
 and every setter must accept a valid value. Optional `expect` pins decoded values.
 

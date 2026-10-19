@@ -115,7 +115,7 @@ export function SalPanel({ status, profile, api, online }: {
           {status.VBW !== undefined && <span><b>VBW</b>{siText(vbw, 'Hz', 3)}</span>}
           {status.SWEEP_TIME !== undefined && <span><b>SWT</b>{siText(swt, 's', 3)}</span>}
           <span><b>REF</b>{dbText(ref, unit, 1)}</span>
-          {status.ATTEN !== undefined && <span><b>ATT</b>{atten != null ? `${atten} dB` : '—'}</span>}
+          {status.ATTEN !== undefined && <span><b>ATT</b>{atten != null ? `${atten} dB` : '-'}</span>}
           {typeof status.DETECTOR === 'string' && <span><b>DET</b>{status.DETECTOR}</span>}
           {status.POINTS != null && <span><b>PTS</b>{status.POINTS}</span>}
         </div>
@@ -178,7 +178,7 @@ export function SalPanel({ status, profile, api, online }: {
                   onStep={(d) => sendTo('ref_level', clamp(Number(((ref ?? 0) + d * scale).toFixed(2)), profile.refLevel!.min, profile.refLevel!.max))} />
               )}
               {profile.attenuation && (
-                <Stepper label="Attenuation" disabled={!online || atten == null} text={atten != null ? `${atten} dB` : '—'} value={atten} format={(v) => `${v} dB`}
+                <Stepper label="Attenuation" disabled={!online || atten == null} text={atten != null ? `${atten} dB` : '-'} value={atten} format={(v) => `${v} dB`}
                   onStep={(d) => sendTo('attenuation', clamp((atten ?? 0) + d * profile.attenuation!.step, profile.attenuation!.min, profile.attenuation!.max))} />
               )}
             </div>

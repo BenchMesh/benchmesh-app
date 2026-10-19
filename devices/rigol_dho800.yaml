@@ -63,7 +63,7 @@ commands:
     params: {v: {type: number, min: 0.0001, max: 10000, format: "%g", unit: "V/div"}}
     reply: none
     safety: configure
-    description: "Range depends on the probe ratio (1X: 500 µV/div–10 V/div on DHO800); the scope clamps"
+    description: "Range depends on the probe ratio (1X: 500 µV/div-10 V/div on DHO800); the scope clamps"
   offset_set:
     send: ":CHANnel{ch}:OFFSet {v}"
     params: {v: {type: number, min: -10000, max: 10000, format: "%g", unit: V}}
@@ -252,6 +252,6 @@ classes:
       sample_rate: {get: srate_q}
       run: {set: run_set}
       waveform: {get: wav_data}
-      # screenshot: {get: screenshot, as: bytes}  — disabled: via the Linux usbtmc driver the PNG
+      # screenshot: {get: screenshot, as: bytes}  - disabled: via the Linux usbtmc driver the PNG
       # transfer stalled after 24 564 bytes and the DHO804 rebooted (2026-10-17); needs the
       # userspace USBTMC transport. See device-notes/rigol_dho800.md.

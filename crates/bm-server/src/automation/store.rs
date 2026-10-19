@@ -223,7 +223,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("bm-flows-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let f = Flows::new(Some(dir.clone()));
-        assert_eq!(f.new_id("Hold 5 V — load!"), "hold-5-v-load");
+        assert_eq!(f.new_id("Hold 5 V - load!"), "hold-5-v-load");
         f.put("hold-5-v", &json!({"name": "Hold 5 V"})).unwrap();
         assert_eq!(f.new_id("Hold 5 V"), "hold-5-v-2");
         assert_eq!(f.list()[0]["name"], "Hold 5 V");

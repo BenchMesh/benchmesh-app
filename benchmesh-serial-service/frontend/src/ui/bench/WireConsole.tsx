@@ -86,7 +86,7 @@ export function WireConsole({ meta }: { meta: EvidenceMeta }) {
 
   const copy = async () => {
     const ok = await copyText(evidence({ ...meta, app }, lines, view))
-    setCopied(ok ? `Copied ${lines.length} lines` : 'Copy failed — select the text instead')
+    setCopied(ok ? `Copied ${lines.length} lines` : 'Copy failed - select the text instead')
     setTimeout(() => setCopied(null), 2500)
   }
 

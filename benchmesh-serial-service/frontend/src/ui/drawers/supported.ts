@@ -1,6 +1,6 @@
 /**
  * Supported instruments (`GET /catalog`): every family the device definitions describe and each
- * model's verification status — the pure logic behind the "Supported" tab.
+ * model's verification status - the pure logic behind the "Supported" tab.
  */
 import type { Support } from '../types'
 
@@ -29,7 +29,7 @@ export const SUPPORT_LABEL: Record<Support, string> = {
 export const SUPPORT_HINT: Record<Support, string> = {
   tested: 'Verified on the maintainers’ bench',
   confirmed: 'A user ran the check on the real instrument and it passed',
-  awaiting: 'Written from the manufacturer’s manual; not yet confirmed on a real instrument — help verify it',
+  awaiting: 'Written from the manufacturer’s manual; not yet confirmed on a real instrument - help verify it',
 }
 
 export const TRANSPORT_LABEL: Record<string, string> = { serial: 'Serial', usbtmc: 'USB TMC', tcpip: 'LAN', vxi11: 'LAN (VXI-11)' }

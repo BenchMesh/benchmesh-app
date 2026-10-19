@@ -121,4 +121,4 @@ classes:
       offset: {get: offs_q, set: offs_set, as: si}
       phase: {set: phase_set}
       symmetry: {get: symm_q, set: symm_set}
-      # screenshot: {get: screenshot, as: bytes}  — disabled until the userspace USBTMC transport exists
+      # screenshot: {get: screenshot, as: bytes}  - disabled until the userspace USBTMC transport exists

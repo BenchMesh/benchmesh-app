@@ -10,7 +10,7 @@ family: DG4000 series function/arbitrary waveform generator
 version: 0.1.0
 sources:
   - {doc: "DG4000 Programming Guide PGB04108 (DG4000_ProgrammingGuide_EN.pdf)", pages: "148 (*IDN?), 199-201 (OUTPut STATe/IMPedance), 319-324 (FREQ), 337-341 (FUNC, RAMP:SYMM), 477-478 (PHAS), 517-527 (VOLT, OFFS, UNIT); USB id p557 (VISA example USB0::0X1AB1::0X0640)"}
-  - {note: "USB PID 0640 per the guide's VISA example; other sources say 0641 — the link names the vendor only. LAN socket port not stated in the guide (omitted). Default load is High-Z."}
+  - {note: "USB PID 0640 per the guide's VISA example; other sources say 0641 - the link names the vendor only. LAN socket port not stated in the guide (omitted). Default load is High-Z."}
 models:
   - {"name": "DG4062", "match": "^Rigol Technologies,DG4062,", "features": {"AWG": {"max_freq_hz": {"SIN": 60e6, "SQU": 25e6}}}}
   - {"name": "DG4102", "match": "^Rigol Technologies,DG4102,", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6, "SQU": 40e6}}}}
@@ -35,7 +35,7 @@ commands:
   ampl_q: {source: "PDF p518"}
   ampl_set:
     params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
-    description: "20 Vpp at High-Z ≤20 MHz (10 Vpp into 50 Ω), 10 Vpp ≤70 MHz — the instrument clamps"
+    description: "20 Vpp at High-Z ≤20 MHz (10 Vpp into 50 Ω), 10 Vpp ≤70 MHz - the instrument clamps"
     source: "PDF p518"
   offs_q: {source: "PDF p524-525"}
   offs_set: {source: "PDF p524-525"}

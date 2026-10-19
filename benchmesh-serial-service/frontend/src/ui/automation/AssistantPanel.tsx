@@ -1,7 +1,7 @@
 /**
  * Assistant: the user describes an automation and the LLM of their choice (their own key,
  * called by the server) assembles the flow, or changes the current one. The result is
- * loaded into the editor as unsaved changes — never run automatically.
+ * loaded into the editor as unsaved changes - never run automatically.
  */
 import React, { useEffect, useId, useState } from 'react'
 import { AutomationClient, errorText } from './client'
@@ -76,7 +76,7 @@ export function AssistantPanel({ client, flow, onFlow, onOpenSettings }: Props) 
       {error && (
         <div className="kit-error auto-assist__error" role="alert">
           {error}
-          {settingsHint && <> — <button type="button" className="auto-link" onClick={onOpenSettings}>open assistant settings</button></>}
+          {settingsHint && <> - <button type="button" className="auto-link" onClick={onOpenSettings}>open assistant settings</button></>}
         </div>
       )}
       {result && (

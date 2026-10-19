@@ -1,6 +1,6 @@
 /**
  * Detect (`POST /devices/detect`, ai_context/migration/IDENTITY.md): response types and the pure
- * logic behind the Detect section of the Instruments drawer — identity summaries, certainty
+ * logic behind the Detect section of the Instruments drawer - identity summaries, certainty
  * labels, ids for new entries and the add / lock request bodies.
  */
 
@@ -100,7 +100,7 @@ export function certaintyLabel(c: Certainty | null | undefined): { text: string;
     case 'instrument': return { text: 'identified by serial number', warn: false };
     case 'adapter': return { text: 'identified by USB serial', warn: false };
     case 'chip': return { text: 'identified by adapter type', warn: false };
-    case 'position': return { text: 'identified by USB port position only — moving it to another port loses it', warn: true };
+    case 'position': return { text: 'identified by USB port position only - moving it to another port loses it', warn: true };
     default: return null;
   }
 }

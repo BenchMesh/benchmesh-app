@@ -1,4 +1,4 @@
-# RIGOL DHO800 / DHO900 series oscilloscope — device notes
+# RIGOL DHO800 / DHO900 series oscilloscope - device notes
 
 Definition: `devices/rigol_dho800.yaml` (class `OSC`, contract `devices/classes/OSC.yaml`).
 Source: *DHO800/DHO900 Programming Guide* (`BenchMeshDOC/rigol_dho800/doc/DHO800-Series_programmingguide_EN.pdf`),
@@ -8,12 +8,12 @@ one guide for both series. Verified on a **DHO804** (FW 00.01.03, USB `1ab1:044d
 
 | Model | Channels | Bandwidth | V/div at 1X | Verified |
 |---|---|---|---|---|
-| DHO802 | 2 | 70 MHz | 500 µV–10 V | no |
-| DHO804 | 4 | 70 MHz | 500 µV–10 V | **yes** |
-| DHO812 | 2 | 100 MHz | 500 µV–10 V | no |
-| DHO814 | 4 | 100 MHz | 500 µV–10 V | no |
-| DHO914(S) | 4 | 125 MHz | 200 µV–10 V | no |
-| DHO924(S) | 4 | 250 MHz | 200 µV–10 V | no |
+| DHO802 | 2 | 70 MHz | 500 µV-10 V | no |
+| DHO804 | 4 | 70 MHz | 500 µV-10 V | **yes** |
+| DHO812 | 2 | 100 MHz | 500 µV-10 V | no |
+| DHO814 | 4 | 100 MHz | 500 µV-10 V | no |
+| DHO914(S) | 4 | 125 MHz | 200 µV-10 V | no |
+| DHO924(S) | 4 | 250 MHz | 200 µV-10 V | no |
 
 Model differences are only channel count and feature values (`models[].channels/features`).
 
@@ -21,7 +21,7 @@ Model differences are only channel count and feature values (`models[].channels/
 - USBTMC: Linux kernel driver `/dev/usbtmcN`; Windows/macOS own USBTMC protocol over `nusb`
   (Windows: WinUSB driver) or an installed VISA (`ai_context/migration/IDENTITY.md`, "USBTMC
   instruments per OS"). Commands end `\n`; replies are one USBTMC message ending `\n`.
-- Every query round trip ≈ 23–29 ms (measured), so polling is split: 250 ms traces
+- Every query round trip ≈ 23-29 ms (measured), so polling is split: 250 ms traces
   (`TRIGger:STATus?`, `WAVeform:PREamble?`, `WAVeform:DATA?`), 1 s display + measurements,
   3 s settings. A set re-polls every group at once (engine), so changes show immediately.
 - Setters never reply (`reply: none`).
@@ -58,5 +58,5 @@ measurement" (e.g. FREQ on a flat line) → status null.
   device clear did not help, and the scope **dropped off USB and came back ≈ 50 s later**
   (re-enumerated; settings intact). Operation disabled in the definition. Next step: the userspace
   USBTMC transport (`nusb`, same item as the DGE screenshot) with proper multi-transfer reads.
-- Edge trigger only (other trigger types not modelled). Digital channels (D0–D15), math, decoders,
+- Edge trigger only (other trigger types not modelled). Digital channels (D0-D15), math, decoders,
   memory depth and RAW/MAXimum waveform reads are not modelled.

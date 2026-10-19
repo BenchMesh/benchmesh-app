@@ -19,20 +19,20 @@ confidence, plus the next step to take.
 
 | # | Family | Price band (new) | Protocol | Manual | Confidence | DSL today |
 |---|---|---|---|---|---|---|
-| 1 | **Korad KEL102/KEL103** (= Tenma 72-13200/72-13210, RND 320-KEL102/103) | €250–400 | ASCII SCPI-like with **unit suffixes**, serial/USB-CDC; LAN = **UDP** 18190 | Vendor 8-page table plus a corrected community spec | medium–high | ✅ serial (LAN needs UDP) |
-| 2 | **Rigol DL3021/DL3021A/DL3031/DL3031A** | €500–900 | SCPI over USBTMC / RS232 / LAN / GPIB | Full programming guide (96 pp) | high | ✅ USBTMC + serial |
-| 3 | **Siglent SDL1020X/SDL1030X (-E)** | €450–800 | SCPI over USBTMC / LAN | Full programming guide (87 pp) + sigrok driver | high | ✅ USBTMC (LAN needs TCP) |
-| 4 | **Atorch DL24 / DL24P / DL24M** (and Atorch meters) | €25–60 | Binary push stream `FF 55…`, BLE/serial; **no setpoint commands** (only key presses) | Community reverse-engineering | medium | ❌ binary + push |
-| 5 | **OWON OEL15xx/30xx** (+ OEL85xx) | €200–350 | SCPI over USB-CDC/RS232 (or Modbus RTU) | Full, already defined | tested | ✅ `owon_oel.yaml` |
-| 6 | **East Tester ET5410/ET5411/ET5420** (and rebrands) | €150–300 | SCPI-like ASCII over USB-CDC | not retrieved | low | probably ✅ |
-| 7 | **ITECH IT8511+/IT8512+/IT8513+ … / B&K 8500 series** (classic ITECH OEM) | used €150–400 | **26-byte binary frame**, TTL serial (USB via a PL2303 cable); IT8500+ also SCPI | Full (BK manual + ITECH frame guide + ITECH SCPI guide) + sigrok | high | ❌ binary frame; ✅ SCPI on IT8500+ |
-| 8 | **B&K 8600 series** (= ITECH IT8800 OEM) | €900–3000 | SCPI over USBTMC / RS232 / GPIB | Full (83 pp) | high | ✅ |
-| 9 | **Array 3710A/3711A** (binary) / 3720A/3721A (SCPI?) | used / €300–600 | 3710A: ITECH-like 26-byte binary (reported); 372xA: SCPI (reported) | not retrieved | low | ❌ / ? |
-| 10 | **Maynuo M9711/M9712/M97xx** | €400–900 | **Modbus RTU**, float32 BE registers | sigrok register map | medium | ❌ Modbus |
-| 11 | **UNI-T UTL8211+/UTL8212+** (UTL8200+) | €250–450 | SCPI over USB-CDC / RS232 (reported) | not retrieved | low | probably ✅ |
-| 12 | **ZKETECH EBD-USB / EBD-A20H**, **Arachnid Re:load Pro** | €20–80 | EBD: binary `FA…F8` frames, XOR checksum, base-240 values; Re:load: plain ASCII | sigrok drivers | medium | EBD ❌ / Re:load ✅ |
+| 1 | **Korad KEL102/KEL103** (= Tenma 72-13200/72-13210, RND 320-KEL102/103) | €250-400 | ASCII SCPI-like with **unit suffixes**, serial/USB-CDC; LAN = **UDP** 18190 | Vendor 8-page table plus a corrected community spec | medium-high | ✅ serial (LAN needs UDP) |
+| 2 | **Rigol DL3021/DL3021A/DL3031/DL3031A** | €500-900 | SCPI over USBTMC / RS232 / LAN / GPIB | Full programming guide (96 pp) | high | ✅ USBTMC + serial |
+| 3 | **Siglent SDL1020X/SDL1030X (-E)** | €450-800 | SCPI over USBTMC / LAN | Full programming guide (87 pp) + sigrok driver | high | ✅ USBTMC (LAN needs TCP) |
+| 4 | **Atorch DL24 / DL24P / DL24M** (and Atorch meters) | €25-60 | Binary push stream `FF 55…`, BLE/serial; **no setpoint commands** (only key presses) | Community reverse-engineering | medium | ❌ binary + push |
+| 5 | **OWON OEL15xx/30xx** (+ OEL85xx) | €200-350 | SCPI over USB-CDC/RS232 (or Modbus RTU) | Full, already defined | tested | ✅ `owon_oel.yaml` |
+| 6 | **East Tester ET5410/ET5411/ET5420** (and rebrands) | €150-300 | SCPI-like ASCII over USB-CDC | not retrieved | low | probably ✅ |
+| 7 | **ITECH IT8511+/IT8512+/IT8513+ … / B&K 8500 series** (classic ITECH OEM) | used €150-400 | **26-byte binary frame**, TTL serial (USB via a PL2303 cable); IT8500+ also SCPI | Full (BK manual + ITECH frame guide + ITECH SCPI guide) + sigrok | high | ❌ binary frame; ✅ SCPI on IT8500+ |
+| 8 | **B&K 8600 series** (= ITECH IT8800 OEM) | €900-3000 | SCPI over USBTMC / RS232 / GPIB | Full (83 pp) | high | ✅ |
+| 9 | **Array 3710A/3711A** (binary) / 3720A/3721A (SCPI?) | used / €300-600 | 3710A: ITECH-like 26-byte binary (reported); 372xA: SCPI (reported) | not retrieved | low | ❌ / ? |
+| 10 | **Maynuo M9711/M9712/M97xx** | €400-900 | **Modbus RTU**, float32 BE registers | sigrok register map | medium | ❌ Modbus |
+| 11 | **UNI-T UTL8211+/UTL8212+** (UTL8200+) | €250-450 | SCPI over USB-CDC / RS232 (reported) | not retrieved | low | probably ✅ |
+| 12 | **ZKETECH EBD-USB / EBD-A20H**, **Arachnid Re:load Pro** | €20-80 | EBD: binary `FA…F8` frames, XOR checksum, base-240 values; Re:load: plain ASCII | sigrok drivers | medium | EBD ❌ / Re:load ✅ |
 | 13 | **GW Instek PEL-3000/PEL-2000**, **Keysight EL30000** | €2000+ | SCPI (USB-CDC/USBTMC/LAN/GPIB) | not retrieved | low | ✅ expected |
-| — | West Mountain Radio CBA | — | Closed USB HID protocol, Windows software only | none public | — | out of scope |
+| - | West Mountain Radio CBA | - | Closed USB HID protocol, Windows software only | none public | - | out of scope |
 
 ---
 
@@ -57,13 +57,13 @@ the 150 W unit and 72-13210 the 300 W unit (Farnell datasheet). CR maximum is re
   0416:5011, which is a plausible guess but must be verified.
 - RS232 (DB9).
 - LAN: **UDP**, device port 18190 by default. The local port must equal the device port.
-  Factory IP is 192.168.1.198 (LAN p.2–5).
+  Factory IP is 192.168.1.198 (LAN p.2-5).
 - Baud: 9600/19200/38400/57600/115200, factory **115200** 8N1 (LAN p.2 `DEVINFO`/FACTRESET;
   KP default).
 
 **Protocol.** ASCII SCPI-like. TX terminator `\n` (KP, PK). Replies end in `\n`.
 **Every value carries a unit suffix**, both sent and received: `:CURR 2A` and the reply
-`10.000A`; `20W`; `10OHM`; `5V` (KP note at the end; CC p.2–3).
+`10.000A`; `20W`; `10OHM`; `5V` (KP note at the end; CC p.2-3).
 
 **Identify.** `*IDN?` → `RND 320-KEL103 V2.60 SN:01234567` (KP). Korad-branded units
 presumably return `KORAD KEL103 V…`. Model regex: `KEL10[23]` anywhere in the reply
@@ -77,16 +77,16 @@ presumably return `KORAD KEL103 V…`. Model regex: `KEL10[23]` anywhere in the 
 | Mode query | `:FUNC?` | `CC`, `CV`, `CR`, `CW`, `SHORt` (sic), `BATTERY`, `OCP`, `OPP`, `LIST`, `CONTINUOUS CC/CV/CR/CW`, `PULSE`, `TOGGLE` | KP (kelenums.py) |
 | CC setpoint | `:CURR <x>A` / `:CURR?` | `10.000A` | CC p.2, KP |
 | CV setpoint | `:VOLT <x>V` / `:VOLT?` | `10.000V` | CC p.2, KP |
-| CR setpoint | `:RES <x>OHM` / `:RES?` | `10.000OHM` | CC p.2–3, KP |
+| CR setpoint | `:RES <x>OHM` / `:RES?` | `10.000OHM` | CC p.2-3, KP |
 | CP setpoint | `:POW <x>W` / `:POW?` | `100.00W` | CC p.3, KP |
-| Limits | `:VOLT:UPP <v>V` / `:VOLT:UPP?`, `:VOLT:LOW?`; same for CURR/POW/RES | `150V` … | CC p.2–3, KP |
+| Limits | `:VOLT:UPP <v>V` / `:VOLT:UPP?`, `:VOLT:LOW?`; same for CURR/POW/RES | `150V` … | CC p.2-3, KP |
 | Readings | `:MEAS:VOLT?`, `:MEAS:CURR?`, `:MEAS:POW?` | `7.4486V`, `3.2415A`, `24.145W` | CC p.3, KP |
-| Status | `:STAT?` | `0,4,0,0,0,0` = beep, baud index, lock, ext-trigger, **remote compensation**, ? | CC p.1–2, KP |
+| Status | `:STAT?` | `0,4,0,0,0,0` = beep, baud index, lock, ext-trigger, **remote compensation**, ? | CC p.1-2, KP |
 | Remote sense | `:SYST:COMP ON\|OFF` / `?` (undocumented by Korad) | `ON`/`OFF` | KP, element14 thread |
 | Panel lock | `:SYST:LOCK ON\|OFF` / `?` | `ON`/`OFF` | KP |
-| Battery | `:BATT g,<range>A,<I>A,<Vcut>V,<Ah>AH,<t>M`; `:RCL:BATT g`; `:BATT:TIM?` (`0.9547M`), `:BATT:CAP?` (`0.1093AH`) | | CC p.6–7, KP |
+| Battery | `:BATT g,<range>A,<I>A,<Vcut>V,<Ah>AH,<t>M`; `:RCL:BATT g`; `:BATT:TIM?` (`0.9547M`), `:BATT:CAP?` (`0.1093AH`) | | CC p.6-7, KP |
 | Dynamic | `:DYN 1..6,…` / `:DYN?` (must recall first) | | CC p.7, KP |
-| LIST/OCP/OPP tests | `:LIST`, `:OCP`, `:OPP`, `:RCL:*` | | CC p.4–6 |
+| LIST/OCP/OPP tests | `:LIST`, `:OCP`, `:OPP`, `:RCL:*` | | CC p.4-6 |
 | Store/recall | `*SAV 1..100`, `*RCL 1..100` | | CC p.1 |
 
 **Quirks.**
@@ -111,7 +111,7 @@ presumably return `KORAD KEL103 V…`. Model regex: `KEL10[23]` anywhere in the 
 test modes. Short circuit is a *mode* (`:FUNC SHORt`), not a separate input switch. `short`
 set ON maps to `:FUNC SHORt`; OFF has no inverse (restore the previous mode). It is better
 not to bind `short` at all. LAN needs a **`udp` link**, which does not exist yet.
-**Confidence: medium–high.** The command set is verified by two independent open-source
+**Confidence: medium-high.** The command set is verified by two independent open-source
 projects. Framing and timing are unmeasured.
 
 ### 2.2 Rigol DL3000 (DL3021, DL3021A, DL3031, DL3031A)
@@ -143,20 +143,20 @@ p.22). Regex: `^RIGOL TECHNOLOGIES,DL30[23]1A?,`.
 |---|---|---|---|
 | Input | `:SOUR:INP:STAT ON\|OFF` / `:SOUR:INP:STAT?` | `0`/`1` | 38 |
 | Mode | `:SOUR:FUNC CURR\|RES\|VOLT\|POW` / `:SOUR:FUNC?` | **`CC`, `CV`, `CR`, `CP`** | 38 |
-| What drives regulation | `:SOUR:FUNC:MODE FIX\|LIST\|WAV\|BATT\|OCP\|OPP` / `?` | `FIX`, `LIST`, `WAV`, `BATT`, `OCP`, `OPP` | 38–39 |
-| CC setpoint | `:SOUR:CURR:LEV:IMM <A>` / `?` (accepts `MIN\|MAX\|DEF`) | real | 39–40 |
+| What drives regulation | `:SOUR:FUNC:MODE FIX\|LIST\|WAV\|BATT\|OCP\|OPP` / `?` | `FIX`, `LIST`, `WAV`, `BATT`, `OCP`, `OPP` | 38-39 |
+| CC setpoint | `:SOUR:CURR:LEV:IMM <A>` / `?` (accepts `MIN\|MAX\|DEF`) | real | 39-40 |
 | CC range | `:SOUR:CURR:RANG <A>` / `?` (low range is the default) | real | 40 |
-| CC slew | `:SOUR:CURR:SLEW[:BOTH\|:POS\|:NEG] <A/µs>` | real | 40–41 |
-| Von / V limit / I limit | `:SOUR:CURR:VON`, `:SOUR:CURR:VLIM`, `:SOUR:CURR:ILIM` (also per mode: `VOLT:VLIM/ILIM`, `RES:…`, `POW:…`) | real | 42, 48, 49–51 |
+| CC slew | `:SOUR:CURR:SLEW[:BOTH\|:POS\|:NEG] <A/µs>` | real | 40-41 |
+| Von / V limit / I limit | `:SOUR:CURR:VON`, `:SOUR:CURR:VLIM`, `:SOUR:CURR:ILIM` (also per mode: `VOLT:VLIM/ILIM`, `RES:…`, `POW:…`) | real | 42, 48, 49-51 |
 | CV setpoint | `:SOUR:VOLT:LEV:IMM <V>` / `?` | real | 47 |
-| CR setpoint | `:SOUR:RES:LEV:IMM <Ω>` / `?` | real | 48–49 |
+| CR setpoint | `:SOUR:RES:LEV:IMM <Ω>` / `?` | real | 48-49 |
 | CP setpoint | `:SOUR:POW:LEV:IMM <W>` / `?` | real | 50 |
-| Readings | `:MEAS:VOLT?`, `:MEAS:CURR?`, `:MEAS:POW?`, `:MEAS:RES?` (`FETC:` variants also exist) | real | 31–33 |
-| Battery results | `:MEAS:CAP?` (mAh), `:MEAS:WATT?`, `:MEAS:DISCT?`, `:MEAS:TIME?` | real | 33–34 |
-| Battery setup | `:SOUR:BATT:RANG/LEV/VST/CST/TIM/VON/VEN/CEN/TEN` | | 54–58 |
-| OCP/OPP *tests* | `:SOUR:OCP:*`, `:SOUR:OPP:*` (test routines, not protection limits) | | 58–66 |
+| Readings | `:MEAS:VOLT?`, `:MEAS:CURR?`, `:MEAS:POW?`, `:MEAS:RES?` (`FETC:` variants also exist) | real | 31-33 |
+| Battery results | `:MEAS:CAP?` (mAh), `:MEAS:WATT?`, `:MEAS:DISCT?`, `:MEAS:TIME?` | real | 33-34 |
+| Battery setup | `:SOUR:BATT:RANG/LEV/VST/CST/TIM/VON/VEN/CEN/TEN` | | 54-58 |
+| OCP/OPP *tests* | `:SOUR:OCP:*`, `:SOUR:OPP:*` (test routines, not protection limits) | | 58-66 |
 | Remote sense | `:SOUR:SENS 0\|1` / `?` | `0`/`1` | 67 |
-| Transient | `:SOUR:TRAN 0\|1`, `:SOUR:CURR:TRAN:MODE CONT\|PULS\|TOGG`, `ALEV/BLEV/AWID/BWID/FREQ/PER/ADUT` | | 39, 43–47 |
+| Transient | `:SOUR:TRAN 0\|1`, `:SOUR:CURR:TRAN:MODE CONT\|PULS\|TOGG`, `ALEV/BLEV/AWID/BWID/FREQ/PER/ADUT` | | 39, 43-47 |
 | Protection status | `:STAT:QUES:COND?` → integer bits: 0 VF, 1 OC, 2 RS, 3 OP, 7 RUN, 9 RRV, 10 UNR, 11 LRV, **12 OV**, **13 PS** (protection shutdown: OC/OP/OT), 14 VON | | 15, 27 |
 | Error queue | `:SYST:ERR?` → `-113,"Undefined header…"` | | 69 |
 | Key press | `:SYST:KEY <n>` (8 = Local, 32 = ON/OFF, **33 = SHORT**) | | 68 |
@@ -202,24 +202,24 @@ resolution and the same command set.
 | Input | `:SOUR:INP:STAT ON\|OFF` / `?` (SR uses `:INPUT?`) | `0`/`1` | 18 |
 | Short | `:SOUR:SHOR:STAT ON\|OFF` / `?` | `0`/`1` | 18 |
 | Mode | `:SOUR:FUNC CURR\|VOLT\|POW\|RES\|LED` / `:SOUR:FUNC?` | **`CURRENT`, `VOLTAGE`, `POWER`, `RESISTANCE`** (uppercase long form; `LED`) | 19, SR |
-| Transient mode | `:SOUR:FUNC:TRAN CURR\|…` / `?` | | 18–19 |
-| CC setpoint | `:SOUR:CURR:LEV:IMM <A>` / `?` | `2.674` | 19–20 |
+| Transient mode | `:SOUR:FUNC:TRAN CURR\|…` / `?` | | 18-19 |
+| CC setpoint | `:SOUR:CURR:LEV:IMM <A>` / `?` | `2.674` | 19-20 |
 | CC ranges | `:SOUR:CURR:IRANG <A>`, `:SOUR:CURR:VRANG <V>` / `?` | `30`, `36` | 20 |
-| CV setpoint | `:SOUR:VOLT:LEV:IMM <V>` / `?` (+ `IRANG/VRANG`) | `4.000` | 24–25 |
-| CP setpoint | `:SOUR:POW:LEV:IMM <W>` / `?` | | 27–28 |
-| CR setpoint | `:SOUR:RES:LEV:IMM <Ω>` / `?`, `:SOUR:RES:RRANG LOW\|MIDDLE\|HIGH\|UPPER` | | 30–31 |
+| CV setpoint | `:SOUR:VOLT:LEV:IMM <V>` / `?` (+ `IRANG/VRANG`) | `4.000` | 24-25 |
+| CP setpoint | `:SOUR:POW:LEV:IMM <W>` / `?` | | 27-28 |
+| CR setpoint | `:SOUR:RES:LEV:IMM <Ω>` / `?`, `:SOUR:RES:RRANG LOW\|MIDDLE\|HIGH\|UPPER` | | 30-31 |
 | Readings | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?`, `MEAS:RES?` | `7.924678` | 17 |
 | Waveform | `MEAS:WAVE? CURR\|VOLT\|POW\|RES` → 200 floats (CSV) | | 18 |
 | Von / latch | `:SOUR:VOLT:LEV:ON <V>`, `:SOUR:VOLT:LATC ON\|OFF` | | 57 |
-| OCP / OPP limits | `:SOUR:CURR:PROT:STAT/LEV/DEL`, `:SOUR:POW:PROT:STAT/LEV/DEL` | | 58–59 |
-| Remote sense | `SYST:SENS ON\|OFF` / `?` | `0`/`1` | 59–60 |
-| Battery | `:SOUR:BATT:FUNC`, `:SOUR:BATT:MODE CURR\|POW\|RES`, `:LEV`, `:VOLT`, `:CAP`, `:TIM`, `:…:STAT`, `:SOUR:BATT:DISCHA:CAP?` (mAh), `:DISCHA:TIM?` (s) | | 35–39 |
+| OCP / OPP limits | `:SOUR:CURR:PROT:STAT/LEV/DEL`, `:SOUR:POW:PROT:STAT/LEV/DEL` | | 58-59 |
+| Remote sense | `SYST:SENS ON\|OFF` / `?` | `0`/`1` | 59-60 |
+| Battery | `:SOUR:BATT:FUNC`, `:SOUR:BATT:MODE CURR\|POW\|RES`, `:LEV`, `:VOLT`, `:CAP`, `:TIM`, `:…:STAT`, `:SOUR:BATT:DISCHA:CAP?` (mAh), `:DISCHA:TIM?` (s) | | 35-39 |
 | Averaging | `SENS:AVER:COUN 6..14` | | 61 |
-| LAN config | `LAN:IPAD`, `LAN:SMAS`, `LAN:GAT`, `DHCP`, `LAN:MAC?` | | 63–65 |
+| LAN config | `LAN:IPAD`, `LAN:SMAS`, `LAN:GAT`, `DHCP`, `LAN:MAC?` | | 63-65 |
 
 **Quirks.**
 - No remote/local command and **no protection-trip query** is documented (no
-  `STAT:QUES`). Only `*STB?`/`*ESR?` are available (PG p.15–16). OVP/OCP/OPP status keys
+  `STAT:QUES`). Only `*STB?`/`*ESR?` are available (PG p.15-16). OVP/OCP/OPP status keys
   stay unbound.
 - PG p.58: the query row for `CURR:PROT:STAT?` is a copy-paste error (it shows
   `EXT:INPUT?`). Assume `:SOUR:CURR:PROT:STAT?` and verify.
@@ -246,7 +246,7 @@ publishes no manual. Local note: `atorch_dl24/doc/SOURCES.md`.
   Type `02` is a reply (4 bytes; `02 01` = OK, `02 03` = unsupported). Type `11` is a
   command (6 bytes).
 - DC-meter report (device type `02`, used by the DL24): V = u24be/10, I = u24be/1000,
-  P = u24be/10, Wh = u32be/100, temperature u16be at 0x18, h/m/s at 0x1A–0x1D. The sigrok
+  P = u24be/10, Wh = u32be/100, temperature u16be at 0x18, h/m/s at 0x1A-0x1D. The sigrok
   scaling differs slightly: V u24be ×0.1, I u24be ×0.001, Ah u24be ×0.01 at 0x0A.
 - Commands: `FF 55 11 <devtype> <cmd> <u32be value> <cks>`. cmd `01/02/03/05` resets Wh/Ah/
   time/all; `11/12` = **[+]/[−] key**; `31` = setup; `32` = enter; `21` = backlight; `22` =
@@ -269,10 +269,10 @@ Already defined and bench-tested (`devices/owon_oel.yaml`,
 - The panel menu also offers **Modbus RTU**, which would need the Modbus feature (§5).
 - A good template for the `scpi_load` base.
 
-### 2.6 ITECH IT8500 / IT8500+ binary frame — B&K Precision 8500 series
+### 2.6 ITECH IT8500 / IT8500+ binary frame - B&K Precision 8500 series
 
 **Docs.**
-- `bk_8500/doc/85xx_manual.pdf` (BK; remote chapter p.46–69).
+- `bk_8500/doc/85xx_manual.pdf` (BK; remote chapter p.46-69).
 - `itech_it8500/doc/ITECH_IT8500plus_Programming-Guide_Frame-Format.pdf` (IF; Ver1.1 2008).
 - sigrok `itech-it8500` (SR).
 - Python: https://github.com/cdwilson/BK-8500-Electronic-Load ,
@@ -284,7 +284,7 @@ IT8511+…IT8516C+ in frame mode, and **B&K 8500/8502/8510/8512/8514/8518/8520/8
 (see 2.10).
 
 **Models.**
-- BK (p.15–16): 8500 120 V/30 A/300 W · 8502 500 V/15 A/300 W · 8510 120 V/120 A/600 W ·
+- BK (p.15-16): 8500 120 V/30 A/300 W · 8502 500 V/15 A/300 W · 8510 120 V/120 A/600 W ·
   8512 500 V/30 A/600 W · 8514 120 V/240 A/1200 W · 8518 60 V/240 A/1200 W ·
   8520 120 V/240 A/2400 W · 8522 500 V/120 A/2400 W · 8524 60 V/240 A/5000 W ·
   8526 500 V/120 A/5000 W.
@@ -299,9 +299,9 @@ IT8511+…IT8516C+ in frame mode, and **B&K 8500/8502/8510/8512/8514/8518/8520/8
   p.9).
 - Serial: 4800/9600/19200/38400, 8N1, default 9600 (IF p.7). The BK manual shows 38400 in
   its example (BK p.48). **"DTR and RTS signal lines must be enabled/asserted"** (BK p.46).
-- Address 0–31 (ITECH) / 0x00–0xFE (BK). 0xFF is broadcast (IF p.9).
+- Address 0-31 (ITECH) / 0x00-0xFE (BK). 0xFF is broadcast (IF p.9).
 
-**Frame** (BK p.47, IF p.9–12, SR protocol.h). All packets are **26 bytes** in both
+**Frame** (BK p.47, IF p.9-12, SR protocol.h). All packets are **26 bytes** in both
 directions:
 
 ```
@@ -319,31 +319,31 @@ remote ON = `AA 00 20 01 00…00 CB`, reply `AA 00 12 80 00…00 3C`.
 
 | Function | Cmd | Data (offset from 0) | Scale | Source |
 |---|---|---|---|---|
-| Remote / local | `0x20` | [3] 1 = remote, 0 = panel | — | BK p.54, IF p.12 |
-| Input on/off | `0x21` | [3] 1/0 | — | BK p.54 |
-| Max V / I / P set·get | `0x22/23`, `0x24/25`, `0x26/27` | [3..6] u32le | 1 mV / 0.1 mA / 1 mW | BK p.54–55 |
-| Mode set / get | `0x28` / `0x29` | [3] 0 = CC, 1 = CV, 2 = CW, 3 = CR | — | BK p.56 |
-| CC set / get | `0x2A` / `0x2B` | [3..6] u32le | **0.1 mA** | BK p.56–57 |
+| Remote / local | `0x20` | [3] 1 = remote, 0 = panel | - | BK p.54, IF p.12 |
+| Input on/off | `0x21` | [3] 1/0 | - | BK p.54 |
+| Max V / I / P set·get | `0x22/23`, `0x24/25`, `0x26/27` | [3..6] u32le | 1 mV / 0.1 mA / 1 mW | BK p.54-55 |
+| Mode set / get | `0x28` / `0x29` | [3] 0 = CC, 1 = CV, 2 = CW, 3 = CR | - | BK p.56 |
+| CC set / get | `0x2A` / `0x2B` | [3..6] u32le | **0.1 mA** | BK p.56-57 |
 | CV set / get | `0x2C` / `0x2D` | u32le | 1 mV | BK p.57 |
 | CW set / get | `0x2E` / `0x2F` | u32le | 1 mW | BK p.57 |
 | CR set / get | `0x30` / `0x31` | u32le | 1 mΩ | BK p.58 |
-| Function set / get | `0x5D` / `0x5E` | [3] 0 = FIXED, **1 = SHORT**, 2 = TRANSIENT, 3 = LIST, 4 = BATTERY | — | BK p.67–68 |
+| Function set / get | `0x5D` / `0x5E` | [3] 0 = FIXED, **1 = SHORT**, 2 = TRANSIENT, 3 = LIST, 4 = BATTERY | - | BK p.67-68 |
 | **Read state** | `0x5F` | V u32le [3..6] (1 mV), I u32le [7..10] (0.1 mA), P u32le [11..14] (1 mW), operation reg u8 [15], demand reg u16le [16..17] | | BK p.68, IF p.20 |
-| Remote sense set / get | `0x56` / `0x57` | [3] 1/0 | — | BK p.66 |
-| Local key enable | `0x55` | [3] 1/0 | — | BK p.66 |
-| Product info | `0x6A` (BK) | model ASCII [3..7], FW [8] lo / [9] hi, serial ASCII [10..19] | — | BK p.69 |
+| Remote sense set / get | `0x56` / `0x57` | [3] 1/0 | - | BK p.66 |
+| Local key enable | `0x55` | [3] 1/0 | - | BK p.66 |
+| Product info | `0x6A` (BK) | model ASCII [3..7], FW [8] lo / [9] hi, serial ASCII [10..19] | - | BK p.69 |
 | Load limits (ITECH +) | `0x01` | I max, V max, V min, P max, R max u32le; R min u16le | | IF p.20 |
-| Soft OCP / OPP (ITECH +) | `0x80–0x89` | level / delay / enable | | IF p.11 |
-| Clear protection (ITECH +) | `0x90` | — | | IF p.11 |
+| Soft OCP / OPP (ITECH +) | `0x80-0x89` | level / delay / enable | | IF p.11 |
+| Clear protection (ITECH +) | `0x90` | - | | IF p.11 |
 
 Register bits:
 - Operation register (`0x5F` [15]): 0 CAL, 1 WTG, **2 REM**, **3 OUT (input on)**, 4 LOCAL
   key, 5 SENSE, 6 load-on timer (BK p.68).
 - Demand register (u16): 0 RV, **1 OV, 2 OC, 3 OP, 4 OT**, 5 sense disconnected, **6 CC,
-  7 CV, 8 CW, 9 CR** (the active regulation mode), 10–12 autotest (IF p.20–21).
+  7 CV, 8 CW, 9 CR** (the active regulation mode), 10-12 autotest (IF p.20-21).
 
 **Binding sketch.** One `0x5F` poll gives VIN/IIN/PIN, INPUT (op bit 3), REMOTE (op bit 2),
-OVP/OCP/OPP (demand bits 1/2/3) and MODE (`0x29` or demand bits 6–9). Setters `0x20`,
+OVP/OCP/OPP (demand bits 1/2/3) and MODE (`0x29` or demand bits 6-9). Setters `0x20`,
 `0x21`, `0x28`, `0x2A`/`2C`/`2E`/`30`, `0x5D` (short = function 1, back to 0 = FIXED),
 `0x56`. Identify: `0x6A` (BK) or `0x01` + model from `6A` where present. sigrok reads the
 model from the `6A` reply data.
@@ -356,7 +356,7 @@ model from the `6A` reply data.
 **Docs.** `itech_it8500/doc/ITECH_IT8500plus_Programming-Guide_SCPI.pdf` (IS, Rev V1.3).
 Models IT8511+, IT8511A+, IT8512+, IT8512A+, IT8512B+, IT8512C+, IT8512H+, IT8513A+,
 IT8513B+, IT8513C+, IT8514C+, IT8514B+, IT8516C+ (IS p.1). The same physical link applies
-(TTL DB9 + IT-E12x, or built-in RS232/USB-PL2303 on B+/C+ models; IS p.20–21).
+(TTL DB9 + IT-E12x, or built-in RS232/USB-PL2303 on B+/C+ models; IS p.20-21).
 Retailers say "many older units can be upgraded to SCPI". Whether frame or SCPI is active
 is probably a menu setting; this is unverified.
 
@@ -366,16 +366,16 @@ is probably a menu setting; this is unverified.
 
 | Function | Command | Reply | IS page |
 |---|---|---|---|
-| Remote / local | `SYST:REM` / `SYST:LOC` / `SYST:RWL` (lock incl. LOCAL key). In remote mode every key except LOCAL and Shift is locked | — | 25–26 |
+| Remote / local | `SYST:REM` / `SYST:LOC` / `SYST:RWL` (lock incl. LOCAL key). In remote mode every key except LOCAL and Shift is locked | - | 25-26 |
 | Input | `INP 0\|1\|OFF\|ON` / `INP?` | `0`/`1` | 31 |
-| Short | `INP:SHOR 0\|1` / `INP:SHOR?` | `0`/`1` | 31–32 |
+| Short | `INP:SHOR 0\|1` / `INP:SHOR?` | `0`/`1` | 31-32 |
 | Mode | `FUNC` (= `MODE`) `CURR\|VOLT\|POW\|RES\|DYN\|LED\|IMP` / `FUNC?` | `<CRD>` (expected `CURR`/`VOLT`/`POW`/`RES`/`DYN`/…; exact form unverified) | 41 |
-| Setpoints | `CURR <A>`, `VOLT <V>`, `POW <W>`, `RES <Ω>` and `?` (long form `[SOUR:]CURR[:LEV][:IMM][:AMPL]`) | NR2 | 42–45 |
-| Ranges | `CURR:RANG`, `VOLT:RANG`, `VOLT:RANG:AUTO` | | 32–34 |
-| Protection limits | `CURR:PROT[:LEV]`, `POW:PROT[:LEV]` (`…:DEL`, `CURR:PROT:STAT`) | | 37–39 |
-| Von / Voff | `VOLT:ON`, `VOLT:OFF` | | 39–40 |
-| Readings | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?`, `MEAS:RES?` (+ `MAX/MIN/PTP`) | NR2 | 53–56 |
-| Remote sense | `SYST:SENS 0\|1` / `?` | `0`/`1` | 24–25 |
+| Setpoints | `CURR <A>`, `VOLT <V>`, `POW <W>`, `RES <Ω>` and `?` (long form `[SOUR:]CURR[:LEV][:IMM][:AMPL]`) | NR2 | 42-45 |
+| Ranges | `CURR:RANG`, `VOLT:RANG`, `VOLT:RANG:AUTO` | | 32-34 |
+| Protection limits | `CURR:PROT[:LEV]`, `POW:PROT[:LEV]` (`…:DEL`, `CURR:PROT:STAT`) | | 37-39 |
+| Von / Voff | `VOLT:ON`, `VOLT:OFF` | | 39-40 |
+| Readings | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?`, `MEAS:RES?` (+ `MAX/MIN/PTP`) | NR2 | 53-56 |
+| Remote sense | `SYST:SENS 0\|1` / `?` | `0`/`1` | 24-25 |
 | Protection status | `STAT:QUES:COND?` bits: 0 VF, 1 OC, 3 OP, **4 OT**, 8 SV, 11 UNR, **13 OV** (this layout **differs** from Rigol/BK 8600) | | 22, 27 |
 | Error | `SYST:ERR?` | | 24 |
 
@@ -395,8 +395,8 @@ the exact `FUNC?` reply are unverified.
 **Interfaces.**
 - USBTMC / USB488 (BP p.8). VID 0x2EC7 (B&K/ITECH). PID **unknown**; 0x8800 is the
   commonly reported value, so verify.
-- RS232: 4800–115200, 8N1, null-modem cable, RTS hold-off / XON-XOFF flow control (BP
-  p.6–7).
+- RS232: 4800-115200, 8N1, null-modem cable, RTS hold-off / XON-XOFF flow control (BP
+  p.6-7).
 - GPIB.
 
 **Protocol.** SCPI. Commands end in NL; responses end in LF (BP p.21, p.24).
@@ -405,16 +405,16 @@ Regex: `^B&K PRECISION, ?86\d\d,`.
 
 | Function | Command | Reply | BP page |
 |---|---|---|---|
-| Remote / local | `SYST:REM`, `SYST:LOC`, `SYST:RWL` (RS-232 operation) | — | 37 |
+| Remote / local | `SYST:REM`, `SYST:LOC`, `SYST:RWL` (RS-232 operation) | - | 37 |
 | Input / short | `INP[:STAT] 0\|1` / `INP?`; `INP:SHOR[:STAT] 0\|1` / `INP:SHOR:STAT?` | `0`/`1` | 44 |
 | Remote sense | `REM:SENS[:STAT] 0\|1` / `?` | `<CRD>` | 44 |
-| Mode | `FUNC CURR\|RES\|VOLT\|POW` / `FUNC?` | `<CRD>` | 44–45 |
+| Mode | `FUNC CURR\|RES\|VOLT\|POW` / `FUNC?` | `<CRD>` | 44-45 |
 | Fixed / list | `FUNC:MODE FIX\|LIST` | | 45 |
-| Clear protection | `PROT:CLE` (restores the input to its state before the fault) | — | 45–46 |
-| OCP / OPP soft limits | `CURR:PROT:STAT/LEV/DEL`, `POW:PROT:LEV/DEL` | | 48–49, 61 |
-| Setpoints | `CURR`, `VOLT`, `RES`, `POW` (+ transient A/B levels and widths) | NR2 | 47–61 |
+| Clear protection | `PROT:CLE` (restores the input to its state before the fault) | - | 45-46 |
+| OCP / OPP soft limits | `CURR:PROT:STAT/LEV/DEL`, `POW:PROT:LEV/DEL` | | 48-49, 61 |
+| Setpoints | `CURR`, `VOLT`, `RES`, `POW` (+ transient A/B levels and widths) | NR2 | 47-61 |
 | Readings | `MEAS:VOLT?`, `MEAS:CURR?`, `MEAS:POW?` (`FETC:` = no new acquisition) | NR2 | 66 |
-| Status | `STAT:QUES:COND?` bits: 0 VF, 1 OC, 2 RS, 3 OP, 4 OT, 7 RUN, 9 RRV, 10 UNR, 11 LRV, **12 OV**, **13 PS**, 14 VON (same layout as Rigol) | | 9–10, 39 |
+| Status | `STAT:QUES:COND?` bits: 0 VF, 1 OC, 2 RS, 3 OP, 4 OT, 7 RUN, 9 RRV, 10 UNR, 11 LRV, **12 OV**, **13 PS**, 14 VON (same layout as Rigol) | | 9-10, 39 |
 
 **DSL fit: ✅** over USBTMC or serial. **Confidence: high** for commands, low for the PID.
 
@@ -443,7 +443,7 @@ The sigrok driver enables only the M9710 and lists the rest commented out (SR ap
 | Family | What is known | Next step |
 |---|---|---|
 | **East Tester ET5410/ET5411/ET5420(A+)** | Cheap 150 V/40 A/400 W class (ET5420 has 2 channels). USB-CDC. A SCPI-like ASCII command set with a channel prefix (`CH1:…`) is reported; the identify string is unknown | Get the "ET54 series programming manual" from the vendor (et-instrument / Hangzhou Zhongchuang); likely ✅ DSL |
-| **UNI-T UTL8211+/UTL8212+** | 150 V/30 A/150–300 W, USB (CDC) + RS232, SCPI per datasheet | Programming manual on uni-trend.com; likely ✅ |
+| **UNI-T UTL8211+/UTL8212+** | 150 V/30 A/150-300 W, USB (CDC) + RS232, SCPI per datasheet | Programming manual on uni-trend.com; likely ✅ |
 | **Array 3710A/3711A** | Reported ITECH-like **26-byte 0xAA frame with sum checksum**, but with a different, compact command set (one "set all" / "read all" pair). Sold also as Tekpower/Velleman rebrands. **3720A/3721A**: SCPI over USB/RS232 per retailer pages | Array 3710A manual (protocol appendix); same binary DSL feature as §2.6 |
 | **GW Instek PEL-3000(E)/PEL-2000A** | SCPI over USB-CDC (VID 0x2184), RS232, GPIB, LAN. PEL-2000 is a mainframe with channels | GW programming manual; ✅ expected (multi-channel for PEL-2000) |
 | **Keysight EL30000 (EL33133A, EL34143A, EL34243A)** | SCPI over USBTMC (VID 0x2A8D) / LAN. N3300-style tree (`FUNC`, `INP`, `MEAS:VOLT?`); EL34243A has 2 channels with `(@1)` channel lists | Keysight programming guide; ✅ (channel list via `{ch}`) |
@@ -468,7 +468,7 @@ Keysight/GW expected):
 
 | Op | Wire (base) | Per-family override |
 |---|---|---|
-| identify | `*IDN?` | — |
+| identify | `*IDN?` | - |
 | input set/get | `INP {on}` (`ON\|OFF`) / `INP?` → `0\|1` | OEL replies `ON/OFF` |
 | mode set | `FUNC {mode}` with `CURR\|VOLT\|RES\|POW` | Korad: `CC\|CV\|CR\|CW` (not SCPI; does not extend the base) |
 | mode get | `FUNC?` → parse `[trim, lower, {regex: "^(cc\|cv\|cr\|cp\|cw\|curr\|volt\|res\|pow)"}, {map: {cc: CURR, curr: CURR, cv: VOLT, volt: VOLT, cr: RES, res: RES, cp: POW, cw: POW, pow: POW}}]` | One map covers Rigol `CC`, Siglent `CURRENT`, OEL `current`, ITECH `CURR` |

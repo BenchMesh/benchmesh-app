@@ -29,7 +29,7 @@ describe('flow editor', () => {
     fireEvent.change(w.getByLabelText('Setting'), { target: { value: 'output' } })
     expect(within(step('steps[0]')).getByText('⚡ energizes')).toBeTruthy()
     fireEvent.change(within(step('steps[0]')).getByLabelText('Setting'), { target: { value: 'current' } })
-    expect(within(step('steps[0]')).getByText('0 – 15 A')).toBeTruthy()
+    expect(within(step('steps[0]')).getByText('0 - 15 A')).toBeTruthy()
     fireEvent.click(within(step('steps[0]')).getByRole('button', { name: 'Value' }))
     fireEvent.change(within(step('steps[0]')).getByLabelText('Value (A)'), { target: { value: '1.25' } })
     expect(screen.getByTestId('unsaved')).toBeTruthy()

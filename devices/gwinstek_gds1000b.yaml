@@ -2,7 +2,7 @@
 # Written from the programming manual, not yet seen live (models are "awaiting confirmation").
 # The USB device port is a CDC-ACM virtual COM port (p5, p16), so the link is `serial` (the baud
 # rate is not used by CDC). LAN: a raw socket server (p8-12), off by default, on a port the user
-# picks (1024-65535, p10) — give that port in the config entry's host (`192.168.1.20:3000`).
+# picks (1024-65535, p10) - give that port in the config entry's host (`192.168.1.20:3000`).
 # Waveform: `:ACQuire<n>:MEMory?` returns the whole record (1e3 … 1e7 points) as signed 16-bit
 # big-endian codes, volts = code / 25 * vertical scale (p36-38). The trace is only polled while the
 # record length is at most 10 000 points (a 10 Mpts read would block the link for minutes).

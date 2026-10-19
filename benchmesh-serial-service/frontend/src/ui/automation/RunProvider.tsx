@@ -106,7 +106,7 @@ export const STATE_TEXT: Record<string, string> = {
 /** Label of the abort button: a press during cleanup also skips the rest of the cleanup. */
 export const abortLabel = (state: string, short = false) => (state === 'cleanup' ? 'Stop cleanup too' : short ? 'Stop' : 'Abort')
 
-/** Top-bar indicator: `▶ <flow> — <state>` and a red Stop, visible from anywhere while a run is active. */
+/** Top-bar indicator: `▶ <flow> - <state>` and a red Stop, visible from anywhere while a run is active. */
 export function RunIndicator({ onOpen }: { onOpen: () => void }) {
   const run = useRun()
   const [error, setError] = useState<string | null>(null)
@@ -115,7 +115,7 @@ export function RunIndicator({ onOpen }: { onOpen: () => void }) {
   return (
     <div className="auto-indicator" role="status" aria-label="Automation run">
       <button type="button" className="auto-indicator__open" onClick={onOpen} title="Open the run in Automation">
-        ▶ {status.flow?.name ?? 'Flow'} — {STATE_TEXT[status.state] ?? status.state}
+        ▶ {status.flow?.name ?? 'Flow'} - {STATE_TEXT[status.state] ?? status.state}
       </button>
       <button type="button" className="bench-btn auto-btn--stop" onClick={() => { setError(null); run.abort().catch((e) => setError(e instanceof Error ? e.message : String(e))) }}
         aria-label={status.state === 'cleanup' ? 'Stop the cleanup too' : 'Stop the automation run'}>

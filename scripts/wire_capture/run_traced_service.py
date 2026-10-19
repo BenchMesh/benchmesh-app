@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 
 def processes_holding(path: str) -> list:
-    """PIDs (other than ours) that have `path` open — instruments must not be shared."""
+    """PIDs (other than ours) that have `path` open - instruments must not be shared."""
     real = os.path.realpath(path)
     pids = []
     for pid in filter(str.isdigit, os.listdir("/proc")):

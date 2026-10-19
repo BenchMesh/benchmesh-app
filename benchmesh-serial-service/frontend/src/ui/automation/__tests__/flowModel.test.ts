@@ -81,7 +81,7 @@ describe('step templates', () => {
 
 describe('values and specs', () => {
   it('describes value specs and picks safe defaults', () => {
-    expect(specHint({ type: 'number', min: 0, max: 60, unit: 'V' })).toBe('0 – 60 V')
+    expect(specHint({ type: 'number', min: 0, max: 60, unit: 'V' })).toBe('0 - 60 V')
     expect(specHint({ type: 'enum', values: ['OFF', 'ON'] })).toBe('OFF | ON')
     expect(defaultValue({ type: 'enum', values: ['ON', 'OFF'] })).toBe('OFF')
     expect(defaultValue({ type: 'bool' })).toBe(false)

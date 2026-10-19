@@ -1,7 +1,7 @@
 //! Community status of instrument models, read once at start from the BenchMesh website
 //! (`GET {BENCHMESH_ONLINE_URL}/api/v1/status`, schema `benchmesh.status/v1`): which models users
 //! have confirmed working, on which app versions, and which have reported issues. Read-only and
-//! best effort — offline, a timeout or a malformed answer leaves the definitions' own status.
+//! best effort - offline, a timeout or a malformed answer leaves the definitions' own status.
 //!
 //! `/catalog` merges it per model (`community`), and a model the definitions mark `awaiting`
 //! counts as `confirmed` once users confirmed it.

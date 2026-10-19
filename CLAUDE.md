@@ -29,7 +29,7 @@ The Python backend and Electron shell are being replaced by **Rust + Tauri** (br
 `rust-migration`). Plan, decisions and progress log: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`
 (read it first when working on the migration). Instruments are described by **declarative
 device definitions** (`devices/*.yaml`, spec `ai_context/migration/DEVICE_DSL.md`) interpreted by
-one generic Rust driver — no per-device code.
+one generic Rust driver - no per-device code.
 
 | Crate (`crates/`) | Role |
 |---|---|
@@ -90,7 +90,7 @@ of a fixed `port`/`device`; the instrument is then found on whatever port it is 
 every reconnect, on Linux/Windows/macOS without udev rules or admin rights.
 On Windows a USBTMC instrument without a usable driver gets **Install driver** (drawer / Detect):
 the server re-runs its executable elevated (`--install-winusb`, `bm_transport::winusb`) to bind
-Microsoft's in-box WinUSB driver — the one admin prompt Windows requires. `POST /devices/detect`
+Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. `POST /devices/detect`
 identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
 them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
 lists what the OS reports. `system/udev_rules.txt` is a development aid, not part of the product.
@@ -184,20 +184,20 @@ npm run start:nodered
 The UI is a **bench**: one panel per instrument class (`PSU`, `DMM`, `ELL`, `AWG`, `OSC`, `LCR`, `SAL`; any other
 class gets a read-only generic panel), laid out in a responsive rack. Every instrument of a class
 uses the same panel; manufacturer differences (limits, steps, ranges, modes, optional controls)
-come only from the API — features (`GET /instruments/{CLS}/{id}`) and setter value specs
+come only from the API - features (`GET /instruments/{CLS}/{id}`) and setter value specs
 (`GET /instruments/{CLS}/{id}/methods`, from the device definition). There is no per-device UI
 code; the definitions' `ui_component` is not used by the UI.
 
 | Path (`frontend/src/ui/`) | Role |
 |---|---|
-| `kit/` | instrument component kit with three skins in `kit.css` — **Reflective LCD** (default), LED segment, Cockpit glass — switched in the top bar (`kit/skin.tsx`, stored in `localStorage` `benchmesh:skin`; canvases read colour tokens at draw time). Components: segment readout, digit-wise setpoint editor, arm-to-enable switch (two presses for anything that `energizes`), micro switch, annunciators, rotary dial, knob, 1-2-5 stepper, bargraph, sparkline, waveform preview, oscilloscope screen, spectrum screen, action button (momentary actions confirmed by a reported change). Fonts are bundled (B612, B612 Mono, Chakra Petch) — the desktop app runs offline |
+| `kit/` | instrument component kit with three skins in `kit.css` - **Reflective LCD** (default), LED segment, Cockpit glass - switched in the top bar (`kit/skin.tsx`, stored in `localStorage` `benchmesh:skin`; canvases read colour tokens at draw time). Components: segment readout, digit-wise setpoint editor, arm-to-enable switch (two presses for anything that `energizes`), micro switch, annunciators, rotary dial, knob, 1-2-5 stepper, bargraph, sparkline, waveform preview, oscilloscope screen, spectrum screen, action button (momentary actions confirmed by a reported change). Fonts are bundled (B612, B612 Mono, Chakra Petch) - the desktop app runs offline |
 | `bench/profiles.ts` | features + methods → what a class panel shows (limits, decimals, modes, ranges, optional controls) |
-| `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel`, `AwgChannel`, `OscPanel` — one screen for all channels, `LcrPanel` — primary/secondary readouts, function keys L/C/R/Z/DCR → secondary → SER/PAR, frequency/level, range/speed, open/short correction with a prompt, bias; `SalPanel` — spectrum screen (`kit/SpectrumScreen`: dB graticule, max-hold ghost, marker diamond, click to place), marker readout, annotation bar, soft-key groups FREQ/BW/AMPT/SWEEP/TRACE/MKR/TG; `GenericPanel`) |
+| `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel`, `AwgChannel`, `OscPanel` - one screen for all channels, `LcrPanel` - primary/secondary readouts, function keys L/C/R/Z/DCR → secondary → SER/PAR, frequency/level, range/speed, open/short correction with a prompt, bias; `SalPanel` - spectrum screen (`kit/SpectrumScreen`: dB graticule, max-hold ghost, marker diamond, click to place), marker readout, annotation bar, soft-key groups FREQ/BW/AMPT/SWEEP/TRACE/MKR/TG; `GenericPanel`) |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden, persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, hide), drawers (Instruments config, Request log) |
 | `drawers/` | instrument configuration + settings (incl. **Detect**: `DetectView.tsx`, `detect.ts`), request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
-| `automation/` | Automation drawer (top bar **Automation**, contract `ai_context/AUTOMATION.md`): saved flows (new, duplicate, delete, import/export JSON), flow editor (parameter form, Setup / Steps / Cleanup step cards with vocabulary pickers, live validation shown at each step's path, JSON view; pure document model `flowModel.ts`), run panel (arm dialog for energising flows, live log, variables, prompt Continue, Abort / Escape), assistant (user's own LLM key, result loaded as unsaved), settings tab (provider, key — only its hint is ever shown, model, base URL; MCP access + connection snippets). `RunProvider.tsx` polls `/automation/run` for the whole UI: top-bar `▶ flow — state` + red **Stop** while a run is active |
+| `automation/` | Automation drawer (top bar **Automation**, contract `ai_context/AUTOMATION.md`): saved flows (new, duplicate, delete, import/export JSON), flow editor (parameter form, Setup / Steps / Cleanup step cards with vocabulary pickers, live validation shown at each step's path, JSON view; pure document model `flowModel.ts`), run panel (arm dialog for energising flows, live log, variables, prompt Continue, Abort / Escape), assistant (user's own LLM key, result loaded as unsaved), settings tab (provider, key - only its hint is ever shown, model, base URL; MCP access + connection snippets). `RunProvider.tsx` polls `/automation/run` for the whole UI: top-bar `▶ flow - state` + red **Stop** while a run is active |
 
 Panel **window controls** (header, top right): fold to the header line (saved with the layout;
 double-click the header works too) and **open in its own window**. A detached panel lives at
@@ -786,6 +786,7 @@ The GitHub Actions workflow (`.github/workflows/release-electron.yml`) is config
 - all new unit tests that are suitable for GitHub Actions execution must be automatically added to the CI workflow
 - when you add or remove dependency update THIRD-PARTY-NOTICES.md
 - when you create any temporary or tool scripts place them always in scripts folder
+- plain text (UI, messages, definitions, docs, release notes) uses "-" only, never em or en dashes; `frontend/src/__tests__/noDashes.test.ts` checks every tracked file
 - always verify CI tests localy
 - when implementing new feature always try to test on the real working service particularly applies to serial service and API
 - do apply defensive programming principle - especially with API implementation the parameters must be validated and resources need to return meaningful response - catch and log 500 responses

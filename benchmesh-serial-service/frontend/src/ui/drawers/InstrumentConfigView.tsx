@@ -779,7 +779,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                   <option key={dev.device} value={dev.device}>
                     {dev.device} - {dev.product || 'USB TMC Device'}
                     {dev.manufacturer ? ` (${dev.manufacturer})` : ''}
-                    {dev.note ? ' — needs a driver' : ''}
+                    {dev.note ? ' - needs a driver' : ''}
                   </option>
                 ))}
                 <option value="__custom__">Manual entry...</option>
@@ -816,7 +816,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               );
             })()}
             <span className="instrument-config__hint">
-              {availableUsbTmcDevices.length === 0 && !loadingUsbTmc ? 'No USB TMC instrument found — plug it in and refresh' : 'USB TMC device'}
+              {availableUsbTmcDevices.length === 0 && !loadingUsbTmc ? 'No USB TMC instrument found - plug it in and refresh' : 'USB TMC device'}
             </span>
           </div>
         ))}

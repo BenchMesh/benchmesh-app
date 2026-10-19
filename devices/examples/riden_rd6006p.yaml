@@ -1,4 +1,4 @@
-# RD6006P (id 60065): mV / 0.1 mA registers — 12.000 V set, 1.2345 A delivered in CC.
+# RD6006P (id 60065): mV / 0.1 mA registers - 12.000 V set, 1.2345 A delivered in CC.
 definition: riden_rd6006p
 model: RD6006P
 modbus:

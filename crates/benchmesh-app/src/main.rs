@@ -17,7 +17,7 @@
 //! - Updates: one check per start, offered by the UI (`update.rs`).
 //! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
-//! - `benchmesh --mcp`: no window — a stdio bridge to the running app's MCP endpoint for AI
+//! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
 //!   clients that start a process (Claude Desktop; `bm_server::mcp::stdio_bridge`).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

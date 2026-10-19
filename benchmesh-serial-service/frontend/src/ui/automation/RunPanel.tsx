@@ -107,7 +107,7 @@ export function RunPanel({ doc, flowId, dirty, blocked, onHighlight, onOpenRecor
           {status.recording_id != null && (
             <div><dt>Recording</dt><dd>
               {onOpenRecordings
-                ? <button type="button" className="auto-path" onClick={onOpenRecordings}>#{status.recording_id} — open Recordings</button>
+                ? <button type="button" className="auto-path" onClick={onOpenRecordings}>#{status.recording_id} - open Recordings</button>
                 : `#${status.recording_id}`}
             </dd></div>
           )}

@@ -1,6 +1,6 @@
 /**
  * Instrument console (`GET /devices/{id}/wire`): what went to and came from an instrument.
- * Pure helpers — decoding the API's Latin-1 byte strings, showing bytes as text or hex, joining
+ * Pure helpers - decoding the API's Latin-1 byte strings, showing bytes as text or hex, joining
  * the chunks of one reply, and the evidence text users copy into a bug report or forum post.
  */
 
@@ -105,10 +105,10 @@ export interface EvidenceMeta {
   link?: string
 }
 
-/** The console as plain text with a header — paste-ready for a bug report or forum post. */
+/** The console as plain text with a header - paste-ready for a bug report or forum post. */
 export function evidence(meta: EvidenceMeta, lines: WireLine[], view: WireView): string {
   const head = [
-    `BenchMesh instrument console — ${new Date().toISOString()}`,
+    `BenchMesh instrument console - ${new Date().toISOString()}`,
     `Instrument: ${meta.instrument} (${meta.klass})${meta.model ? ` model ${meta.model}` : ''}${meta.support ? ` [${meta.support}]` : ''}`,
     meta.idn ? `Identify: ${meta.idn}` : null,
     meta.link ? `Link: ${meta.link}` : null,

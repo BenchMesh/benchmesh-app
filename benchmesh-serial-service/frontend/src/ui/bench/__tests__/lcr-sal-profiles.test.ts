@@ -48,7 +48,7 @@ describe('LCR profile', () => {
   })
 
   it('canonical tokens fill what features leave out', () => {
-    expect(lcrFunction('ZTR')).toMatchObject({ primary: 'Z', secondary: 'θ', circuit: null, units: ['Ω', 'rad'], name: 'Z–θ' })
+    expect(lcrFunction('ZTR')).toMatchObject({ primary: 'Z', secondary: 'θ', circuit: null, units: ['Ω', 'rad'], name: 'Z-θ' })
     expect(lcrFunction('XYZ')).toMatchObject({ primary: 'XYZ', secondary: null, group: 'X' })
   })
 })

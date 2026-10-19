@@ -1,7 +1,7 @@
 /**
  * App updates (desktop app only): the app checks once per start for a newer published release
  * and installs it on request (crates/benchmesh-app/src/update.rs). In a browser there is
- * nothing to update — the server serves whatever UI it was built with.
+ * nothing to update - the server serves whatever UI it was built with.
  */
 
 export interface Available {

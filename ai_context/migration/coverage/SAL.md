@@ -1,7 +1,7 @@
-# SAL — Spectrum analyzers (coverage research)
+# SAL - Spectrum analyzers (coverage research)
 
 Status: research report, 2026-10-18. No definition written yet; every family below is
-**Awaiting confirmation** at best. The class `SAL` is reserved but has **no contract** yet — a
+**Awaiting confirmation** at best. The class `SAL` is reserved but has **no contract** yet - a
 proposal is in §4. Manuals live outside the repo in `/home/marek/project/BenchMeshDOC/<vendor>_<family>/doc/`
 (each with `SOURCES.md`); page numbers are **PDF pages** of those local files (`pN`), printed page in
 parentheses where useful.
@@ -9,8 +9,8 @@ parentheses where useful.
 **The main finding is a DSL gap that affects every family:** spectrum analyzers return their trace
 as **ASCII numbers separated by commas** (SCPI `:TRACe:DATA?`, often wrapped in an IEEE 488.2
 block header) or as **newline-separated lines** (tinySA/NanoVNA `data`). Today's DSL can only produce
-a `list` from **binary integer** samples (`{samples: u8|i16le|…}`). With one new parse step —
-`{numbers: {sep: ","}}` (ASCII list → list of f64, §5) — the trace becomes reachable for all
+a `list` from **binary integer** samples (`{samples: u8|i16le|…}`). With one new parse step -
+`{numbers: {sep: ","}}` (ASCII list → list of f64, §5) - the trace becomes reachable for all
 SCPI families and for tinySA. Everything else (settings, markers, peak search, sweep control)
 already fits today's DSL.
 
@@ -20,20 +20,20 @@ already fits today's DSL.
 
 | # | Family | Price band | Protocol | Transport | Doc quality | Confidence | DSL fit |
 |---|---|---|---|---|---|---|---|
-| 1 | **tinySA / tinySA Ultra / Ultra+** (ZS-405/406/407) | 60–200 € | text shell `ch> ` | USB CDC 0483:5740 | wiki + firmware source (authoritative) | high | settings/markers **today**; trace needs `numbers` |
-| 2 | **Rigol DSA815/832/875 (-TG)** | 1–2.5 k€ (used 500 €) | SCPI | USBTMC 1ab1, LAN | full programming guide | high | today except trace (`numbers` after `block`) |
-| 3 | **Siglent SSA3000X / X Plus / X-R, SVA1000X** (+SSA5000A) | 1–5 k€ | SCPI | USBTMC f4ec, LAN 5025 | full programming guides | high | today except trace (`numbers`, trailing comma) |
-| 4 | **UNI-T UTS1000B/T, UTS3000A/B/T** (+UTS5000A) | 1–4 k€ | SCPI | USBTMC, LAN | full manual (one for all series) | medium-high | today except trace (`numbers` after `block`) |
-| 5 | NanoVNA-H / H4 (and NanoVNA-D fw) | 30–80 € | text shell `ch> ` | USB CDC 0483:5740 | firmware source | high | **VNA class**, not SAL (§6) |
-| 6 | RF Explorer (3G/6G/WSUB1G/PLUS…) | 150–400 € | binary-length-prefixed, streaming | USB-serial CP210x, 500 kbaud | library source + UART spec (wiki) | medium | **blocked** (push stream, binary) |
-| 7 | **Rigol RSA3000(E/N) / RSA5000** | 4–15 k€ | SCPI | USBTMC 1ab1, LAN raw 5555 | full programming guides | high | as DSA800 |
-| 8 | GW Instek GSP-9300(B)/9330, GSP-818 | 1.5–6 k€ | SCPI | **RS-232** (9300), USBTMC, LAN | complete (9300) / sparse (818) | high / medium | today except trace (`numbers`) |
-| 9 | Keysight N9320B / N9322C, FieldFox | 5–30 k€ (used N9320B 1.5 k€) | SCPI | USBTMC 0957:2118 (N93xx); FieldFox LAN | good / FieldFox thorough | medium / high | N93xx today except trace; FieldFox needs **TCP** |
-| 10 | R&S FPC1000/FPC1500, FPH | 1.5–10 k€ | SCPI | **LAN only** (USB is a network link) | complete user manuals | medium-high | **blocked on TCP** |
-| 11 | Hantek HSA2000 / OWON XSA1000/XSA800 | 1–3 k€ | SCPI (Hantek) / unknown (OWON) | USB, LAN | thin (Hantek) / none (OWON) | low | Hantek: no marker readout; OWON: needs capture |
-| 12 | LiteVNA, NanoVNA V2 / SAA-2(N) | 50–150 € | **binary register protocol** | USB CDC | user-guide appendix | high (protocol) | **blocked**; VNA anyway |
-| – | Signal Hound (BB60/SM/SA44) | 1–20 k€ | proprietary C API (Spike has SCPI over TCP) | USB 3 | vendor SDK | – | out of scope (note only) |
-| – | HackRF | – | SDR, not an instrument | – | – | – | skipped |
+| 1 | **tinySA / tinySA Ultra / Ultra+** (ZS-405/406/407) | 60-200 € | text shell `ch> ` | USB CDC 0483:5740 | wiki + firmware source (authoritative) | high | settings/markers **today**; trace needs `numbers` |
+| 2 | **Rigol DSA815/832/875 (-TG)** | 1-2.5 k€ (used 500 €) | SCPI | USBTMC 1ab1, LAN | full programming guide | high | today except trace (`numbers` after `block`) |
+| 3 | **Siglent SSA3000X / X Plus / X-R, SVA1000X** (+SSA5000A) | 1-5 k€ | SCPI | USBTMC f4ec, LAN 5025 | full programming guides | high | today except trace (`numbers`, trailing comma) |
+| 4 | **UNI-T UTS1000B/T, UTS3000A/B/T** (+UTS5000A) | 1-4 k€ | SCPI | USBTMC, LAN | full manual (one for all series) | medium-high | today except trace (`numbers` after `block`) |
+| 5 | NanoVNA-H / H4 (and NanoVNA-D fw) | 30-80 € | text shell `ch> ` | USB CDC 0483:5740 | firmware source | high | **VNA class**, not SAL (§6) |
+| 6 | RF Explorer (3G/6G/WSUB1G/PLUS…) | 150-400 € | binary-length-prefixed, streaming | USB-serial CP210x, 500 kbaud | library source + UART spec (wiki) | medium | **blocked** (push stream, binary) |
+| 7 | **Rigol RSA3000(E/N) / RSA5000** | 4-15 k€ | SCPI | USBTMC 1ab1, LAN raw 5555 | full programming guides | high | as DSA800 |
+| 8 | GW Instek GSP-9300(B)/9330, GSP-818 | 1.5-6 k€ | SCPI | **RS-232** (9300), USBTMC, LAN | complete (9300) / sparse (818) | high / medium | today except trace (`numbers`) |
+| 9 | Keysight N9320B / N9322C, FieldFox | 5-30 k€ (used N9320B 1.5 k€) | SCPI | USBTMC 0957:2118 (N93xx); FieldFox LAN | good / FieldFox thorough | medium / high | N93xx today except trace; FieldFox needs **TCP** |
+| 10 | R&S FPC1000/FPC1500, FPH | 1.5-10 k€ | SCPI | **LAN only** (USB is a network link) | complete user manuals | medium-high | **blocked on TCP** |
+| 11 | Hantek HSA2000 / OWON XSA1000/XSA800 | 1-3 k€ | SCPI (Hantek) / unknown (OWON) | USB, LAN | thin (Hantek) / none (OWON) | low | Hantek: no marker readout; OWON: needs capture |
+| 12 | LiteVNA, NanoVNA V2 / SAA-2(N) | 50-150 € | **binary register protocol** | USB CDC | user-guide appendix | high (protocol) | **blocked**; VNA anyway |
+| - | Signal Hound (BB60/SM/SA44) | 1-20 k€ | proprietary C API (Spike has SCPI over TCP) | USB 3 | vendor SDK | - | out of scope (note only) |
+| - | HackRF | - | SDR, not an instrument | - | - | - | skipped |
 
 ---
 
@@ -41,23 +41,23 @@ already fits today's DSL.
 
 ### 2.1 tinySA (basic, ZS-304), tinySA Ultra (ZS-405), Ultra+ (ZS-406 / ZS-407)
 
-- **Models**: tinySA (ZS-304; 100 kHz–350 MHz low / 240–960 MHz high input, ≤ 290 points, RBW
-  2–600 kHz, `rbw` usage text sa_cmd.c l.580); tinySA Ultra ZS-405 (100 kHz–5.3 GHz, ≤ 450 points,
-  RBW 0.2–850 kHz, l.578); Ultra+ ZS-406/ZS-407 (higher upper limit — exact per-model range to
+- **Models**: tinySA (ZS-304; 100 kHz-350 MHz low / 240-960 MHz high input, ≤ 290 points, RBW
+  2-600 kHz, `rbw` usage text sa_cmd.c l.580); tinySA Ultra ZS-405 (100 kHz-5.3 GHz, ≤ 450 points,
+  RBW 0.2-850 kHz, l.578); Ultra+ ZS-406/ZS-407 (higher upper limit - exact per-model range to
   take from the device's `info`/menus at first contact; same shell). Points: `nanovna.h` l.195/197. All share one firmware tree (`tinySA4` build = Ultra/Ultra+, `tinySA` = basic).
   Built-in signal generator (output mode `mode low|high output`, `level` −76…−6 / −38…+13 dBm)
-  — tracking-generator-like, `energize`.
-- **Interface**: USB CDC-ACM (ChibiOS), **VID:PID 0483:5740** (`usbcfg.c` l.44-45) — the same
+  - tracking-generator-like, `energize`.
+- **Interface**: USB CDC-ACM (ChibiOS), **VID:PID 0483:5740** (`usbcfg.c` l.44-45) - the same
   ID as NanoVNA-H and every other ChibiOS/STM32 VCP. Baud ignored (CDC). Identity must therefore
   come from the identify reply, never from vid:pid alone (see IDENTITY.md).
 - **Protocol** (source: `erikkaashoek/tinySA` `main.c`):
   - Line input ends on **`\r`** (`VNAShell_readLine` l.3113); `\n` and other control chars are
-    ignored (l.3118) — so `tx.terminator: "\r"` (or `"\r\n"`, harmless).
+    ignored (l.3118) - so `tx.terminator: "\r"` (or `"\r\n"`, harmless).
   - Every typed character is **echoed** (l.3119), then `\r\n` on Enter (l.3114).
   - Command output lines end `\r\n`; after the command the device prints the prompt **`ch> `**
     (l.50, l.278, l.3190). Unknown command: `<cmd>?\r\nch> ` (l.3208).
   - A complete exchange therefore looks like
-    `sweep\r\n` → `sweep\r\n0 800000000 450\r\nch> ` — echo line, output, prompt.
+    `sweep\r\n` → `sweep\r\n0 800000000 450\r\nch> ` - echo line, output, prompt.
   - Commands flagged `CMD_WAIT_MUTEX` (data, sweep, trace, rbw, attenuate, …) run in the sweep
     thread: they abort the running sweep and execute at the next point (l.3163-3180). If the
     command itself is aborted (touch on the screen), **no prompt is printed** (l.276) → the host
@@ -90,13 +90,13 @@ already fits today's DSL.
 | screenshot | `capture` → raw RGB565 frame, 2 bytes/pixel (wiki: 320×240; Ultra display 480×320), no header | binary, not framed | wiki |
 
 - **DSL fit (precise)**:
-  - **Framing works today.** `rx.mode: terminator`, `rx.terminator: "ch> "` — the framer matches
+  - **Framing works today.** `rx.mode: terminator`, `rx.terminator: "ch> "` - the framer matches
     multi-byte terminators (`bm-driver/src/framing.rs` `find`, needle of any length). The reply
     then is `<echo>\r\n<output>`; strip the echo with
     `{regex: {pattern: "(?s)^[^\r\n]*\r\n(.*)$", group: 1}}` followed by `trim`.
     The prompt string `ch> ` never appears inside data (numbers, `%e`).
   - **Setters must read the reply**: every command answers at least `<echo>\r\nch> `, so setters are
-    `reply: line` (no parse) — never `reply: none`, or the prompt lands on the next command. The
+    `reply: line` (no parse) - never `reply: none`, or the prompt lands on the next command. The
     parse of a setter reply is non-empty (the echo), so `on_empty` is never hit.
   - Usage-prefixed queries (`rbw`, `attenuate`, `sweeptime`) need `regex` on the last line
     (`(?s)\r\n([^\r\n]*)$`) and an SI suffix parse (`3.0kHz` → regex number + unit map, or CEL).
@@ -106,7 +106,7 @@ already fits today's DSL.
     expressible by `samples` (would need a stride/skip option); prefer `data 2` (450 × ~11 bytes =
     5 KB, ~50 ms at USB FS).
   - Connect: when USB becomes active the firmware prints the banner `\r\ntinySA Shell\r\nch> `
-    (main.c l.3726-3727) — possibly still buffered when the port opens, so the first exchange could
+    (main.c l.3726-3727) - possibly still buffered when the port opens, so the first exchange could
     end on the banner's prompt and shift every later reply by one. An empty line (`\r`) is answered
     with `<garbage>?\r\nch> ` (parceLine returns NULL, l.3085-3091, l.3208). Needs a
     **drain-before-identify** (flush input until idle, e.g. 200 ms). `Engine::open`
@@ -116,18 +116,18 @@ already fits today's DSL.
     poll the trace no faster than the sweep time, and settings slowly (3 s).
 - **Quirks**: frequency args accept `k`/`M`/`G` suffixes (wiki); `marker 1 <n>` treats n ≤ points
   as an index (send Hz ≥ 1 kHz to be safe); units change `data` values (keep `trace dBm` in
-  `on_connect`); auto-refresh mode (`refresh on`) pushes binary `bulk`/`fill` frames — never enable.
+  `on_connect`); auto-refresh mode (`refresh on`) pushes binary `bulk`/`fill` frames - never enable.
 - **Docs**: `/home/marek/project/BenchMeshDOC/tinysa_tinysa/doc/SOURCES.md` (wiki URL + firmware
   commit with line numbers). **Confidence high** (source code is the spec; widely used by
   tinySA-App, QtTinySA, python `tinySA.py`).
 
 ### 2.2 Rigol DSA800 (DSA815, DSA832, DSA832E, DSA875; -TG)
 
-- **Models**: DSA815 9 kHz–1.5 GHz, DSA832(E) 9 kHz–3.2 GHz, DSA875 9 kHz–7.5 GHz; RBW 10 Hz–1 MHz
-  1-3-10 (p128; EMI/QP: 200 Hz/9 kHz/120 kHz only); ref level −100…+20 dBm (p70); attenuation 0–30 dB (p160);
-  sweep points 101–3001, default 601 (p170); sweep time 20 µs–7500 s (p170); TG −40…0 dBm (p180)
+- **Models**: DSA815 9 kHz-1.5 GHz, DSA832(E) 9 kHz-3.2 GHz, DSA875 9 kHz-7.5 GHz; RBW 10 Hz-1 MHz
+  1-3-10 (p128; EMI/QP: 200 Hz/9 kHz/120 kHz only); ref level −100…+20 dBm (p70); attenuation 0-30 dB (p160);
+  sweep points 101-3001, default 601 (p170); sweep time 20 µs-7500 s (p170); TG −40…0 dBm (p180)
   on -TG models. Detector NEG/NORM/POS/RMS/SAMP/VAV/QPE (p143).
-- **Interfaces**: USBTMC (VID 1ab1; PID not in the guide — match by VID + `*IDN?` like
+- **Interfaces**: USBTMC (VID 1ab1; PID not in the guide - match by VID + `*IDN?` like
   `rigol_dho800`), LAN (VXI-11; raw socket **port 5555**, p224), no RS-232.
 - **Identify**: `*IDN?` → `Rigol Technologies,DSA875,DSA8A134400008,00.00.00.00.03` (p94 (2-72)).
 
@@ -139,11 +139,11 @@ already fits today's DSL.
 | RBW / auto | `:SENS:BAND:RES <Hz>` / `?`; `:SENS:BAND:RES:AUTO ON|OFF` | integer Hz; 0/1 | p128 |
 | VBW / auto | `:SENS:BAND:VID <Hz>`; `:SENS:BAND:VID:AUTO` | integer Hz | p129 |
 | ref level | `:DISP:WIN:TRAC:Y:SCAL:RLEV <dBm>` / `?` | `-1.000000E+01` | p70 |
-| scale | `:DISP:WIN:TRAC:Y:SCAL:PDIV <dB>` (0.1–20) | sci | p70 |
+| scale | `:DISP:WIN:TRAC:Y:SCAL:PDIV <dB>` (0.1-20) | sci | p70 |
 | attenuation / auto | `:SENS:POW:RF:ATT <dB>` / `?`; `:SENS:POW:RF:ATT:AUTO` | integer dB | p160 |
 | detector | `:SENS:DET:FUNC NEG|NORM|POS|RMS|SAMP|VAV|QPE` | | p143 |
 | sweep time / auto | `:SENS:SWE:TIME <s>`; `:SENS:SWE:TIME:AUTO` | sci s | p170 |
-| points | `:SENS:SWE:POIN <n>` (101–3001) | integer | p170 |
+| points | `:SENS:SWE:POIN <n>` (101-3001) | integer | p170 |
 | continuous / single | `:INIT:CONT ON|OFF` / `?` (0/1); `:INIT` (single, ignored if CONT ON) | | p97-98 |
 | sweep state | `:STAT:OPER:COND?` bit 3 = SWEeping (8), bit 4 = MEASuring | integer | p185 |
 | marker X | `:CALC:MARK1:X <Hz>` / `?` (also enables marker) | integer Hz | p48 (2-26) |
@@ -159,11 +159,11 @@ already fits today's DSL.
 - **DSL fit**: settings, markers, peak search, sweep control fit today (`link.usbtmc`,
   `rx.mode: message`, like `rigol_dho800`). Trace: `reply: block` already strips `#9000009014`;
   the payload is ASCII → needs `{numbers: {sep: ","}}`. Alternative `REAL,32` + `samples: f32le`
-  (does not exist). Screenshot: not documented in the guide (forum: `:PRIV:SNAP? BMP`) — omit.
-- **Quirks**: ASCII trace still carries a block header (unlike RSA3000, §2.7) — must be
+  (does not exist). Screenshot: not documented in the guide (forum: `:PRIV:SNAP? BMP`) - omit.
+- **Quirks**: ASCII trace still carries a block header (unlike RSA3000, §2.7) - must be
   `reply: block`; `:INIT` is ignored in continuous mode; frequencies queried as integers.
 - **Docs**: `/home/marek/project/BenchMeshDOC/rigol_dsa800/doc/DSA800_ProgrammingGuide_EN.pdf`
-  (Aug 2016, 251 pp.). **Confidence high** — complete, consistent guide; Rigol SCPI parser
+  (Aug 2016, 251 pp.). **Confidence high** - complete, consistent guide; Rigol SCPI parser
   behaviour known from `rigol_dho800`.
 
 ### 2.3 Siglent SSA3000X, SSA3000X Plus, SSA3000X-R, SVA1000X, SSA5000A
@@ -174,18 +174,18 @@ guide for Plus, -R and SVA1000X, copied into `siglent_ssa3000x_r/` and `siglent_
 E01A copies too); **[UM]** `siglent_ssa5000/SSA5000A_UserManual_EN02A.pdf` (SCPI inside the user
 manual) + datasheet **[DS]**.
 
-- **Models**: SSA3021X/3032X (9 kHz–2.1/3.2 GHz, RBW 10 Hz–1 MHz 1-3-10 [E04A] p31-32, VBW 1 Hz–1 MHz
-  p32, ref level −100…+30 dBm p27, att 0–50 dB p27, preamp `:POW:GAIN`); Plus (SSA3015X+/3021X+/3032X+/
-  3050X+/3075X+, RBW 1 Hz–1 MHz [P02B] p45, att 0–51 dB p34, 8 markers p52-55); SSA3000X-R (adds
+- **Models**: SSA3021X/3032X (9 kHz-2.1/3.2 GHz, RBW 10 Hz-1 MHz 1-3-10 [E04A] p31-32, VBW 1 Hz-1 MHz
+  p32, ref level −100…+30 dBm p27, att 0-50 dB p27, preamp `:POW:GAIN`); Plus (SSA3015X+/3021X+/3032X+/
+  3050X+/3075X+, RBW 1 Hz-1 MHz [P02B] p45, att 0-51 dB p34, 8 markers p52-55); SSA3000X-R (adds
   real-time mode, [P02B] ch. 8 p149-160); SVA1015X/1032X (SA + VNA, `:INST VNA`, [P02B] p94-103);
-  SSA5083A/5085A (9 kHz–13.6/26.5 GHz [DS] p8, RBW 1 Hz–10 MHz, ref −170…+23 dBm [UM] p61, att 0–50 dB
-  even [UM] p62, points 201–10001 [UM] p58). Trace points on SSA3000X/Plus: 751 (not stated in the
-  guides; used by LibreVNA's SSA3000X driver — confirm with `:SWE:POIN?`). TG on -TG models.
-- **Interfaces**: USBTMC (VID **f4ec**; PID not documented — 0x1305 reported for the Plus family on
+  SSA5083A/5085A (9 kHz-13.6/26.5 GHz [DS] p8, RBW 1 Hz-10 MHz, ref −170…+23 dBm [UM] p61, att 0-50 dB
+  even [UM] p62, points 201-10001 [UM] p58). Trace points on SSA3000X/Plus: 751 (not stated in the
+  guides; used by LibreVNA's SSA3000X driver - confirm with `:SWE:POIN?`). TG on -TG models.
+- **Interfaces**: USBTMC (VID **f4ec**; PID not documented - 0x1305 reported for the Plus family on
   EEVblog, low confidence), LAN raw socket **5025**, telnet 5024 with `>>` prompt ([E04A] p7, [P02B] p9,
   [UM] p363). No RS-232.
 - **Identify**: `*IDN?` → `Siglent Technologies,SSA3032X,<serial>,<fw>` (manual examples show
-  `SSA3032` [E04A] p14 and `Siglent,SVA1015,…` [P02B] p17 — real units report the X/X-Plus name; match
+  `SSA3032` [E04A] p14 and `Siglent,SVA1015,…` [P02B] p17 - real units report the X/X-Plus name; match
   with `^Siglent[^,]*,(SSA3\d{3}X|SVA10\d{2}X|SSA50\d{2}A)`).
 
 | Operation | Command | Reply | Page |
@@ -196,7 +196,7 @@ manual) + datasheet **[DS]**.
 | ref level | `:DISP:WIND:TRAC:Y:RLEV <dBm>` | | [E04A] p27; [P02B] p34 |
 | attenuation / auto / preamp | `[:SENS]:POW:ATT <dB>`, `:POW:ATT:AUTO`, `:POW:GAIN ON|OFF` | | [E04A] p27 |
 | detector | `[:SENS]:DET:TRAC1 NEG|POS|SAMP|AVER|NORMAL|QUASi` | | [E04A] p36; [P02B] p50; [UM] p77 |
-| sweep time | `[:SENS]:SWE:TIME <s>` (917 µs–1000 s), `:SWE:TIME:AUTO` | | [E04A] p38-39; [UM] p59 |
+| sweep time | `[:SENS]:SWE:TIME <s>` (917 µs-1000 s), `:SWE:TIME:AUTO` | | [E04A] p38-39; [UM] p59 |
 | continuous / single | `:INIT:CONT ON|OFF`, `:INIT[:IMM]`; Plus also `:INIT:REST|PAUS|RES` | | [E04A] p22; [P02B] p41-42; [UM] p60 |
 | sweep done | `:TRAC:SWE:STAT?` → 1/0 (SSA3000X only); else `*OPC?` after `:INIT` | | [E04A] p34, p15 |
 | marker on / X / Y | `:CALC:MARK1:STAT ON`, `:CALC:MARK1:X <f>` / `?` (integer Hz), `:CALC:MARK1:Y?` (dBm) | | [E04A] p41-45; [UM] p84-85 |
@@ -221,9 +221,9 @@ manual) + datasheet **[DS]**.
 
 - **Models**: UTS1015B/1032B (≤ 3.2 GHz, 4 traces, ≤ 10001 points), UTS3021B/3036B/3084B (≤ 8.4 GHz,
   6 traces, ≤ 40001 points), UTS5026A (≤ 100001 points) (p107, p117); -T = tracking generator.
-  RBW 1 Hz – max, 1-3-10 (p80).
+  RBW 1 Hz - max, 1-3-10 (p80).
 - **Interfaces**: USBTMC and LAN (SCPI via `:SYST:COMM:LAN:*`, p10-11); vid:pid not documented
-  (UNI-T USBTMC instruments commonly 5345:xxxx or 6656:xxxx — verify on first contact).
+  (UNI-T USBTMC instruments commonly 5345:xxxx or 6656:xxxx - verify on first contact).
 - **Identify**: `*IDN?` → `UNI-T Technologies, UTS3036B, 000000001, 00.00.01` (p7; note the spaces
   after the commas).
 
@@ -245,10 +245,10 @@ manual) + datasheet **[DS]**.
 | trace type | `:TRAC<n>:TYPE WRIT|AVER|MAXH|MINH` | | p118 |
 | TG | `:OUTP[:EXT][:STAT] ON|OFF`; `:SOUR:POW <dBm>` | | p66, p115 |
 
-- **DSL fit**: as DSA800 — `reply: block` + `numbers`. Large point counts (40001 × 14 bytes ≈
+- **DSL fit**: as DSA800 - `reply: block` + `numbers`. Large point counts (40001 × 14 bytes ≈
   560 KB) need `max_bytes`, `timeout_ms` and a capped `:SWE:POIN` in `on_connect` (e.g. 1001).
 - **Quirks**: manual typos (`ASCll`; "REAL32: 32-bit binary system integer" although IEEE 754, p62/117;
-  `:INIT:CONT` description lists `1|ON` twice). One manual for four series — per-model limits
+  `:INIT:CONT` description lists `1|ON` twice). One manual for four series - per-model limits
   scattered in prose.
 - **Docs**: `/home/marek/project/BenchMeshDOC/unit_uts/doc/UTS_Spectrum_Analyzer_Programming_Manual_V1.0.pdf`
   (245 pp.). **Confidence medium-high** (complete command set, sloppy wording, no UNI-T SA on
@@ -256,11 +256,11 @@ manual) + datasheet **[DS]**.
 
 ### 2.5 NanoVNA-H / H4 / NanoVNA (edy555 lineage, NanoVNA-D and hugen firmware), NanoVNA-F
 
-- **This is a VNA, not a spectrum analyzer** — recommendation in §6. Documented here because the
+- **This is a VNA, not a spectrum analyzer** - recommendation in §6. Documented here because the
   transport/framing is identical to tinySA and a VNA definition can reuse it.
-- **Interface**: USB CDC 0483:5740 (`usbcfg.c` l.45-46) — identical to tinySA.
+- **Interface**: USB CDC 0483:5740 (`usbcfg.c` l.45-46) - identical to tinySA.
 - **Framing**: same ChibiOS shell: echo, `\r\n`, prompt `ch> ` (`main.c` l.44, l.3198-3205).
-- **Identify**: `version` returns only the git tag (`1.2.40`) — useless for models; use `info`
+- **Identify**: `version` returns only the git tag (`1.2.40`) - useless for models; use `info`
   (first line `Board: NanoVNA-H 4` / `Board: NanoVNA`, l.131-132).
 - **Commands**: `sweep` → `start stop points` (l.1614); `sweep <start> <stop> [points]`;
   `frequencies`; `data 0` (S11) / `data 1` (S21) → one `"%f %f"` (real imag) per point (l.766);
@@ -268,14 +268,14 @@ manual) + datasheet **[DS]**.
   (l.1384-1452); `marker`, `pause`/`resume`, `capture`, `power`, `bandwidth` (IF BW), `cal`.
   Points max 401 (H4, F303) / 101 (H, F072) (`nanovna.h` l.139/160).
 - **NanoVNA-F (BH5HNU, V2/V3)**: NanoVNA-Saver-compatible text shell of the same lineage
-  (not independently verified here — confidence medium).
+  (not independently verified here - confidence medium).
 - **DSL fit**: framing today; `data 0` needs `numbers` (interleaved re/im). The binary
   `scan … 0x80` needs `samples: f32le` + header skip → not today.
 - **Docs**: `/home/marek/project/BenchMeshDOC/nanovna_nanovna/doc/SOURCES.md`. **Confidence high**.
 
 ### 2.6 RF Explorer (3G Combo, 6G Combo, WSUB1G, ISM Combo, PLUS models)
 
-- **Interface**: USB-serial (Silicon Labs CP210x; 10c4:ea60 is the chip default — to confirm),
+- **Interface**: USB-serial (Silicon Labs CP210x; 10c4:ea60 is the chip default - to confirm),
   **500000 baud** (`RFExplorer-for-Python` examples, `BAUDRATE = 500000`; 2400 is the alternative
   device setting). 8N1, no flow control.
 - **Protocol**: commands framed as `#` + one **binary length byte** (`len(cmd)+2`) + command
@@ -284,18 +284,18 @@ manual) + datasheet **[DS]**.
   `C2-F:sssssss,eeeeeee,ttt,bbb` (start/end kHz, top/bottom dBm). Replies: `#C2-F:…` config line;
   **sweeps are pushed continuously** as `$S` + binary count + one byte per point (dBm = −byte/2)
   + `\r\n` (`RFESweepData.py` l.101-113); the payload bytes may contain `\r\n`.
-- **DSL fit: blocked.** (a) unsolicited streaming — no request/response; (b) binary length
+- **DSL fit: blocked.** (a) unsolicited streaming - no request/response; (b) binary length
   prefix inside sweep frames that may contain the terminator; (c) binary bytes in the command
   (a YAML `\x04` escape could produce them, but numeric params cannot be encoded as raw bytes).
-  Would need a "stream" link mode with frame parser — not worth it now.
+  Would need a "stream" link mode with frame parser - not worth it now.
 - **Docs**: `/home/marek/project/BenchMeshDOC/rfexplorer_rfexplorer/doc/SOURCES.md` (library source;
   UART API spec on the vendor wiki). **Confidence medium.**
 
 ### 2.7 Rigol RSA3000 (RSA3015/3030/3045, E/N variants) and RSA5000 (RSA5032/5065)
 
-- **Models**: RSA3015/3030/3045 9 kHz–1.5/3/4.5 GHz; RSA5032/5065 to 3.2/6.5 GHz. Two modes:
-  `:INST:SEL SA|RTSA` (wait ~8 s after switching) (p107). Points 101–10001, default 801 (p178);
-  sweep time 1 ms–4000 s (p178).
+- **Models**: RSA3015/3030/3045 9 kHz-1.5/3/4.5 GHz; RSA5032/5065 to 3.2/6.5 GHz. Two modes:
+  `:INST:SEL SA|RTSA` (wait ~8 s after switching) (p107). Points 101-10001, default 801 (p178);
+  sweep time 1 ms-4000 s (p178).
 - **Interfaces**: USBTMC (VID 1ab1), LAN, raw socket **port 5555** (p232; RSA5000 p236).
 - **Identify**: `*IDN?` → `Rigol Technologies,RSA3045,RSA3A200100001,00.01.00` (p101 (2-83)).
 - **Commands**: same tree as DSA800 (`[:SENS]:FREQ:*`, `[:SENS]:BAND[:RES]`,
@@ -303,11 +303,11 @@ manual) + datasheet **[DS]**.
   `:CALC:MARK<n>:X` p53, `:CALC:MARK<n>:Y?` p55, `:INIT:CONT` p105, `:STAT:OPER:COND?` p189,
   `:MMEM:STOR:SCR` p113). Differences:
   - `:FORM[:TRAC][:DATA] ASCii|INTeger,32|REAL,32|REAL,64`, query → `ASC,8` (p98).
-  - `:TRAC[:DATA]? TRACE1..TRACE6` — the ASCII example has **no block header**:
+  - `:TRAC[:DATA]? TRACE1..TRACE6` - the ASCII example has **no block header**:
     `-1.390530e+01, -7.108871e+01, …` up to 801 points (p206-207). Binary: `#9…` block.
   - `:TRAC<n>:MODE|TYPE WRIT|AVER|MAXH|MINH` (p212).
 - **DSL fit**: as DSA800 but trace via `reply: line`/`message` + `numbers` (header presence must be
-  confirmed live — make `numbers` tolerate an optional `#<n><len>` prefix, §5).
+  confirmed live - make `numbers` tolerate an optional `#<n><len>` prefix, §5).
 - **Docs**: `/home/marek/project/BenchMeshDOC/rigol_rsa3000/doc/RSA3000_ProgrammingGuide_EN.pdf`
   (Jan 2018, 264 pp.), `/home/marek/project/BenchMeshDOC/rigol_rsa5000/doc/RSA5000_ProgrammingGuide_EN.pdf`
   (Jan 2018, 268 pp., same layout: FORMat p98, *IDN? p101, POINts p179, TRACe p210).
@@ -320,18 +320,18 @@ Docs: **[G93]** `/home/marek/project/BenchMeshDOC/gwinstek_gsp9300/doc/201501_PM
 **[G818]** `/home/marek/project/BenchMeshDOC/gwinstek_gsp818/doc/GSP-818_Programming_Manual_EN_Ver_B_20230111.pdf`
 (+ user manual, datasheet `DS_GSP-818_E.pdf`).
 
-**GSP-9300 family** — 9 kHz–3 GHz (9330: 3.25 GHz), VBW 1 Hz–1 MHz, att 0–50 dB/1 dB ([G93] p10),
-**601 points** (p219), TG option −50…0 dBm (p13, p18). Interfaces: **RS-232 8N1, 300–115200 baud,
+**GSP-9300 family** - 9 kHz-3 GHz (9330: 3.25 GHz), VBW 1 Hz-1 MHz, att 0-50 dB/1 dB ([G93] p10),
+**601 points** (p219), TG option −50…0 dBm (p13, p18). Interfaces: **RS-232 8N1, 300-115200 baud,
 RTS/CTS** (p12, p37), USBTMC (p28), LAN/LXI HiSLIP 4880 (p31), optional GPIB; no raw socket port and no
 vid:pid documented. Terminator LF (p55). `*IDN?` → `GWINSTEK,GSP9300,XXXXXXXX,T.X.X.X.X` (p38; p77 shows
-`GSP-9300` — regex `GSP-?9300`), 9300B `GWINSTEK,GSP9300B,…`.
+`GSP-9300` - regex `GSP-?9300`), 9300B `GWINSTEK,GSP9300B,…`.
 
 | Operation | Command | Reply | Page |
 |---|---|---|---|
 | center/span/start/stop | `:FREQ:CENT|SPAN|STAR|STOP <NRf>` | NR3 Hz | [G93] p163-165 |
 | RBW / auto, VBW | `:BAND <f>`, `:BAND:AUTO`, `:BAND:VID` | | p154-155 |
 | ref level | `:DISP:TRAC:Y:RLEV` | | p130 |
-| attenuation | **`:INP:ATT`** 0–50 | | p134 |
+| attenuation | **`:INP:ATT`** 0-50 | | p134 |
 | detector | `:DET AVER|SAMP|POS|NEG|NORM` | | p161 |
 | sweep time | `:SWE:TIME` | | p191 |
 | continuous / single / state | `:INIT:CONT`, `:INIT`; `:STAT:OPER:COND?` bit 3 (8) = sweeping; `*OPC?` | | p133, p205, p77 |
@@ -341,8 +341,8 @@ vid:pid documented. Terminator LF (p55). `*IDN?` → `GWINSTEK,GSP9300,XXXXXXXX,
 | TG | `:OUTP`, `:SOUR:POW <ampl>` | | p144, p193 |
 | screenshot | `:MMEM:STOR:SCR x.jpg` (to storage only) | | p142 |
 
-**GSP-818** — 9 kHz–1.8 GHz, RBW 10 Hz–500 kHz (1-10) + 1/3 MHz, VBW 10 Hz–3 MHz, ref −80…+30 dBm,
-att 0–40 dB ([G818DS] p1; [G818] p90), TG option 100 kHz–1.8 GHz −30…0 dBm (p94). LAN + USB device (p12),
+**GSP-818** - 9 kHz-1.8 GHz, RBW 10 Hz-500 kHz (1-10) + 1/3 MHz, VBW 10 Hz-3 MHz, ref −80…+30 dBm,
+att 0-40 dB ([G818DS] p1; [G818] p90), TG option 100 kHz-1.8 GHz −30…0 dBm (p94). LAN + USB device (p12),
 no RS-232. LF terminator (p23). `*IDN?` → `GWINSTEK, GSP-818, GSPXXXXXX, VX.X.X` (p31); **no `*OPC?`, no
 status registers**. Commands: `:FREQ:CENT|SPAN|STAR|STOP` (p78-81), `:BAND[:AUTO]`, `:BAND:VID` (p69-71),
 `:DISP:WIN:TRAC:Y:RLEV` (p55), `:POW:ATT` (p90), `:DET AUTO|NORM|POS|NEG|SAMP` (p77), `:SWE:TIME` (set
@@ -368,18 +368,18 @@ Docs: `/home/marek/project/BenchMeshDOC/keysight_n9320b/doc/N9320B_Programmers_G
 
 | | N9320B | N9322C | FieldFox SA |
 |---|---|---|---|
-| Range | 9 kHz–3 GHz ([UG20] p10) | 9 kHz–7 GHz (N9321C 4 GHz … N9324C 20 GHz) | 9 kHz–4…50 GHz by model ([FFUG] p35) |
-| RBW / VBW | 10 Hz–3 MHz / 1 Hz–3 MHz ([PG20] p151) | 10 Hz–3 MHz 1-3-10 ([PG22] p88) | 10 Hz–2 MHz / 1 Hz–2 MHz ([FF] p568-569) |
-| Ref level / att | −100…+50 dBm (p112) / 0–70 dB (p156) | −140…+20 dBm / 0–50 dB (p83) | – / 0–30 dB in 5 dB ([FFUG] p174) |
-| Points | not documented | not documented | 2–10001, SA default 401 ([FF] p736) |
+| Range | 9 kHz-3 GHz ([UG20] p10) | 9 kHz-7 GHz (N9321C 4 GHz … N9324C 20 GHz) | 9 kHz-4…50 GHz by model ([FFUG] p35) |
+| RBW / VBW | 10 Hz-3 MHz / 1 Hz-3 MHz ([PG20] p151) | 10 Hz-3 MHz 1-3-10 ([PG22] p88) | 10 Hz-2 MHz / 1 Hz-2 MHz ([FF] p568-569) |
+| Ref level / att | −100…+50 dBm (p112) / 0-70 dB (p156) | −140…+20 dBm / 0-50 dB (p83) | - / 0-30 dB in 5 dB ([FFUG] p174) |
+| Points | not documented | not documented | 2-10001, SA default 401 ([FF] p736) |
 | TG | option TG3 | option TG4/TG7 | independent source/TG option, −45…0 dBm ([FF] p758) |
-| USB | USBTMC **0957:2118** (`USB0::2391::8472`, [PG20] p48, p53; rear USB-B) | USBTMC 0957:2118 ([PG22] p42, p47) | mini-USB only on N995x/N996x and newer N991x–N993x (serial ≥ 5607, [FFUG] p53, p843); vid:pid not documented |
+| USB | USBTMC **0957:2118** (`USB0::2391::8472`, [PG20] p48, p53; rear USB-B) | USBTMC 0957:2118 ([PG22] p42, p47) | mini-USB only on N995x/N996x and newer N991x-N993x (serial ≥ 5607, [FFUG] p53, p843); vid:pid not documented |
 | LAN | socket 5025, telnet 5025 with `SCPI>` prompt ([PG20] p13-16) | VISA TCPIP, port not stated | socket 5025, telnet 5024 (no binary blocks on telnet) ([FF] p42, p451) |
 | `*IDN?` | `Keysight Technologies, N9320B, 45310116, A.01.02` (p67) | `Agilent Technologies, N9322C, 45310116, A.04.20` (p59) | no example |
 
 | Operation | N9320B [PG20] | N9322C [PG22] | FieldFox [FF] |
 |---|---|---|---|
-| mode | – | TG needs `INST TGEN` (p77, p220) | `INST "SA";*OPC?` (case-sensitive, overlapped, p460-461) |
+| mode | - | TG needs `INST TGEN` (p77, p220) | `INST "SA";*OPC?` (case-sensitive, overlapped, p460-461) |
 | freq | `[:SENS]:FREQ:CENT|SPAN|STAR|STOP`, `:SPAN:FULL` (p154-156) | same + `SPAN:ZERO|PREV` (p79-82) | same + MIN/MAX (p636-642) |
 | RBW / VBW | `BAND[:RES]`, `BAND:AUTO`, `BAND:VID[:AUTO|:RAT]` (p151-152) | same (p88-89) | `BAND[:RES]`, `BAND:AUTO 0|1`, `BAND:VID` (p568-569) |
 | ref level | `DISP:WIND:TRAC:Y[:SCAL]:RLEV` (p112) | same (p83) | same, all traces (p438) |
@@ -389,7 +389,7 @@ Docs: `/home/marek/project/BenchMeshDOC/keysight_n9320b/doc/N9320B_Programmers_G
 | cont / single / done | `INIT:CONT`, `INIT`; `*OPC?` valid only right after `INIT` (p67-68, p117) | `INIT:CONT`, `INIT`, `*OPC?` (p59, p109) | `INIT:CONT 0;*OPC?`, `INIT;*OPC?` (overlapped, p453) |
 | marker X / Y | `CALC:MARK1:X`, `:Y?` (p85, p87) | `CALC:MARK1:X`, `:Y?` (p107-108) | `CALC:MARK1:X`, `:Y?` (no `[:SEL]` node in SA, p323) |
 | peak | `CALC:MARK1:MAX[:NEXT|LEFT|RIGH]` (p78) | `CALC:MARK1:MAX` (p103) | `CALC:MARK1:FUNC:MAX` (p310) |
-| **trace** | `TRAC[:DATA]? TRACE1` (p169) — **no FORMat subsystem, reply format undocumented** | `TRAC? TRACE1` (p91); `FORM ASC|REAL` (ASC comma list; REAL 4-byte floats) | `TRAC1:DATA?` comma list (p801); `FORM ASC,0|REAL,32|REAL,64` (block) (p451-452); `FORM:BORD NORM` = LSB first (p450) |
+| **trace** | `TRAC[:DATA]? TRACE1` (p169) - **no FORMat subsystem, reply format undocumented** | `TRAC? TRACE1` (p91); `FORM ASC|REAL` (ASC comma list; REAL 4-byte floats) | `TRAC1:DATA?` comma list (p801); `FORM ASC,0|REAL,32|REAL,64` (block) (p451-452); `FORM:BORD NORM` = LSB first (p450) |
 | trace mode | `TRAC1:MODE WRIT|MAXH|MINH|VIEW|BLAN` (+AVER, p169-171) | `TRAC1:MODE …`, `AVER:TRAC1:COUN` (p90, p93) | `TRAC1:TYPE CLRW|MAXH|MINH|AVG|VIEW|BLAN` (p827) |
 | TG | `OUTP`, `SOUR:POW` (p123, p159-161) | `OUTP`, `SOUR:POW` 0…−30 dBm (p220-221) | `SOUR:ENAB`, `SOUR:TRAC TSWP`, `SOUR:POW` (p753-763) |
 | screenshot | `MMEM:STOR:SCR` to storage only (p122) | `MMEM:STOR JPG,"…"` + `MMEM:DATA?` block (p74) | `MMEM:STOR:IMAG "x.png"` + `MMEM:DATA? "x.png"` (p487, p468) |
@@ -405,12 +405,12 @@ Docs: `/home/marek/project/BenchMeshDOC/rs_fpc/doc/FPC_UserManual_en_13.pdf` **[
 remote commands inside); `/home/marek/project/BenchMeshDOC/rs_fph/doc/FPH_User_Manual_en_21.pdf` **[FPH]**
 (553 pp., FW 2.70).
 
-- **Models**: FPC1000/FPC1500 (5 kHz–1 GHz, key-code upgradable to 2/3 GHz — range "per datasheet",
-  [FPC] p255-256; RBW 1 Hz–3 MHz 1-3 + 200 kHz p264; VBW 1 Hz–3 MHz p265; att 0–40 dB/5 dB p260;
+- **Models**: FPC1000/FPC1500 (5 kHz-1 GHz, key-code upgradable to 2/3 GHz - range "per datasheet",
+  [FPC] p255-256; RBW 1 Hz-3 MHz 1-3 + 200 kHz p264; VBW 1 Hz-3 MHz p265; att 0-40 dB/5 dB p260;
   tracking generator/signal source FPC1500 only p14). FPH 02/06/13/23/26/36: 2…26.5 GHz (+upgrades to
-  31 GHz), model 23 with TG ([FPH] p179); RBW/VBW 1 Hz–3 MHz (p348); att 0–40 dB (p343); **711 points**
+  31 GHz), model 23 with TG ([FPH] p179); RBW/VBW 1 Hz-3 MHz (p348); att 0-40 dB (p343); **711 points**
   (p358).
-- **Interfaces**: **LAN (VXI-11)** ([FPC] p200-201, [FPH] p315); the USB-B port is **not USBTMC** — it is
+- **Interfaces**: **LAN (VXI-11)** ([FPC] p200-201, [FPH] p315); the USB-B port is **not USBTMC** - it is
   a network link via the InstrumentView driver to fixed IP 172.16.10.10 ([FPC] p201, [FPH] p316); raw
   port 5025 not documented. Wi-Fi option (FPC).
 - **Identify**: `Rohde&Schwarz,FPC1000,1328.6660K02/xxxxxx,1.00` ([FPC] p33, p206);
@@ -420,7 +420,7 @@ remote commands inside); `/home/marek/project/BenchMeshDOC/rs_fph/doc/FPH_User_M
 |---|---|---|
 | mode | `INST[:SEL] SPECtrum|…` (example uses `INST SAN`, p236) | `INST SAN|PM|…` (*RST documented as PM! p452) |
 | freq | `FREQ:CENT|SPAN|STAR|STOP`, `SPAN:FULL` (p252-256) | same; CENT default unit MHz (p337-339) |
-| RBW / VBW | `BAND[:RES]`, `BAND:AUTO`, `BAND:VID[:AUTO]` (p264-265) | same; **default unit GHz** — always send units (p348) |
+| RBW / VBW | `BAND[:RES]`, `BAND:AUTO`, `BAND:VID[:AUTO]` (p264-265) | same; **default unit GHz** - always send units (p348) |
 | ref level / att | `DISP:TRAC:Y:RLEV` (p258); **`INP:ATT`**, `INP:ATT:AUTO` (p260) | `DISP:TRAC:Y:RLEV` (p341); `INP:ATT[:AUTO]` (p343) |
 | detector | `DET POS|NEG|SAMP|RMS|AVER|APE` (p274) | same (p354) |
 | sweep | `SWE:TIME[:AUTO]`, `SWE:COUN` (p266-267); `INIT:CONT OFF`, `INIT;*OPC?` (sync in single sweep only, p267-268) | same (p349-351) |
@@ -435,11 +435,11 @@ remote commands inside); `/home/marek/project/BenchMeshDOC/rs_fph/doc/FPH_User_M
 - **Confidence**: medium-high (complete reference, but point counts and defaults contradict
   themselves in places).
 
-### 2.11 Hantek HSA2000 (HSA2016/HSA2030 A–E) and OWON XSA1000 / XSA800
+### 2.11 Hantek HSA2000 (HSA2016/HSA2030 A-E) and OWON XSA1000 / XSA800
 
-**Hantek HSA2000** — doc **[HSA]** `/home/marek/project/BenchMeshDOC/hantek_hsa2000/doc/HSA2000_User_Manual_V1.0.1_EN.pdf`
-(SCPI = chapter 5, 15 pages). 9 kHz–1.6/3.2 GHz, TG on B/C/D variants (p6), RBW 10 Hz–1 MHz 1-3-10
-(p65), VBW 1 Hz–1 MHz, **461 points**, ref −100…+30 dBm, att 0–51 dB (p66), 4 traces/4 markers. USB
+**Hantek HSA2000** - doc **[HSA]** `/home/marek/project/BenchMeshDOC/hantek_hsa2000/doc/HSA2000_User_Manual_V1.0.1_EN.pdf`
+(SCPI = chapter 5, 15 pages). 9 kHz-1.6/3.2 GHz, TG on B/C/D variants (p6), RBW 10 Hz-1 MHz 1-3-10
+(p65), VBW 1 Hz-1 MHz, **461 points**, ref −100…+30 dBm, att 0-51 dB (p66), 4 traces/4 markers. USB
 device + LAN (p14, p37), no port/vid:pid/LAN details. `*IDN?` fields only, no example (p49). Commands
 (printed with stray spaces): `SENS:FREQ:STAR|CENT|STOP|SPAN <Hz>` integer Hz (p56-57),
 `SENS:BAND:RES[:AUTO]`, `:VID[:AUTO]` (p58-59), `SENS:POW:RF:ATT[:AUTO]` (p59-60), `SENS:SWE:TIME?`
@@ -449,10 +449,10 @@ query-only in µs (p57), `INIT:CONT`, `INIT:IMM` (p60-61), detector (p57-58), `T
 `CALC:MARK:FCO:X?`), no TG, `*OPC`, status or screenshot commands. **Confidence low**; DSL fit like the
 SCPI families (trace via `numbers`), marker readout must be computed client-side from the trace.
 
-**OWON XSA1000 / XSA800 / XSA3000-R** — no SCPI/programming manual is published on owon.com.hk
+**OWON XSA1000 / XSA800 / XSA3000-R** - no SCPI/programming manual is published on owon.com.hk
 (download centre lists only user manuals, quick guides and PC software, checked 2026-10-18), and the
 OWON file server was unreachable for direct probes. The PC software (`OWON_Spectrum_pco_sofware.zip`)
-proves a USB/LAN protocol exists. **Not researchable from documents now** — candidate for a
+proves a USB/LAN protocol exists. **Not researchable from documents now** - candidate for a
 wire capture (`scripts/wire_capture/`) when a community member has one. No local docs.
 
 ### 2.12 LiteVNA 62/64/67, NanoVNA V2 / S-A-A-2(N)
@@ -463,16 +463,16 @@ wire capture (`scripts/wire_capture/`) when a community member has one. No local
   `0x20` sweepPoints u16, `0x30` valuesFIFO (32-byte records of int32 fwd/rev re/im + freq index),
   `0xf0` deviceVariant (0x02 = LiteVNA). Writing sweep registers takes the device out of its UI
   ("USB data mode").
-- **DSL fit: blocked** — no terminators, binary integer parameters (u64 LE) in commands, 32-byte
+- **DSL fit: blocked** - no terminators, binary integer parameters (u64 LE) in commands, 32-byte
   struct records, raw (uncalibrated) data needing complex division. VNA class anyway.
 - **Docs**: `/home/marek/project/BenchMeshDOC/zeenko_litevna/doc/LiteVNA_User-Guide.pdf` (31 pp.,
   appendix 5 p26-31). **Confidence high** (protocol), **fit none**.
 
 ### 2.13 Signal Hound (note only)
 
-USB 3.0 receivers (SA44B/SA124B, BB60C/D, SM200/435) without a front panel or text protocol —
+USB 3.0 receivers (SA44B/SA124B, BB60C/D, SM200/435) without a front panel or text protocol -
 controlled through the vendor C API. SCPI exists only through the **Spike** PC application, raw SCPI
-on a TCP socket (`TCPIP::localhost::5025::SOCKET`, one connection at a time) — tech brief
+on a TCP socket (`TCPIP::localhost::5025::SOCKET`, one connection at a time) - tech brief
 `/home/marek/project/BenchMeshDOC/signalhound/doc/TB-SCPI-Automation-of-Signal-Hound-Spectrum-Analyzers.pdf` p2.
 Would need TCP; full Spike command reference not obtained. Out of scope, confidence low.
 
@@ -487,7 +487,7 @@ A base definition (`extends: scpi_sa`) can carry:
 |---|---|---|
 | identify | `*IDN?` | `vendor,model,serial,fw` |
 | center / span / start / stop | `:SENS:FREQ:CENT|SPAN|STAR|STOP <Hz>` / `?` | number (Hz) |
-| full span | `:SENS:FREQ:SPAN:FULL` | – |
+| full span | `:SENS:FREQ:SPAN:FULL` | - |
 | RBW / auto | `:SENS:BAND:RES <Hz>`, `:SENS:BAND:RES:AUTO ON|OFF` | number |
 | VBW / auto | `:SENS:BAND:VID <Hz>`, `:SENS:BAND:VID:AUTO` | number |
 | ref level | `:DISP:WIN:TRAC:Y:SCAL:RLEV <dBm>` | number |
@@ -499,7 +499,7 @@ A base definition (`extends: scpi_sa`) can carry:
 | continuous / single | `:INIT:CONT ON|OFF`, `:INIT[:IMM]` | 0/1 |
 | complete | `*OPC?` | 1 |
 | marker | `:CALC:MARK1:STAT ON`, `:CALC:MARK1:X <Hz>`, `:CALC:MARK1:Y?` | number |
-| peak / next / mkr→CF | `:CALC:MARK1:MAX`, `:CALC:MARK1:MAX:NEXT`, `:CALC:MARK1:SET:CENT` (Rigol `[:SET]` optional) | – |
+| peak / next / mkr→CF | `:CALC:MARK1:MAX`, `:CALC:MARK1:MAX:NEXT`, `:CALC:MARK1:SET:CENT` (Rigol `[:SET]` optional) | - |
 | trace format | `:FORM[:TRAC][:DATA] ASC|REAL,32` | |
 | trace | `:TRAC[:DATA]? TRACE1` | comma list (± block header) |
 | trace mode | `:TRAC1:MODE WRIT|MAXH|MINH|AVER|VIEW|BLAN` | keyword |
@@ -510,7 +510,7 @@ Dialect differences (what each definition overrides):
 
 | Family | Trace query | ASCII reply shape | Trace mode keyword | Other |
 |---|---|---|---|---|
-| Rigol DSA800 | `:TRAC:DATA? TRACE1` | `#9…` header + `, ` separated | `:TRAC1:MODE WRIT|MAXH|MINH|VIEW|BLAN|VID|POW` | points 101–3001; socket 5555 |
+| Rigol DSA800 | `:TRAC:DATA? TRACE1` | `#9…` header + `, ` separated | `:TRAC1:MODE WRIT|MAXH|MINH|VIEW|BLAN|VID|POW` | points 101-3001; socket 5555 |
 | Rigol RSA3000/5000 | `:TRAC:DATA? TRACE1` | no header (per example) | `:TRAC1:TYPE|MODE WRIT|AVER|MAXH|MINH` | `:INST:SEL SA` first; raw socket 5555 |
 | UNI-T UTS | `:TRAC1:DATA?` | `#5…` header + `,` separated | `:TRAC1:TYPE` | `*IDN?` fields with spaces |
 | Siglent SSA3000X/Plus | `:TRAC:DATA? 1` | no header, **trailing comma** | `:TRAC1:MODE WRIT|MAXH|MINH|VIEW|BLAN|AVER` | `:BWID` spelling; set `:FORM ASC` (default differs) |
@@ -605,7 +605,7 @@ operations:
 Binding notes: `tg_output` setters carry `safety: energize` (two presses in the UI);
 `SWEEPING` from `:STAT:OPER:COND?` bit 3 on SCPI (`{bits: {sweeping: "3"}}`), from `status`
 (`Paused`/`Resumed`) on tinySA; `peak_search` must re-poll `MARKER_FREQ`/`MARKER_LEVEL` (a set makes
-all poll groups due — already the engine's behaviour). Suggested poll: trace group at
+all poll groups due - already the engine's behaviour). Suggested poll: trace group at
 `max(250 ms, sweep time)`, marker group 500 ms, settings 3 s.
 
 ### Proposed panel (`SalPanel`, profile `salProfile()`)
@@ -644,7 +644,7 @@ As on the instruments' front panels (Rigol DSA, Siglent SSA, tinySA screen layou
 |---|---|---|
 | **ASCII number list** (critical) | trace of **every** family (SCPI `:TRAC:DATA?` ASCII, tinySA/NanoVNA `data`) | parse step `{numbers: {sep: ","}}` → `list` of f64: splits on `sep` **and** surrounding whitespace / newlines, ignores a trailing separator and empty fields, accepts `1.2e+01`/`-8.3e+01`; as first step after `reply: block` it parses the block payload; when used on a `line`/`message` reply it skips an optional leading IEEE `#<n><len>` header (RSA3000 vs DSA800 ambiguity). `sep: "\n"` or `" "` for shells |
 | float32 samples (nice to have) | faster/binary trace (`FORM REAL,32`, NanoVNA `scan … 0x80`) | `samples: f32le|f32be` (and `f64le`) |
-| TCP link | FieldFox, **R&S FPC/FPH (LAN-only, USB is a network link)**, Signal Hound Spike; optional for all SCPI families (5025 Siglent/Keysight, 5555 Rigol) | `link.tcp` is in the schema — interpreter transport needed |
+| TCP link | FieldFox, **R&S FPC/FPH (LAN-only, USB is a network link)**, Signal Hound Spike; optional for all SCPI families (5025 Siglent/Keysight, 5555 Rigol) | `link.tcp` is in the schema - interpreter transport needed |
 | Stride/skip in samples | tinySA `scanraw` (`x`,MSB,LSB) | not needed if `numbers` exists |
 | Streaming / push frames | RF Explorer | out of scope |
 | Binary command encoding (u64 LE params) + struct records | NanoVNA V2 / SAA-2 / LiteVNA | out of scope |

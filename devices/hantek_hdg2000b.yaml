@@ -18,7 +18,7 @@ models:
   - {"name": "HDG2082B", "match": "HDG2082B", "features": {"AWG": {"max_freq_hz": {"SIN": 80e6}}}}
   - {"name": "HDG2102B", "match": "HDG2102B", "features": {"AWG": {"max_freq_hz": {"SIN": 100e6, "SQU": 30e6, "PUL": 15e6, "RAMP": 4e6}}}}
 link:
-  # LAN: VXI-11 (LXI) — message-based like USB-TMC
+  # LAN: VXI-11 (LXI) - message-based like USB-TMC
   vxi11:
     framing:
       tx: {terminator: "\n"}
@@ -44,7 +44,7 @@ commands:
     send: "SOURce{ch}:VOLTage {vpp}"
     params: {vpp: {type: number, min: 0.002, max: 20, format: "%.4f", unit: Vpp}}
     requires: null
-    description: "2 mVpp–20 Vpp; into 50 Ω 10 Vpp ≤20 MHz, 7.5 ≤60 MHz, 5 ≤80 MHz, 1 ≤100 MHz"
+    description: "2 mVpp-20 Vpp; into 50 Ω 10 Vpp ≤20 MHz, 7.5 ≤60 MHz, 5 ≤80 MHz, 1 ≤100 MHz"
     source: "PDF p40"
   offs_q: {send: "SOURce{ch}:VOLTage:OFFSet?", source: "PDF p40"}
   offs_set: {send: "SOURce{ch}:VOLTage:OFFSet {v}", source: "PDF p40; −10 to +10 V"}

@@ -1,4 +1,4 @@
-# DEVELOPMENT AID ONLY — not shipped and not needed by BenchMesh. The app identifies instruments
+# DEVELOPMENT AID ONLY - not shipped and not needed by BenchMesh. The app identifies instruments
 # itself on Linux, Windows and macOS (config `match`, see ai_context/migration/IDENTITY.md).
 # Note: rules with ACTION=="add" lose their symlink on a `udevadm trigger` (change event).
 # FTDI FT232R (has serial) → /dev/ttyFTDI0

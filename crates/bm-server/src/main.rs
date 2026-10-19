@@ -1,4 +1,4 @@
-//! benchmesh-server — BenchMesh API + UI server (headless / lab server).
+//! benchmesh-server - BenchMesh API + UI server (headless / lab server).
 //!
 //! ```text
 //! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--host ADDR] [--port N]
@@ -7,7 +7,7 @@
 //! `./devices`; UI `benchmesh-serial-service/frontend/dist` if present; `0.0.0.0:$API_PORT`
 //! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
 //! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
-//! traffic instead of opening ports — UI work and demos without hardware.
+//! traffic instead of opening ports - UI work and demos without hardware.
 //! `benchmesh-server mcp` bridges stdio to a running server's MCP endpoint (`$BENCHMESH_URL`,
 //! default `http://127.0.0.1:57666`) for AI clients that start a process.
 
@@ -76,7 +76,7 @@ fn main() {
     for w in &server.warnings {
         eprintln!("warning: {w}");
     }
-    eprintln!("BenchMesh server on {} (listening {}) — config {}", server.url(), server.addr, config.display());
+    eprintln!("BenchMesh server on {} (listening {}) - config {}", server.url(), server.addr, config.display());
     if let Some(s) = &simulate {
         eprintln!("SIMULATION: instruments replayed from {} (no hardware is used; recordings in memory)", s.display());
     }

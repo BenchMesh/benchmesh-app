@@ -99,7 +99,7 @@ test.describe('Arrange mode', () => {
     await expect.poll(() => panelOrder(mockPage)).toEqual([PANELS.psu, PANELS.dmm, PANELS.lcr]);
   });
 
-  // UI bug: on an offline panel the "Offline — reconnecting" badge (.bench-panel__offline,
+  // UI bug: on an offline panel the "Offline - reconnecting" badge (.bench-panel__offline,
   // absolutely positioned at top: 46px) covers the wrapped arrange controls of a narrow
   // panel and intercepts the click on "Hide panel" / the width buttons.
   test('an offline panel can be hidden', async ({ mockPage }) => {

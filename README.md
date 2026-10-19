@@ -7,7 +7,7 @@
 **One cockpit for your whole test bench.**
 
 Power supplies, multimeters, electronic loads, signal generators, oscilloscopes, LCR meters and
-spectrum analyzers — connected over USB, serial or LAN, controlled from one window, recorded on
+spectrum analyzers - connected over USB, serial or LAN, controlled from one window, recorded on
 one shared timeline.
 
 ### [benchmesh.online](https://benchmesh.online)
@@ -21,16 +21,16 @@ one shared timeline.
 
 ## Why BenchMesh
 
-- **One panel per instrument type** — every power supply, meter or scope looks and works the same,
+- **One panel per instrument type** - every power supply, meter or scope looks and works the same,
   whatever the brand.
-- **Recording on one time domain** — readings from all instruments line up second by second;
+- **Recording on one time domain** - readings from all instruments line up second by second;
   export to CSV.
-- **Automation** — build flows with conditions by hand, or describe what you want and let an AI
+- **Automation** - build flows with conditions by hand, or describe what you want and let an AI
   assistant (your own Anthropic, OpenAI or OpenRouter key) assemble them.
-- **AI assistants via MCP** — connect Claude, Cursor and other MCP clients to your bench.
+- **AI assistants via MCP** - connect Claude, Cursor and other MCP clients to your bench.
 - **Hundreds of models** described by device definitions, no drivers to write; the
   [instrument database](https://benchmesh.online/instruments) shows what is supported.
-- **Free, open source, offline** — Windows, macOS and Linux.
+- **Free, open source, offline** - Windows, macOS and Linux.
 
 ## Get it
 

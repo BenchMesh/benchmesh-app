@@ -100,7 +100,7 @@ export function OscPanel({ id, channels, registry, profile, online }: {
     ? { ch: srcCh, levelDivs: (level + srcOffset) / srcScale } : null
 
   const runOptions = profile.runActions.filter((a) => a !== 'STOP')
-  const summary = `${siText(timebase, 's')}/div · ${siText(siNumber(g.SRATE), 'Sa/s')} · trigger ${sourceLabel(g.TRIG_SOURCE ?? '—')} ${SLOPE_LABEL[g.TRIG_SLOPE] ?? ''} ${siText(level, 'V')}`
+  const summary = `${siText(timebase, 's')}/div · ${siText(siNumber(g.SRATE), 'Sa/s')} · trigger ${sourceLabel(g.TRIG_SOURCE ?? '-')} ${SLOPE_LABEL[g.TRIG_SLOPE] ?? ''} ${siText(level, 'V')}`
 
   return (
     <div className="bench-osc">

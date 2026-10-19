@@ -24,7 +24,7 @@ commands:
   shape_q: {source: "PDF p83; SIN SQU TRI RAMP PULS PRBS NOIS ARB DC"}
   shape_set: {source: "PDF p83"}
   freq_q: {source: "PDF p84"}
-  freq_set: {source: "PDF p83-84; 1 µHz–20 MHz sine"}
+  freq_set: {source: "PDF p83-84; 1 µHz-20 MHz sine"}
   unit_q: {source: "PDF p88"}
   ampl_q: {source: "PDF p87"}
   ampl_set:

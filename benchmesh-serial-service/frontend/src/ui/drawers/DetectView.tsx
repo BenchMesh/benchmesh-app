@@ -1,7 +1,7 @@
 /**
  * Detect section of the Instruments drawer: `POST /devices/detect` identifies the instruments on
  * the USB ports; each row offers to add the instrument or to lock a configured entry to its
- * identity (`match`) — ai_context/migration/IDENTITY.md.
+ * identity (`match`) - ai_context/migration/IDENTITY.md.
  */
 
 import { useEffect, useRef, useState } from 'react';

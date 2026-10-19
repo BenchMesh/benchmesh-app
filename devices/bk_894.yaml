@@ -18,7 +18,7 @@ models:
     match: '(?i)^B&K Precision,\s*895\b'
     features: {LCR: {frequency: {min: 20, max: 1000000, presets: [100, 120, 1000, 10000, 100000, 1000000]}}}
 link:
-  # LAN: VXI-11 only (PM p.76: raw socket not supported) — message-based like USB-TMC
+  # LAN: VXI-11 only (PM p.76: raw socket not supported) - message-based like USB-TMC
   vxi11:
     framing:
       tx: {terminator: "\n"}

@@ -1,4 +1,4 @@
-# libcheck — cross-check device definitions against open-source instrument libraries
+# libcheck - cross-check device definitions against open-source instrument libraries
 
 Dev tooling, never shipped. Two steps:
 
@@ -15,7 +15,7 @@ Dev tooling, never shipped. Two steps:
    (`mapping.yaml`) and writes `ai_context/migration/coverage/crosscheck/<id>.md` + `README.md`.
 
 Output of step 1 goes **outside the repository**, `BenchMeshDOC/_vectors/<library>/<class>.json`:
-InstrumentKit is AGPLv3 — its tests are used as facts only, nothing of it is copied into BenchMesh
+InstrumentKit is AGPLv3 - its tests are used as facts only, nothing of it is copied into BenchMesh
 (the script refuses an output dir inside the repo). PyMeasure and QCoDeS are MIT.
 
 ## Setup
@@ -35,7 +35,7 @@ cargo run -q -p bm-driver --example crosscheck                     # --vectors D
 - **(a) replies**: a vector query that matches one of our commands goes through our parse pipeline
   (`bm_driver::parse::parse_reply`, after our framing's trailing strip); failures first.
 - **(b) writes**: each vector setter (split on `;` with SCPI path rules) against our `send`
-  templates — `{ch}` and enum params expanded to their wire values, other params wildcards checked with
+  templates - `{ch}` and enum params expanded to their wire values, other params wildcards checked with
   `bm_driver::wire::format_param` (min/max, format). Verdicts: equivalent · equivalent (optional nodes) ·
   value rejected/changed · same header, other spelling/value · no such command.
 - **(c) ours unseen**: polled/get queries and setters no vector exercises.

@@ -1,4 +1,4 @@
-//! bm-probe — run device definitions against real instruments.
+//! bm-probe - run device definitions against real instruments.
 //!
 //! ```text
 //! bm-probe [--config FILE] [--devices DIR] verify [--id ID]... [--polls N] [--screenshots]

@@ -1,6 +1,6 @@
 /**
- * Automation settings: the assistant (provider, the user's own API key — shown only as the
- * server's hint after saving — model, base URL) and MCP access for AI clients, with
+ * Automation settings: the assistant (provider, the user's own API key - shown only as the
+ * server's hint after saving - model, base URL) and MCP access for AI clients, with
  * ready-to-paste connection snippets.
  */
 import React, { useEffect, useId, useState } from 'react'
@@ -83,7 +83,7 @@ function AssistantSettingsForm({ client }: { client: AutomationClient }) {
           {models.length > 0 && (
             <select className="kit-input" aria-label="Models of the provider" value={models.some((m) => m.id === model) ? model : ''}
               onChange={(e) => e.target.value && setModel(e.target.value)}>
-              <option value="">{models.length} models — choose…</option>
+              <option value="">{models.length} models - choose…</option>
               {models.map((m) => <option key={m.id} value={m.id}>{m.name && m.name !== m.id ? `${m.name} (${m.id})` : m.id}</option>)}
             </select>
           )}
@@ -134,7 +134,7 @@ function McpSettings({ client }: { client: AutomationClient }) {
           {ACCESS.map((a) => (
             <label key={a.value} className="auto-radio__item">
               <input type="radio" name="mcp-access" value={a.value} checked={info.access === a.value} onChange={() => void set(a.value)} />
-              <span><b>{a.label}</b>{a.value === 'read' ? ' (default)' : ''} — {a.text}</span>
+              <span><b>{a.label}</b>{a.value === 'read' ? ' (default)' : ''} - {a.text}</span>
             </label>
           ))}
         </fieldset>

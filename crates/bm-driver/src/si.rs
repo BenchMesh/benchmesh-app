@@ -1,4 +1,4 @@
-//! BenchMesh SI value dict — a faithful port of `utils/si.py` (`sci_to_value` /
+//! BenchMesh SI value dict - a faithful port of `utils/si.py` (`sci_to_value` /
 //! `si_to_value` with `sig_figs=5`), because the UI renders `si.number` + `si.symbol`
 //! and reads `val` for setpoints.
 //!
@@ -36,7 +36,7 @@ const PREFIXES: [(i32, &str, &str); 17] = [
 ];
 
 /// SI parts (number string, symbol, prefix name) of an already-normalised scientific
-/// string — `format_scientific_to_si(sci, sig_figs=5)` in Python.
+/// string - `format_scientific_to_si(sci, sig_figs=5)` in Python.
 fn scientific_to_si(sci: &str) -> (String, &'static str, &'static str) {
     let num: f64 = sci.parse().unwrap_or(0.0);
     if num == 0.0 {

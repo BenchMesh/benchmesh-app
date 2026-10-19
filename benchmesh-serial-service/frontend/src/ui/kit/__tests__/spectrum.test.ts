@@ -25,6 +25,6 @@ describe('spectrum arithmetic', () => {
     expect(freqText(433920000, 7)).toBe('433.9200 MHz')
     expect(freqText(0)).toBe('0 Hz')
     expect(dbText(-42.314)).toBe('−42.31 dBm')
-    expect(dbText(null)).toBe('—')
+    expect(dbText(null)).toBe('-')
   })
 })

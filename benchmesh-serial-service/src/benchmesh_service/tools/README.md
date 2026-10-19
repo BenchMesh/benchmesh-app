@@ -1,9 +1,9 @@
-# BenchMesh Tools – OpenAPI Generator
+# BenchMesh Tools - OpenAPI Generator
 
 This folder contains helper scripts for the BenchMesh Serial Service.
 
-- `driver_cli.py` – Manual driver testing utility
-- `gen_openapi.py` – Generate the OpenAPI specification from the FastAPI app
+- `driver_cli.py` - Manual driver testing utility
+- `gen_openapi.py` - Generate the OpenAPI specification from the FastAPI app
 
 ## gen_openapi.py
 
@@ -60,10 +60,10 @@ PYTHONPATH=benchmesh-serial-service/src \
 
 ### Options
 
-- `--app` – App path in the form `module:var` (default: `benchmesh_service.api:app`)
-- `--out-dir` – Output directory (default: `src/benchmesh_service/doc` inside the package)
-- `--basename` – Base filename without extension (default: `openapi`)
-- `--formats` – One of `json`, `yaml`, `both` (default: `both`)
+- `--app` - App path in the form `module:var` (default: `benchmesh_service.api:app`)
+- `--out-dir` - Output directory (default: `src/benchmesh_service/doc` inside the package)
+- `--basename` - Base filename without extension (default: `openapi`)
+- `--formats` - One of `json`, `yaml`, `both` (default: `both`)
 
 ### Notes
 

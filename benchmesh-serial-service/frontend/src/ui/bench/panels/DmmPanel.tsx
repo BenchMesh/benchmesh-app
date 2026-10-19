@@ -96,9 +96,9 @@ export function DmmPanel({ status, profile, api, online }: {
           </Recordable>
           <Bargraph tone="meas" label="Reading as a fraction of the range" fraction={fs && shown != null ? Math.abs(shown) / fs : overload ? 1 : 0} marks={['0', fsText]} />
           <div className="kit-stats" aria-label="Statistics">
-            <span><b>MIN</b>{stats.n ? fmt(stats.min) : '—'}</span>
-            <span><b>MAX</b>{stats.n ? fmt(stats.max) : '—'}</span>
-            <span><b>AVG</b>{stats.n ? fmt(stats.sum / stats.n) : '—'}</span>
+            <span><b>MIN</b>{stats.n ? fmt(stats.min) : '-'}</span>
+            <span><b>MAX</b>{stats.n ? fmt(stats.max) : '-'}</span>
+            <span><b>AVG</b>{stats.n ? fmt(stats.sum / stats.n) : '-'}</span>
             <span><b>N</b>{stats.n}</span>
           </div>
           <Annunciators items={[

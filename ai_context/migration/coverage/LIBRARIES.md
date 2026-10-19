@@ -32,10 +32,10 @@ libraries = distinct command literals or captured reply lines (method stated per
 | **Qcodes_contrib_drivers** (`_libs/Qcodes_contrib_drivers`, partial) | MIT | 2026-10-18 | Community add-ons: Siglent SDG 20xx/60xx, Rigol DSA800 ("tested on a DSA815-TG") | No protocol tests | 0 vectors; ≈ 60 command strings (DSA800) |
 | **InstrumentKit** (`_libs/InstrumentKit`) | **AGPLv3**, facts only | 2026-10-12 | Older lab gear; generic SCPI DMM/AFG; Rigol DS1000 (**old DS1000E/D**, not Z), MinghE MHS5200A | `expected_protocol(ik.Cls, [sent…], [replies…], sep="\n")`, replies author-written. One known wrong mock: 33220A `LOAD?` → `INF` | 33220A 26 sent / 12 replies; generic SCPI multimeter 34/21, function generator 12/5 |
 | **python-ivi** (`_libs/python-ivi`) | MIT | 2017-02-18 (dead) | IVI-style drivers: Agilent 34401A/34461A, InfiniiVision DSO-X 2000A/3000A, Rigol DP800/DP832/DP831A, DM3068 (Agilent mode), E36xx | No protocol tests (only `test_ivi.py` for the core); command strings in code | 0 vectors |
-| **pyvisa-sim** (`_libs/pyvisa-sim`) | MIT | 2026-10-12 | Format reference for the Qcodes sims | – | – |
+| **pyvisa-sim** (`_libs/pyvisa-sim`) | MIT | 2026-10-12 | Format reference for the Qcodes sims | - | - |
 | **libsigrok** (`_libs/libsigrok`) | GPL-3, facts only | 2025-11-20 | Hobby gear: `korad-kaxxxxp`, `gwinstek-gpd`, `manson-hcs-3xxx`, `scpi-pps` (Rigol DP700/DP800, OWON P4000/SPE6103), `scpi-dmm` (34401A, 34460A/65A, GDM9060/61, XDM1041/2041, SDM3055), `siglent-sdl10x0`, `itech-it8500` (binary), `rigol-ds` (DS1000Z, DS2000A, MSO5000), `siglent-sds` (SDS1000X-E), `rigol-dg` (DG800/900, DG1000Z) | No protocol tests; C command tables, per-model timing/quirk flags, udev IDs | 0 captured replies; ≈ 60 DMM + 91 scpi-pps + 16 Korad + 11 GPD + 8 Manson table entries |
 | **scopehal** (`_libs/scopehal`, sparse) | BSD-3 | 2026-10-18 | ngscopeclient drivers for Rigol DS/MSO5/DHO, Siglent legacy and new sets, Keysight, Tek | No tests; firmware-specific workarounds in code, "tested on SDS1104X-E FW 6.1.37R8 / 8.2.6.1.37R9" | ≈ 150 command strings per driver |
-| **lxi-tools** (`_libs/lxi-tools`) | BSD-3 | 2025-05 | Screenshot plugins; README list of hardware-tested models (DS1104Z, MSO5074, DSA815, SDS1202X-E, MSO-X 3024T …) | – | ≈ 8 screenshot commands |
+| **lxi-tools** (`_libs/lxi-tools`) | BSD-3 | 2025-05 | Screenshot plugins; README list of hardware-tested models (DS1104Z, MSO5074, DSA815, SDS1202X-E, MSO-X 3024T …) | - | ≈ 8 screenshot commands |
 
 ### 1.2 Hobby and single-instrument libraries
 
@@ -64,30 +64,30 @@ libraries = distinct command literals or captured reply lines (method stated per
 | CPX400DP, mxpsu | github.com/RandomGgames/CPX400DP, HENRYMARTIN5/mxpsu | 4 / 0 | 2026-03 / 2025-06 | other / MIT | tti_cpx / tti_mx | none | no | ≈ 12 / 25 |
 | dp800 (Rust) | github.com/newAM/dp800 | 4 | 2026-10 | MIT | rigol_dp800 (DP832, raw TCP 5555) | none | no | ≈ 17 |
 | rusty_meter | github.com/markusdd/rusty_meter | 145 | 2026-09 | MIT | owon_xdm, owon_xdm3000 ("confirmed working" 1041/1241/1051/1251/2041/3041/3051) | 147 asserts (IDN classification, overload), 2 reply-stream tests | `rusty_meter` | ≈ 10 real replies + range tables |
-| OWON-XDM1041 | github.com/TheHWcave/OWON-XDM1041 | 67 | 2021-12 | MIT | owon_xdm | trial-found command list, firmware-bug notes (HW) | `OWON-XDM1041` | – |
+| OWON-XDM1041 | github.com/TheHWcave/OWON-XDM1041 | 67 | 2021-12 | MIT | owon_xdm | trial-found command list, firmware-bug notes (HW) | `OWON-XDM1041` | - |
 | Multimeter (XDM3000) | github.com/martin-bochum/Multimeter | 20 | 2023-02 | GPL-3 | owon_xdm3000 (+PeakTech/Voltcraft clones) | dmesg log, udev rule (HW) | `Multimeter-xdm3000` | ≈ 45 commands |
 | DMM-Siglent-SDM, sdm3055 | github.com/martin-bochum/DMM-Siglent-SDM, djacobow/sdm3055 | 9 / 0 | 2026-01 / 2026-02 | GPL-3 | siglent_sdm3000 (HW, LAN) | none | `DMM-Siglent-SDM`, `sdm3055` | ≈ 60 / 10 |
 | HP-34401A-Python | github.com/PY1CX/HP-34401A-Python | 10 | 2021-08 | MIT | agilent_34401a (RS-232) | **real session transcript** (`Test in Terminal.md`) | no | 24 replies |
-| AgilentDMM, 34401AGUI | github.com/jones139/AgilentDMM, AkBKukU/34401AGUI | 5 / 16 | 2019 / 2018 | MIT / none | agilent_34401a | none | no | – |
+| AgilentDMM, 34401AGUI | github.com/jones139/AgilentDMM, AkBKukU/34401AGUI | 5 / 16 | 2019 / 2018 | MIT / none | agilent_34401a | none | no | - |
 | gdm-8341 | github.com/inflex/gdm-8341 | 6 | 2022-11 | BSD-3 | gwinstek_gdm8300 | none | no | ≈ 20 |
 | kelctl | github.com/vorbeiei/kelctl | 4 | 2024-06 | MIT | korad_kel10x (RND 320-KEL103 V2.60, HW) | `KEL103-protocol.md` with example replies | `kelctl` | ≈ 34 |
 | siglent_sdl1000x | github.com/JxR-TestMeasure/siglent_sdl1000x | 12 | 2020-07 | none | siglent_sdl1000x | `raw_scpi_commands.txt` | `siglent_sdl1000x` | 0 replies |
 | LabInstruments | github.com/ulikoehler/LabInstruments | 6 | 2026-03 | Apache-2 | rigol_dl3000 (DL3021, HW), rigol_dm3000 | reply comments in code | `LabInstruments` | ≈ 6 |
 | 8600_Series, 894-and-895_Series | github.com/BKPrecisionCorp/… | 2 / 0 | 2019 | Apache-2 | bk_8600, bk_894 (vendor examples) | none | `8600_Series` | ≈ 30 / 15 |
 | TH2830_USER | github.com/haorucheng/TH2830_USER | 0 | 2026-08 | none | tonghui_th28xx | none (low confidence) | no | ≈ 10 |
-| ET44.py | github.com/philpagel/ET44.py | 2 | 2026-08 | MIT | easttester_et44 (basis of LCR.md) | none | no | – |
+| ET44.py | github.com/philpagel/ET44.py | 2 | 2026-08 | MIT | easttester_et44 (basis of LCR.md) | none | no | - |
 | ds1054z | github.com/pklaus/ds1054z | 200 | 2017 (code) | GPL | rigol_ds1000z | live-scope unittest | `ds1054z` | ≈ 40 commands, 1 preamble reply |
 | rigol-ds1000z | github.com/amosborne/rigol-ds1000z | 30 | 2026-10 | MIT | rigol_ds1000z | **42 hardware-in-the-loop pytests** | `rigol-ds1000z` | ≈ 74 fields |
 | pyMSO5000 | github.com/mabl/pyMSO5000 | 3 | 2026-08 | MIT | rigol_mso5000 | 2236 command-header regexes extracted from firmware 01.03.03.00; MSO5074 HW | `pyMSO5000` | 2236 headers; ≈ 226 tuples |
 | pydho800 | github.com/MasterJubei/pydho800 | 14 | 2024-05 | BSD-3 | rigol_dho800/1000 | none | `pydho800` | ≈ 45 |
-| rigol-grab, DS1054Z_screen_capture | github.com/rdpoor/rigol-grab, RoGeorge/DS1054Z_screen_capture | 136 / 222 | 2024 / 2022 | MIT / GPL-2 | ds1000z, dho (screenshots) | firmware-difference issues | no | 2–5 |
+| rigol-grab, DS1054Z_screen_capture | github.com/rdpoor/rigol-grab, RoGeorge/DS1054Z_screen_capture | 136 / 222 | 2024 / 2022 | MIT / GPL-2 | ds1000z, dho (screenshots) | firmware-difference issues | no | 2-5 |
 | sdsremote, SDSpy | github.com/klumw/sdsremote, lheywang/SDSpy | 43 / 4 | 2026-10 / 2025-01 | Apache-2 / GPL-3 | siglent_sds1000xe (legacy set) | sdsremote claims SDS1202X-E/1104X-E/1204X-E; SDSpy untested | `sdsremote`, `SDSpy` | ≈ 30 / 80 |
 | SiglentSDS2000xPlusPy | github.com/JoshGenao/SiglentSDS2000xPlusPy | 5 | 2023-10 | MIT | siglent_sds2000xplus | binary preamble offsets | no | ≈ 25 |
 | tct_project TBS1000C notes | github.com/KTY137/tct_project (`docs/research/tbs1000c_scpi.md`) | 0 | 2026-07 | MIT | tektronix_tbs1000c | **verified live on a TBS1052C 2026-07-06** | no | ≈ 20 queries |
 | tinySA_python (tsapython) | github.com/LC-Linkous/tinySA_python | 16 | 2026-10 | GPL-2 | tinysa (ZS405 HW, fw v1.4-143/252) | firmware compatibility tables, example replies | `tinySA_python` | ≈ 100 commands, 35 replies |
 | QtTinySA | github.com/g4ixt/QtTinySA | 253 | 2026-10 | GPL-3 | tinysa | widely used GUI | `QtTinySA` | ≈ 25 |
-| tinySA firmware | github.com/erikkaashoek/tinySA | 351 | 2026-10 | – | tinysa (ground truth: `sa_cmd.c`, `main.c`) | – | `tinySA-fw` (sparse) | – |
-| Qcodes_contrib Rigol_DSA800, emc-toolkit, rigol-dsa815-python | see §1.1; github.com/fpgadeveloper/emc-toolkit, JovanMarkov96/rigol-dsa815-python | 70 / 6 / 1 | – | MIT / – / MIT | rigol_dsa800 | "tested on a DSA815-TG" (contrib) | no | ≈ 60 / 45 / 40 |
+| tinySA firmware | github.com/erikkaashoek/tinySA | 351 | 2026-10 | - | tinysa (ground truth: `sa_cmd.c`, `main.c`) | - | `tinySA-fw` (sparse) | - |
+| Qcodes_contrib Rigol_DSA800, emc-toolkit, rigol-dsa815-python | see §1.1; github.com/fpgadeveloper/emc-toolkit, JovanMarkov96/rigol-dsa815-python | 70 / 6 / 1 | - | MIT / - / MIT | rigol_dsa800 | "tested on a DSA815-TG" (contrib) | no | ≈ 60 / 45 / 40 |
 | pyssa3021x, LibreVNA SSA3000X driver | github.com/tspspi/pyssa3021x, jankae/LibreVNA | 1 / 1656 | 2024 / 2026 | other / GPL-3 | siglent_ssa3000x | LibreVNA is a shipped product | `pyssa3021x` | ≈ 11 / 14 |
 | sdg2122-cli | github.com/LHX369963/sdg2122-cli | 0 | 2026-08 | MIT | siglent_sdg* (SDG2122X fw 2.01.01.23R8/39R7) | `docs/validation.md` + 44 validation JSON runs **checked against a scope** | `sdg2122-cli` | 52 test tuples; **240 live BSWV + 25 live OUTP replies** |
 | devsignal | github.com/JacobBeningo/devsignal | 3 | 2026-07 | MIT | siglent_sdg* (SDG2042X fw 2.01.01.35R3B2) | fake-VISA tests; HW-verified per CHANGELOG | `devsignal` | 6 |
@@ -99,7 +99,7 @@ libraries = distinct command literals or captured reply lines (method stated per
 | tektronix-func-gen | github.com/asvela/tektronix-func-gen | 21 | 2021-03 | MIT | tek_afg1000 ("tested with AFG1022/1062/3022") | README transcript | `tektronix-func-gen` | ≈ 5 |
 | arbitrage, afg2225-sequencer | github.com/gabrielbenedikt/arbitrage, speicherl/afg2225-sequencer | 0 / 0 | 2020 / 2026 | GPL-3 | gwinstek_afg2000 (AFG-2105 only tested), gwinstek_afg2225 | none | both | 0 |
 | owon-xdg-python-tools | github.com/fredzo/owon-xdg-python-tools | 0 | 2024-03 | MIT | owon_xdg (Multicomp MP750290) | none | yes | 0 |
-| sds1004x_bode | github.com/4x1md/sds1004x_bode | 97 | 2023-02 | MIT | FY6600 driver; log of SDG-dialect commands sent by an SDS scope | – | yes | 0 replies |
+| sds1004x_bode | github.com/4x1md/sds1004x_bode | 97 | 2023-02 | MIT | FY6600 driver; log of SDG-dialect commands sent by an SDS scope | - | yes | 0 replies |
 
 Searched without result: UT8805E/UT8806E, TH2817B+/TH2810B+, SDM4055A/65A, GDM-8351/906x, OWON OEL,
 IT8500+ over SCPI, rigol_dp700 (beyond sigrok), spd4000x (only a "Testing" script), gpd3303d,
@@ -120,126 +120,126 @@ Legend: **pym** pymeasure · **qc** Qcodes · **qcc** Qcodes_contrib · **ik** I
 
 | Family | Big libraries (path · class · models) | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
-| korad_ka | – | sr `korad-kaxxxxp` (KA/KD3005P, KD6005P, RND, Velleman PS3005D, Stamos); ka3005p, py-korad-serial, koradctl, tenma-serial | ≈ 60 forms, 0 cap | HW | |
-| tenma_72 | – | sr korad (2535/40/50, 2705/10); tenma-serial (all incl. 13320/30/60), koradctl | ≈ 60 forms + real IDNs | HW (per model) | |
-| rigol_dp700 | – | sr scpi-pps `rigol_dp700_cmd` (DP711/712) | ≈ 20 table | – | |
-| rigol_dp800 | qc `rigol/private/DP8xx.py` · `RigolDP8xxBase` · DP821/831/832; ivi `rigol/rigolDP800.py`, `rigolDP832.py`, `rigolDP831A.py` | sr scpi-pps; newAM/dp800 | 0 test, ≈ 40 table | – | |
+| korad_ka | - | sr `korad-kaxxxxp` (KA/KD3005P, KD6005P, RND, Velleman PS3005D, Stamos); ka3005p, py-korad-serial, koradctl, tenma-serial | ≈ 60 forms, 0 cap | HW | |
+| tenma_72 | - | sr korad (2535/40/50, 2705/10); tenma-serial (all incl. 13320/30/60), koradctl | ≈ 60 forms + real IDNs | HW (per model) | |
+| rigol_dp700 | - | sr scpi-pps `rigol_dp700_cmd` (DP711/712) | ≈ 20 table | - | |
+| rigol_dp800 | qc `rigol/private/DP8xx.py` · `RigolDP8xxBase` · DP821/831/832; ivi `rigol/rigolDP800.py`, `rigolDP832.py`, `rigolDP831A.py` | sr scpi-pps; newAM/dp800 | 0 test, ≈ 40 table | - | |
 | siglent_spd1000x | pym `siglenttechnologies/siglent_spd1168x.py`, `siglent_spd1305x.py` · `SPD1168X`, `SPD1305X` | siglent-mcp | 26 | HW (mcp) | X |
-| siglent_spd3303x | – (pym `SPDBase` is the same dialect) | python-spd3303x, Swallowtail | 9 + IDN | HW | |
-| siglent_spd4000x | – | HomeLabTools (testing) | 4 | – | |
-| gwinstek_gpd | – | sr `gwinstek-gpd` (2303S, 3303S); PyGPD3303S, gpd2303s | ≈ 25 | – | |
-| gwinstek_gpd3303d | – | (sr gpd old-firmware status layout) | – | – | |
-| gwinstek_gpp | – | gpp4323, gwinstekgpp | ≈ 45 | – | |
-| owon_odp | – | Python_SCPI (ODP3033) | ≈ 12 | – | |
-| owon_spe | – | sr scpi-pps (SPE6103); owon-spe, kiprim-psu, owon-spe6103-mcp, kiprim-dc310s | ≈ 20 + tests | HW | |
-| owon_p4000 | – | sr scpi-pps (P4305/P4603); owon_p4305 | ≈ 12 | – | |
-| owon_spm | – (ours, bench-tested) | – | – | ours | |
-| juntek_dpm86xx | – | dpm8600, DPM8624 | ≈ 25 real reply strings | HW | |
-| hantek_pps | – | PPS2320A (and PPS2116A lib) | ≈ 10 | – | |
-| manson_hcs | – | sr `manson-hcs-3xxx`; pyhcs, manson-cpp | ≈ 16 | HW (pyhcs) | |
-| manson_hcs_10ma | – | sr `manson-hcs-3xxx` (3102/3104/3204) | ≈ 8 | – | |
-| tti_cpx | sibling: pym `aimtti/aimttiPL.py` · `PLBase` (PL-P, same command set, 16 vec); qc `AimTTi/_AimTTi_PL_P.py` (+sim 3 q) | CPX400DP lib | ≈ 28 | – | |
-| tti_mx | sibling as tti_cpx | mxpsu | ≈ 25 | – | |
-| unit_udp3000s | – | UDP3305S.py, udp3305s, udp3000s-control, udp3000s-wrapper | ≈ 100 | HW | |
-| unit_udp6700 | – | – | – | – | |
+| siglent_spd3303x | - (pym `SPDBase` is the same dialect) | python-spd3303x, Swallowtail | 9 + IDN | HW | |
+| siglent_spd4000x | - | HomeLabTools (testing) | 4 | - | |
+| gwinstek_gpd | - | sr `gwinstek-gpd` (2303S, 3303S); PyGPD3303S, gpd2303s | ≈ 25 | - | |
+| gwinstek_gpd3303d | - | (sr gpd old-firmware status layout) | - | - | |
+| gwinstek_gpp | - | gpp4323, gwinstekgpp | ≈ 45 | - | |
+| owon_odp | - | Python_SCPI (ODP3033) | ≈ 12 | - | |
+| owon_spe | - | sr scpi-pps (SPE6103); owon-spe, kiprim-psu, owon-spe6103-mcp, kiprim-dc310s | ≈ 20 + tests | HW | |
+| owon_p4000 | - | sr scpi-pps (P4305/P4603); owon_p4305 | ≈ 12 | - | |
+| owon_spm | - (ours, bench-tested) | - | - | ours | |
+| juntek_dpm86xx | - | dpm8600, DPM8624 | ≈ 25 real reply strings | HW | |
+| hantek_pps | - | PPS2320A (and PPS2116A lib) | ≈ 10 | - | |
+| manson_hcs | - | sr `manson-hcs-3xxx`; pyhcs, manson-cpp | ≈ 16 | HW (pyhcs) | |
+| manson_hcs_10ma | - | sr `manson-hcs-3xxx` (3102/3104/3204) | ≈ 8 | - | |
+| tti_cpx | sibling: pym `aimtti/aimttiPL.py` · `PLBase` (PL-P, same command set, 16 vec); qc `AimTTi/_AimTTi_PL_P.py` (+sim 3 q) | CPX400DP lib | ≈ 28 | - | |
+| tti_mx | sibling as tti_cpx | mxpsu | ≈ 25 | - | |
+| unit_udp3000s | - | UDP3305S.py, udp3305s, udp3000s-control, udp3000s-wrapper | ≈ 100 | HW | |
+| unit_udp6700 | - | - | - | - | |
 
 ### DMM (19)
 
 | Family | Big libraries | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
 | agilent_34401a | pym `hp/hp34401A.py` · `HP34401A`; qc `agilent/Agilent_34401A.py`; ivi `agilent/agilent34401A.py` | sr scpi-dmm; PY1CX transcript, AgilentDMM | 62 + 24 cap | wd, cap | X |
-| keysight_truevolt | qc `Keysight/Keysight_3446{0,1,5}A_submodules.py`, `Keysight_34470A…` (sim 104 q); ivi `agilent34461A.py` | sr scpi-dmm (34460A/65A) | 104 (synthetic) | – | X |
-| keysight_u3606 | – | u3606b_py (generic) | – | – | |
-| keithley_2000 | pym `keithley/keithley2000.py` · `Keithley2000`; qc `Keithley/Keithley_2000.py` | – | 12 | – | X |
-| keithley_2100 | – | – | – | – | |
-| keithley_2110 | – | – | – | – | |
+| keysight_truevolt | qc `Keysight/Keysight_3446{0,1,5}A_submodules.py`, `Keysight_34470A…` (sim 104 q); ivi `agilent34461A.py` | sr scpi-dmm (34460A/65A) | 104 (synthetic) | - | X |
+| keysight_u3606 | - | u3606b_py (generic) | - | - | |
+| keithley_2000 | pym `keithley/keithley2000.py` · `Keithley2000`; qc `Keithley/Keithley_2000.py` | - | 12 | - | X |
+| keithley_2100 | - | - | - | - | |
+| keithley_2110 | - | - | - | - | |
 | keithley_dmm6500 | pym `keithley/keithleyDMM6500.py` · `KeithleyDMM6500`; qc `Keithley/Keithley_6500.py` | py-DMM6500 | 218 | wd | X |
 | rigol_dm3000 | ivi `rigol/rigolDM3068Agilent.py` (Agilent-compat mode only) | LabInstruments (DM3058) | ≈ 6 | HW | |
-| rigol_dm858 | – | – | – | – | |
-| siglent_sdm3000 | – | sr scpi-dmm (SDM3055); DMM-Siglent-SDM, sdm3055 | ≈ 70 commands | HW | |
-| siglent_sdm4000 | – | – | – | – | |
-| owon_xdm | – (ours, bench-tested) | sr scpi-dmm (XDM1041/2041); rusty_meter, OWON-XDM1041 | ≈ 10 real replies | HW | |
-| owon_xdm3000 | – | rusty_meter, Multimeter-xdm3000 | ≈ 45 | HW | |
-| gwinstek_gdm8300 | – | gdm-8341 | ≈ 20 | – | |
-| gwinstek_gdm9000 | – | sr scpi-dmm (GDM9060/61) | ≈ 10 | – | |
-| hantek_hdm3000 | – | Hantek-UI (C#) | ≈ 3 | – | |
-| tektronix_dmm4000 | – | – | – | – | |
-| unit_ut8805e | – | – | – | – | |
-| unit_ut8806e | – | – | – | – | |
+| rigol_dm858 | - | - | - | - | |
+| siglent_sdm3000 | - | sr scpi-dmm (SDM3055); DMM-Siglent-SDM, sdm3055 | ≈ 70 commands | HW | |
+| siglent_sdm4000 | - | - | - | - | |
+| owon_xdm | - (ours, bench-tested) | sr scpi-dmm (XDM1041/2041); rusty_meter, OWON-XDM1041 | ≈ 10 real replies | HW | |
+| owon_xdm3000 | - | rusty_meter, Multimeter-xdm3000 | ≈ 45 | HW | |
+| gwinstek_gdm8300 | - | gdm-8341 | ≈ 20 | - | |
+| gwinstek_gdm9000 | - | sr scpi-dmm (GDM9060/61) | ≈ 10 | - | |
+| hantek_hdm3000 | - | Hantek-UI (C#) | ≈ 3 | - | |
+| tektronix_dmm4000 | - | - | - | - | |
+| unit_ut8805e | - | - | - | - | |
+| unit_ut8806e | - | - | - | - | |
 
 ### LCR (5) and ELL (6)
 
 | Family | Big libraries | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
 | keysight_e4980a | pym `agilent/agilentE4980.py` · `AgilentE4980` · E4980A/AL; qc `Keysight/keysight_e4980a.py` (sim 9 q) | MariaPoliti/LCR, mitle/keysight_e4980al | 4 + 9 | wd | X |
-| bk_894 | (E4980-like command set via our base) | BK vendor examples, impydance | ≈ 15 | – | |
-| bk_880 | – | – | – | – | |
-| tonghui_th28xx | – | TH2830_USER | ≈ 10 | weak | |
-| easttester_et44 | – | ET44.py | – | – | |
-| rigol_dl3000 | – | LabInstruments (DL3021) | ≈ 6 | HW | |
-| siglent_sdl1000x | – | sr `siglent-sdl10x0`; JxR command list | ≈ 25 | – | |
-| korad_kel10x | – | kelctl, KEL103Driver, python-kel102 | ≈ 34 | HW | |
-| bk_8600 | – | BK 8600_Series examples | ≈ 30 | – | |
-| itech_it8500plus | – | sr `itech-it8500` and itech-serial: **binary 26-byte protocol only** | 0 for SCPI | – | |
-| owon_oel | – (ours, bench-tested) | – | – | ours | |
+| bk_894 | (E4980-like command set via our base) | BK vendor examples, impydance | ≈ 15 | - | |
+| bk_880 | - | - | - | - | |
+| tonghui_th28xx | - | TH2830_USER | ≈ 10 | weak | |
+| easttester_et44 | - | ET44.py | - | - | |
+| rigol_dl3000 | - | LabInstruments (DL3021) | ≈ 6 | HW | |
+| siglent_sdl1000x | - | sr `siglent-sdl10x0`; JxR command list | ≈ 25 | - | |
+| korad_kel10x | - | kelctl, KEL103Driver, python-kel102 | ≈ 34 | HW | |
+| bk_8600 | - | BK 8600_Series examples | ≈ 30 | - | |
+| itech_it8500plus | - | sr `itech-it8500` and itech-serial: **binary 26-byte protocol only** | 0 for SCPI | - | |
+| owon_oel | - (ours, bench-tested) | - | - | ours | |
 
 ### AWG (24)
 
 | Family | Big libraries | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
-| rigol_dg800 | pym `rigol/rigol_dg800.py` · `DG800` | sr `rigol-dg` | 22 | – | X |
+| rigol_dg800 | pym `rigol/rigol_dg800.py` · `DG800` | sr `rigol-dg` | 22 | - | X |
 | rigol_dg1000z | qc `rigol/Rigol_DG1062.py` · `RigolDG1062` (no tests) | sr `rigol-dg`; pyawg | ≈ 8 log | HW (pyawg) | |
-| rigol_dg2000 | – | – | – | – | |
-| rigol_dg4000 | qc `rigol/Rigol_DG4000.py` · `Rigol_DG4000` (no tests) | – | 0 | – | |
+| rigol_dg2000 | - | - | - | - | |
+| rigol_dg4000 | qc `rigol/Rigol_DG4000.py` · `Rigol_DG4000` (no tests) | - | 0 | - | |
 | siglent_sdg1000x | OEM: pym `teledyne/teledyneT3AFG.py` · `TeledyneT3AFG` (11 vec, BSWV dialect) | pysdg1032x, pyawg; sdg2122-cli replies (same base) | 265 cap (sibling) | cap | |
 | siglent_sdg2000x | OEM as above; qcc `Siglent/sdg_channel.py` · `Siglent_SDG_20xx` | **sdg2122-cli**, devsignal | 265 cap | cap, HW | |
-| siglent_sdg6000x | OEM as above; qcc `Siglent_SDG_60xx` | awg_scpi | (base) | – | |
-| bk_4050b | OEM as above (Siglent protocol) | – | (base) | – | |
-| bk_4060b | OEM as above | – | (base) | – | |
-| keysight_33220a | pym `agilent/agilent33220A.py` · `Agilent33220A` (no test); ik `agilent/agilent33220a.py` (26/12); qc `Keysight/Keysight_33210a.py` | – | ≈ 38 (+74 pym 33250A sibling) | – | X |
-| keysight_33500b | pym `agilent/agilent33500.py` · `Agilent33500`, `agilent33521A.py`; qc `KeysightAgilent_33XXX.py` + `Keysight_335xx/336xx` (sim 18 q) | – | 77 + 18 | wd | X |
-| keysight_edu33210 | – | – | – | – | |
-| tek_afg1000 | – | tektronix-func-gen | ≈ 5 | HW | |
-| owon_xdg | – | owon-xdg-python-tools | 0 | – | |
-| owon_dge | – (ours, bench-tested) | – | – | ours | |
-| gwinstek_afg2000 | – | arbitrage | 0 | HW (2105) | |
-| gwinstek_afg2225 | – | afg2225-sequencer | 0 | – | |
-| gwinstek_afg3000 | – | – | – | – | |
-| hantek_hdg2000b | – | – | – | – | |
-| unit_utg900e | – | utg900e, utg962, UTG900 | 9 + 3 IDN | HW | |
-| unit_utg1000x | – | – | – | – | |
-| unit_utg2000b | – | – | – | – | |
-| unit_utg4000a | – | – | – | – | |
-| feeltech_fy6900 | – (ik `minghe/mhs5200a.py` is a different hobby AWG) | fygen, pyfy6900, fy6900commander, fy6x00 | 59 | HW | |
+| siglent_sdg6000x | OEM as above; qcc `Siglent_SDG_60xx` | awg_scpi | (base) | - | |
+| bk_4050b | OEM as above (Siglent protocol) | - | (base) | - | |
+| bk_4060b | OEM as above | - | (base) | - | |
+| keysight_33220a | pym `agilent/agilent33220A.py` · `Agilent33220A` (no test); ik `agilent/agilent33220a.py` (26/12); qc `Keysight/Keysight_33210a.py` | - | ≈ 38 (+74 pym 33250A sibling) | - | X |
+| keysight_33500b | pym `agilent/agilent33500.py` · `Agilent33500`, `agilent33521A.py`; qc `KeysightAgilent_33XXX.py` + `Keysight_335xx/336xx` (sim 18 q) | - | 77 + 18 | wd | X |
+| keysight_edu33210 | - | - | - | - | |
+| tek_afg1000 | - | tektronix-func-gen | ≈ 5 | HW | |
+| owon_xdg | - | owon-xdg-python-tools | 0 | - | |
+| owon_dge | - (ours, bench-tested) | - | - | ours | |
+| gwinstek_afg2000 | - | arbitrage | 0 | HW (2105) | |
+| gwinstek_afg2225 | - | afg2225-sequencer | 0 | - | |
+| gwinstek_afg3000 | - | - | - | - | |
+| hantek_hdg2000b | - | - | - | - | |
+| unit_utg900e | - | utg900e, utg962, UTG900 | 9 + 3 IDN | HW | |
+| unit_utg1000x | - | - | - | - | |
+| unit_utg2000b | - | - | - | - | |
+| unit_utg4000a | - | - | - | - | |
+| feeltech_fy6900 | - (ik `minghe/mhs5200a.py` is a different hobby AWG) | fygen, pyfy6900, fy6900commander, fy6x00 | 59 | HW | |
 
 ### OSC (14)
 
 | Family | Big libraries | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
 | rigol_ds1000z | qc `rigol/Rigol_DS1074Z.py` · `RigolDS1074Z` (sim 13 q); ik `rigolds1000.py` is **old DS1000E** (different syntax, does not count) | sr `rigol-ds`; sh; ds1054z, **rigol-ds1000z (HIL)**, screen-capture tools | 13 + ≈ 74 fields | HIL | X |
-| rigol_ds2000a | – | sr `rigol-ds` (DS2000A V3); ds2000 (WIP) | – | – | |
-| rigol_mso5000 | – | sr `rigol-ds`; sh; **pyMSO5000** | 2236 headers, ≈ 226 tuples | HW (MSO5074) | |
+| rigol_ds2000a | - | sr `rigol-ds` (DS2000A V3); ds2000 (WIP) | - | - | |
+| rigol_mso5000 | - | sr `rigol-ds`; sh; **pyMSO5000** | 2236 headers, ≈ 226 tuples | HW (MSO5074) | |
 | rigol_dho800 | pym `rigol/rigol_dho_base.py` · `DHOBase` | sh; pydho800, rigol-grab | 85 | wd + ours | X |
 | rigol_dho1000 | pym `DHOBase` | sh; pydho800 | 85 | wd | X |
 | siglent_sds1000xe | OEM: pym `lecroy/lecroyT3DSO1204.py` · `LeCroyT3DSO1204` (legacy set, 144 vec) | sr `siglent-sds`; sh (tested SDS1104X-E); sdsremote, SDSpy | 144 | wd, HW | |
 | siglent_sds800xhd | sibling: pym `siglenttechnologies/siglent_sds1000xhd.py` · `SDS1000XHD` | sh | (210) | wd | |
 | siglent_sds1000xhd | pym `SDS1000XHD` | sh | 210 | wd | X |
-| siglent_sds2000xplus | sibling `SDS1000XHD` | sh; SiglentSDS2000xPlusPy | ≈ 25 | – | |
-| siglent_sds2000xhd | sibling `SDS1000XHD` | sh | – | – | |
+| siglent_sds2000xplus | sibling `SDS1000XHD` | sh; SiglentSDS2000xPlusPy | ≈ 25 | - | |
+| siglent_sds2000xhd | sibling `SDS1000XHD` | sh | - | - | |
 | keysight_infiniivision | pym `keysight/keysightDSOX1102G.py` · `KeysightDSOX1102G`; ivi `agilentBaseInfiniiVision.py` (DSO-X 2000A/3000A) | lxi-tools (MSO-X 3024T) | 122 | wd | X |
-| tektronix_tbs1000c | – | **tct_project notes (live TBS1052C)**, WASIC | ≈ 20 verified | HW | |
-| gwinstek_gds1000b | – (GDS-2000A/3000 scripts only) | – | – | – | |
-| unit_upo2000 | – | – | – | – | |
+| tektronix_tbs1000c | - | **tct_project notes (live TBS1052C)**, WASIC | ≈ 20 verified | HW | |
+| gwinstek_gds1000b | - (GDS-2000A/3000 scripts only) | - | - | - | |
+| unit_upo2000 | - | - | - | - | |
 
 ### SAL (5)
 
 | Family | Big libraries | sigrok / hobby | Vec | HW | X |
 |---|---|---|---|---|---|
-| tinysa | – | **tinySA firmware source**, tinySA_python, QtTinySA | ≈ 35 replies + firmware | HW | |
+| tinysa | - | **tinySA firmware source**, tinySA_python, QtTinySA | ≈ 35 replies + firmware | HW | |
 | rigol_dsa800 | qcc `Rigol_DSA800.py` ("tested on DSA815-TG") | lxi-tools, emc-toolkit, rigol-dsa815-python | ≈ 60 commands | HW | |
-| siglent_ssa3000x | – | pyssa3021x, LibreVNA driver, lxi-tools | ≈ 25 | HW (LibreVNA) | |
-| gwinstek_gsp9300 | – | – | – | – | |
-| unit_uts | – | – | – | – | |
+| siglent_ssa3000x | - | pyssa3021x, LibreVNA driver, lxi-tools | ≈ 25 | HW (LibreVNA) | |
+| gwinstek_gsp9300 | - | - | - | - | |
+| unit_uts | - | - | - | - | |
 
 ### Totals
 
@@ -273,7 +273,7 @@ command disagreements already decided against the manual are in `crosscheck/*.md
 - Risk: fixed `reply {bytes: 6}` for ISET? on every model. Protocol 2.1 sends 5 bytes, so reads would run to their timeout; this is verified only on our 2540. The 72-2550 may identify as `KORADKA6003P` and then fall to korad_ka, which is acceptable.
 
 **rigol_dp700 / rigol_dp800**: [EEVblog DP832 firmware/bug list](https://eevblog.com/forum/testgear/rigol-dp832-firmware-updates-and-bug-list): LAN dropouts (stuck in remote, recover with Back key), DHCP renewal every 5 min on fw 1.14, an `OUTP:TRAC?` timeout fixed in firmware.
-- RESOLVED 2026-10-18 (tcp 5555 added) — was: CONTRADICTS the dp800 note "no raw LAN socket port": newAM/dp800 drives a DP832 over raw TCP 5555 with our exact commands. Add `tcp: {port: 5555}`.
+- RESOLVED 2026-10-18 (tcp 5555 added) - was: CONTRADICTS the dp800 note "no raw LAN socket port": newAM/dp800 drives a DP832 over raw TCP 5555 with our exact commands. Add `tcp: {port: 5555}`.
 - Risk (dp700): sigrok's DP700 profile uses no channel arguments (`:OUTP?`, `:MEAS:VOLT?`). We send `:OUTP? CH1` / `:MEAS:ALL? CH1` to a single-channel DP711/712; unverified.
 
 **siglent_spd1000x**: pymeasure (26 vectors) and siglent-mcp (hardware-confirmed, fw 2.1.1.9) agree with our `stat` bits; the LAN server is single-client and can wedge after an abrupt disconnect (power cycle). [EEVblog](https://eevblog.com/forum/testgear/spd3303x-e-scpi-interface-issues/msg2483208): on fw 2.01.01.07R1, `OUTP`/`MODE:SET` had to be sent without `\n`, and one user waited 2 s after `OUTP CH1,ON`.
@@ -317,7 +317,7 @@ command disagreements already decided against the manual are in `crosscheck/*.md
 
 **rigol_dm3000**: commands match ulikoehler's hardware-used ones. A DM3068 switched to the Agilent command set (python-ivi drives that mode) will not answer us. Rigol USBTMC is non-standard ([EEVblog](https://eevblog.com/forum/testgear/rigol-usbtmcvisa-interface-is-really-terrible)); old Linux kernels needed a patched usbtmc.
 
-**siglent_sdm3000**: `tcp.port 5025` is confirmed on hardware (djacobow). The Siglent socket app note says 5024 ([PDF](https://siglentna.com/application-note/programming-example-controlling-an-spd-power-supply-via-sockets-ov/?pdf=19789)); document it as an alternative. LAN reads take 40–45 ms with `INIT`+`DATA:LAST?` ([EEVblog](https://eevblog.com/forum/testgear/sdm3045x-scpi-poll-rate)). Risk across `scpi_dmm`: `READ?` blocks if the trigger source was left at BUS/EXT. Consider `TRIG:SOUR IMM` on connect.
+**siglent_sdm3000**: `tcp.port 5025` is confirmed on hardware (djacobow). The Siglent socket app note says 5024 ([PDF](https://siglentna.com/application-note/programming-example-controlling-an-spd-power-supply-via-sockets-ov/?pdf=19789)); document it as an alternative. LAN reads take 40-45 ms with `INIT`+`DATA:LAST?` ([EEVblog](https://eevblog.com/forum/testgear/sdm3045x-scpi-poll-rate)). Risk across `scpi_dmm`: `READ?` blocks if the trigger source was left at BUS/EXT. Consider `TRIG:SOUR IMM` on connect.
 
 **owon_xdm** (bench-tested by us, but on one firmware): [TheHWcave](https://github.com/TheHWcave/OWON-XDM1041): fw 25052021 answers every non-query with `OK\n`. [rusty_meter#4](https://github.com/markusdd/rusty_meter/issues/4): XDM2041 over RS-232 stuck at identify. [#20](https://github.com/markusdd/rusty_meter/issues/20): XDM1051 overload value differs; beeper reply 0/1.
 - CONTRADICTS `commands.func` DIOD/CONT mapping: rusty_meter swaps them for firmware < V4.3 (`src/app/serial.rs`).
@@ -364,7 +364,7 @@ command disagreements already decided against the manual are in `crosscheck/*.md
 - CONTRADICTS `link.usbtmc` on Linux (SDG2122X fw 2.01.01): replies carry the previous request's bTag, so the kernel usbtmc driver rejects them. Replies also come one query late, a 4-byte all-zero packet sometimes appears, and the instrument refuses USBTMC CLEAR (sdg2122-cli `docs/validation.md`). Also seen: [EEVblog SDG1000X](https://www.eevblog.com/forum/testgear/siglent-sdg1000x-waveform-generators/msg4522292/) (second USB query fails, pyvisa-py froze it) and [pyvisa-py#468](https://github.com/pyvisa/pyvisa-py/issues/468). Prefer `tcp` 5025.
 - Minor: `outp_q` pattern `OUTP\s*(ON|OFF)` fails if CHDR OFF was set on the instrument.
 
-**Rigol DG (dg800/dg1000z/dg2000/dg4000)**: [pyvisa#521](https://github.com/pyvisa/pyvisa/issues/521): a DG811 failed reads until a power cycle; pyvisa-py carries Rigol USBTMC quirk handling ([#186](https://github.com/pyvisa/pyvisa-py/pull/186)). No contradictions; the DG1032Z IDN (`Rigol Technologies,DG1032Z,…,03.01.12`) matches. Risk: other libraries wait 200–250 ms after writes; ours waits 20 ms.
+**Rigol DG (dg800/dg1000z/dg2000/dg4000)**: [pyvisa#521](https://github.com/pyvisa/pyvisa/issues/521): a DG811 failed reads until a power cycle; pyvisa-py carries Rigol USBTMC quirk handling ([#186](https://github.com/pyvisa/pyvisa-py/pull/186)). No contradictions; the DG1032Z IDN (`Rigol Technologies,DG1032Z,…,03.01.12`) matches. Risk: other libraries wait 200-250 ms after writes; ours waits 20 ms.
 
 **Keysight 33220A/33500B**: [pymeasure#821](https://github.com/pymeasure/pymeasure/issues/821) (`%f` truncation; we use `%g`). Qcodes' per-model limits match ours.
 

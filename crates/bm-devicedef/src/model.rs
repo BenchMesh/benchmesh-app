@@ -184,7 +184,7 @@ impl Links {
         self.all().iter().map(Link::kind).collect()
     }
 
-    /// The link for `transport` (config name), or without one the only link — with several,
+    /// The link for `transport` (config name), or without one the only link - with several,
     /// serial, then USB-TMC (configs without a transport have always meant the local link;
     /// a LAN link needs a host and is only used when asked for).
     pub fn choose(&self, transport: Option<&str>) -> Result<Link, String> {

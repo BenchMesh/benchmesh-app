@@ -131,4 +131,4 @@ every disagreement is decided against the manual (see the review section, if any
 - `OUTP:LOAD?` → `INF` (InstrumentKit mock) fails our parse; the 33220A User's Guide (OUTPut:LOAD) says
   the query returns `9.9E+37` for high impedance. Library mock; ours right.
 - `FREQ 8e+07` / `VOLT 0.001` rejected: they come from PyMeasure's Keysight33250A (80 MHz, 1 mVpp), a
-  different instrument sharing the dialect — limits are expected to differ. Mapping caveat.
+  different instrument sharing the dialect - limits are expected to differ. Mapping caveat.

@@ -56,6 +56,6 @@ every disagreement is decided against the manual (see the review section, if any
 
 Thin overlap: PyMeasure's DG800 drives the generator through `:SOUR<n>:APPL:<shape> f,a,o,p` and pulse
 commands, ours through the individual `FUNC/FREQ/VOLT/…` commands, so only `:OUTP<n>`, `:OUTP<n>?`
-and `:OUTP<n>:LOAD?` (`9.900000E+37` = High-Z) meet — and agree (DG800 PG p.57-58). `:OUTP<n>:LOAD`
+and `:OUTP<n>:LOAD?` (`9.900000E+37` = High-Z) meet - and agree (DG800 PG p.57-58). `:OUTP<n>:LOAD`
 and `:OUTP<n>:IMP INF` (PG p.57: `{<ohms>|INFinity|MIN|MAX}`) exist on the instrument; we read the load
 but have no setter (coverage gap). No disagreement.

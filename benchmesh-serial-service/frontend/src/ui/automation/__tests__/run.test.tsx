@@ -54,7 +54,7 @@ describe('run panel', () => {
       ...savedFlow,
       'POST /automation/run': () => (n++ === 0
         ? { status: 409, body: { detail: 'x', energizes: [{ path: 'steps[0]', device: 'psu', class: 'PSU', channel: 1, op: 'output' }] } }
-        : { status: 409, body: { detail: 'a flow is already running — abort it first' } }),
+        : { status: 409, body: { detail: 'a flow is already running - abort it first' } }),
     })
     const run = await openRamp()
     fireEvent.click(run)
@@ -96,7 +96,7 @@ describe('run panel', () => {
     expect(gets.some((p) => p === '/automation/run?after=2')).toBe(true)
     expect(within(screen.getByRole('table', { name: 'Variables' })).getByText('4.99')).toBeTruthy()
     // top-bar indicator while active
-    expect(screen.getByRole('status', { name: 'Automation run' }).textContent).toMatch(/▶ Ramp — Waiting for you/)
+    expect(screen.getByRole('status', { name: 'Automation run' }).textContent).toMatch(/▶ Ramp - Waiting for you/)
 
     // a log path highlights its step
     fireEvent.click(within(screen.getByRole('list', { name: 'Run log' })).getByRole('button', { name: 'steps[1]' }))
@@ -137,7 +137,7 @@ describe('run indicator', () => {
     const onOpen = vi.fn()
     render(<RunProvider><RunIndicator onOpen={onOpen} /></RunProvider>)
     const ind = await screen.findByRole('status', { name: 'Automation run' })
-    expect(ind.textContent).toMatch(/▶ Soak — Running/)
+    expect(ind.textContent).toMatch(/▶ Soak - Running/)
     fireEvent.click(within(ind).getByTitle('Open the run in Automation'))
     expect(onOpen).toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Stop the automation run' }))

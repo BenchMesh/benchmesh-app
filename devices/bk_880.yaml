@@ -31,7 +31,7 @@ framing:
   timing: {min_gap_ms: 20, gap_after_write_ms: 50}
 commands:
   idn: {send: "*IDN?", parse: [trim], source: "UM p.49 (<model>,<firmware>,<serial number>)"}
-  # <A>,<B>,<bin> (L/C/R/Z) or <A>,<bin> (DCR) — UM p.52
+  # <A>,<B>,<bin> (L/C/R/Z) or <A>,<bin> (DCR) - UM p.52
   fetch: {send: "FETC?", parse: [trim, {fields: {sep: ",", names: [a, b]}}], source: "UM p.52"}
   fetch_a: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 0}}, trim, number], source: "UM p.52"}
   fetch_b: {send: "FETC?", parse: [trim, {split: {sep: ",", index: 1}}, trim, number], source: "UM p.52 (bin number for DCR)"}
@@ -114,16 +114,16 @@ classes:
     features:
       counts: 5
       functions:
-        CSD:   {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs–D"}
-        CPD:   {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp–D"}
-        CSQ:   {primary: Cs, secondary: Q,   circuit: SER, units: [F, ""],  ui_name: "Cs–Q"}
-        CPQ:   {primary: Cp, secondary: Q,   circuit: PAR, units: [F, ""],  ui_name: "Cp–Q"}
-        CSESR: {primary: Cs, secondary: ESR, circuit: SER, units: [F, "Ω"], ui_name: "Cs–ESR"}
-        LSD:   {primary: Ls, secondary: D,   circuit: SER, units: [H, ""],  ui_name: "Ls–D"}
-        LPD:   {primary: Lp, secondary: D,   circuit: PAR, units: [H, ""],  ui_name: "Lp–D"}
-        LSQ:   {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls–Q"}
-        LPQ:   {primary: Lp, secondary: Q,   circuit: PAR, units: [H, ""],  ui_name: "Lp–Q"}
-        ZTD:   {primary: Z,  secondary: θ,   units: ["Ω", "°"], ui_name: "Z–θ"}
+        CSD:   {primary: Cs, secondary: D,   circuit: SER, units: [F, ""],  ui_name: "Cs-D"}
+        CPD:   {primary: Cp, secondary: D,   circuit: PAR, units: [F, ""],  ui_name: "Cp-D"}
+        CSQ:   {primary: Cs, secondary: Q,   circuit: SER, units: [F, ""],  ui_name: "Cs-Q"}
+        CPQ:   {primary: Cp, secondary: Q,   circuit: PAR, units: [F, ""],  ui_name: "Cp-Q"}
+        CSESR: {primary: Cs, secondary: ESR, circuit: SER, units: [F, "Ω"], ui_name: "Cs-ESR"}
+        LSD:   {primary: Ls, secondary: D,   circuit: SER, units: [H, ""],  ui_name: "Ls-D"}
+        LPD:   {primary: Lp, secondary: D,   circuit: PAR, units: [H, ""],  ui_name: "Lp-D"}
+        LSQ:   {primary: Ls, secondary: Q,   circuit: SER, units: [H, ""],  ui_name: "Ls-Q"}
+        LPQ:   {primary: Lp, secondary: Q,   circuit: PAR, units: [H, ""],  ui_name: "Lp-Q"}
+        ZTD:   {primary: Z,  secondary: θ,   units: ["Ω", "°"], ui_name: "Z-θ"}
         DCR:   {primary: DCR, units: ["Ω"], ui_name: "DCR"}
       level: {list: [0.3, 0.6, 1.0]}
     poll:

@@ -32,7 +32,7 @@ export function UpdatePrompt() {
       <div className="bench-modal__scrim" />
       <div className="bench-modal__box">
         <h2 id="update-title">Update available</h2>
-        <p>BenchMesh <b>{update.version}</b> is available — you have {update.current}.</p>
+        <p>BenchMesh <b>{update.version}</b> is available - you have {update.current}.</p>
         {update.notes && <pre className="bench-modal__notes">{update.notes}</pre>}
         {installing && (
           <div className="bench-modal__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>

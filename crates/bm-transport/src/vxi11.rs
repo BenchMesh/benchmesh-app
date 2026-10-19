@@ -171,7 +171,7 @@ fn join(host: &str, port: u16) -> String {
 }
 
 impl Vxi11Transport {
-    /// `path`: `host` (portmapper on 111) or `host:port` (another portmapper port — tests,
+    /// `path`: `host` (portmapper on 111) or `host:port` (another portmapper port - tests,
     /// port forwarding); `device`: the logical device, usually `inst0`.
     pub fn open(path: &str, device: &str) -> io::Result<Self> {
         let (host, pmap_port) = split_host(path)?;
