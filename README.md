@@ -1,6 +1,6 @@
 <div align="center">
 
-![BenchMesh](https://raw.githubusercontent.com/MarkoVcode/BenchMesh/rust-migration/docs/static/BenchMesh.png)
+![BenchMesh](https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/BenchMesh.png)
 
 # BenchMesh
 
@@ -14,7 +14,7 @@ one shared timeline.
 
 [Download](https://benchmesh.online/download) · [Supported instruments](https://benchmesh.online/instruments) · [Docs](https://benchmesh.online/docs) · [Releases](https://github.com/MarkoVcode/BenchMesh/releases)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/MarkoVcode/BenchMesh/blob/rust-migration/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/MarkoVcode/BenchMesh/blob/develop/LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/MarkoVcode/BenchMesh)](https://github.com/MarkoVcode/BenchMesh/releases/latest)
 
 </div>
@@ -39,7 +39,7 @@ Download the installer for your system from **[benchmesh.online/download](https:
 
 ## Build from source
 
-The current code is on the [`rust-migration`](https://github.com/MarkoVcode/BenchMesh/tree/rust-migration) branch (Rust + Tauri, React UI).
+The current code is on the [`develop`](https://github.com/MarkoVcode/BenchMesh/tree/develop) branch (Rust + Tauri, React UI).
 
 ```bash
 cd benchmesh-serial-service/frontend && npm ci && npm run build && cd -
@@ -47,8 +47,8 @@ cargo run -p bm-server        # API + UI on http://localhost:57666/ui
 ```
 
 The desktop app: `cargo tauri dev` in `crates/benchmesh-app`. Contributor notes are in
-[CLAUDE.md](https://github.com/MarkoVcode/BenchMesh/blob/rust-migration/CLAUDE.md) and [CONTRIBUTING.md](https://github.com/MarkoVcode/BenchMesh/blob/rust-migration/CONTRIBUTING.md).
+[CLAUDE.md](https://github.com/MarkoVcode/BenchMesh/blob/develop/CLAUDE.md) and [CONTRIBUTING.md](https://github.com/MarkoVcode/BenchMesh/blob/develop/CONTRIBUTING.md).
 
 ## License
 
-[MIT](https://github.com/MarkoVcode/BenchMesh/blob/rust-migration/LICENSE)
+[MIT](https://github.com/MarkoVcode/BenchMesh/blob/develop/LICENSE)

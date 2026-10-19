@@ -25,8 +25,8 @@ Each device runs in its own worker thread with per-device RLock for thread safet
 
 ## Rust + Tauri Migration (in progress)
 
-The Python backend and Electron shell are being replaced by **Rust + Tauri** (branch
-`rust-migration`). Plan, decisions and progress log: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`
+The Python backend and Electron shell are being replaced by **Rust + Tauri** (working branch
+`develop`; `main` is kept separately). Plan, decisions and progress log: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`
 (read it first when working on the migration). Instruments are described by **declarative
 device definitions** (`devices/*.yaml`, spec `ai_context/migration/DEVICE_DSL.md`) interpreted by
 one generic Rust driver - no per-device code.
