@@ -19,6 +19,7 @@ pub mod config;
 pub mod detect;
 pub mod ai;
 pub mod devices;
+pub mod guard;
 pub mod openapi;
 pub mod opspec;
 pub mod recordings;
@@ -43,7 +44,6 @@ use bm_devicedef::Repr;
 use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
 use tower::ServiceBuilder;
-use tower_http::cors::CorsLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -109,12 +109,13 @@ pub fn router(state: S) -> Router {
         }
         r = r.nest_service("/ui", ServiceBuilder::new().layer(no_cache()).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
-    r.layer(CorsLayer::very_permissive()).with_state(state)
+    // no CORS: only pages served by this server use the API; other sites are refused (guard.rs)
+    r.layer(axum::middleware::from_fn(guard::guard)).with_state(state)
 }
 
 // ---- helpers ------------------------------------------------------------------------
 
-fn detail(code: StatusCode, msg: impl Into<String>) -> Response {
+pub(crate) fn detail(code: StatusCode, msg: impl Into<String>) -> Response {
     (code, Json(json!({"detail": msg.into()}))).into_response()
 }
 

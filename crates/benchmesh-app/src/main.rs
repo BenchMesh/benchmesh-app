@@ -5,7 +5,8 @@
 //! - Device definitions and the built UI ship as app resources (`devices/`, `ui/`).
 //! - User data: `$BENCHMESH_DATA_DIR` or `~/.benchmesh` (config.yaml lives there).
 //! - Listens on 127.0.0.1:57666, or a free port if that is taken. The API has no
-//!   authentication, so LAN access is opt-in: `BENCHMESH_LISTEN=0.0.0.0`.
+//!   authentication, so LAN access is opt-in: `BENCHMESH_LISTEN=0.0.0.0`; other web sites
+//!   are refused by the server's cross-site guard (`bm_server::guard`).
 //! - `BENCHMESH_SIMULATE=captures/<session>` replays recorded instrument traffic (no hardware).
 //! - Closing the app stops every device (definitions' on_disconnect steps run, e.g. the
 //!   OWON load is returned to local mode).

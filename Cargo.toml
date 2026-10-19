@@ -24,4 +24,4 @@ axum = { version = "0.8", features = ["ws"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "signal", "sync"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-tower-http = { version = "0.6", features = ["cors", "fs", "set-header"] }
+tower-http = { version = "0.6", features = ["fs", "set-header"] }

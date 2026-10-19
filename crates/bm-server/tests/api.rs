@@ -684,3 +684,31 @@ async fn openapi_and_docs() {
     let resp = router(f.state.clone()).oneshot(Request::get("/docs").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(resp.headers()[header::LOCATION], "/ui/docs");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn other_websites_cannot_drive_instruments_through_the_browser() {
+    let f = fixture("guard");
+    let send = |method: &str, uri: &str, headers: &[(&str, &str)]| {
+        let mut req = Request::builder().method(method).uri(uri);
+        for (k, v) in headers {
+            req = req.header(*k, *v);
+        }
+        router(f.state.clone()).oneshot(req.body(Body::empty()).unwrap())
+    };
+    // a page on another site posting a setter: refused before it reaches the instrument
+    let r = send("POST", "/instruments/PSU/t1/1/voltage/5", &[("host", "127.0.0.1:57666"), ("origin", "https://evil.example")]).await.unwrap();
+    assert_eq!(r.status(), StatusCode::FORBIDDEN);
+    // a WebSocket upgrade from another site (CORS never applies to WebSockets)
+    let ws = [("host", "127.0.0.1:57666"), ("origin", "https://evil.example"), ("connection", "upgrade"), ("upgrade", "websocket"), ("sec-websocket-version", "13"), ("sec-websocket-key", "dGhlIHNhbXBsZSBub25jZQ==")];
+    assert_eq!(send("GET", "/ws/registry", &ws).await.unwrap().status(), StatusCode::FORBIDDEN);
+    // DNS rebinding: the attacker's own name pointed at 127.0.0.1
+    let r = send("GET", "/instruments", &[("host", "evil.example:57666"), ("origin", "http://evil.example:57666")]).await.unwrap();
+    assert_eq!(r.status(), StatusCode::FORBIDDEN);
+    // no CORS grant for other origins
+    let r = send("GET", "/instruments", &[("host", "127.0.0.1:57666")]).await.unwrap();
+    assert!(r.headers().get("access-control-allow-origin").is_none());
+    // the UI served by this server, and scripts without an Origin, work
+    let r = send("POST", "/instruments/PSU/t1/1/voltage/5", &[("host", "127.0.0.1:57666"), ("origin", "http://127.0.0.1:57666")]).await.unwrap();
+    assert_eq!(r.status(), StatusCode::NO_CONTENT);
+    assert_eq!(send("GET", "/instruments", &[("host", "localhost:57666")]).await.unwrap().status(), StatusCode::OK);
+}

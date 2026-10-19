@@ -56,6 +56,12 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 (`frontend/src/ui/update/`). Releases are signed with the updater key (CI secrets
 `TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]`); losing that key means installed apps can no longer update.
 
+**Cross-site guard:** the API has no authentication, so `crates/bm-server/src/guard.rs` refuses
+what a foreign web page could make the browser send: a `Host` that is not a loopback name, IP
+literal, single-label / `.local` name or listed in `BENCHMESH_ALLOWED_HOSTS` (DNS rebinding), and
+any request whose `Origin` is neither the server's own nor a loopback origin (form posts,
+`fetch`, WebSocket upgrades). There is no CORS layer: the UI is same-origin.
+
 **Website (BenchMeshOnline, `../BenchMeshOnline`):** the public instrument database is exported
 from the definitions (`cargo run -p bm-devicedef -- export devices --notes
 ai_context/website/instrument-notes.yaml`, schema `benchmesh.instruments/v1`, no wire details)
