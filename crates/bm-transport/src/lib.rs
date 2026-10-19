@@ -179,6 +179,9 @@ impl Transport for TcpTransport {
 pub struct SerialTransport {
     port: Box<dyn serialport::SerialPort>,
     buf: Vec<u8>,
+    /// Wait for the output to drain after a write. Only without flow control: with RTS/CTS a
+    /// device that never raises CTS (wrong device, unplugged cable) would block the drain forever.
+    drain: bool,
 }
 
 fn parse_format(f: &str) -> io::Result<(serialport::DataBits, serialport::Parity, serialport::StopBits)> {
@@ -233,7 +236,19 @@ impl SerialTransport {
         }
         std::thread::sleep(Duration::from_millis(link.settle_ms as u64));
         let _ = port.clear(serialport::ClearBuffer::Input);
-        Ok(SerialTransport { port, buf: vec![0; 4096] })
+        Ok(SerialTransport { port, buf: vec![0; 4096], drain: link.flow == Flow::None })
+    }
+}
+
+impl Drop for SerialTransport {
+    fn drop(&mut self) {
+        // With flow control, bytes the device never accepted would hold close() for the kernel's
+        // closing_wait (30 s on Linux) — and the port with it. Without, the output has drained.
+        // Turning flow control off first lets the adapter release bytes it holds back for CTS.
+        if !self.drain {
+            let _ = self.port.set_flow_control(serialport::FlowControl::None);
+            let _ = self.port.clear(serialport::ClearBuffer::All);
+        }
     }
 }
 
@@ -247,8 +262,13 @@ fn set_line(state: LineState, mut set: impl FnMut(bool) -> serialport::Result<()
 
 impl Transport for SerialTransport {
     fn write(&mut self, data: &[u8]) -> io::Result<()> {
+        // a write waits at most this long for the device to accept it (flow control)
+        self.port.set_timeout(Duration::from_secs(2)).map_err(io::Error::from)?;
         self.port.write_all(data)?;
-        self.port.flush()
+        if self.drain {
+            self.port.flush()?;
+        }
+        Ok(())
     }
 
     fn read(&mut self, timeout: Duration) -> io::Result<Vec<u8>> {

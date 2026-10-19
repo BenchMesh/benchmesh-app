@@ -52,8 +52,27 @@ export interface DetectedPort {
   error: string | null;
 }
 
+/** What Detect is doing on a port (`GET /devices/detect`). */
+export interface DetectProgress {
+  state: 'queued' | 'probing' | 'done';
+  /** Probes already tried / probes for this port (definitions sharing a probe count once). */
+  tried?: number;
+  total?: number;
+  /** The probe on the wire: `*IDN? · 9600 8N1 · korad_ka and 3 more`. */
+  current?: string;
+}
+
 export interface DetectResponse {
-  ports: DetectedPort[];
+  running?: boolean;
+  elapsed_ms?: number;
+  ports: (DetectedPort & { progress?: DetectProgress })[];
+}
+
+/** One line of overall progress: `2 of 6 ports done · 14 s`. */
+export function detectSummary(r: DetectResponse): string {
+  const done = r.ports.filter((p) => (p.progress?.state ?? 'done') === 'done').length;
+  const secs = Math.round((r.elapsed_ms ?? 0) / 1000);
+  return `${done} of ${r.ports.length} ports done · ${secs} s`;
 }
 
 /** A config entry as `GET /config` returns it (unknown keys are kept). */

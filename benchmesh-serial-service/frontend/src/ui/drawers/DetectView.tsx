@@ -4,10 +4,10 @@
  * identity (`match`) — ai_context/migration/IDENTITY.md.
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  apiError, buildAddEntry, buildLockEntry, certaintyLabel, identitySummary, instrumentName,
-  type DetectedPort, type DetectResponse,
+  apiError, buildAddEntry, buildLockEntry, certaintyLabel, detectSummary, identitySummary, instrumentName,
+  type DetectedPort, type DetectProgress, type DetectResponse,
 } from './detect';
 import { InstallDriverButton } from './InstallDriverButton';
 
@@ -21,6 +21,8 @@ interface DetectViewProps {
 
 interface RowState { busy?: boolean; error?: string | null }
 
+const POLL_MS = 400;
+
 export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) {
   const [running, setRunning] = useState(false);
   const [ports, setPorts] = useState<DetectedPort[] | null>(null);
@@ -33,6 +35,19 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
   const patchPort = (port: string, patch: Partial<DetectedPort>) =>
     setPorts((prev) => prev && prev.map((p) => (p.port === port ? { ...p, ...patch } : p)));
 
+  const [summary, setSummary] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Record<string, DetectProgress | undefined>>({});
+  const live = useRef(true);
+  useEffect(() => () => { live.current = false; }, []);
+
+  function show(data: DetectResponse) {
+    const list = Array.isArray(data?.ports) ? data.ports : [];
+    setPorts(list);
+    setProgress(Object.fromEntries(list.map((p) => [p.port, p.progress])));
+    setSummary(detectSummary({ ...data, ports: list }));
+  }
+
+  /** Start Detect (or join a run in progress) and follow it until every port is done. */
   async function detect() {
     setRunning(true);
     setError(null);
@@ -40,15 +55,22 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
     try {
       const resp = await fetch(`${apiBase}/devices/detect`, { method: 'POST' });
       if (!resp.ok) throw new Error(await apiError(resp));
-      const data: DetectResponse = await resp.json();
+      let data: DetectResponse = await resp.json();
+      show(data);
+      while (data.running && live.current) {
+        await new Promise((r) => setTimeout(r, POLL_MS));
+        const r = await fetch(`${apiBase}/devices/detect`);
+        if (!r.ok) throw new Error(await apiError(r));
+        data = await r.json();
+        if (live.current) show(data);
+      }
       const found = Array.isArray(data?.ports) ? data.ports : [];
-      setPorts(found);
       setInstallable(found.some((p) => p.kind === 'usbtmc' && p.error) ? await driverInstallable() : new Set());
     } catch (e: any) {
       console.error('Detect failed:', e);
       setError(e?.message || String(e));
     } finally {
-      setRunning(false);
+      if (live.current) setRunning(false);
     }
   }
 
@@ -127,6 +149,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
           {running ? 'Detecting…' : 'Detect instruments'}
         </button>
         <span className="detect__hint">Sends only an identify query to USB ports no instrument is using.</span>
+        {summary && <span className="detect__summary" data-testid="detect-summary" aria-live="polite">{summary}</span>}
       </div>
 
       {error && <div className="instrument-config__inline-error">{error}</div>}
@@ -139,21 +162,24 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
             const cert = p.instrument ? certaintyLabel(p.certainty) : null;
             const summary = identitySummary(p.match ?? (p.usb ? { usb: p.usb } : null));
             const st = rows[p.port];
+            const pr = progress[p.port];
+            const pending = pr && pr.state !== 'done';
             return (
-              <li key={p.port} className="detect__row" data-testid="detect-row">
+              <li key={p.port} className={`detect__row${pending ? ' detect__row--pending' : ''}`} data-testid="detect-row">
                 <div className="detect__main">
                   <span className="detect__name">
-                    {p.instrument ? instrumentName(p.instrument) : 'Unknown device'}
+                    {p.instrument ? instrumentName(p.instrument) : pending ? (p.configured_as ?? 'Probing…') : 'Unknown device'}
                     {!p.instrument && (p.usb?.product || p.usb?.manufacturer) && (
                       <span className="detect__product"> · {p.usb.product || p.usb.manufacturer}</span>
                     )}
                   </span>
-                  <span className="detect__action">{action(p)}</span>
+                  <span className="detect__action">{pending ? null : action(p)}</span>
                 </div>
                 <div className="detect__meta">
                   <span className="detect__port">{p.port}</span>
                   {summary && <span>{summary}</span>}
                 </div>
+                {pending && <PortProgress p={pr} />}
                 {cert && <div className={`detect__cert${cert.warn ? ' detect__cert--warn' : ''}`}>{cert.text}</div>}
                 {p.error && <div className="detect__muted">{p.error}</div>}
                 {installable.has(p.port) && <InstallDriverButton apiBase={apiBase} device={p.port} onInstalled={detect} />}
@@ -164,5 +190,23 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
         </ul>
       )}
     </section>
+  );
+}
+
+/** A port still being probed: which probe is on the wire and how far along this port is. */
+function PortProgress({ p }: { p: DetectProgress }) {
+  if (p.state === 'queued') return <div className="detect__progress"><span className="detect__muted">waiting…</span></div>;
+  const total = p.total ?? 0;
+  const tried = p.tried ?? 0;
+  return (
+    <div className="detect__progress" data-testid="detect-progress">
+      <div className="detect__bar-track" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={tried}
+        aria-label="Probes tried on this port">
+        <i style={{ width: total ? `${Math.round((tried / total) * 100)}%` : '0%' }} />
+      </div>
+      <span className="detect__current">
+        {total ? `${tried + 1}/${total} ` : ''}{p.current ?? 'opening…'}
+      </span>
+    </div>
   );
 }

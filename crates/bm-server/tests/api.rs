@@ -284,7 +284,8 @@ async fn detect_lists_nothing_without_real_ports() {
     let f = fixture("detect");
     let (code, v, _) = call(&f, "POST", "/devices/detect", None, None).await;
     assert_eq!(code, StatusCode::OK);
-    assert_eq!(v, json!({"ports": []}), "simulated benches never probe hardware");
+    assert_eq!(v["ports"], json!([]), "simulated benches never probe hardware");
+    assert_eq!(v["running"], false);
 }
 
 #[tokio::test(flavor = "multi_thread")]

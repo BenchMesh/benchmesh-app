@@ -195,11 +195,13 @@ pub struct Devices {
     pub hardware: bool,
     /// Wire logs by device id (kept across reconnects and restarts of the same id).
     pub wire: Mutex<BTreeMap<String, Arc<WireLog>>>,
+    /// The current / last Detect run (`/devices/detect`).
+    pub detect: Mutex<crate::detect::Job>,
 }
 
 impl Devices {
     pub fn new(catalog: Catalog, connectors: ConnectorFactory, actor: ActorConfig) -> Self {
-        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default() }
+        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default(), detect: Default::default() }
     }
 
     pub fn driver_ids(&self) -> Vec<String> {

@@ -80,7 +80,7 @@ pub fn router(state: S) -> Router {
         .route("/config", get(get_config).post(post_config))
         .route("/devices", post(add_device))
         .route("/devices/{id}", put(update_device).delete(delete_device))
-        .route("/devices/detect", post(detect_devices))
+        .route("/devices/detect", post(detect_devices).get(detect_status))
         .route("/devices/{id}/wire", get(wire_log).delete(clear_wire_log))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
@@ -566,14 +566,41 @@ async fn clear_wire_log(State(s): State<S>, Path(id): Path<String>) -> Response 
 
 // ---- discovery ----------------------------------------------------------------------
 
-/// Identify the instruments on the attached USB ports (sends identify queries only).
+/// Start identifying the instruments on the attached USB ports (identify queries only) in the
+/// background; `GET` shows its progress. A run in progress is not restarted.
 async fn detect_devices(State(s): State<S>) -> Response {
     if !s.devices.hardware {
-        return Json(json!({"ports": []})).into_response();
+        return Json(json!({"running": false, "elapsed_ms": 0, "ports": []})).into_response();
+    }
+    {
+        let mut job = s.devices.detect.lock().unwrap();
+        if job.running {
+            return Json(job.snapshot()).into_response();
+        }
+        *job = detect::Job { running: true, started: Some(std::time::Instant::now()), ..Default::default() };
     }
     let devs = s.devices.clone();
-    let ports = blocking(move || detect::run(&devs)).await;
-    Json(json!({"ports": ports})).into_response()
+    std::thread::spawn(move || {
+        let ports = detect::run(&devs);
+        let mut job = devs.detect.lock().unwrap();
+        job.elapsed_ms = job.started.map(|t| t.elapsed().as_millis() as u64).unwrap_or_default();
+        job.ports = ports;
+        job.running = false;
+    });
+    // the port list appears once the ports are enumerated (a few ms)
+    for _ in 0..20 {
+        if !s.devices.detect.lock().unwrap().ports.is_empty() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    (StatusCode::ACCEPTED, Json(s.devices.detect.lock().unwrap().snapshot())).into_response()
+}
+
+/// The current or last Detect run: each port's progress (queued / probing with the probe on the
+/// wire and how many of its probes were tried / done with the result).
+async fn detect_status(State(s): State<S>) -> Json<Value> {
+    Json(s.devices.detect.lock().unwrap().snapshot())
 }
 
 fn excluded(q: &std::collections::HashMap<String, String>) -> Vec<String> {

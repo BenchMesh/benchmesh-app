@@ -22,9 +22,9 @@ tower-http.workspace = true
 tower = "0.5"
 serde_json.workspace = true
 serde_yaml_ng.workspace = true
+regex.workspace = true
 
 [dev-dependencies]
-regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 bm-store = { path = "../bm-store" }
 tower = { version = "0.5", features = ["util"] }

@@ -63,12 +63,26 @@ Lists USB serial ports and USBTMC instruments and identifies them:
 
 - port held by a configured, connected instrument → reported as `configured_as` with the identity
   built from its last identify reply (nothing is sent);
-- other ports → each candidate definition's identify command is sent with that definition's
-  link settings (serial: all serial definitions in turn; USBTMC: definitions whose `link.usbtmc`
-  `vid`/`pid` match, else all USBTMC definitions) until one model matches. Only the identify
-  command; never session steps, never setters. Ports are probed in parallel.
+- other ports → candidate definitions are grouped by their **probe** (link settings, framing,
+  identify command): each distinct probe is sent once and its reply matched against the models
+  of every definition in the group, in order (USBTMC: definitions whose `link.usbtmc` `vid`/`pid`
+  match first) until one model matches. A reply no definition knows is reported ("answered …,
+  which no definition knows yet"). Only identify commands; never session steps, never setters.
+  Ports are probed in parallel; while detecting, replies time out after 0.7 s and a probe that
+  does not return within 5 s abandons the port ("the port stopped responding").
 
-Response:
+It runs in the background: `POST` starts it (202; a run in progress is not restarted) and
+`GET /devices/detect` returns its state — `{running, elapsed_ms, ports}` where each port also has
+`progress: {state: queued|probing|done, tried, total, current}` (`current`: the probe on the wire,
+e.g. `*IDN? · 115200 8N1 · owon_xdm and 3 more`). The Instruments drawer polls it and shows
+per-port progress. On the 6-instrument bench (2026-10-19): 16.7 s for 39 probes per serial port
+(was several minutes with one exchange per definition).
+
+Serial ports with RTS/CTS flow control: a device that never raises CTS would otherwise hold the
+port — the transport does not wait for output to drain with flow control, and switches flow
+control off and discards pending output before closing (else Linux waits 30 s in `close()`).
+
+Result (the final `GET`, each port):
 
 ```json
 {"ports": [{
