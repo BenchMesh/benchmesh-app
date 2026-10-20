@@ -243,9 +243,11 @@ mod tests {
 
     #[test]
     fn held_ports_are_not_candidates() {
-        let ports = bench();
+        // a path of its own: the lock is process-wide and other tests run in parallel
+        let mut ports = bench();
+        ports[3].path = "/dev/ttyUSB-held-test".into();
         let xdm = Identity::of(&ports[3], None).unwrap();
-        let _g = crate::lock::acquire("/dev/ttyUSB2").unwrap();
+        let _g = crate::lock::acquire("/dev/ttyUSB-held-test").unwrap();
         assert!(xdm.candidates(PortKind::Serial, &ports, None).is_empty());
     }
 
