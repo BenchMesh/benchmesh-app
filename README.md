@@ -2,6 +2,11 @@
 
 ![BenchMesh: power supply, multimeter, oscilloscope and electronic load on one bench](https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/bench.png)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/logo/benchmesh-mark-on-dark.svg">
+  <img alt="BenchMesh logo" src="https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/logo/benchmesh-mark-on-light.svg" width="72">
+</picture>
+
 # BenchMesh
 
 **One cockpit for your whole test bench.**

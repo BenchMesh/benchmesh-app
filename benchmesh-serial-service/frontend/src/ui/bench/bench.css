@@ -22,7 +22,7 @@ html, body { background: var(--kit-ground); }
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--kit-panel-edge);
 }
-.bench-brand { font: 600 1.2rem/1 var(--kit-font-title); letter-spacing: .04em; margin-right: 6px; }
+.bench-brand { display: inline-flex; align-items: center; gap: 7px; font: 600 1.2rem/1 var(--kit-font-title); letter-spacing: .04em; margin-right: 6px; }
 .bench-pill { display: inline-flex; align-items: center; gap: 6px; font: 400 .72rem/1 var(--kit-font-num); color: var(--kit-ink-2); }
 .bench-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--kit-alert); }
 .bench-pill[data-ok="true"] i { background: var(--kit-ok); }

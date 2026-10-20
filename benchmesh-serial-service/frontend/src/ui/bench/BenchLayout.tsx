@@ -8,7 +8,7 @@ import { Rack } from './Rack'
 import { clearDetached, markDetached, useDetachedKeys } from './detach'
 import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
 import { getClassDescription } from '../instrumentClasses'
-import { Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
+import { BrandMark, Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
 import { RecorderDock } from '../recording/RecorderDock'
 import { UpdatePrompt } from '../update/UpdatePrompt'
 import { RunIndicator, RunProvider } from '../automation/RunProvider'
@@ -100,7 +100,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
     <div className="bench">
       <UpdatePrompt />
       <header className="bench-top">
-        <span className="bench-brand">BenchMesh</span>
+        <span className="bench-brand"><BrandMark size={22} />BenchMesh</span>
         <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>
         <span className="bench-pill" data-ok={wsDiag.ok}><i />{wsDiag.ok ? 'live' : wsDiag.msg}</span>
         <RunIndicator onOpen={() => setDrawer('automation')} />

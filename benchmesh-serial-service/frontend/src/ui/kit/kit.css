@@ -20,6 +20,9 @@
   --kit-font-title: "Chakra Petch", "B612", system-ui, sans-serif;
 
   --kit-ground: #d7dbd2;      /* bench surface behind the panels */
+  --kit-brand-seg: #0f8a52;   /* BenchMesh mark (kit/brand.ts): segments, decimal point, ghost segments */
+  --kit-brand-dp: #c86f00;
+  --kit-brand-ghost: .14;
   --kit-panel: #e9ece4;       /* instrument front panel */
   --kit-panel-edge: #b7bfb1;
   --kit-ink: #1d231c;         /* labels, lit segments */
@@ -74,6 +77,9 @@
 
 /* LED segment: dark rack, glowing seven-segment digits colour-coded by quantity. */
 :root[data-skin="led"] {
+  --kit-brand-seg: #5cf2a0;
+  --kit-brand-dp: #ffb648;
+  --kit-brand-ghost: .13;
   --kit-ground: #0b0d10;
   --kit-panel: #171b21;
   --kit-panel-edge: #2b323c;
@@ -123,6 +129,9 @@
 
 /* Cockpit glass: calm dark glass panels, numbers as B612 Mono text, no glow. */
 :root[data-skin="glass"] {
+  --kit-brand-seg: #5cf2a0;
+  --kit-brand-dp: #ffb648;
+  --kit-brand-ghost: .13;
   --kit-ground: #0e1217;
   --kit-panel: #18202b;
   --kit-panel-edge: #2c394a;
