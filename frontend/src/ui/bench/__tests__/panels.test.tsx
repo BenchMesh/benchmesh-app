@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react'
 import fixtures from './bench-fixtures.json'
 import { psuProfile, ellProfile, dmmProfile, awgProfile, setterMap } from '../profiles'
 import { PsuPanel } from '../panels/PsuPanel'
@@ -263,6 +263,65 @@ describe('AwgChannel', () => {
     expect(screen.getByRole('button', { name: 'Vrms' })).toBeEnabled()
     expect(screen.getByRole('spinbutton', { name: 'Symmetry' })).toHaveAttribute('aria-valuenow', '20')
     expect(screen.getByRole('spinbutton', { name: 'Phase' })).toHaveAttribute('aria-valuenow', '90')
+  })
+
+  it('switches the mode and shows the settings of the active one', async () => {
+    localStorage.clear()
+    const api = awg({ MODE: 'CW' })
+    const modes = screen.getByRole('group', { name: 'Mode CH1' })
+    expect(screen.queryByRole('group', { name: 'Sweep settings' })).toBeNull()
+    fireEvent.click(within(modes).getByRole('button', { name: 'SWEEP' }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('mode', 'SWEEP'))
+  })
+
+  it('modulation: type, modulating wave and frequency, depth for AM, deviation for FM', async () => {
+    localStorage.clear()
+    const api = awg({ MODE: 'MOD', MOD_TYPE: 'AM', MOD_SHAPE: 'SIN', MOD_FREQ: si('100'), AM_DEPTH: 80, FM_DEV: si('100') })
+    const mod = screen.getByRole('group', { name: 'Modulation settings' })
+    expect(within(mod).getByRole('spinbutton', { name: 'Depth' })).toHaveAttribute('aria-valuenow', '80')
+    expect(within(mod).getByRole('spinbutton', { name: 'Modulating frequency' })).toHaveAttribute('aria-valuenow', '100')
+    expect(screen.getByRole('img', { name: /AM 100 Hz/ })).toBeInTheDocument()
+    fireEvent.click(within(mod).getByRole('button', { name: 'FM' }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('mod_type', 'FM'))
+    fireEvent.click(within(mod).getByRole('button', { name: 'SQU' }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('mod_shape', 'SQU'))
+  })
+
+  it('sweep: start, stop, time with a unit, spacing and trigger', async () => {
+    localStorage.clear()
+    const api = awg({ MODE: 'SWEEP', SWEEP_START: si('100'), SWEEP_STOP: si('1000'), SWEEP_TIME: si('0.5'), SWEEP_SPACING: 'LIN', SWEEP_TRIG: 'INT' })
+    const sw = screen.getByRole('group', { name: 'Sweep settings' })
+    expect(within(sw).getByRole('spinbutton', { name: 'Stop' })).toHaveAttribute('aria-valuenow', '1000')
+    expect(within(sw).getByRole('spinbutton', { name: 'Sweep time' })).toHaveAttribute('aria-valuetext', '500 ms')
+    fireEvent.click(within(sw).getByRole('button', { name: 'Log' }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('sweep_spacing', 'LOG'))
+    enter('Sweep time', '002000')
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('sweep_time', 0.002))
+  })
+
+  it('burst: cycles only for N cycles, period only with the internal trigger', () => {
+    localStorage.clear()
+    awg({ MODE: 'BURST', BURST_MODE: 'NCYC', BURST_CYCLES: 5, BURST_PERIOD: si('0.01'), BURST_TRIG: 'INT' })
+    const b = screen.getByRole('group', { name: 'Burst settings' })
+    expect(within(b).getByRole('spinbutton', { name: 'Cycles' })).toHaveAttribute('aria-valuenow', '5')
+    expect(within(b).getByRole('spinbutton', { name: 'Burst period' })).toHaveAttribute('aria-valuetext', '10 ms')
+    cleanup()
+    awg({ MODE: 'BURST', BURST_MODE: 'INF', BURST_CYCLES: null, BURST_TRIG: 'MAN' })
+    const b2 = screen.getByRole('group', { name: 'Burst settings' })
+    expect(within(b2).queryByRole('spinbutton', { name: 'Cycles' })).toBeNull()
+    expect(within(b2).queryByRole('spinbutton', { name: 'Burst period' })).toBeNull()
+  })
+
+  it('pulse: duty, width and edges in their own units; load chips', async () => {
+    localStorage.clear()
+    const api = awg({ SHAPE: 'PUL', DUTY: 20, WIDTH: si('0.0000666667'), RISE: si('0.000001953'), FALL: si('0.000001953'), LOAD: 'HIGHZ' })
+    const pulse = screen.getByRole('group', { name: 'Pulse' })
+    expect(within(pulse).getByRole('spinbutton', { name: 'Width' })).toHaveAttribute('aria-valuetext', '66.667 µs')
+    expect(within(pulse).getByRole('spinbutton', { name: 'Rise' })).toHaveAttribute('aria-valuetext', '1.953 µs')
+    enter('Width', '100000')
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('pulse_width', 0.0001))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Load CH1' })).getByRole('button', { name: '50 Ω' }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('load', '50'))
   })
 
   it('no Vrms for noise, and a hint when the amplitude is not reported in Vpp', () => {

@@ -150,7 +150,8 @@ with the formula) in `/instruments/{CLS}/{id}` features, `/methods` (`emulated: 
    DMM bugs; OSC BW-limit values.
 2. **Class `derive` (L1) with provenance:** delete the duplicated POUT expressions and the browser
    fallbacks; AWG period/high/low/Vrms, ELL RIN, LCR impedance set, SAL peak values.
-3. **AWG Core in the contract and the bases:** `mode` CW/MOD/SWEEP/BURST, sweep, AM/FM/PM, burst,
+3. **AWG Core in the contract and the bases** (contract, OWON DGE definition and panel done
+   2026-10-20, bench-checked on the DGE2070; the other families and a replay capture open): `mode` CW/MOD/SWEEP/BURST, sweep, AM/FM/PM, burst,
    load, duty; a DGE bench session for the traps above and a capture for the replay tests.
 4. **Server signals (L2):** energy, statistics, REL/dB/mx+b/limits, moving the DMM math out of the
    browser.

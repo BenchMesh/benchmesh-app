@@ -50,7 +50,6 @@ function FrequencyField({ freq, profile, api, online, entry, setEntry }: {
   freq: number | null; profile: AwgProfile; api: ChannelApi; online: boolean; entry: Entry; setEntry: (e: Partial<Entry>) => void
 }) {
   const period = reciprocal(freq)
-  const [unitPick, setUnitPick] = useState<string | null>(null)
   const lim = profile.frequencyLimits
   if (!profile.frequency) return null
   const toggle = lim && (
@@ -68,18 +67,36 @@ function FrequencyField({ freq, profile, api, online, entry, setEntry }: {
       </div>
     )
   }
-  const tMin = 1 / lim.max, tMax = Math.min(1 / lim.min, 1e6)
-  // units in which the period range has something to enter
-  const units = PERIOD_UNITS.filter((u) => tMax >= u.scale && tMin < u.scale * 1000)
-  const u = units.find((x) => x.unit === unitPick) ?? units.find((x) => x.unit === periodUnitFor(period).unit) ?? units[0]
-  const spec = derivedSpec(tMin / u.scale, Math.min(tMax / u.scale, 999.999), 3, u.unit)
   return (
     <div className="bench-awg__field">
-      <DigitEditor label="Period" value={roundTo(period == null ? null : period / u.scale, spec.decimals)} spec={spec} unit={u.unit}
-        disabled={!online} onCommit={(v) => api.set('frequency', Number((1 / (v * u.scale)).toPrecision(9)))} />
+      <TimeEditor label="Period" seconds={period} min={1 / lim.max} max={1 / lim.min} disabled={!online}
+        onCommit={(t) => api.set('frequency', Number((1 / t).toPrecision(9)))} />
       {toggle}
-      <Selector variant="chips" label="Period unit" value={u.unit} onChange={(v) => setUnitPick(v)}
-        options={units.map((x) => ({ value: x.unit, label: x.unit }))} />
+    </div>
+  )
+}
+
+/**
+ * A time (period, pulse width, edges, burst period) in a unit picked from its range: ns to s,
+ * 3 + 3 digits; the unit follows the value unless one is chosen.
+ */
+export function TimeEditor({ label, seconds, min, max, disabled, onCommit }: {
+  label: string; seconds: number | null; min: number; max: number; disabled?: boolean; onCommit: (s: number) => Promise<void> | void
+}) {
+  const [unitPick, setUnitPick] = useState<string | null>(null)
+  const tMax = Math.min(max, 1e6)
+  // units in which the range has something to enter
+  const units = PERIOD_UNITS.filter((u) => tMax >= u.scale && min < u.scale * 1000)
+  const u = units.find((x) => x.unit === unitPick) ?? units.find((x) => x.unit === periodUnitFor(seconds).unit) ?? units[0] ?? PERIOD_UNITS[0]
+  const spec = derivedSpec(min / u.scale, Math.min(tMax / u.scale, 999.999), 3, u.unit)
+  return (
+    <div className="bench-awg__field">
+      <DigitEditor label={label} value={roundTo(seconds == null ? null : seconds / u.scale, spec.decimals)} spec={spec} unit={u.unit}
+        disabled={disabled} onCommit={(v) => onCommit(Number((v * u.scale).toPrecision(9)))} />
+      {units.length > 1 && (
+        <Selector variant="chips" label={`${label} unit`} value={u.unit} onChange={(v) => setUnitPick(v)}
+          options={units.map((x) => ({ value: x.unit, label: x.unit }))} />
+      )}
     </div>
   )
 }
@@ -150,6 +167,109 @@ function AmplitudeField({ ampl, offs, shape, ohms, profile, api, online, entry, 
   return <div className="bench-awg__field">{editors}{toggle}</div>
 }
 
+/** What the output does besides the carrier, for the preview. */
+function modeCaption(mode: string | null, st: Record<string, any>): string | undefined {
+  if (mode === 'MOD' && typeof st.MOD_TYPE === 'string') {
+    const f = siNumber(st.MOD_FREQ)
+    return `${st.MOD_TYPE}${f != null ? ` ${siText(f, 'Hz', 4)}` : ''}`
+  }
+  if (mode === 'SWEEP') {
+    const a = siNumber(st.SWEEP_START), b = siNumber(st.SWEEP_STOP)
+    return `SWEEP${a != null && b != null ? ` ${siText(a, 'Hz', 4)} → ${siText(b, 'Hz', 4)}` : ''}`
+  }
+  if (mode === 'BURST') {
+    return `BURST${st.BURST_MODE === 'INF' ? ' ∞' : typeof st.BURST_CYCLES === 'number' ? ` ${st.BURST_CYCLES} cyc` : ''}`
+  }
+  return undefined
+}
+
+const MODE_TITLES: Record<string, string> = {
+  CW: 'Continuous output', MOD: 'Modulation', SWEEP: 'Frequency sweep', BURST: 'Burst',
+}
+const TRIG_LABELS: Record<string, string> = { INT: 'Internal', MAN: 'Manual', EXT: 'External' }
+const TRIG_TITLES: Record<string, string> = {
+  INT: 'Repeats on its own (sweep time / burst period)',
+  MAN: 'Starts on the trigger key of the instrument',
+  EXT: 'Starts on the trigger input',
+}
+
+/** Settings of the active mode: modulation, sweep or burst (the carrier stays above). */
+function ModeSettings({ mode, status, profile, api, online, run }: {
+  mode: string; status: Record<string, any>; profile: AwgProfile; api: ChannelApi; online: boolean
+  run: (p: Promise<unknown>) => Promise<boolean>
+}) {
+  const choose = (op: string, values: string[], value: unknown, label: string, labels?: Record<string, React.ReactNode>, titles?: Record<string, string>) =>
+    values.length > 0 && (
+      <div className="kit-field">
+        <span className="kit-label">{label}</span>
+        <Selector label={label} disabled={!online} value={typeof value === 'string' ? value : null}
+          options={values.map((v) => ({ value: v, label: labels?.[v] ?? v, title: titles?.[v] }))} onChange={(v) => run(api.set(op, v))} />
+      </div>
+    )
+  const num = (label: string, op: string, key: string, spec: NumberSpec | null, group = 0) => spec && (
+    <DigitEditor label={label} value={siNumber(status[key])} spec={spec} unit={spec.unit} group={group} disabled={!online}
+      onCommit={(v) => api.set(op, v)} />
+  )
+  if (mode === 'MOD') {
+    const type = typeof status.MOD_TYPE === 'string' ? status.MOD_TYPE : null
+    return (
+      <div className="bench-awg__mode kit-row" role="group" aria-label="Modulation settings">
+        {choose('mod_type', profile.modTypes, type, 'Modulation')}
+        {profile.modShapes.length > 0 && (
+          <div className="kit-field">
+            <span className="kit-label">Modulating wave</span>
+            <Selector variant="chips" label="Modulating wave" disabled={!online} value={typeof status.MOD_SHAPE === 'string' ? status.MOD_SHAPE : null}
+              options={profile.modShapes.map((v) => ({ value: v, label: <WaveGlyph shape={v} />, title: v }))} onChange={(v) => run(api.set('mod_shape', v))} />
+          </div>
+        )}
+        {num('Modulating frequency', 'mod_frequency', 'MOD_FREQ', profile.modFrequency, 3)}
+        {type === 'AM' && num('Depth', 'am_depth', 'AM_DEPTH', profile.amDepth)}
+        {type === 'FM' && num('Deviation', 'fm_deviation', 'FM_DEV', profile.fmDeviation, 3)}
+        {type === 'PM' && num('Deviation', 'pm_deviation', 'PM_DEV', profile.pmDeviation)}
+      </div>
+    )
+  }
+  if (mode === 'SWEEP') {
+    return (
+      <div className="bench-awg__mode kit-row" role="group" aria-label="Sweep settings">
+        {num('Start', 'sweep_start', 'SWEEP_START', profile.sweepStart, 3)}
+        {num('Stop', 'sweep_stop', 'SWEEP_STOP', profile.sweepStop, 3)}
+        {profile.sweepTime && (
+          <TimeEditor label="Sweep time" seconds={siNumber(status.SWEEP_TIME)} min={profile.sweepTime.min} max={profile.sweepTime.max}
+            disabled={!online} onCommit={(t) => api.set('sweep_time', t)} />
+        )}
+        {choose('sweep_spacing', profile.sweepSpacings, status.SWEEP_SPACING, 'Spacing', { LIN: 'Linear', LOG: 'Log' })}
+        {choose('sweep_trigger', profile.sweepTriggers, status.SWEEP_TRIG, 'Sweep trigger', TRIG_LABELS, TRIG_TITLES)}
+        {profile.trigger && status.SWEEP_TRIG !== 'INT' && <TriggerButton api={api} online={online} run={run} />}
+      </div>
+    )
+  }
+  if (mode === 'BURST') {
+    const bmode = typeof status.BURST_MODE === 'string' ? status.BURST_MODE : null
+    return (
+      <div className="bench-awg__mode kit-row" role="group" aria-label="Burst settings">
+        {choose('burst_mode', profile.burstModes, bmode, 'Burst', { NCYC: 'N cycles', INF: 'Infinite', GATED: 'Gated' })}
+        {bmode !== 'INF' && bmode !== 'GATED' && num('Cycles', 'burst_cycles', 'BURST_CYCLES', profile.burstCycles, 3)}
+        {profile.burstPeriod && status.BURST_TRIG !== 'MAN' && status.BURST_TRIG !== 'EXT' && (
+          <TimeEditor label="Burst period" seconds={siNumber(status.BURST_PERIOD)} min={profile.burstPeriod.min} max={profile.burstPeriod.max}
+            disabled={!online} onCommit={(t) => api.set('burst_period', t)} />
+        )}
+        {choose('burst_trigger', profile.burstTriggers, status.BURST_TRIG, 'Burst trigger', TRIG_LABELS, TRIG_TITLES)}
+        {profile.trigger && status.BURST_TRIG !== 'INT' && <TriggerButton api={api} online={online} run={run} />}
+      </div>
+    )
+  }
+  return null
+}
+
+function TriggerButton({ api, online, run }: { api: ChannelApi; online: boolean; run: (p: Promise<unknown>) => Promise<boolean> }) {
+  return (
+    <button type="button" className="bench-btn" disabled={!online} title="Fire one sweep or burst" onClick={() => run(api.set('trigger', 'ONCE'))}>
+      Trigger
+    </button>
+  )
+}
+
 /** One generator channel: waveform, output, preview, frequency / amplitude / offset, phase, symmetry. */
 export function AwgChannel({ ch, status, profile, api, online }: {
   ch: string; status: Record<string, any>; profile: AwgProfile; api: ChannelApi; online: boolean
@@ -163,6 +283,8 @@ export function AwgChannel({ ch, status, profile, api, online }: {
   const phase = siNumber(status.PHASE)
   const symm = siNumber(status.SYMM)
   const ohms = loadOhms(status.LOAD)
+  const duty = siNumber(status.DUTY)
+  const mode = typeof status.MODE === 'string' ? status.MODE : profile.modes.length ? null : 'CW'
   const on = status.OUTPUT === 'ON'
   const color = profile.channelColors[ch]
 
@@ -187,17 +309,28 @@ export function AwgChannel({ ch, status, profile, api, online }: {
             options={profile.shapes.map((s) => ({ value: s, label: <WaveGlyph shape={s} />, title: s }))}
             onChange={(s) => run(api.set('shape', s))} />
         )}
-        {status.LOAD != null && (
+        {profile.loads.length > 1 ? (
+          <Selector variant="chips" label={`Load CH${ch}`} disabled={!online} value={typeof status.LOAD === 'string' ? status.LOAD : null}
+            options={profile.loads.map((l) => ({ value: l, label: l === 'HIGHZ' ? 'HIGH-Z' : `${l} Ω`, title: 'Load the amplitude refers to' }))}
+            onChange={(v) => run(api.set('load', v))} />
+        ) : status.LOAD != null && (
           <span className="bench-awg__load" title="Load impedance set on the instrument">
             {ohms === Infinity ? 'HIGH-Z' : ohms != null ? `${ohms} Ω` : String(status.LOAD)}
           </span>
         )}
         {profile.output && <ArmSwitch label={`CH${ch}`} on={on} disabled={!online} onChange={(v) => api.set('output', v ? 'ON' : 'OFF')} />}
       </div>
+      {profile.modes.length > 1 && (
+        <Selector label={`Mode CH${ch}`} disabled={!online} value={mode}
+          options={profile.modes.map((m) => ({ value: m, label: m, title: MODE_TITLES[m] }))}
+          onChange={(m) => run(api.set('mode', m))} />
+      )}
       <div className="kit-glass">
         <WavePreview shape={shape} amplitude={ampl ?? 0} offset={offs ?? 0} on={on} symmetry={symm ?? 100}
+          duty={shape === 'PUL' ? duty ?? undefined : undefined} caption={modeCaption(mode, status)}
           maxAmplitude={profile.amplitude?.max ?? 20} maxOffset={profile.offset?.max ?? 10} />
       </div>
+      {mode && mode !== 'CW' && <ModeSettings mode={mode} status={status} profile={profile} api={api} online={online} run={run} />}
       <div className="kit-row">
         <FrequencyField freq={freq} profile={profile} api={api} online={online} entry={entry} setEntry={setEntry} />
         <AmplitudeField ampl={ampl} offs={offs} shape={shape} ohms={ohms} profile={profile} api={api} online={online}
@@ -217,6 +350,25 @@ export function AwgChannel({ ch, status, profile, api, online }: {
             onCommit={(v) => api.set('symmetry', v)} />
         )}
       </div>
+      {shape === 'PUL' && (profile.duty || profile.pulseWidth || profile.pulseRise || profile.pulseFall) && (
+        <div className="kit-row" role="group" aria-label="Pulse">
+          {profile.duty && (
+            <DigitEditor label="Duty" value={duty} spec={profile.duty} unit="%" disabled={!online} onCommit={(v) => api.set('duty', v)} />
+          )}
+          {profile.pulseWidth && (
+            <TimeEditor label="Width" seconds={siNumber(status.WIDTH)} min={profile.pulseWidth.min} max={profile.pulseWidth.max}
+              disabled={!online} onCommit={(t) => api.set('pulse_width', t)} />
+          )}
+          {profile.pulseRise && (
+            <TimeEditor label="Rise" seconds={siNumber(status.RISE)} min={profile.pulseRise.min} max={profile.pulseRise.max}
+              disabled={!online} onCommit={(t) => api.set('pulse_rise', t)} />
+          )}
+          {profile.pulseFall && (
+            <TimeEditor label="Fall" seconds={siNumber(status.FALL)} min={profile.pulseFall.min} max={profile.pulseFall.max}
+              disabled={!online} onCommit={(t) => api.set('pulse_fall', t)} />
+          )}
+        </div>
+      )}
       {online && profile.amplitude && ampl == null && shape !== '' && (
         <span className="bench-awg__note">The amplitude is not reported in Vpp: the instrument may be set to show Vrms or dBm on its front panel.</span>
       )}

@@ -1391,39 +1391,382 @@
   },
   "methods": [
    {
-    "description": "Query amplitude",
+    "description": "Query am depth",
+    "example": "GET /instruments/AWG/dge/1/am_depth",
+    "full_name": "query_am_depth",
     "http_method": "GET",
-    "name": "amplitude"
+    "name": "am_depth",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query amplitude",
+    "example": "GET /instruments/AWG/dge/1/amplitude",
+    "full_name": "query_amplitude",
+    "http_method": "GET",
+    "name": "amplitude",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query burst period",
+    "example": "GET /instruments/AWG/dge/1/burst_period",
+    "full_name": "query_burst_period",
+    "http_method": "GET",
+    "name": "burst_period",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query burst trigger",
+    "example": "GET /instruments/AWG/dge/1/burst_trigger",
+    "full_name": "query_burst_trigger",
+    "http_method": "GET",
+    "name": "burst_trigger",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query duty",
+    "example": "GET /instruments/AWG/dge/1/duty",
+    "full_name": "query_duty",
+    "http_method": "GET",
+    "name": "duty",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query fm deviation",
+    "example": "GET /instruments/AWG/dge/1/fm_deviation",
+    "full_name": "query_fm_deviation",
+    "http_method": "GET",
+    "name": "fm_deviation",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
    },
    {
     "description": "Query frequency",
+    "example": "GET /instruments/AWG/dge/1/frequency",
+    "full_name": "query_frequency",
     "http_method": "GET",
-    "name": "frequency"
+    "name": "frequency",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
    },
    {
     "description": "Query offset",
+    "example": "GET /instruments/AWG/dge/1/offset",
+    "full_name": "query_offset",
     "http_method": "GET",
-    "name": "offset"
+    "name": "offset",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
    },
    {
     "description": "Query output",
+    "example": "GET /instruments/AWG/dge/1/output",
+    "full_name": "query_output",
     "http_method": "GET",
-    "name": "output"
+    "name": "output",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query pulse fall",
+    "example": "GET /instruments/AWG/dge/1/pulse_fall",
+    "full_name": "query_pulse_fall",
+    "http_method": "GET",
+    "name": "pulse_fall",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query pulse rise",
+    "example": "GET /instruments/AWG/dge/1/pulse_rise",
+    "full_name": "query_pulse_rise",
+    "http_method": "GET",
+    "name": "pulse_rise",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query pulse width",
+    "example": "GET /instruments/AWG/dge/1/pulse_width",
+    "full_name": "query_pulse_width",
+    "http_method": "GET",
+    "name": "pulse_width",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
    },
    {
     "description": "Query shape",
+    "example": "GET /instruments/AWG/dge/1/shape",
+    "full_name": "query_shape",
     "http_method": "GET",
-    "name": "shape"
+    "name": "shape",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query sweep spacing",
+    "example": "GET /instruments/AWG/dge/1/sweep_spacing",
+    "full_name": "query_sweep_spacing",
+    "http_method": "GET",
+    "name": "sweep_spacing",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Query sweep start",
+    "example": "GET /instruments/AWG/dge/1/sweep_start",
+    "full_name": "query_sweep_start",
+    "http_method": "GET",
+    "name": "sweep_start",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query sweep stop",
+    "example": "GET /instruments/AWG/dge/1/sweep_stop",
+    "full_name": "query_sweep_stop",
+    "http_method": "GET",
+    "name": "sweep_stop",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query sweep time",
+    "example": "GET /instruments/AWG/dge/1/sweep_time",
+    "full_name": "query_sweep_time",
+    "http_method": "GET",
+    "name": "sweep_time",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "si"
+   },
+   {
+    "description": "Query sweep trigger",
+    "example": "GET /instruments/AWG/dge/1/sweep_trigger",
+    "full_name": "query_sweep_trigger",
+    "http_method": "GET",
+    "name": "sweep_trigger",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
    },
    {
     "description": "Query symmetry",
+    "example": "GET /instruments/AWG/dge/1/symmetry",
+    "full_name": "query_symmetry",
     "http_method": "GET",
-    "name": "symmetry"
+    "name": "symmetry",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "any"
+   },
+   {
+    "description": "Set am depth",
+    "example": "POST /instruments/AWG/dge/1/am_depth/<value>",
+    "full_name": "set_am_depth",
+    "http_method": "POST",
+    "name": "am_depth",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%.1f",
+     "max": 100.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "%"
+    }
    },
    {
     "description": "Set amplitude",
+    "example": "POST /instruments/AWG/dge/1/amplitude/<value>",
+    "full_name": "set_amplitude",
     "http_method": "POST",
     "name": "amplitude",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
     "value": {
      "format": "%g",
      "max": 20.0,
@@ -1433,9 +1776,213 @@
     }
    },
    {
+    "description": "Set burst cycles",
+    "example": "POST /instruments/AWG/dge/1/burst_cycles/<value>",
+    "full_name": "set_burst_cycles",
+    "http_method": "POST",
+    "name": "burst_cycles",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "int"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%d",
+     "max": 60000.0,
+     "min": 1.0,
+     "type": "integer"
+    }
+   },
+   {
+    "description": "Set burst mode",
+    "example": "POST /instruments/AWG/dge/1/burst_mode/<value>",
+    "full_name": "set_burst_mode",
+    "http_method": "POST",
+    "name": "burst_mode",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "INF",
+      "NCYC"
+     ]
+    }
+   },
+   {
+    "description": "Set burst period",
+    "example": "POST /instruments/AWG/dge/1/burst_period/<value>",
+    "full_name": "set_burst_period",
+    "http_method": "POST",
+    "name": "burst_period",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 500.0,
+     "min": 2e-08,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set burst trigger",
+    "example": "POST /instruments/AWG/dge/1/burst_trigger/<value>",
+    "full_name": "set_burst_trigger",
+    "http_method": "POST",
+    "name": "burst_trigger",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "INT",
+      "MAN"
+     ]
+    }
+   },
+   {
+    "description": "Set duty",
+    "example": "POST /instruments/AWG/dge/1/duty/<value>",
+    "full_name": "set_duty",
+    "http_method": "POST",
+    "name": "duty",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%.1f",
+     "max": 100.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "%"
+    }
+   },
+   {
+    "description": "Set fm deviation",
+    "example": "POST /instruments/AWG/dge/1/fm_deviation/<value>",
+    "full_name": "set_fm_deviation",
+    "http_method": "POST",
+    "name": "fm_deviation",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 35000000.0,
+     "min": 1e-06,
+     "type": "number",
+     "unit": "Hz"
+    }
+   },
+   {
     "description": "Set frequency",
+    "example": "POST /instruments/AWG/dge/1/frequency/<value>",
+    "full_name": "set_frequency",
     "http_method": "POST",
     "name": "frequency",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
     "value": {
      "format": "%g",
      "max": 70000000.0,
@@ -1445,9 +1992,188 @@
     }
    },
    {
+    "description": "Set load",
+    "example": "POST /instruments/AWG/dge/1/load/<value>",
+    "full_name": "set_load",
+    "http_method": "POST",
+    "name": "load",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "50",
+      "HIGHZ"
+     ]
+    }
+   },
+   {
+    "description": "Set mod frequency",
+    "example": "POST /instruments/AWG/dge/1/mod_frequency/<value>",
+    "full_name": "set_mod_frequency",
+    "http_method": "POST",
+    "name": "mod_frequency",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 100000.0,
+     "min": 0.002,
+     "type": "number",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set mod shape",
+    "example": "POST /instruments/AWG/dge/1/mod_shape/<value>",
+    "full_name": "set_mod_shape",
+    "http_method": "POST",
+    "name": "mod_shape",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "PRN",
+      "RAMP",
+      "SIN",
+      "SQU"
+     ]
+    }
+   },
+   {
+    "description": "Set mod type",
+    "example": "POST /instruments/AWG/dge/1/mod_type/<value>",
+    "full_name": "set_mod_type",
+    "http_method": "POST",
+    "name": "mod_type",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "AM",
+      "FM",
+      "PM"
+     ]
+    }
+   },
+   {
+    "description": "Set mode",
+    "example": "POST /instruments/AWG/dge/1/mode/<value>",
+    "full_name": "set_mode",
+    "http_method": "POST",
+    "name": "mode",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "BURST",
+      "CW",
+      "MOD",
+      "SWEEP"
+     ]
+    }
+   },
+   {
     "description": "Set offset",
+    "example": "POST /instruments/AWG/dge/1/offset/<value>",
+    "full_name": "set_offset",
     "http_method": "POST",
     "name": "offset",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
     "value": {
      "format": "%g",
      "max": 10.0,
@@ -1459,8 +2185,27 @@
    {
     "description": "Set output",
     "energizes": true,
+    "example": "POST /instruments/AWG/dge/1/output/<value>",
+    "full_name": "set_output",
     "http_method": "POST",
     "name": "output",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
     "value": {
      "type": "enum",
      "values": [
@@ -1471,8 +2216,27 @@
    },
    {
     "description": "Set phase",
+    "example": "POST /instruments/AWG/dge/1/phase/<value>",
+    "full_name": "set_phase",
     "http_method": "POST",
     "name": "phase",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
     "value": {
      "format": "%g",
      "max": 360.0,
@@ -1482,9 +2246,152 @@
     }
    },
    {
+    "description": "Set pm deviation",
+    "example": "POST /instruments/AWG/dge/1/pm_deviation/<value>",
+    "full_name": "set_pm_deviation",
+    "http_method": "POST",
+    "name": "pm_deviation",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 180.0,
+     "min": 0.0,
+     "type": "number",
+     "unit": "deg"
+    }
+   },
+   {
+    "description": "Set pulse fall",
+    "example": "POST /instruments/AWG/dge/1/pulse_fall/<value>",
+    "full_name": "set_pulse_fall",
+    "http_method": "POST",
+    "name": "pulse_fall",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 1000000.0,
+     "min": 1.5e-08,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set pulse rise",
+    "example": "POST /instruments/AWG/dge/1/pulse_rise/<value>",
+    "full_name": "set_pulse_rise",
+    "http_method": "POST",
+    "name": "pulse_rise",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 1000000.0,
+     "min": 1.5e-08,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set pulse width",
+    "example": "POST /instruments/AWG/dge/1/pulse_width/<value>",
+    "full_name": "set_pulse_width",
+    "http_method": "POST",
+    "name": "pulse_width",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 1000000.0,
+     "min": 2.4e-08,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
     "description": "Set shape",
+    "example": "POST /instruments/AWG/dge/1/shape/<value>",
+    "full_name": "set_shape",
     "http_method": "POST",
     "name": "shape",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
     "value": {
      "type": "enum",
      "values": [
@@ -1497,9 +2404,183 @@
     }
    },
    {
+    "description": "Set sweep spacing",
+    "example": "POST /instruments/AWG/dge/1/sweep_spacing/<value>",
+    "full_name": "set_sweep_spacing",
+    "http_method": "POST",
+    "name": "sweep_spacing",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "LIN",
+      "LOG"
+     ]
+    }
+   },
+   {
+    "description": "Set sweep start",
+    "example": "POST /instruments/AWG/dge/1/sweep_start/<value>",
+    "full_name": "set_sweep_start",
+    "http_method": "POST",
+    "name": "sweep_start",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 70000000.0,
+     "min": 1e-06,
+     "type": "number",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set sweep stop",
+    "example": "POST /instruments/AWG/dge/1/sweep_stop/<value>",
+    "full_name": "set_sweep_stop",
+    "http_method": "POST",
+    "name": "sweep_stop",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 70000000.0,
+     "min": 1e-06,
+     "type": "number",
+     "unit": "Hz"
+    }
+   },
+   {
+    "description": "Set sweep time",
+    "example": "POST /instruments/AWG/dge/1/sweep_time/<value>",
+    "full_name": "set_sweep_time",
+    "http_method": "POST",
+    "name": "sweep_time",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "format": "%g",
+     "max": 500.0,
+     "min": 0.001,
+     "type": "number",
+     "unit": "s"
+    }
+   },
+   {
+    "description": "Set sweep trigger",
+    "example": "POST /instruments/AWG/dge/1/sweep_trigger/<value>",
+    "full_name": "set_sweep_trigger",
+    "http_method": "POST",
+    "name": "sweep_trigger",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "str"
+     }
+    ],
+    "returns": "none",
+    "value": {
+     "type": "enum",
+     "values": [
+      "INT",
+      "MAN"
+     ]
+    }
+   },
+   {
     "description": "Set symmetry",
+    "example": "POST /instruments/AWG/dge/1/symmetry/<value>",
+    "full_name": "set_symmetry",
     "http_method": "POST",
     "name": "symmetry",
+    "parameters": [
+     {
+      "default": null,
+      "description": "Channel number",
+      "name": "channel",
+      "required": true,
+      "type": "int"
+     },
+     {
+      "default": null,
+      "description": "Value to set",
+      "name": "value",
+      "required": true,
+      "type": "float"
+     }
+    ],
+    "returns": "none",
     "value": {
      "format": "%g",
      "max": 100.0,

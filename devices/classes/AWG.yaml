@@ -1,16 +1,42 @@
 schema: benchmesh.class/v1
 class: AWG
 description: >
-  Function / arbitrary waveform generator, one status block per channel.
+  Function / arbitrary waveform generator, one status block per channel. The carrier (shape,
+  frequency, amplitude in Vpp, offset, phase) applies in every mode; MODE selects continuous
+  output (CW), modulation, frequency sweep or burst, each with its own keys. Period, Vrms, dBm
+  and high/low levels are derived by BenchMesh from these (ai_context/CLASS_FEATURES.md), so a
+  definition binds the native quantities only. Canonical values (API side; definitions map the
+  wire spellings): see each key.
 status:
   OUTPUT: {type: enum, values: [ON, OFF], required: true}
-  SHAPE:  {type: string, description: "Waveform (SIN, SQU, PUL, RAMP, PRN, ...)"}
+  SHAPE:  {type: string, description: "Waveform (SIN, SQU, PUL, RAMP, PRN, DC, ARB, ...)"}
   FREQ:   {type: si, description: "Frequency (Hz)"}
   AMPL:   {type: si, description: "Amplitude (Vpp)"}
   OFFS:   {type: si, description: "DC offset (V)"}
   PHASE:  {type: number, description: "Phase (degrees)"}
   LOAD:   {type: string, description: "Load impedance in ohm, or HIGHZ"}
   SYMM:   {type: number, description: "Ramp symmetry (%)"}
+  DUTY:   {type: number, description: "Duty cycle of the square or pulse waveform (%)"}
+  WIDTH:  {type: si, description: "Pulse width (s)"}
+  RISE:   {type: si, description: "Pulse leading edge time (s)"}
+  FALL:   {type: si, description: "Pulse trailing edge time (s)"}
+  MODE:   {type: enum, values: [CW, MOD, SWEEP, BURST], description: "Continuous output, modulation, frequency sweep or burst"}
+  MOD_TYPE:   {type: enum, values: [AM, FM, PM, FSK, ASK, PSK, PWM], description: "Active modulation (null unless MODE is MOD)"}
+  MOD_SOURCE: {type: enum, values: [INT, EXT], description: "Modulating signal: internal or the external input"}
+  MOD_SHAPE:  {type: string, description: "Internal modulating waveform (SIN, SQU, RAMP, PRN, ...)"}
+  MOD_FREQ:   {type: si, description: "Internal modulating frequency (Hz)"}
+  AM_DEPTH:   {type: number, description: "AM depth (%)"}
+  FM_DEV:     {type: si, description: "FM frequency deviation (Hz)"}
+  PM_DEV:     {type: number, description: "PM phase deviation (degrees)"}
+  SWEEP_START:   {type: si, description: "Sweep start frequency (Hz)"}
+  SWEEP_STOP:    {type: si, description: "Sweep stop frequency (Hz)"}
+  SWEEP_TIME:    {type: si, description: "Sweep time (s)"}
+  SWEEP_SPACING: {type: enum, values: [LIN, LOG], description: "Linear or logarithmic sweep"}
+  SWEEP_TRIG:    {type: enum, values: [INT, EXT, MAN], description: "Sweep trigger: internal (repeating), external input or manual"}
+  BURST_MODE:    {type: enum, values: [NCYC, INF, GATED], description: "N cycles per trigger, infinite after a trigger, or gated by the external input"}
+  BURST_CYCLES:  {type: integer, description: "Cycles per burst (null when infinite)"}
+  BURST_PERIOD:  {type: si, description: "Burst period with the internal trigger (s)"}
+  BURST_TRIG:    {type: enum, values: [INT, EXT, MAN], description: "Burst trigger: internal (burst period), external input or manual"}
 operations:
   output:     {get: true, set: true, value: enum, values: [ON, OFF], required: [get, set]}
   shape:      {get: true, set: true, value: string}
@@ -19,4 +45,27 @@ operations:
   offset:     {get: true, set: true, value: si}
   phase:      {get: true, set: true, value: number}
   symmetry:   {get: true, set: true, value: number}
+  load:       {get: true, set: true, value: enum, values: ["50", HIGHZ], description: "Load the amplitude refers to: 50 ohm or high impedance"}
+  duty:        {get: true, set: true, value: number, description: "Duty cycle (%)"}
+  pulse_width: {get: true, set: true, value: si, description: "Pulse width (s)"}
+  pulse_rise:  {get: true, set: true, value: si, description: "Leading edge time (s)"}
+  pulse_fall:  {get: true, set: true, value: si, description: "Trailing edge time (s)"}
+  mode:       {get: true, set: true, value: enum, values: [CW, MOD, SWEEP, BURST], description: "CW switches modulation, sweep and burst off; MOD switches the last or the definition's default modulation on"}
+  mod_type:   {get: true, set: true, value: enum, values: [AM, FM, PM, FSK, ASK, PSK, PWM], description: "Switches that modulation on (MODE becomes MOD)"}
+  mod_source: {get: true, set: true, value: enum, values: [INT, EXT]}
+  mod_shape:  {get: true, set: true, value: string, description: "Internal modulating waveform of the active modulation"}
+  mod_frequency: {get: true, set: true, value: si, description: "Internal modulating frequency of the active modulation (Hz)"}
+  am_depth:      {get: true, set: true, value: number, description: "AM depth (%)"}
+  fm_deviation:  {get: true, set: true, value: si, description: "FM deviation (Hz)"}
+  pm_deviation:  {get: true, set: true, value: number, description: "PM deviation (degrees)"}
+  sweep_start:   {get: true, set: true, value: si}
+  sweep_stop:    {get: true, set: true, value: si}
+  sweep_time:    {get: true, set: true, value: si}
+  sweep_spacing: {get: true, set: true, value: enum, values: [LIN, LOG]}
+  sweep_trigger: {get: true, set: true, value: enum, values: [INT, EXT, MAN]}
+  burst_mode:    {get: true, set: true, value: enum, values: [NCYC, INF, GATED]}
+  burst_cycles:  {get: true, set: true, value: integer}
+  burst_period:  {get: true, set: true, value: si}
+  burst_trigger: {get: true, set: true, value: enum, values: [INT, EXT, MAN]}
+  trigger:       {set: true, value: enum, values: [ONCE], description: "Fire a manual sweep or burst trigger"}
   screenshot: {get: true, value: bytes}

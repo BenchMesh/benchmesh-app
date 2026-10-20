@@ -160,6 +160,14 @@ export type DmmProfile = ReturnType<typeof dmmProfile>
 
 // ---- AWG -------------------------------------------------------------------------------
 
+export const AWG_MODES = ['CW', 'MOD', 'SWEEP', 'BURST']
+
+/** A numeric setter's raw limits (time setters span ns to s: the editor picks a unit). */
+function limits(setter: Setter | undefined): { min: number; max: number } | null {
+  const v = setter?.value
+  return v && (v.type === 'number' || v.type === 'integer') && isNum(v.min) && isNum(v.max) ? { min: v.min, max: v.max } : null
+}
+
 export function awgProfile(features: any, setters: Setters) {
   const shapes = setters.shape?.value?.values ?? []
   const f = setters.frequency?.value
@@ -176,6 +184,29 @@ export function awgProfile(features: any, setters: Setters) {
     levelLimit: amplitude && offset ? Math.max(Math.abs(offset.min), Math.abs(offset.max), amplitude.max / 2) : null,
     phase: numberSpec(setters.phase, { unit: '°' }),
     symmetry: numberSpec(setters.symmetry, { unit: '%' }),
+    duty: numberSpec(setters.duty, { unit: '%' }),
+    pulseWidth: limits(setters.pulse_width),
+    pulseRise: limits(setters.pulse_rise),
+    pulseFall: limits(setters.pulse_fall),
+    loads: ordered(setters, 'load', ['50', 'HIGHZ']),
+    /** Modes the definition can switch (CW / MOD / SWEEP / BURST); empty: continuous output only. */
+    modes: ordered(setters, 'mode', AWG_MODES),
+    modTypes: ordered(setters, 'mod_type', ['AM', 'FM', 'PM', 'FSK', 'ASK', 'PSK', 'PWM']),
+    modShapes: ordered(setters, 'mod_shape', WAVE_SHAPES),
+    modFrequency: numberSpec(setters.mod_frequency, { unit: 'Hz' }),
+    amDepth: numberSpec(setters.am_depth, { unit: '%' }),
+    fmDeviation: numberSpec(setters.fm_deviation, { unit: 'Hz' }),
+    pmDeviation: numberSpec(setters.pm_deviation, { unit: '°' }),
+    sweepStart: numberSpec(setters.sweep_start, { unit: 'Hz' }),
+    sweepStop: numberSpec(setters.sweep_stop, { unit: 'Hz' }),
+    sweepTime: limits(setters.sweep_time),
+    sweepSpacings: ordered(setters, 'sweep_spacing', ['LIN', 'LOG']),
+    sweepTriggers: ordered(setters, 'sweep_trigger', ['INT', 'MAN', 'EXT']),
+    burstModes: ordered(setters, 'burst_mode', ['NCYC', 'INF', 'GATED']),
+    burstCycles: numberSpec(setters.burst_cycles),
+    burstPeriod: limits(setters.burst_period),
+    burstTriggers: ordered(setters, 'burst_trigger', ['INT', 'MAN', 'EXT']),
+    trigger: !!setters.trigger,
     output: !!setters.output,
     channelColors: (features?.channel_colors ?? {}) as Record<string, string>,
   }

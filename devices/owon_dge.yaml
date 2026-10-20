@@ -4,13 +4,14 @@ schema: benchmesh.device/v1
 id: owon_dge
 vendor: OWON
 family: DGE2000 series arbitrary waveform generator
-version: 1.0.0
+version: 1.1.0
 sources:
   - {doc: "DGE2000/3000 SCPI Protocol", pages: "5-39"}
   - {doc: "DGE2000 Arbitrary Waveform Generator User Manual", pages: "38-49"}
   - {capture: captures/20261016-201609}
   - {capture: captures/20261016-203514}
   - {capture: captures/20261016-204256-owon-dge2070-query_screenshot, note: "split-read failure mode"}
+  - {note: "Bench 2026-10-20, DGE2070 FV V1.0.4.7.0: every modulation / sweep / burst / pulse / load command below probed with scripts/dge_probe.py (output off, settings restored)"}
 models:
   - {"name": "DGE2070", "match": "^OWON,DGE2070,", "support": "tested"}
   - {"name": "DGE2035", "match": "^OWON,DGE2035,"}
@@ -83,6 +84,194 @@ commands:
     reply: none
     safety: configure
     source: PM p26
+  # ---- modes (bench 2026-10-20): AM, FM, PM, sweep and burst exclude each other - switching one
+  # on switches the others off; MODE:STATe? answers nothing, so the mode is read from the five
+  # states. Remote trigger: none (sweep/burst MANual means the front-panel knob).
+  am_st:  {send: "SOURce{ch}:AM:STATe?", parse: [trim, number], source: "PM p13"}
+  fm_st:  {send: "SOURce{ch}:FM:STATe?", parse: [trim, number], source: "PM p18"}
+  pm_st:  {send: "SOURce{ch}:PM:STATe?", parse: [trim, number], source: "PM p26"}
+  swe_st: {send: "SOURce{ch}:SWEep:STATe?", parse: [trim, number], source: "PM p29"}
+  bur_st: {send: "SOURce{ch}:BURSt:STATe?", parse: [trim, number], source: "PM p16"}
+  mode_set:
+    send: "SOURce{ch}:{m}"
+    params: {m: {type: enum, values: {MOD: "AM:STATe ON", SWEEP: "SWEep:STATe ON", BURST: "BURSt:STATe ON", CW: "BURSt:STATe OFF"}}}
+    reply: none
+    safety: configure
+    gap_after_ms: 100
+    description: "MOD switches AM on (choose FM/PM with mod_type); CW also runs the *_off steps"
+    source: "PM p13-29; bench 2026-10-20"
+  am_off:  {send: "SOURce{ch}:AM:STATe OFF", reply: none, safety: configure, gap_after_ms: 100, source: "PM p13"}
+  fm_off:  {send: "SOURce{ch}:FM:STATe OFF", reply: none, safety: configure, gap_after_ms: 100, source: "PM p18"}
+  pm_off:  {send: "SOURce{ch}:PM:STATe OFF", reply: none, safety: configure, gap_after_ms: 100, source: "PM p26"}
+  swe_off: {send: "SOURce{ch}:SWEep:STATe OFF", reply: none, safety: configure, gap_after_ms: 100, source: "PM p29"}
+  mod_type_set:
+    send: "SOURce{ch}:{t}:STATe ON"
+    params: {t: {type: enum, values: {AM: AM, FM: FM, PM: PM}}}
+    reply: none
+    safety: configure
+    gap_after_ms: 100
+    description: "FSK exists on the front panel only"
+    source: "PM p13, p18, p26"
+  # ---- modulation parameters (internal source only: the DGE2000 has no modulation input)
+  am_dep: {send: "SOURce{ch}:AM:DEPTh?", parse: [trim, number], source: "PM p12; reply 100"}
+  am_f:   {send: "SOURce{ch}:AM:INTernal:FREQuency?", parse: [trim, number], source: "PM p12"}
+  am_fn:  {send: "SOURce{ch}:AM:INTernal:FUNCtion?", parse: [trim, upper], source: "PM p12; SIN SQU RAMP PRN"}
+  fm_dev: {send: "SOURce{ch}:FM:DEViation?", parse: [trim, number], source: "PM p16"}
+  fm_f:   {send: "SOURce{ch}:FM:INTernal:FREQuency?", parse: [trim, number], source: "PM p17"}
+  fm_fn:  {send: "SOURce{ch}:FM:INTernal:FUNCtion?", parse: [trim, upper], source: "PM p17"}
+  pm_dev: {send: "SOURce{ch}:PM:DEViation?", parse: [trim, number], description: "Radians", source: "PM p24; bench: 90DEG reads 1.570796e+00"}
+  pm_f:   {send: "SOURce{ch}:PM:INTernal:FREQuency?", parse: [trim, number], source: "PM p24"}
+  pm_fn:  {send: "SOURce{ch}:PM:INTernal:FUNCtion?", parse: [trim, upper], source: "PM p25"}
+  am_dep_set:
+    send: "SOURce{ch}:AM:DEPTh {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+    source: "PM p12; UM spec 0.0% to 100.0%"
+  fm_dev_set:
+    send: "SOURce{ch}:FM:DEViation {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 35000000, format: "%g", unit: Hz}}
+    reply: none
+    safety: configure
+    description: "Below the carrier frequency and below the maximum minus the carrier (UM p29-30); the instrument limits it"
+    source: "PM p16"
+  pm_dev_set:
+    send: "SOURce{ch}:PM:DEViation {deg}DEG"
+    params: {deg: {type: number, min: 0, max: 180, format: "%g", unit: deg}}
+    reply: none
+    safety: configure
+    source: "PM p24; UM spec 0 to 180 degrees"
+  mod_f_set:
+    send: "SOURce{ch}:{sub}:INTernal:FREQuency {hz}"
+    params:
+      sub: {type: enum, from: 'fm_st == 1.0 ? "FM" : (pm_st == 1.0 ? "PM" : "AM")', values: {AM: AM, FM: FM, PM: PM}}
+      hz: {type: number, min: 0.002, max: 100000, format: "%g", unit: Hz}
+    reply: none
+    safety: configure
+    description: "The active modulation's modulating frequency (AM when none is on)"
+    source: "PM p12, p17, p24; UM spec 2 mHz to 100 kHz"
+  mod_fn_set:
+    send: "SOURce{ch}:{sub}:INTernal:FUNCtion {shape}"
+    params:
+      sub: {type: enum, from: 'fm_st == 1.0 ? "FM" : (pm_st == 1.0 ? "PM" : "AM")', values: {AM: AM, FM: FM, PM: PM}}
+      shape: {type: enum, values: {SIN: SINusoid, SQU: SQUare, RAMP: RAMP, PRN: PRNoise}}
+    reply: none
+    safety: configure
+    description: "The manual prints SUQare; the instrument takes SQUare (bench 2026-10-20)"
+    source: "PM p12, p17, p25"
+  # ---- sweep (trigger: internal timer or the front-panel knob)
+  swe_start: {send: "SOURce{ch}:FREQuency:STARt?", parse: [trim, number], source: "PM p20"}
+  swe_stop:  {send: "SOURce{ch}:FREQuency:STOP?", parse: [trim, number], source: "PM p21"}
+  swe_time:  {send: "SOURce{ch}:SWEep:TIME?", parse: [trim, number], source: "PM p30"}
+  swe_spc:   {send: "SOURce{ch}:SWEep:SPACing?", parse: [trim, upper, {map: {LIN: LIN, LOG: LOG}}], source: "PM p29"}
+  swe_src:   {send: "SOURce{ch}:SWEep:SOURce?", parse: [trim, upper, {map: {TIM: INT, MAN: MAN, EXT: EXT}}], source: "PM p28"}
+  swe_start_set:
+    send: "SOURce{ch}:FREQuency:STARt {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 70000000, format: "%g", unit: Hz}}
+    reply: none
+    safety: configure
+    source: "PM p20"
+  swe_stop_set:
+    send: "SOURce{ch}:FREQuency:STOP {hz}"
+    params: {hz: {type: number, min: 0.000001, max: 70000000, format: "%g", unit: Hz}}
+    reply: none
+    safety: configure
+    source: "PM p21"
+  swe_time_set:
+    send: "SOURce{ch}:SWEep:TIME {s}"
+    params: {s: {type: number, min: 0.001, max: 500, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "PM p30; UM spec 1 ms to 500 s"
+  swe_spc_set:
+    send: "SOURce{ch}:SWEep:SPACing {sp}"
+    params: {sp: {type: enum, values: {LIN: LINear, LOG: LOGarithmic}}}
+    reply: none
+    safety: configure
+    source: "PM p29"
+  swe_src_set:
+    send: "SOURce{ch}:SWEep:SOURce {src}"
+    params: {src: {type: enum, values: {INT: TIMer, MAN: MANual}}}
+    reply: none
+    safety: configure
+    description: "No trigger input on the DGE2000 (EXT exists in the protocol only)"
+    source: "PM p28; UM spec trigger source internal, manual"
+  # ---- burst
+  bur_mode: {send: "SOURce{ch}:BURSt:MODE?", parse: [trim, upper], source: "PM p14; TRIG or GAT"}
+  bur_ncyc: {send: "SOURce{ch}:BURSt:NCYCles?", parse: [trim, number], source: "PM p15; infinite reads 9.9E+37"}
+  bur_per:  {send: "SOURce{ch}:BURSt:INTernal:PERiod?", parse: [trim, number], source: "PM p14"}
+  bur_src:  {send: "SOURce{ch}:BURSt:SOURce?", parse: [trim, upper, {map: {TIM: INT, MAN: MAN, EXT: EXT}}], source: "PM p15"}
+  bur_mode_set:
+    send: "SOURce{ch}:BURSt:{m}"
+    params: {m: {type: enum, values: {INF: "NCYCles INFinity", NCYC: "MODE TRIGgered"}}}
+    reply: none
+    safety: configure
+    gap_after_ms: 100
+    description: "N cycles or infinite after each trigger; gated needs the trigger input the DGE2000 lacks"
+    source: "PM p14-15"
+  bur_finite:
+    send: "SOURce{ch}:BURSt:NCYCles {n}"
+    params: {n: {type: integer, format: "%d", from: "bur_ncyc >= 9.0e37 ? 1 : int(bur_ncyc)"}}
+    reply: none
+    safety: configure
+    description: "Leaving infinite: one cycle (the count is kept when it is already finite)"
+    source: "PM p15"
+  bur_ncyc_set:
+    send: "SOURce{ch}:BURSt:NCYCles {n}"
+    params: {n: {type: integer, min: 1, max: 60000, format: "%d"}}
+    reply: none
+    safety: configure
+    source: "PM p15; UM spec 1 to 60000 (max = burst period / period)"
+  bur_per_set:
+    send: "SOURce{ch}:BURSt:INTernal:PERiod {s}"
+    params: {s: {type: number, min: 0.00000002, max: 500, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "PM p14; UM p31 20 ns to 500 s (at least cycles x period)"
+  bur_src_set:
+    send: "SOURce{ch}:BURSt:SOURce {src}"
+    params: {src: {type: enum, values: {INT: TIMer, MAN: MANual}}}
+    reply: none
+    safety: configure
+    source: "PM p15; UM spec trigger source internal, manual"
+  # ---- pulse (duty applies to the pulse waveform; the square is fixed at 50 %)
+  pul_dcyc:  {send: "SOURce{ch}:PULSe:DCYCle?", parse: [trim, number], source: "PM p26"}
+  pul_width: {send: "SOURce{ch}:PULSe:WIDTh?", parse: [trim, number], source: "PM p28"}
+  pul_lead:  {send: "SOURce{ch}:PULSe:TRANsition?", parse: [trim, number], source: "PM p27"}
+  pul_trail: {send: "SOURce{ch}:PULSe:TRANsition:TRAiling?", parse: [trim, number], source: "PM p27"}
+  pul_dcyc_set:
+    send: "SOURce{ch}:PULSe:DCYCle {pct}"
+    params: {pct: {type: number, min: 0, max: 100, format: "%.1f", unit: "%"}}
+    reply: none
+    safety: configure
+    description: "Limited by the minimum pulse width and the period (UM p14)"
+    source: "PM p26"
+  pul_width_set:
+    send: "SOURce{ch}:PULSe:WIDTh {s}"
+    params: {s: {type: number, min: 0.000000024, max: 1000000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "PM p28; UM spec pulse width >= 24 ns"
+  pul_lead_set:
+    send: "SOURce{ch}:PULSe:TRANsition {s}"
+    params: {s: {type: number, min: 0.000000015, max: 1000000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "PM p27; UM spec rise and fall time >= 15 ns"
+  pul_trail_set:
+    send: "SOURce{ch}:PULSe:TRANsition:TRAiling {s}"
+    params: {s: {type: number, min: 0.000000015, max: 1000000, format: "%g", unit: s}}
+    reply: none
+    safety: configure
+    source: "PM p27"
+  # ---- load the amplitude refers to
+  load_q: {send: "OUTPut{ch}:IMPedance?", parse: [trim, number], source: "PM p13-14; High-Z reads 9.9E+37"}
+  load_set:
+    send: "OUTPut{ch}:IMPedance {z}"
+    params: {z: {type: enum, values: {"50": "50", HIGHZ: INFinity}}}
+    reply: none
+    safety: configure
+    source: "PM p13-14"
   screenshot:
     send: "HCOPy:SDUMp:DATA?"
     reply: block
@@ -104,7 +293,10 @@ classes:
       - every_ms: 1000
         read: [outp_q]
       - every_ms: 5000
-        read: [shape_q, freq_q, ampl_q, offs_q, phase_q, symm_q]
+        read: [shape_q, freq_q, ampl_q, offs_q, phase_q, symm_q, am_st, fm_st, pm_st, swe_st, bur_st, load_q]
+      - every_ms: 10000
+        read: [am_dep, am_f, am_fn, fm_dev, fm_f, fm_fn, pm_dev, pm_f, pm_fn, swe_start, swe_stop, swe_time, swe_spc, swe_src,
+               bur_mode, bur_ncyc, bur_per, bur_src, pul_dcyc, pul_width, pul_lead, pul_trail]
     status:
       OUTPUT: outp_q
       SHAPE: shape_q
@@ -113,6 +305,30 @@ classes:
       OFFS: {expr: offs_q, as: si}
       PHASE: "phase_q * 180.0 / 3.141592653589793"
       SYMM: symm_q
+      LOAD: "load_q >= 9.0e37 ? 'HIGHZ' : string(int(load_q))"
+      DUTY: pul_dcyc
+      WIDTH: {expr: pul_width, as: si}
+      RISE: {expr: pul_lead, as: si}
+      FALL: {expr: pul_trail, as: si}
+      MODE: >-
+        bur_st == 1.0 ? "BURST" : swe_st == 1.0 ? "SWEEP" :
+        (am_st == 1.0 || fm_st == 1.0 || pm_st == 1.0) ? "MOD" : "CW"
+      MOD_TYPE: 'am_st == 1.0 ? "AM" : fm_st == 1.0 ? "FM" : pm_st == 1.0 ? "PM" : null'
+      MOD_SOURCE: '"INT"'
+      MOD_SHAPE: 'fm_st == 1.0 ? fm_fn : pm_st == 1.0 ? pm_fn : am_fn'
+      MOD_FREQ: {expr: 'fm_st == 1.0 ? fm_f : pm_st == 1.0 ? pm_f : am_f', as: si}
+      AM_DEPTH: am_dep
+      FM_DEV: {expr: fm_dev, as: si}
+      PM_DEV: "pm_dev * 180.0 / 3.141592653589793"
+      SWEEP_START: {expr: swe_start, as: si}
+      SWEEP_STOP: {expr: swe_stop, as: si}
+      SWEEP_TIME: {expr: swe_time, as: si}
+      SWEEP_SPACING: swe_spc
+      SWEEP_TRIG: swe_src
+      BURST_MODE: 'bur_mode == "GAT" ? "GATED" : (bur_ncyc >= 9.0e37 ? "INF" : "NCYC")'
+      BURST_CYCLES: "bur_ncyc >= 9.0e37 ? null : int(bur_ncyc)"
+      BURST_PERIOD: {expr: bur_per, as: si}
+      BURST_TRIG: bur_src
     operations:
       output: {get: outp_q, set: outp_set}
       shape: {get: shape_q, set: shape_set}
@@ -121,4 +337,34 @@ classes:
       offset: {get: offs_q, set: offs_set, as: si}
       phase: {set: phase_set}
       symmetry: {get: symm_q, set: symm_set}
+      load: {set: load_set}
+      duty: {get: pul_dcyc, set: pul_dcyc_set}
+      pulse_width: {get: pul_width, set: pul_width_set, as: si}
+      pulse_rise: {get: pul_lead, set: pul_lead_set, as: si}
+      pulse_fall: {get: pul_trail, set: pul_trail_set, as: si}
+      mode:
+        set:
+          - {cmd: mode_set, args: {m: "{value}"}}
+          - {cmd: am_off, only: [CW]}
+          - {cmd: fm_off, only: [CW]}
+          - {cmd: pm_off, only: [CW]}
+          - {cmd: swe_off, only: [CW]}
+      mod_type: {set: mod_type_set}
+      mod_shape: {set: mod_fn_set}
+      mod_frequency: {set: mod_f_set}
+      am_depth: {get: am_dep, set: am_dep_set}
+      fm_deviation: {get: fm_dev, set: fm_dev_set, as: si}
+      pm_deviation: {set: pm_dev_set}
+      sweep_start: {get: swe_start, set: swe_start_set, as: si}
+      sweep_stop: {get: swe_stop, set: swe_stop_set, as: si}
+      sweep_time: {get: swe_time, set: swe_time_set, as: si}
+      sweep_spacing: {get: swe_spc, set: swe_spc_set}
+      sweep_trigger: {get: swe_src, set: swe_src_set}
+      burst_mode:
+        set:
+          - {cmd: bur_mode_set, args: {m: "{value}"}}
+          - {cmd: bur_finite, only: [NCYC]}
+      burst_cycles: {set: bur_ncyc_set}
+      burst_period: {get: bur_per, set: bur_per_set, as: si}
+      burst_trigger: {get: bur_src, set: bur_src_set}
       # screenshot: {get: screenshot, as: bytes}  - disabled until the userspace USBTMC transport exists

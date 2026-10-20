@@ -68,8 +68,19 @@ There is no class-level schema in the Python code; this document is the first on
 - ⚠️ `REMOTE` hardcoded "ON". `INPUT` is the raw `INP?` reply (possibly "1"/"0" - verify by capture) while UI compares to "ON". `query_mode` returns None on unknown reply.
 - ⚠️ Node-RED calls `set_current/voltage/power`; OEL has `set_curr/volt/pow`.
 
-## AWG - `GenericAWG` (owon_dge)
-- Driver emits `{"OUTPUT":"ON"|"OFF"}` per channel (2). UI renders placeholders only; no ops used. Features: `channel_colors`.
+## AWG (contract `devices/classes/AWG.yaml`, panel `AwgChannel`)
+- Required: `OUTPUT` and the `output` operation. Carrier keys SHAPE, FREQ (Hz), AMPL (Vpp), OFFS, PHASE, SYMM,
+  LOAD (`"50"` | `HIGHZ`), pulse DUTY / WIDTH / RISE / FALL are optional. Period, Vrms, dBm and high/low levels
+  are computed by the UI (`bench/awgMath.ts`), so a definition binds the native quantities only.
+- **Modes (optional, AWG Core):** `MODE` CW | MOD | SWEEP | BURST. MOD: MOD_TYPE (AM, FM, PM, FSK, ASK, PSK, PWM),
+  MOD_SOURCE, MOD_SHAPE, MOD_FREQ, AM_DEPTH (%), FM_DEV (Hz), PM_DEV (degrees). SWEEP: SWEEP_START / STOP / TIME,
+  SWEEP_SPACING LIN | LOG, SWEEP_TRIG INT | EXT | MAN. BURST: BURST_MODE NCYC | INF | GATED, BURST_CYCLES (null when
+  infinite), BURST_PERIOD, BURST_TRIG. Operations of the same names (`mode`, `mod_type`, `sweep_start`, ...,
+  `trigger` ONCE). `mode` CW switches modulation, sweep and burst off.
+- The panel shows a control only when its setter is in `/methods`; enum setters list only what the instrument
+  takes (the DGE2000 has no trigger input, so its triggers are INT and MAN). A generator without `mode` is CW.
+- Features: `channel_colors`. Only `owon_dge` binds the modes so far (bench-checked 2026-10-20,
+  `scripts/awg_modes_check.py`); the other families follow (CLASS_FEATURES.md, step 3).
 
 ## OSC - `GenericOSC` (rigol_dho800)
 - **Status read:** `SCALE`,`OFFSET`,`TIMEBASE` (SI), `COUPLING` (raw, unstripped). 💤 `CHANNEL` (int). 4 channels. No ops from UI.

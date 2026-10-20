@@ -97,6 +97,32 @@ describe('AWG profile', () => {
     expect(p.symmetry).toMatchObject({ min: 0, max: 100, unit: '%' })
     expect(p.levelLimit).toBe(10)
   })
+
+  it('DGE2070: modes, modulation, sweep, burst, pulse and load from the setters, in panel order', () => {
+    const p = awgProfile(...fx('owon-dge2070:AWG'))
+    expect(p.modes).toEqual(['CW', 'MOD', 'SWEEP', 'BURST'])
+    expect(p.modTypes).toEqual(['AM', 'FM', 'PM'])
+    expect(p.modShapes).toEqual(['SIN', 'SQU', 'RAMP', 'PRN'])
+    expect(p.modFrequency).toMatchObject({ max: 100000, unit: 'Hz' })
+    expect(p.amDepth).toMatchObject({ min: 0, max: 100, decimals: 1 })
+    expect(p.pmDeviation).toMatchObject({ max: 180 })
+    expect(p.sweepTime).toEqual({ min: 0.001, max: 500 })
+    expect(p.sweepSpacings).toEqual(['LIN', 'LOG'])
+    // the DGE2000 has no trigger input: internal and the front-panel key only
+    expect(p.sweepTriggers).toEqual(['INT', 'MAN'])
+    expect(p.burstTriggers).toEqual(['INT', 'MAN'])
+    expect(p.burstModes).toEqual(['NCYC', 'INF'])
+    expect(p.burstCycles).toMatchObject({ min: 1, max: 60000, decimals: 0 })
+    expect(p.pulseWidth).toEqual({ min: 2.4e-8, max: 1e6 })
+    expect(p.loads).toEqual(['50', 'HIGHZ'])
+    expect(p.trigger).toBe(false)
+  })
+
+  it('a generator without modes offers continuous output only', () => {
+    const p = awgProfile({}, setterMap([{ name: 'frequency', http_method: 'POST', value: { type: 'number', min: 1, max: 1e6 } }]))
+    expect(p.modes).toEqual([])
+    expect(p.loads).toEqual([])
+  })
 })
 
 describe('OSC profile', () => {
