@@ -7,36 +7,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - See @ai_context/IMPLEMENTATION_PHILOSOPHY.md for core development principles
 - See @ai_context/MODULAR_DESIGN_PHILOSOPHY.md for architecture patterns
 
+
 ## Project Overview
 
-BenchMesh is a consistent, browser-based cockpit for lab instruments. It connects, controls, logs, correlates, and automates multiple serial devices from a single interface. The core component is `benchmesh-serial-service`, a Python backend with FastAPI that manages concurrent serial connections through a modular driver architecture.
+BenchMesh is one cockpit for lab instruments: power supplies, multimeters, electronic loads,
+signal generators, oscilloscopes, LCR meters and spectrum analyzers, connected over USB, serial or
+LAN, controlled from one window, recorded on one shared timeline and automated with flows. It is
+a **Rust** server with a **React** UI, shipped as a **Tauri** desktop app for Windows, macOS and
+Linux. Working branch: `develop`. Public site: https://benchmesh.online (repo `../BenchMeshOnline`).
+
+Instruments are described by **declarative device definitions** (`devices/*.yaml`, shared parts
+in `devices/bases/`, spec `ai_context/migration/DEVICE_DSL.md`, class contracts
+`ai_context/migration/CLASS_CONTRACT.md`) interpreted by one generic driver: there is no
+per-device code. Design history and decisions: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`. The
+Python/Electron/Node-RED system it replaced is kept only in git (tag `legacy-python`).
 
 ## Architecture
-
-The system follows a layered architecture:
-
-- **SerialManager** (`serial_manager.py`): Central orchestrator that manages device connections, spawns per-device worker threads, maintains device registry with IDN and status data, and handles reconnection logic
-- **Driver Layer** (`drivers/`): Modular device-specific drivers (tenma_72, owon_spm, owon_xdm, owon_oel, owon_dge) that implement device-specific protocols and polling
-- **Transport Layer** (`transport/`): Abstract transport interface supporting multiple physical transports (Serial, USB TMC, TCP/IP) with consistent SCPI communication patterns
-- **API Layer** (`api.py`): FastAPI application exposing REST endpoints and WebSocket for device status and control
-- **Frontend** (`frontend/`): React+TypeScript UI built with Vite
-
-Each device runs in its own worker thread with per-device RLock for thread safety. Devices reconnect automatically with ~2s backoff on failure. The registry maintains `IDN` (from *IDN? SCPI command on connect) and `status` (polled every ~2s) for each device.
-
-## Rust + Tauri Migration (in progress)
-
-The Python backend and Electron shell are being replaced by **Rust + Tauri** (working branch
-`develop`; `main` is kept separately). Plan, decisions and progress log: `ai_context/RUST_TAURI_MIGRATION_PLAN.md`
-(read it first when working on the migration). Instruments are described by **declarative
-device definitions** (`devices/*.yaml`, spec `ai_context/migration/DEVICE_DSL.md`) interpreted by
-one generic Rust driver - no per-device code.
 
 | Crate (`crates/`) | Role |
 |---|---|
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
 | `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
-| `bm-server` | axum API (wire-compatible with the Python API), WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
+| `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
@@ -50,6 +43,7 @@ cargo run -p bm-server -- --config captures/bench-config.yaml --simulate capture
 ./target/debug/bm-probe --config captures/bench-config.yaml verify    # bench check (read-only)
 cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
 ```
+
 
 **App updates:** the desktop app checks once per start for a newer *published* GitHub release
 (signed `latest.json`, `crates/benchmesh-app/src/update.rs`) and the UI offers it in a modal
@@ -93,93 +87,55 @@ the server re-runs its executable elevated (`--install-winusb`, `bm_transport::w
 Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. `POST /devices/detect`
 identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
 them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
-lists what the OS reports. `system/udev_rules.txt` is a development aid, not part of the product.
+lists what the OS reports.
 
-Bench/hardware notes and wire captures: `captures/`, `scripts/wire_capture/`,
-`scripts/bench_setters.sh`, `ai_context/migration/device-notes/`.
+Bench/hardware notes and wire captures: `captures/` (golden transcripts replayed by the tests),
+`scripts/bench_setters.sh`, `scripts/bench_scope_setters.sh`, `ai_context/migration/device-notes/`.
 
-## Unified Polling & Priority Queue
+## Instrument API
 
-**Status**: Implemented (disabled by default for backward compatibility)
+- `GET /instruments`, `/instruments/{CLS}`, `/instruments/{CLS}/{id}` (features), `/instruments/{CLS}/{id}/methods`
+- `GET /instruments/{CLS}/{id}/{ch}/{op}` runs the definition's **query** `op`; `POST
+  /instruments/{CLS}/{id}/{ch}/{op}/{value}` runs its **setter**. Only operations the definition
+  declares for that class can be called, a GET never runs a setter and a POST never runs a query;
+  values are validated against the setter's value spec before anything is sent.
+- `/methods` lists every operation with its HTTP verb; `POST` entries carry the setter's value
+  spec from the definition, e.g. `"value": {"type": "number", "min": 0, "max": 60, "format": "%.2f", "unit": "V"}`
+  or `{"type": "enum", "values": ["OFF", "ON"]}`, plus `"energizes": true` for operations that
+  can switch an output/input on (the UI requires two presses for those). Implemented in
+  `crates/bm-server/src/opspec.rs` (also used by `/ai/context` and the automation vocabulary).
+- `/openapi.json` / `/openapi.yaml` describe every route (`crates/bm-server/src/openapi.rs`; a
+  test fails when a route is missing); `/docs` opens the UI's API reference drawer.
 
-The system supports unified polling with priority queues for improved performance and responsiveness. Unified polling synchronizes device updates, prioritizes API requests, and enables aggressive polling intervals (25-50ms) for 50-80x UI latency improvement.
+## Configuration and user data
 
-**See `ai_context/UNIFIED_POLLING_QUICKREF.md` for complete configuration, performance characteristics, and testing guide.**
+User data lives in `~/.benchmesh/` (`BENCHMESH_DATA_DIR`): `config.yaml` (the instruments),
+`recordings.db`, `flows/`, `automation.json`. A simulation (`--simulate <capture>`) keeps
+recordings, flows and settings in memory. `config.yaml`:
 
-
-## Serial Port Utilization Metrics
-
-The system includes comprehensive metrics collection for monitoring serial port utilization and performance. Metrics are automatically logged every 30 seconds and include utilization %, QPS, API latency (P95/P99), queue depth, and poll duration.
-
-**See `ai_context/METRICS_MONITORING.md` for complete metric descriptions, log output format, diagnostic guide, and implementation details.**
-
-
-## Common Commands
-
-### Starting the Full System
-
-```bash
-# From repository root - starts everything (API, Frontend, Node-RED)
-./start.sh
-
-# Start with frontend UI build (use when frontend code has changed)
-./start.sh --uibuild
-
-# Build and run in Electron desktop app wrapper
-./start.sh --electron
-# or
-npm run start:electron
-
-# Services will be available at:
-# - Frontend: http://localhost:57666/ui
-# - API Docs: http://localhost:57666/docs
-# - Node-RED: http://localhost:1880
+```yaml
+version: 1
+devices:
+  - {id: tenma-72-2540, name: Tenma, driver: tenma_72, model: 72-2540, transport: serial, port: /dev/ttyACM0, baud: 9600, serial: 8N1}
+  - {id: rigol-dho804, name: Rigol DHO804, driver: rigol_dho800, model: DHO804, transport: usbtmc, device: /dev/usbtmc0}
 ```
 
-**Note**: The `--uibuild` flag triggers a full frontend build before starting services. This runs `npm ci` and `npm run build` in the frontend directory. Use this flag when you've made changes to the frontend code. Without the flag, the script uses the existing build in `dist/`.
+`driver` names the definition (`devices/<driver>.yaml`); transports are `serial` (`port`, `baud`,
+`serial`), `usbtmc` (`device`) and `tcpip` (raw SCPI socket) / `vxi11` (`host`, optionally
+`:port`). Instead of `port`/`device` a USB entry may carry `match` (see Instrument identity); the
+UI's Instruments drawer and Detect write these entries (`crates/bm-server/src/config.rs`).
 
-**Note**: The `--electron` flag builds the frontend UI, starts all backend services (Node-RED, FastAPI), and launches the Electron desktop application. When the Electron window closes, all backend services are automatically cleaned up.
+## Adding an instrument
 
-### Backend Development
+1. Find the family's definition in `devices/` (or a base in `devices/bases/`) and add the model, or
+   write a new definition following `DEVICE_DSL.md` and the class contract.
+2. `cargo run -q -p bm-devicedef -- validate devices` (0 errors).
+3. With hardware: `bm-probe verify` (read-only), then `get` / `set` checks; record a capture for
+   the replay tests when the definition is confirmed. Without hardware: mark it from the manual
+   (speculative coverage, `ai_context/migration/coverage/`).
+4. The UI needs nothing: class panels read features and value specs from the API.
 
-```bash
-# From benchmesh-serial-service/ directory
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the service (standalone, no API)
-python -m benchmesh_service.main --config config.yaml
-
-# Run with FastAPI (includes frontend auto-start)
-PYTHONPATH=src uvicorn benchmesh_service.api:app --host 0.0.0.0 --port 57666
-
-# Run tests
-pytest tests/
-
-# Run specific test file
-pytest tests/test_serial_manager.py
-
-# Run with verbose output
-pytest -v tests/
-```
-
-### Node-RED
-
-```bash
-# From repository root
-
-# Install Node-RED (first time only)
-npm install
-
-# Start Node-RED standalone
-npm run start:nodered
-
-# Node-RED runs on port 1880
-# Data stored in .node-red/ directory
-```
-
-### Instrument UI (bench)
+## Instrument UI (bench)
 
 The UI is a **bench**: one panel per instrument class (`PSU`, `DMM`, `ELL`, `AWG`, `OSC`, `LCR`, `SAL`; any other
 class gets a read-only generic panel), laid out in a responsive rack. Every instrument of a class
@@ -227,553 +183,40 @@ Adding a class panel: write `bench/panels/<Cls>Panel.tsx` from kit components, a
 in `profiles.ts` (with tests against `bench/__tests__/bench-fixtures.json`, captured from the
 simulated bench), and dispatch it in `InstrumentPanel.tsx`.
 
-### Frontend Development
+
+## Frontend (`frontend/`)
 
 ```bash
-# From benchmesh-serial-service/frontend/ directory
-
-# Install dependencies
 npm ci
-
-# Development server (hot reload)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run unit tests (vitest)
-npm test
-
-# Run unit tests once (CI mode)
-npm run test:run
-
-# Run E2E tests (Playwright)
-npm run test:e2e
-
-# Run E2E tests with UI mode
-npm run test:e2e:ui
-
-# Run E2E tests in headed mode (visible browser)
-npm run test:e2e:headed
-
-# Run E2E tests in debug mode
-npm run test:e2e:debug
+npm run dev            # Vite dev server, proxies the API to :57666 (BENCHMESH_API overrides)
+npm run build          # into frontend/dist (served by bm-server under /ui)
+npm run lint
+npx vitest run         # unit tests (CI)
+npm run test:e2e       # Playwright against a preview build with a mocked API (CI)
 ```
 
-**E2E Testing**: See `ai_context/TESTING_GUIDE.md` for comprehensive E2E testing documentation.
-
-
-### Driver CLI Tool
-
-Test driver methods directly from command line:
-
-```bash
-# From repository root, set PYTHONPATH if needed
-export PYTHONPATH=benchmesh-serial-service/src
-
-# List devices from config
-python -m benchmesh_service.tools.driver_cli list --config benchmesh-serial-service/config.yaml
-
-# List available methods for a device
-python -m benchmesh_service.tools.driver_cli methods --id tenmapsu-1 --config benchmesh-serial-service/config.yaml
-
-# Call a method (no args)
-python -m benchmesh_service.tools.driver_cli call --id tenmapsu-1 --method query_identify --config benchmesh-serial-service/config.yaml
-
-# Call with positional args
-python -m benchmesh_service.tools.driver_cli call --id spm-1 --method set_voltage 5.0 --config benchmesh-serial-service/config.yaml
-
-# Call with kwargs (JSON)
-python -m benchmesh_service.tools.driver_cli call --id tenmapsu-1 --method set_output true --kwargs '{"ch":1}' --config benchmesh-serial-service/config.yaml
-```
-
-### CI
-
-GitHub Actions runs on all branches and PRs:
-- Backend tests: `pytest benchmesh-serial-service/tests`
-- Frontend tests: `npx vitest run --reporter=dot`
-
-## Testing
-
-BenchMesh includes comprehensive testing infrastructure: unit tests, integration tests, E2E tests (Playwright), and an MCP service for automated testing. The MCP service enables Claude Code to run tests automatically after code changes, supporting the project's TDD philosophy.
-
-**See `ai_context/TESTING_GUIDE.md` for complete testing documentation including MCP service setup, E2E testing modes, backend/frontend test commands, and CI integration.**
-
-
-## API Naming Convention & Security
-
-The API implements a **secure method resolution system** that prevents arbitrary method execution:
-
-### GET Requests (Query)
-Partial method names are **strictly** resolved to `query_*` methods only:
-- `GET /instruments/PSU/device-1/1/voltage` → calls `driver.query_voltage(1)`
-- `GET /instruments/DMM/device-2/1/current` → calls `driver.query_current(1)`
-
-### POST Requests (Set)
-Partial method names are **strictly** resolved to `set_*` methods only:
-- `POST /instruments/PSU/device-1/1/current/2.5` → calls `driver.set_current(1, 2.5)`
-- `POST /instruments/ELL/device-3/1/mode/CURR` → calls `driver.set_mode(1, "CURR")`
-
-### Security Features
-1. **No Arbitrary Method Execution**: Only methods with `query_` or `set_` prefixes can be called via API
-2. **No Private Method Access**: Methods like `_internal_method()` or `__init__()` cannot be accessed
-3. **HTTP Verb Enforcement**: GET only allows query methods, POST only allows set methods
-4. **Protection Against Mistakes**: Cannot accidentally call setters with GET or queries with POST
-
-**Example of what is NOT allowed (security protection):**
-- `GET /instruments/PSU/device-1/1/poll_status` → **Rejected** (no query_poll_status)
-- `POST /instruments/PSU/device-1/1/_private_method/value` → **Rejected** (private method)
-- `GET /instruments/PSU/device-1/1/set_voltage` → **Rejected** (setter on GET request)
-
-## API Method Discovery
-
-The API provides automatic method discovery for all instruments, enabling dynamic UI generation (e.g., Node-RED dropdowns) without hardcoded method lists.
-
-### Method Discovery Endpoint
-
-**`GET /instruments/{class}/{device_id}/methods`** - Returns all available methods with rich metadata:
-
-```json
-{
-  "device_id": "psu-1",
-  "class": "PSU",
-  "methods": [
-    {
-      "name": "output_voltage",           // Partial name (API-friendly)
-      "full_name": "query_output_voltage", // Full method name
-      "http_method": "GET",                // GET or POST
-      "description": "Query the output voltage",
-      "parameters": [
-        {
-          "name": "channel",
-          "type": "int",
-          "required": true,
-          "description": "Channel number"
-        }
-      ],
-      "returns": "string",
-      "example": "GET /instruments/PSU/psu-1/1/output_voltage"
-    }
-  ]
-}
-```
-
-**Rust server:** `POST` entries also carry the setter's value spec from the device definition
-and a safety flag, e.g. `"value": {"type": "number", "min": 0, "max": 60, "format": "%.2f", "unit": "V"}`
-or `{"type": "enum", "values": ["OFF", "ON"]}`, plus `"energizes": true` for operations that can
-switch an output/input on (the UI requires two presses for those). Implemented in
-`crates/bm-server/src/opspec.rs` (also used by `/ai/context`).
-
-### How It Works
-
-**Automatic Discovery (80% auto-generated):**
-- Python introspection discovers all `query_*` and `set_*` methods
-- Extracts method signatures and parameter types from type hints
-- Auto-generates descriptions from method names:
-  - `query_output_voltage` → "Query the output voltage"
-  - `set_current` → "Set the current"
-- Categorizes by HTTP method (GET for query_, POST for set_)
-
-**Optional Manifest Enrichment (20% configuration):**
-Drivers can optionally add a `methods` section to `manifest.json` for enhanced metadata:
-
-```json
-{
-  "methods": {
-    "query_output_voltage": {
-      "description": "Query the actual output voltage being delivered",
-      "parameters": {
-        "channel": {
-          "description": "PSU channel number",
-          "range": [1, 3],
-          "unit": null
-        }
-      },
-      "returns": {
-        "type": "float",
-        "unit": "V"
-      }
-    }
-  }
-}
-```
-
-**See `benchmesh-serial-service/MANIFEST_METHODS_SCHEMA.md` for complete documentation.**
-
-### Use Cases
-
-**Node-RED Integration:**
-- Dynamically populate method dropdowns
-- Show user-friendly descriptions
-- Validate parameters before sending
-- Generate correct API calls automatically
-- Support all instrument classes without hardcoding
-
-**API Exploration:**
-- Discover available methods without reading code
-- Understand parameter requirements
-- See example usage patterns
-- Find methods by HTTP verb (GET vs POST)
-
-### Implementation Files
-
-- `method_inspector.py` - Introspection and enrichment logic
-- `/instruments/{class}/{device_id}/methods` endpoint in `api.py`
-- `test_method_inspector.py` - Comprehensive unit tests
-
-## API Documentation & OpenAPI Specification
-
-BenchMesh provides comprehensive OpenAPI 3.1 documentation with rich metadata, organized tag groups, and type-safe Pydantic models - similar to Java Spring Boot's annotation-based approach.
-
-### OpenAPI Specification Generation
-
-OpenAPI specs are generated during the build process and served as static files. The specifications are available in both JSON and YAML formats.
-
-**Generation Locations:**
-- **Automatic**: During `./start.sh --uibuild` (frontend build process)
-- **Manual**: Using the `gen_openapi.py` CLI tool
-
-**Generated Files:**
-- `benchmesh-serial-service/src/benchmesh_service/static/openapi/openapi.json`
-- `benchmesh-serial-service/src/benchmesh_service/static/openapi/openapi.yaml`
-
-### Accessing OpenAPI Specifications
-
-**Via Endpoints:**
-- `GET /openapi.json` - JSON format specification
-- `GET /openapi.yaml` - YAML format specification
-- `GET /docs` - Interactive Swagger UI (FastAPI default)
-- `GET /redoc` - ReDoc documentation (FastAPI default)
-
-**Direct File Access:**
-Both files are served statically and can be downloaded for use with code generators, testing tools, or API clients.
-
-### Using the OpenAPI Generator Tool
-
-The `gen_openapi.py` tool generates specifications from the FastAPI application:
-
-```bash
-# From benchmesh-serial-service directory
-PYTHONPATH=src python3 -m benchmesh_service.tools.gen_openapi \
-  --app benchmesh_service.api:app \
-  --out-dir src/benchmesh_service/static/openapi \
-  --formats both
-
-# Options:
-#   --app MODULE:VARIABLE      FastAPI app module path (required)
-#   --out-dir PATH             Output directory (default: ./openapi)
-#   --formats json|yaml|both   Output formats (default: both)
-```
-
-**Integration with Build Process:**
-The `start.sh --uibuild` flag automatically runs this tool after building the frontend, ensuring specs are always up-to-date with the code.
-
-### API Tag Groups
-
-The API is organized into 8 logical tag groups for better navigation and documentation:
-
-1. **system** - Service status, version, health checks
-2. **configuration** - Device config, driver discovery, port scanning
-3. **instruments** - Instrument listing, capabilities, manifest features
-4. **instrument-control** - Device control endpoints (query/set methods)
-5. **monitoring** - Performance metrics, utilization, quality scores
-6. **recordings** - Data recording management (future)
-7. **ai-assistant** - AI-powered assistant endpoints (future)
-8. **websockets** - Real-time WebSocket connections
-
-### Pydantic Models for Type Safety
-
-All API endpoints use Pydantic models for request/response validation and automatic OpenAPI schema generation.
-
-**Response Models Location:** `benchmesh-serial-service/src/benchmesh_service/models/api_responses.py`
-
-**Request Models Location:** `benchmesh-serial-service/src/benchmesh_service/models/api_requests.py`
-
-**Key Patterns:**
-
-1. **Standard Response Model:**
-```python
-class StatusResponse(BaseModel):
-    """Service status response with device connection statistics."""
-
-    devices_total: int = Field(
-        description="Total number of configured devices",
-        example=3
-    )
-    connected: int = Field(
-        description="Number of currently connected devices",
-        example=2
-    )
-```
-
-2. **Dictionary Response Model (Pydantic V2):**
-```python
-class DriversResponse(RootModel[Dict[str, DriverInfo]]):
-    """Map of available drivers and their information."""
-    root: Dict[str, DriverInfo] = Field(
-        description="Dictionary mapping driver ID to driver information",
-        examples=[{...}]
-    )
-```
-
-3. **Request Model with Validation:**
-```python
-class DeviceConfig(BaseModel):
-    id: str = Field(description="Unique device identifier")
-    baud: int = Field(description="Baud rate", example=9600)
-
-    @field_validator('baud')
-    @classmethod
-    def validate_baud(cls, v: int) -> int:
-        valid_bauds = [300, 1200, 2400, 4800, 9600, 19200, ...]
-        if v not in valid_bauds:
-            raise ValueError(f"Invalid baud rate: {v}")
-        return v
-```
-
-### Adding New Endpoints with Rich Documentation
-
-When adding new API endpoints, follow these patterns for comprehensive OpenAPI documentation:
-
-```python
-@app.get(
-    "/status",
-    tags=["system"],                    # Tag group for organization
-    response_model=StatusResponse,      # Type-safe response model
-    summary="Get service status",       # Short summary
-    responses={                         # Additional response documentation
-        200: {
-            "description": "Service status with device connection counts",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "devices_total": 3,
-                        "connected": 2,
-                        "disconnected": 1
-                    }
-                }
-            }
-        }
-    }
-)
-def get_status():
-    """
-    Get current service status and device connection statistics.
-
-    Returns the total number of configured devices and their connection states.
-    This endpoint is lightweight and suitable for health monitoring.
-
-    **Connection States:**
-    - **connected**: Device driver is active and responding
-    - **disconnected**: Device driver failed to connect or lost connection
-
-    **Use Cases:**
-    - System health monitoring
-    - Dashboard status displays
-    - Connection troubleshooting
-    """
-    # Implementation...
-```
-
-**Parameter Documentation:**
-```python
-@app.get("/instruments/{class_}/{device_id}/{channel}/methods")
-def get_methods(
-    class_: str = Path(..., description="3-letter instrument class code", example="PSU"),
-    device_id: str = Path(..., description="Unique device identifier", example="psu-1"),
-    channel: int = Path(..., description="Channel number", ge=1),
-    include_private: bool = Query(False, description="Include private methods")
-):
-    """Endpoint implementation..."""
-```
-
-### Best Practices
-
-1. **Always use Pydantic models** for requests and responses (enables automatic validation and OpenAPI schema generation)
-2. **Add descriptive docstrings** with markdown formatting for rich documentation
-3. **Use appropriate tags** from the 8 tag groups for organization
-4. **Provide examples** in Field() descriptions and response documentation
-5. **Document error cases** in the responses parameter
-6. **Regenerate specs after changes** using `./start.sh --uibuild` or manually with `gen_openapi.py`
-7. **Use RootModel[Type]** for dictionary responses (Pydantic V2 pattern)
-8. **Add field validators** for complex validation logic in request models
-
-### Implementation Files
-
-- `models/api_responses.py` - All response Pydantic models (20+ models)
-- `models/api_requests.py` - Request models with validation
-- `tools/gen_openapi.py` - OpenAPI specification generator CLI tool
-- `api.py` - FastAPI app with tag metadata and documented endpoints
-
-## Configuration System
-
-Devices are defined in `config.yaml` (YAML v1 schema):
-
-```yaml
-version: 1
-devices:
-  - id: tenmapsu-1              # Unique device ID
-    name: "TENMA PSU"            # Display name
-    driver: tenma_psu            # Maps to driver folder (aliased to tenma_72)
-    port: /dev/tty722540         # Serial port path
-    baud: 9600                   # Baud rate
-    serial: 8N1                  # Data bits, parity, stop bits
-    model: 72-2540               # Optional model override
-```
-
-Each driver has a `manifest.json` defining:
-- Supported models and their classes (3-letter codes: PSU, SPM, XDM, OEL)
-- Per-class polling methods and intervals
-- Connection EOL characters (send_eol, recv_eol)
-- Driver module path
-
-Manifest aliases in `serial_manager.py` and `manifest_resolver.py` map legacy driver names (e.g., `tenma_psu` → `tenma_72`).
-
-### Multi-Transport Support (USB TMC, Serial, TCP/IP)
-
-BenchMesh supports multiple physical transport layers: Serial (RS232/USB-Serial), USB TMC (IEEE 488.2 over USB), and TCP/IP (planned). The `transport` field in config.yaml determines which communication interface to use.
-
-**See `ai_context/TRANSPORT_LAYER_GUIDE.md` for complete configuration examples, USB TMC device discovery, udev rules, and driver manifest transport support.**
-
-
-## User Data Persistence
-
-BenchMesh stores all user data in `~/.benchmesh/` to ensure configurations, Node-RED flows, and recordings persist across app updates and installations. This includes device config, Node-RED flows, credential encryption secrets, recordings database, and application logs.
-
-**⚠️ CRITICAL**: The Node-RED credential secret (`~/.benchmesh/node-red/.credentials-secret`) must be backed up to ensure credential recovery.
-
-**See `ai_context/USER_DATA_PERSISTENCE.md` for complete directory structure, initialization details, backup/migration procedures, logging configuration, and troubleshooting guide.**
-
-
-## Adding a New Driver
-
-1. Create driver package: `benchmesh-serial-service/src/benchmesh_service/drivers/<driver_name>/`
-2. Create `driver.py` with a class that **inherits from DriverBase**:
-   - Import: `from ..base import DriverBase`
-   - Inherit: `class MyDriver(DriverBase):`
-   - **No `__init__` needed** - DriverBase handles transport and cache setup
-   - Implement required abstract methods:
-     - `query_identify()` → returns IDN string
-     - `poll_status(channel: int)` → returns status dict
-   - Add device-specific control methods following naming convention:
-     - Read methods: `query_voltage()`, `query_current()`, `query_status()`, etc.
-     - Write methods: `set_voltage()`, `set_current()`, `set_mode()`, etc.
-3. Create `manifest.json` defining models, classes, polling config, and EOL characters
-   - **Optional**: Add `"enabled": false` at root level to hide work-in-progress drivers from configuration UI
-   - Drivers default to enabled if flag is omitted
-   - Example: `{"vendor": "OWON", "family": "DGE", "version": "1.0.0", "enabled": false, "models": {...}}`
-4. Update `drivers/classes.json` if adding new 3-letter class codes
-5. Create tests in `tests/` using pytest and mock serial communication
-
-**Driver Naming Convention:**
-- **Query methods** (read): prefix with `query_` (e.g., `query_voltage`, `query_current`)
-- **Setter methods** (write): prefix with `set_` (e.g., `set_voltage`, `set_current`)
-- This enables the API's smart resolution: GET `/voltage` → `query_voltage()`, POST `/current/2.5` → `set_current()`
-
-**DriverBase Inheritance:**
-All drivers inherit from `DriverBase` which provides:
-- **Automatic transport management**: Access via `self.t` (no constructor needed)
-- **Built-in caching**: Use `self.cache` (SimpleCache instance automatically created)
-- **Common methods**: `close()`, `is_connected()`, `set_reset()` (with USB TMC auto-detection)
-- **Transport delegation**: `write()`, `read()`, `write_line()`, `read_until_reol()`
-- **Helper methods**: `_parse_numeric()`, `_clean_response()`, `_is_usb_tmc()`
-
-**Caching (Built-in):**
-Every driver automatically has `self.cache` (SimpleCache instance) available:
-- Use in `poll_status()`: `value = self.cache.get_or_set("key", self.query_method, channel)`
-- Invalidate in `set_*` methods: `self.cache.invalidate("key")` when device state changes
-- No initialization needed - handled by DriverBase
-- See `drivers/owon_oel/driver.py` for reference implementation
-- See `CACHE_DESIGN.md` for complete caching guide and migration steps
-- Typical performance gain: 3x speedup in polling (owon_oel measured)
-
-## Key Modules
-
-- `serial_manager.py`: SerialManager orchestrates all device connections and worker threads
-- `manifest_resolver.py`: Resolves driver manifests to extract class, polling, and EOL configuration
-- `driver_factory.py`: Instantiates driver classes from string names and device configs
-- `poll_worker.py`: DeviceWorker runs per-device polling loop in dedicated thread
-- `registry.py`: DeviceRegistry thread-safe storage for device IDN and status
-- `drivers/base.py`: DriverBase abstract class - all drivers inherit from this
-  - Provides automatic transport management, built-in caching, USB TMC detection
-  - Common methods: `close()`, `is_connected()`, `set_reset()`, transport delegation
-  - Helper methods: `_parse_numeric()`, `_clean_response()`, `_is_usb_tmc()`
-  - Abstract methods drivers must implement: `query_identify()`, `poll_status()`
-- `transport/`: Abstract transport layer with multiple implementations
-  - `transport/base.py`: Transport ABC defining interface for all transports
-  - `transport/serial.py`: SerialTransport for RS232/USB-Serial with pyserial
-  - Future: USB TMC and TCP/IP transports for SCPI-over-network
-- `api.py`: FastAPI app with endpoints `/status`, `/instruments`, instrument control endpoints, and WebSocket `/ws`
-  - Implements **secure** method resolution: GET requests resolve `voltage` → `query_voltage`, POST requests resolve `current` → `set_current`
-  - Prevents arbitrary method execution - only `query_*` and `set_*` methods can be called via API
-  - Provides `/instruments/{class}/{device_id}/methods` for dynamic method discovery
-- `method_inspector.py`: Python introspection utility for discovering driver methods with parameter/return metadata
-- `cache.py`: SimpleCache universal caching layer for driver values with TTL support and thread safety
-- `connection.py`: DeviceConnection tracks connection state per device
-- `reconnect.py`: ReconnectPolicy implements backoff strategy
-
-## Testing Notes
-
-- Tests use `pytest` with fixtures in `conftest.py`
-- Mock serial communication using `unittest.mock.Mock` for transport
-- Tests in `tests/` cover: manifest resolution, driver factory, serial manager behavior, concurrency, polling, and edge cases
-- Frontend uses `vitest` with `@testing-library/react`
-
-## Environment Variables
-
-**User Data and Configuration:**
-- `BENCHMESH_CONFIG`: Path to config.yaml (default: `~/.benchmesh/config.yaml`, automatically set by start.sh and Electron)
-- `BENCHMESH_DATA_DIR`: User data directory path (default: `~/.benchmesh/`, automatically set by start.sh and Electron)
-
-**Service Ports:**
-- `API_PORT`: FastAPI port (default: `57666`)
-- `UI_PORT`: Frontend dev server port (default: `52893`)
-
-**Unified Polling Configuration:**
-- `BM_UNIFIED_POLLING`: Enable unified polling (default: `false`)
-- `BM_UNIFIED_POLL_INTERVAL`: Polling interval in milliseconds (default: `50`)
-- `BM_MAX_QUEUE_DEPTH`: Maximum queue depth threshold (default: `10`)
-- `BM_API_QUEUE_TIMEOUT`: API request timeout in seconds (default: `10.0`)
-
-**Serial Communication:**
-- `BM_SERIAL_OPEN_TIMEOUT`: Serial port open timeout in seconds (default: `2.0`)
-- `BM_SERIAL_READ_TIMEOUT`: Serial read timeout in seconds (default: `0.3`)
-- `BM_API_REQUEST_TIMEOUT`: API request timeout in seconds (default: `5.0`)
-
-**WebSocket:**
-- `BM_WS_INTERVAL`: WebSocket broadcast interval in seconds (default: `0.2`)
-
-**Health Monitoring:**
-- `BM_HEALTH_FAILURE_THRESHOLD`: Health check failure threshold (default: `3`)
-- `BM_HEALTH_DEGRADED_THRESHOLD`: Health check degraded threshold (default: `1`)
-
-## Node.js Version Requirements
-
-**IMPORTANT**: BenchMesh requires **Node.js v18** for Electron packaging to ensure compatibility with electron-builder and Electron v28.
-
-### For Local Development
-
-The repository includes `.nvmrc` files that specify Node.js v18. If you use `nvm`, run:
-
-```bash
-nvm use
-```
-
-This will automatically switch to the correct Node.js version.
-
-### For CI/CD
-
-The GitHub Actions workflow (`.github/workflows/release-electron.yml`) is configured to use Node.js v18 for all Electron builds across Linux, Windows, and macOS platforms.
-
-## Notes
-
-- Repository root contains example RS232 test scripts in `system/` directory
-- Documentation and udev rules in `system/udev_rules.txt` for persistent device paths
-- Driver manifests support per-class polling intervals (e.g., PSU class polls every 2s, SPM every 3s)
-- Frontend proxies API requests to backend during development via Vite config
+## Environment variables
+
+| Variable | Effect |
+|---|---|
+| `BENCHMESH_CONFIG` | config file (default `~/.benchmesh/config.yaml`) |
+| `BENCHMESH_DATA_DIR` | user data directory (default `~/.benchmesh`) |
+| `BENCHMESH_DEVICES` | device definitions directory (default `./devices`, in the app its bundled copy) |
+| `BENCHMESH_UI` | UI directory for the app (default its bundled copy; `bm-server --ui`) |
+| `BENCHMESH_SIMULATE` | capture to simulate instead of real hardware (`--simulate`) |
+| `API_PORT` | `bm-server` port (default 57666; `--port`) |
+| `BENCHMESH_LISTEN` | app listen address (default `127.0.0.1`; `0.0.0.0` opts into LAN access) |
+| `BENCHMESH_ALLOWED_HOSTS` | extra `Host` names the cross-site guard accepts |
+| `BENCHMESH_ONLINE` / `BENCHMESH_ONLINE_URL` | `off` disables the community status / its base URL |
+| `BENCHMESH_URL` | server address for the MCP stdio bridge |
+| `BENCHMESH_NATIVE_WAYLAND` | `1`: run the app on native Wayland instead of XWayland |
+| `BM_WS_INTERVAL` | registry WebSocket push interval in seconds |
+
+## CI and releases
+
+`.github/workflows/README.md`: `ci.yaml` (frontend lint/tests/build, Rust clippy/tests/definition
+validation, transport on Windows and macOS), `e2e-tests.yml`, `release-tauri.yml` (tag `vX.Y.Z`
+-> draft release for all platforms; publish with `gh release edit vX.Y.Z --draft=false`).
 
 ## Guidelines
 
@@ -789,7 +232,7 @@ The GitHub Actions workflow (`.github/workflows/release-electron.yml`) is config
 - when you create any temporary or tool scripts place them always in scripts folder
 - plain text (UI, messages, definitions, docs, release notes) uses "-" only, never em or en dashes; `frontend/src/__tests__/noDashes.test.ts` checks every tracked file
 - always verify CI tests localy
-- when implementing new feature always try to test on the real working service particularly applies to serial service and API
+- when implementing new feature always try to test on the real working service particularly applies to the server and API (`--simulate` when no hardware is attached)
 - do apply defensive programming principle - especially with API implementation the parameters must be validated and resources need to return meaningful response - catch and log 500 responses
 - feel free to kill and spinn up the services we are developing in this project but always MUST clean up - do not leave used ports, release all resources
 

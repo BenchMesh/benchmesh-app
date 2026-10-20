@@ -4,50 +4,6 @@ BenchMesh includes or depends upon third-party software components that are dist
 
 ---
 
-## Python Dependencies
-
-### pyserial
-- **License**: BSD-3-Clause
-- **Copyright**: Copyright (c) 2001-2020 Chris Liechti
-- **URL**: https://github.com/pyserial/pyserial
-
-### PyYAML
-- **License**: MIT
-- **Copyright**: Copyright (c) 2017-2021 Ingy döt Net, Copyright (c) 2006-2016 Kirill Simonov
-- **URL**: https://github.com/yaml/pyyaml
-
-### FastAPI
-- **License**: MIT
-- **Copyright**: Copyright (c) 2018 Sebastián Ramírez
-- **URL**: https://github.com/tiangolo/fastapi
-
-### Uvicorn
-- **License**: BSD-3-Clause
-- **Copyright**: Copyright © 2017-present, Encode OSS Ltd.
-- **URL**: https://github.com/encode/uvicorn
-
-### Pydantic
-- **License**: MIT
-- **Copyright**: Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors
-- **URL**: https://github.com/pydantic/pydantic
-
-### HTTPX
-- **License**: BSD-3-Clause
-- **Copyright**: Copyright © 2019, Encode OSS Ltd.
-- **URL**: https://github.com/encode/httpx
-
-### SQLAlchemy
-- **License**: MIT
-- **Copyright**: Copyright (c) 2005-2024 Michael Bayer and contributors
-- **URL**: https://github.com/sqlalchemy/sqlalchemy
-
-### websockets
-- **License**: BSD-3-Clause
-- **Copyright**: Copyright (c) 2013-2024 Aymeric Augustin and contributors
-- **URL**: https://github.com/python-websockets/websockets
-
----
-
 ## Rust Dependencies
 
 Direct dependencies of the Rust crates (`crates/`). Transitive dependencies are under permissive
@@ -135,31 +91,12 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 
 ---
 
-## Node.js Dependencies
-
-### Node-RED
-- **License**: Apache-2.0
-- **Copyright**: Copyright JS Foundation and other contributors
-- **URL**: https://github.com/node-red/node-red
-
----
-
 ## Frontend Dependencies
 
 ### React & React-DOM
 - **License**: MIT
 - **Copyright**: Copyright (c) Meta Platforms, Inc. and affiliates
 - **URL**: https://github.com/facebook/react
-
-### react-markdown
-- **License**: MIT
-- **Copyright**: Copyright (c) 2015 Espen Hovlandsdal
-- **URL**: https://github.com/remarkjs/react-markdown
-
-### remark-gfm
-- **License**: MIT
-- **Copyright**: Copyright (c) 2020 Titus Wormer
-- **URL**: https://github.com/remarkjs/remark-gfm
 
 ### swagger-ui-react
 - **License**: Apache-2.0
@@ -187,25 +124,6 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **Copyright**: Copyright 2018 The Chakra Petch Project Authors (Cadson Demak)
 - **URL**: https://github.com/cadsondemak/Chakra-Petch
 - Bundled with the UI (panel titles); the font is unmodified.
-
----
-
-## Electron Dependencies
-
-### tree-kill
-- **License**: MIT
-- **Copyright**: Copyright (c) 2014 Peter Kvitek
-- **URL**: https://github.com/pkrumins/node-tree-kill
-
-### Electron (Development Dependency)
-- **License**: MIT
-- **Copyright**: Copyright (c) Electron contributors, Copyright (c) 2013-2020 GitHub Inc.
-- **URL**: https://github.com/electron/electron
-
-### electron-builder (Development Dependency)
-- **License**: MIT
-- **Copyright**: Copyright © 2015 Loopline Systems
-- **URL**: https://github.com/electron-userland/electron-builder
 
 ---
 

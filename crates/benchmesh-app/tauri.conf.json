@@ -41,7 +41,7 @@
     ],
     "resources": {
       "../../devices/": "devices/",
-      "../../benchmesh-serial-service/frontend/dist/": "ui/"
+      "../../frontend/dist/": "ui/"
     },
     "createUpdaterArtifacts": true
   }

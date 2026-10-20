@@ -161,7 +161,7 @@ bound; `effects` target declared state; `requires` messages present; unused comm
 
 ## Authoring checklist (human or LLM)
 1. Identity: `*IDN?`-style command + per-model regex; mark `support: tested` only after a bench test (`confirmed` after a user's check).
-2. Framing from observation, not the manual: run `scripts/wire_capture/` (or a probe) and read the transcript.
+2. Framing from observation, not the manual: watch the exchange in the instrument console (or `bm-probe`) and read what the instrument really sends.
 3. Every setter: `reply: none` unless the device really answers; set `safety`.
 4. Numeric setters: explicit `format` with the decimals the device accepts.
 5. Preconditions as `requires`, not hidden mode switches.

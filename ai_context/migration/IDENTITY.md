@@ -1,8 +1,7 @@
 # Instrument identity (`match`) and Detect
 
 Instruments are configured by **who they are**, not by the port they happen to be plugged into.
-Works the same on Linux, Windows and macOS without root/admin rights and without udev rules
-(`system/udev_rules.txt` is a development aid only).
+Works the same on Linux, Windows and macOS without root/admin rights and without udev rules.
 
 ## Two layers
 

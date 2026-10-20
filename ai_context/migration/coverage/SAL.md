@@ -453,7 +453,7 @@ SCPI families (trace via `numbers`), marker readout must be computed client-side
 (download centre lists only user manuals, quick guides and PC software, checked 2026-10-18), and the
 OWON file server was unreachable for direct probes. The PC software (`OWON_Spectrum_pco_sofware.zip`)
 proves a USB/LAN protocol exists. **Not researchable from documents now** - candidate for a
-wire capture (`scripts/wire_capture/`) when a community member has one. No local docs.
+wire capture (instrument console, Copy) when a community member has one. No local docs.
 
 ### 2.12 LiteVNA 62/64/67, NanoVNA V2 / S-A-A-2(N)
 

@@ -8,7 +8,7 @@
 //! - `GET  /drivers`, `/drivers/{id}`, `/config`, `POST /config`, `POST /devices`,
 //!   `PUT|DELETE /devices/{id}`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
 //! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}}}}` every interval
-//! - `/ui` static UI (+ SPA routes `/ui/docs`, `/ui/metrics`)
+//! - `/ui` static UI (`/docs` opens its API reference)
 //!
 //! Errors are `{"detail": "..."}`. Driver errors map to HTTP: bad argument 400,
 //! unknown operation 404, refused precondition 409, device unreachable 503,
@@ -47,7 +47,7 @@ use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
 use tower::ServiceBuilder;
 use tower_http::set_header::SetResponseHeaderLayer;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeDir;
 
 use crate::config::{str_field, validate_entry, ConfigFile, DeviceEntry};
 use crate::devices::{merge, Devices};
@@ -109,10 +109,6 @@ pub fn router(state: S) -> Router {
         // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
         // stale index.html after an upgrade.
         let no_cache = || SetResponseHeaderLayer::overriding(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-        let index = ServeFile::new(ui.join("index.html"));
-        for spa in ["/ui/docs", "/ui/docs/", "/ui/metrics", "/ui/metrics/"] {
-            r = r.route_service(spa, ServiceBuilder::new().layer(no_cache()).service(index.clone()));
-        }
         r = r.nest_service("/ui", ServiceBuilder::new().layer(no_cache()).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
     // no CORS: only pages served by this server use the API; other sites are refused (guard.rs)
@@ -736,7 +732,7 @@ async fn ws_metrics(State(s): State<S>, ws: WebSocketUpgrade) -> Response {
 /// API reference lives in the UI (Swagger UI bundled with the frontend: works offline).
 async fn api_docs(State(s): State<S>) -> Response {
     if s.ui_dir.is_some() {
-        Redirect::temporary("/ui/docs").into_response()
+        Redirect::temporary("/ui/?openDocs=true").into_response()
     } else {
         Redirect::temporary("/openapi.json").into_response()
     }

@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { BRAND_ON_DARK, BRAND_ON_LIGHT, brandSvg } from '../../benchmesh-serial-service/frontend/src/ui/kit/brand.ts'
+import { BRAND_ON_DARK, BRAND_ON_LIGHT, brandSvg } from '../../frontend/src/ui/kit/brand.ts'
 
 const root = resolve(import.meta.dirname, '../..')
 const logo = join(root, 'docs/static/logo')
@@ -19,7 +19,7 @@ const files = {
   'benchmesh-icon.svg': brandSvg(BRAND_ON_DARK, { tile: true }),
 }
 for (const [name, svg] of Object.entries(files)) writeFileSync(join(logo, name), svg + '\n')
-copyFileSync(join(logo, 'benchmesh-icon.svg'), join(root, 'benchmesh-serial-service/frontend/public/favicon.svg'))
+copyFileSync(join(logo, 'benchmesh-icon.svg'), join(root, 'frontend/public/favicon.svg'))
 
 // app icons: a 1024 px PNG of the tile, then only the files tauri.conf.json bundles (+ icon.png)
 const tmp = mkdtempSync(join(root, 'target/logo-'))

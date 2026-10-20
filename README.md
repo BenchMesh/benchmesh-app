@@ -47,7 +47,7 @@ Download the installer for your system from **[benchmesh.online/download](https:
 The current code is on the [`develop`](https://github.com/MarkoVcode/BenchMesh/tree/develop) branch (Rust + Tauri, React UI).
 
 ```bash
-cd benchmesh-serial-service/frontend && npm ci && npm run build && cd -
+cd frontend && npm ci && npm run build && cd -
 cargo run -p bm-server        # API + UI on http://localhost:57666/ui
 ```
 

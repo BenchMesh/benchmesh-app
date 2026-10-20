@@ -4,7 +4,7 @@
 //! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--host ADDR] [--port N]
 //! ```
 //! Defaults: `$BENCHMESH_CONFIG` or `~/.benchmesh/config.yaml`; `$BENCHMESH_DEVICES` or
-//! `./devices`; UI `benchmesh-serial-service/frontend/dist` if present; `0.0.0.0:$API_PORT`
+//! `./devices`; UI `frontend/dist` if present; `0.0.0.0:$API_PORT`
 //! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
 //! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
 //! traffic instead of opening ports - UI work and demos without hardware.
@@ -39,7 +39,7 @@ fn main() {
         .or_else(|| std::env::var("BENCHMESH_DEVICES").ok())
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("devices"));
-    let ui_dir = arg(&args, "--ui").map(PathBuf::from).or_else(|| Some(PathBuf::from("benchmesh-serial-service/frontend/dist")));
+    let ui_dir = arg(&args, "--ui").map(PathBuf::from).or_else(|| Some(PathBuf::from("frontend/dist")));
     let host = arg(&args, "--host").unwrap_or_else(|| "0.0.0.0".into());
     let port = arg(&args, "--port").or_else(|| std::env::var("API_PORT").ok()).unwrap_or_else(|| "57666".into());
     let ws_interval = std::env::var("BM_WS_INTERVAL")

@@ -345,9 +345,9 @@ async fn usbtmc_driver_install_validates_the_request() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn ui_is_served_with_spa_routes() {
+async fn ui_is_served() {
     let f = fixture("ui");
-    for p in ["/ui/", "/ui/metrics", "/ui/docs"] {
+    for p in ["/ui/"] {
         let (code, v, _) = call(&f, "GET", p, None, None).await;
         assert_eq!(code, StatusCode::OK, "{p}");
         assert!(v.as_str().unwrap().contains("BenchMesh UI"), "{p}: {v}");
@@ -684,7 +684,7 @@ async fn openapi_and_docs() {
     let resp = router(f.state.clone()).oneshot(Request::get("/openapi.yaml").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(resp.headers()[header::CONTENT_TYPE], "application/x-yaml");
     let resp = router(f.state.clone()).oneshot(Request::get("/docs").body(Body::empty()).unwrap()).await.unwrap();
-    assert_eq!(resp.headers()[header::LOCATION], "/ui/docs");
+    assert_eq!(resp.headers()[header::LOCATION], "/ui/?openDocs=true");
 }
 
 #[tokio::test(flavor = "multi_thread")]

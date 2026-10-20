@@ -692,7 +692,7 @@ reference cell tester in battery workshops. Docs:
 **Cheap testers (YR1035+, RC3563, SM8124…)** - 20-60 €, extremely popular for 18650 sorting.
 YR1035+: forum reports the USB port only charges (akkudoktor.net). RC3563 "serial" version:
 CH340/CP210x USB link, protocol only in a community wiki (not fetched); believed to stream frames
-→ unknown. Not definable until someone captures the wire (scripts/wire_capture).
+→ unknown. Not definable until someone captures the wire (instrument console, Copy).
 
 ---
 

@@ -1,2 +1,0 @@
-Currently supported instruments:
-DGE2070
