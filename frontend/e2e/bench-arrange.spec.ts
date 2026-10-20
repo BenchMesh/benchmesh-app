@@ -108,6 +108,28 @@ test.describe('Arrange mode', () => {
     await expect(panel(mockPage, PANELS.lcr)).toHaveCount(0);
   });
 
+  test('multi-channel panels put their channels side by side or stacked, kept across a reload', async ({ page, api }) => {
+    api.instruments = [...api.instruments, { id: 'dual-psu', name: 'Dual PSU', classes: [{ class: 'PSU', channels: ['1', '2'] }] }];
+    await gotoBench(page, 4);
+    await startArranging(page);
+    // single-channel panels have nothing to lay out
+    await expect(panel(page, PANELS.psu).getByRole('group', { name: 'Channel layout' })).toHaveCount(0);
+    const dual = panel(page, 'Power Supply Unit: Dual PSU');
+    const choice = dual.getByRole('group', { name: 'Channel layout' });
+    await expect(choice.getByRole('button', { name: 'Side by side' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(dual.locator('.bench-panel__channels--multi')).toHaveCount(1);
+
+    await choice.getByRole('button', { name: 'Stacked' }).click();
+    await expect(choice.getByRole('button', { name: 'Stacked' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(dual.locator('.bench-panel__channels--stacked')).toHaveCount(1);
+    const [first, second] = await dual.locator('.bench-panel__channel').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    expect(second).toBeGreaterThan(first);
+    expect((await storedLayout(page)).stacked).toEqual(['dual-psu:PSU']);
+
+    await page.reload();
+    await expect(page.getByRole('article', { name: 'Power Supply Unit: Dual PSU' }).locator('.bench-panel__channels--stacked')).toHaveCount(1);
+  });
+
   test('order, widths and hidden panels persist across a reload', async ({ mockPage }) => {
     await startArranging(mockPage);
     await panel(mockPage, PANELS.dmm).getByRole('button', { name: 'Move earlier' }).click();
@@ -121,6 +143,7 @@ test.describe('Arrange mode', () => {
       size: { 'test-psu-1:PSU': 'l', 'test-dmm-1:DMM': 'm', 'test-lcr-1:LCR': 's' },
       hidden: ['test-dmm-1:DMM'],
       folded: [],
+      stacked: [],
     });
 
     await gotoBench(mockPage, 2);

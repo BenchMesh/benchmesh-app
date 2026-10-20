@@ -93,6 +93,7 @@ html, body { background: var(--kit-ground); }
 .bench-panel__arrange .kit-seg button { padding: 5px 8px; }
 .bench-panel__channels { display: grid; gap: 14px; min-width: 0; }
 .bench-panel__channels--multi { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.bench-panel__channels--stacked > .bench-panel__channel + .bench-panel__channel { border-top: 1px solid var(--kit-panel-edge); padding-top: 14px; }
 .bench-panel__channel { display: grid; gap: 8px; min-width: 0; }
 .bench-panel--offline .bench-panel__channels { opacity: .45; pointer-events: none; }
 .bench-panel__offline {
@@ -262,3 +263,6 @@ html, body { background: var(--kit-ground); }
 
 .auto-btn--stop.auto-btn--stop { color: var(--kit-panel); background: var(--kit-alert); border-color: var(--kit-alert); }
 .auto-btn--stop.auto-btn--stop:hover { background: var(--kit-alert); filter: brightness(1.08); }
+
+/* text for screen readers only (e.g. names of symbol buttons) */
+.bench-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

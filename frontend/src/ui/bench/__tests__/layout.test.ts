@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reconcile, move, setSize, hide, show, toggleFold, columnsFor, spanFor, panelsOf, EMPTY_LAYOUT } from '../layout'
+import { reconcile, move, setSize, hide, show, toggleFold, toggleStacked, loadLayout, columnsFor, spanFor, panelsOf, EMPTY_LAYOUT } from '../layout'
 
 const instruments = [
   { id: 'tenma', classes: [{ class: 'PSU', channels: ['/instruments/PSU/tenma/1'] }] },
@@ -67,5 +67,21 @@ describe('folding', () => {
   })
   it('reads layouts saved before folding existed', () => {
     expect(reconcile({ order: [], size: {}, hidden: [] } as any, panelsOf(instruments)).folded).toEqual([])
+  })
+})
+
+describe('channel layout', () => {
+  it('stacks and unstacks a panel\'s channels, and forgets panels that are gone', () => {
+    const l = reconcile(EMPTY_LAYOUT, panelsOf(instruments))
+    expect(l.stacked).toEqual([])
+    const st = toggleStacked(l, 'dge:AWG')
+    expect(st.stacked).toEqual(['dge:AWG'])
+    expect(toggleStacked(st, 'dge:AWG').stacked).toEqual([])
+    expect(reconcile({ ...st, stacked: ['dge:AWG', 'gone:AWG'] }, panelsOf(instruments)).stacked).toEqual(['dge:AWG'])
+  })
+  it('is side by side for layouts saved before the setting existed', () => {
+    localStorage.setItem('benchmesh:bench-layout', JSON.stringify({ order: ['dge:AWG'], size: {}, hidden: [], folded: [] }))
+    expect(loadLayout().stacked).toEqual([])
+    localStorage.removeItem('benchmesh:bench-layout')
   })
 })

@@ -6,6 +6,7 @@ import { getClassDescription } from '../instrumentClasses'
 import { closeWindow, isDesktop, resizeWindow, setWindowOnTop, startWindowDrag, startWindowResize } from '../desktop'
 import { InstrumentPanel } from './InstrumentPanel'
 import { clearDetached, useDetachedHeartbeat } from './detach'
+import { loadLayout } from './layout'
 import { RecordingsProvider } from '../recording/RecordingsProvider'
 
 /** `instrumentId:CLASS` → its parts (ids may contain colons). */
@@ -29,6 +30,8 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
   const instrument = instruments.find((i) => i.id === instrumentId)
   const [folded, setFolded] = useState(false)
   const [onTop, setOnTop] = useState(false)
+  // channels side by side or stacked, as arranged on the bench
+  const [stacked] = useState(() => (loadLayout().stacked ?? []).includes(panelKey))
   const unfoldedSize = useRef<{ w: number; h: number } | null>(null)
   const root = useRef<HTMLDivElement>(null)
 
@@ -58,7 +61,7 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
     <RecordingsProvider>
     <div ref={root} className={`bench bench-window${folded ? ' bench-window--folded' : ''}`}>
       {instrument ? (
-        <InstrumentPanel instrument={instrument} klass={klass} registry={registry} win={{
+        <InstrumentPanel instrument={instrument} klass={klass} registry={registry} stacked={stacked} win={{
           folded,
           onFold: () => setFolded((f) => !f),
           onTop: isDesktop() ? { on: onTop, toggle: toggleOnTop } : undefined,

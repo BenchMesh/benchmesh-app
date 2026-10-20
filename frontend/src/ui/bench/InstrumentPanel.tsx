@@ -74,6 +74,8 @@ export interface ArrangeProps {
   onSize: (s: PanelSize) => void
   onHide: () => void
   onMove: (delta: number) => void
+  /** Channels side by side or stacked (offered when the panel has more than one channel). */
+  onStack: () => void
 }
 
 /** Window-like controls in the panel header (top right). */
@@ -95,8 +97,10 @@ export interface WindowControls {
  * its channels; folded, only the header. In arrange mode the header carries the drag handle,
  * size and hide controls.
  */
-export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
+export function InstrumentPanel({ instrument, klass, registry, arrange, win, stacked = false }: {
   instrument: Instrument; klass: string; registry: any; arrange?: ArrangeProps; win?: WindowControls
+  /** Multi-channel panels: channels stacked vertically instead of side by side. */
+  stacked?: boolean
 }) {
   const el = useRef<HTMLElement>(null)
   const folded = win?.folded ?? false
@@ -109,6 +113,9 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
   const channels = (cls?.channels ?? []).map((p) => p.split('/').pop() || '1')
   const idn = registry?.[instrument.id]?.IDN ?? instrument.IDN
   const title = getClassDescription(klass)
+  // the oscilloscope draws all its channels on one screen
+  const perChannel = klass.toUpperCase() !== 'OSC'
+  const multi = channels.length > 1
 
   return (
     <article ref={el} className={`bench-panel bench-panel--${klass.toLowerCase()}${online ? '' : ' bench-panel--offline'}${folded ? ' bench-panel--folded' : ''}`}
@@ -159,20 +166,27 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win }: {
             <button type="button" className="bench-icon" onClick={() => arrange.onMove(1)} aria-label="Move later" title="Move later">▶</button>
             <Selector label="Panel width" value={arrange.size} onChange={(v) => arrange.onSize(v as PanelSize)}
               options={SIZES.map((s) => ({ value: s.value, label: s.label, title: s.title }))} />
+            {perChannel && multi && (
+              <Selector label="Channel layout" value={stacked ? 'stacked' : 'row'} onChange={(v) => { if ((v === 'stacked') !== stacked) arrange.onStack() }}
+                options={[
+                  { value: 'row', label: <><span aria-hidden="true">⇆</span><span className="bench-sr">Side by side</span></>, title: 'Channels side by side' },
+                  { value: 'stacked', label: <><span aria-hidden="true">⇅</span><span className="bench-sr">Stacked</span></>, title: 'Channels stacked' },
+                ]} />
+            )}
             <button type="button" className="bench-icon" onClick={arrange.onHide} aria-label="Hide panel" title="Hide panel">✕</button>
           </span>
         )}
       </header>
       {folded ? null : <div className="bench-panel__body">{!meta ? (
         <span className="bench-hint">Loading…</span>
-      ) : klass.toUpperCase() === 'OSC' ? (
+      ) : !perChannel ? (
         // one screen for all channels: the scope panel is per instrument, not per channel
         <SignalScope value={{ deviceId: instrument.id, klass, name: instrument.name ?? instrument.id, multi: channels.length > 1 }}>
           <OscPanel id={instrument.id} channels={channels} registry={registry} online={online}
             profile={oscProfile(meta.features, meta.setters, channels.length)} />
         </SignalScope>
       ) : (
-        <div className={`bench-panel__channels${channels.length > 1 ? ' bench-panel__channels--multi' : ''}`}>
+        <div className={`bench-panel__channels${multi ? (stacked ? ' bench-panel__channels--stacked' : ' bench-panel__channels--multi') : ''}`}>
           {channels.map((ch) => (
             <section key={ch} className="bench-panel__channel" aria-label={channels.length > 1 ? `Channel ${ch}` : undefined}>
               {channels.length > 1 && klass.toUpperCase() !== 'AWG' && <span className="kit-label">Channel {ch}</span>}

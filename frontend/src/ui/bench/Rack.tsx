@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Instrument } from '../types'
 import { InstrumentPanel } from './InstrumentPanel'
-import { BenchLayout, columnsFor, hide, move, PanelRef, setSize, show, spanFor, toggleFold } from './layout'
+import { BenchLayout, columnsFor, hide, move, PanelRef, setSize, show, spanFor, toggleFold, toggleStacked } from './layout'
 import { getClassDescription } from '../instrumentClasses'
 
 /** Columns that fit the rack's current width. */
@@ -22,7 +22,8 @@ function useColumns(ref: React.RefObject<HTMLElement>) {
 
 /**
  * The bench: instrument panels in a responsive grid, in the user's order and widths.
- * In arrange mode panels can be dragged (or moved with ◀ ▶), resized and hidden.
+ * In arrange mode panels can be dragged (or moved with ◀ ▶), resized, hidden and, with more than
+ * one channel, set to show their channels side by side or stacked.
  */
 export function Rack({ panels, instruments, registry, layout, onLayout, arranging, detached, onDetach }: {
   panels: PanelRef[]
@@ -52,7 +53,7 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
     <>
       {arranging && (
         <div className="bench-shelf" aria-label="Hidden panels">
-          <span className="kit-label">Arrange: drag panels by their header, set widths, hide what you don't need.</span>
+          <span className="kit-label">Arrange: drag panels by their header, set widths, put channels side by side or stacked, hide what you don't need.</span>
           {hidden.map((k) => (
             <button key={k} type="button" className="bench-chip" onClick={() => onLayout(show(layout, k))}>+ {label(k)}</button>
           ))}
@@ -90,6 +91,7 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
                 instrument={instrument}
                 klass={p.klass}
                 registry={registry}
+                stacked={(layout.stacked ?? []).includes(k)}
                 win={{
                   folded: (layout.folded ?? []).includes(k),
                   onFold: () => onLayout(toggleFold(layout, k)),
@@ -99,6 +101,7 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
                   size,
                   onSize: (s) => onLayout(setSize(layout, k, s)),
                   onHide: () => onLayout(hide(layout, k)),
+                  onStack: () => onLayout(toggleStacked(layout, k)),
                   onMove: (d) => {
                     const target = visible[i + d]
                     if (target) onLayout(move(layout, k, layout.order.indexOf(target)))
