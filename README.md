@@ -1,6 +1,6 @@
 <div align="center">
 
-![BenchMesh](https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/BenchMesh.png)
+![BenchMesh: power supply, multimeter, oscilloscope and electronic load on one bench](https://raw.githubusercontent.com/MarkoVcode/BenchMesh/develop/docs/static/bench.png)
 
 # BenchMesh
 
