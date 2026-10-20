@@ -484,15 +484,15 @@ async fn export(State(s): State<S>, Path(id): Path<String>) -> Result<Response, 
 
 // ---- WebSocket -----------------------------------------------------------------------
 
-async fn ws(State(s): State<S>, upgrade: WebSocketUpgrade) -> Response {
-    upgrade.on_upgrade(move |socket| live(s, socket))
+async fn ws(State(s): State<S>, p: crate::remote::Principal, upgrade: WebSocketUpgrade) -> Response {
+    upgrade.on_upgrade(move |socket| live(s, p, socket))
 }
 
 async fn snapshot(s: &S) -> Option<String> {
     db(s, all_recordings_json).await.ok().map(|list| json!({"type": "snapshot", "recordings": list}).to_string())
 }
 
-async fn live(s: S, mut socket: WebSocket) {
+async fn live(s: S, p: crate::remote::Principal, mut socket: WebSocket) {
     let mut rx = s.recordings.tx.subscribe(); // before the snapshot: no change is missed
     let Some(first) = snapshot(&s).await else { return };
     if socket.send(Message::Text(first.into())).await.is_err() {
@@ -500,6 +500,10 @@ async fn live(s: S, mut socket: WebSocket) {
     }
     loop {
         tokio::select! {
+            _ = p.revoked() => {
+                let _ = socket.send(Message::Close(None)).await;
+                return;
+            }
             msg = socket.recv() => match msg {
                 Some(Ok(Message::Close(_))) | None | Some(Err(_)) => return,
                 _ => {}

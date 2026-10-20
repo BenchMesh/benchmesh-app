@@ -196,8 +196,8 @@ impl SettingsFile {
     }
 }
 
-/// Write a file only the user can read (it holds API keys).
-fn write_private(p: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+/// Write a file only the user can read (API keys, password hash, TLS key).
+pub(crate) fn write_private(p: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
     if let Some(d) = p.parent() {
         std::fs::create_dir_all(d).map_err(|e| e.to_string())?;
     }

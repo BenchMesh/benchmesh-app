@@ -1,16 +1,36 @@
 /**
  * Automation settings: the assistant (provider, the user's own API key - shown only as the
  * server's hint after saving - model, base URL) and MCP access for AI clients, with
- * ready-to-paste connection snippets.
+ * ready-to-paste connection snippets. Both are admin: a remote browser sees only a note.
  */
 import React, { useEffect, useId, useState } from 'react'
 import { AutomationClient, errorText } from './client'
 import { providerName } from './AssistantPanel'
+import { useRemote } from '../remote/RemoteProvider'
 import type { AssistantSettings, McpAccess, McpInfo, ModelInfo, Provider } from './types'
 
 const PROVIDERS: Provider[] = ['anthropic', 'openai', 'openrouter', 'custom']
 
+export const ADMIN_NOTE = 'Change this in the BenchMesh app on the bench computer.'
+
 export function SettingsTab({ client }: { client: AutomationClient }) {
+  const remote = useRemote()
+  // not before the principal is known: GET /automation/mcp is admin (403 for a remote browser)
+  if (remote && remote.principal === null) return <span className="bench-hint">Loading…</span>
+  if (remote?.principal === 'remote') {
+    return (
+      <div className="auto-settings">
+        <section className="auto-section" aria-label="Assistant settings">
+          <h3 className="auto-settings__title">Assistant</h3>
+          <p className="bench-hint">The assistant's provider, API key and model are set on the bench computer. {ADMIN_NOTE}</p>
+        </section>
+        <section className="auto-section" aria-label="MCP settings">
+          <h3 className="auto-settings__title">MCP (AI clients)</h3>
+          <p className="bench-hint">AI clients get access only from the bench computer. {ADMIN_NOTE}</p>
+        </section>
+      </div>
+    )
+  }
   return (
     <div className="auto-settings">
       <AssistantSettingsForm client={client} />

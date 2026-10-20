@@ -12,6 +12,8 @@ import { BrandMark, Selector, SkinProvider, useSkin, SKINS, Skin } from '../kit'
 import { RecorderDock } from '../recording/RecorderDock'
 import { UpdatePrompt } from '../update/UpdatePrompt'
 import { RunIndicator, RunProvider } from '../automation/RunProvider'
+import { RemoteProvider } from '../remote/RemoteProvider'
+import { RemoteBadge } from '../remote/RemoteBadge'
 import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, saveLayout } from './layout'
 
 // loaded when first opened (with its chart)
@@ -64,9 +66,9 @@ function SkinSwitch() {
   )
 }
 
-/** The application shell: top bar (with the automation run indicator), the instrument rack, the recorder dock, and drawers for setup, recordings, automation and the request log. */
+/** The application shell: top bar (with the automation run indicator and the remote access badge), the instrument rack, the recorder dock, and drawers for setup, recordings, automation and the request log. */
 export function BenchLayout(props: Props) {
-  return <SkinProvider><RunProvider><BenchShell {...props} /></RunProvider></SkinProvider>
+  return <SkinProvider><RemoteProvider><RunProvider><BenchShell {...props} /></RunProvider></RemoteProvider></SkinProvider>
 }
 
 function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenMetrics, onOpenDocs }: Props) {
@@ -104,6 +106,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
         <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>
         <span className="bench-pill" data-ok={wsDiag.ok}><i />{wsDiag.ok ? 'live' : wsDiag.msg}</span>
         <RunIndicator onOpen={() => setDrawer('automation')} />
+        <RemoteBadge />
         <div className="bench-tools">
           <SkinSwitch />
           <nav className="bench-actions" aria-label="Main">

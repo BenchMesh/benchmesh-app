@@ -1,11 +1,15 @@
 //! benchmesh-server - BenchMesh API + UI server (headless / lab server).
 //!
 //! ```text
-//! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--host ADDR] [--port N]
+//! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--port N]
+//! benchmesh-server remote-password      # password from stdin; switches remote access on
 //! ```
 //! Defaults: `$BENCHMESH_CONFIG` or `~/.benchmesh/config.yaml`; `$BENCHMESH_DEVICES` or
-//! `./devices`; UI `frontend/dist` if present; `0.0.0.0:$API_PORT`
-//! (57666). Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
+//! `./devices`; UI `frontend/dist` if present; `127.0.0.1:$API_PORT` (57666). Other computers
+//! reach it only through remote access (HTTPS + password on port 57667,
+//! `ai_context/REMOTE_ACCESS.md`); without a browser on this computer, set the password with
+//! `remote-password` (or use an SSH tunnel to port 57666 and the UI's settings).
+//! Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
 //! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
 //! traffic instead of opening ports - UI work and demos without hardware.
 //! `benchmesh-server mcp` bridges stdio to a running server's MCP endpoint (`$BENCHMESH_URL`,
@@ -31,6 +35,10 @@ fn main() {
         std::process::exit(bm_server::mcp::stdio_bridge(&url));
     }
     let home = std::env::var("HOME").unwrap_or_default();
+    if args.get(1).map(String::as_str) == Some("remote-password") {
+        let dir = std::env::var("BENCHMESH_DATA_DIR").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from(&home).join(".benchmesh"));
+        std::process::exit(remote_password(dir));
+    }
     let config = arg(&args, "--config")
         .or_else(|| std::env::var("BENCHMESH_CONFIG").ok())
         .map(PathBuf::from)
@@ -40,7 +48,6 @@ fn main() {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("devices"));
     let ui_dir = arg(&args, "--ui").map(PathBuf::from).or_else(|| Some(PathBuf::from("frontend/dist")));
-    let host = arg(&args, "--host").unwrap_or_else(|| "0.0.0.0".into());
     let port = arg(&args, "--port").or_else(|| std::env::var("API_PORT").ok()).unwrap_or_else(|| "57666".into());
     let ws_interval = std::env::var("BM_WS_INTERVAL")
         .ok()
@@ -61,7 +68,7 @@ fn main() {
         config: config.clone(),
         devices_dir,
         ui_dir,
-        listen: vec![format!("{host}:{port}")],
+        listen: vec![format!("127.0.0.1:{port}")],
         recordings_db,
         ws_interval,
         simulate: simulate.clone(),
@@ -84,6 +91,33 @@ fn main() {
     rt.block_on(shutdown_signal());
     eprintln!("stopping devices…");
     server.stop();
+}
+
+/// `benchmesh-server remote-password`: read the password from stdin (one line, e.g.
+/// `read -rs P && printf '%s' "$P" | benchmesh-server remote-password`), save its hash and switch
+/// remote access on; a running server picks it up at its next start.
+fn remote_password(data_dir: PathBuf) -> i32 {
+    let mut line = String::new();
+    if std::io::stdin().read_line(&mut line).is_err() {
+        eprintln!("cannot read the password from stdin");
+        return 1;
+    }
+    let password = line.trim_end_matches(['\r', '\n']);
+    if let Some(why) = bm_server::remote::password::refusal(password) {
+        eprintln!("{why}");
+        return 1;
+    }
+    let remote = bm_server::remote::Remote::new(Some(data_dir.clone()));
+    match remote.set_password(bm_server::remote::password::hash(password), true) {
+        Ok(()) => {
+            eprintln!("remote access is on (settings in {}); restart the server to open https://<this computer>:{}/", data_dir.join("remote.json").display(), bm_server::remote::DEFAULT_PORT);
+            0
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            1
+        }
+    }
 }
 
 /// Ctrl-C or SIGTERM: both stop the devices cleanly. A device thread finishes its current

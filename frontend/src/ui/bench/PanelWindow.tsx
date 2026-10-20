@@ -8,6 +8,7 @@ import { InstrumentPanel } from './InstrumentPanel'
 import { clearDetached, useDetachedHeartbeat } from './detach'
 import { loadLayout } from './layout'
 import { RecordingsProvider } from '../recording/RecordingsProvider'
+import { RemoteProvider } from '../remote/RemoteProvider'
 
 /** `instrumentId:CLASS` → its parts (ids may contain colons). */
 export function splitPanelKey(key: string): [string, string] {
@@ -19,7 +20,8 @@ export function splitPanelKey(key: string): [string, string] {
  * One instrument panel in its own undecorated window (`/ui/?panel=<key>`). The panel header is
  * the title bar: drag it to move the window, fold it to the header line, keep it on top, or
  * close it - the panel then returns to the bench. While this window lives, the bench leaves the
- * panel out (heartbeat), so the instrument is never drawn twice.
+ * panel out (heartbeat), so the instrument is never drawn twice. In a remote browser it goes to
+ * the sign-in page when the session ends, as the main window does.
  */
 export function PanelWindow({ panelKey }: { panelKey: string }) {
   const apiBase = useApiBase()
@@ -58,6 +60,7 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
 
   return (
     // readings are recordable here too (the recorder dock lives in the main window only)
+    <RemoteProvider watchStatus={false}>
     <RecordingsProvider>
     <div ref={root} className={`bench bench-window${folded ? ' bench-window--folded' : ''}`}>
       {instrument ? (
@@ -82,5 +85,6 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
       )}
     </div>
     </RecordingsProvider>
+    </RemoteProvider>
   )
 }

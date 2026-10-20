@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 const apiTarget = process.env.BENCHMESH_API ?? 'http://localhost:57666'
 const apiPaths = [
   '/instruments', '/drivers', '/config', '/devices', '/serial-ports', '/usbtmc-devices',
-  '/status', '/version', '/metrics', '/recordings', '/automation', '/mcp', '/openapi.json', '/openapi.yaml', '/ai', '/ws',
+  '/status', '/version', '/metrics', '/recordings', '/automation', '/mcp', '/remote', '/openapi.json', '/openapi.yaml', '/ai', '/ws',
 ]
 const proxy = Object.fromEntries(apiPaths.map((p) => [p, { target: apiTarget, changeOrigin: true, ws: true }]))
 

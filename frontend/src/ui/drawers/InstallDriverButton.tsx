@@ -2,11 +2,13 @@
  * "Install driver" for a Windows USBTMC instrument that has no usable driver
  * (`POST /usbtmc-devices/driver`, ai_context/migration/IDENTITY.md): the server gives it
  * Microsoft's generic WinUSB driver after Windows asks the user for administrator approval.
- * The request waits for that answer, so the button stays busy meanwhile.
+ * The request waits for that answer, so the button stays busy meanwhile. Admin only: a remote
+ * browser does not get the button (the prompt would appear on the bench computer).
  */
 
 import { useState } from 'react';
 import { apiError } from './detect';
+import { useIsRemote } from '../remote/RemoteProvider';
 
 /** Windows re-enumerates the instrument after the driver change; lists are re-read after this. */
 export const REENUMERATE_MS = 2000;
@@ -30,6 +32,7 @@ interface Props {
 export function InstallDriverButton({ apiBase, device, onInstalled }: Props) {
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const remote = useIsRemote();
 
   async function install() {
     setState('busy');
@@ -45,6 +48,7 @@ export function InstallDriverButton({ apiBase, device, onInstalled }: Props) {
     }
   }
 
+  if (remote) return null;
   return (
     <div className="install-driver" data-testid="install-driver">
       <button

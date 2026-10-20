@@ -114,7 +114,7 @@ const mockPorts = [
 
 const API_PREFIXES = [
   '/instruments', '/drivers', '/config', '/devices', '/serial-ports', '/usbtmc-devices',
-  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai',
+  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote',
 ];
 
 export interface RecordedRequest { method: string; path: string; body?: string | null }
@@ -129,6 +129,21 @@ export interface MockRecording {
   started_at: number; stopped_at: number | null; paused_at: number | null; samples: number; last_t: number | null;
   series: MockSeries[];
 }
+
+/** Remote access (ai_context/REMOTE_ACCESS.md): who the UI is, and the network listener's state. */
+export interface MockRemoteSession { id: string; address: string; agent: string; since: number; last_seen: number }
+export interface MockRemote {
+  /** `GET /remote/session`; `{principal: 'remote', ...}` makes the UI a remote browser (admin routes answer 403). */
+  session: { principal: 'local' } | { principal: 'remote'; address: string; since: number };
+  enabled: boolean;
+  password_set: boolean;
+  sessions: MockRemoteSession[];
+  /** Every request to `/remote...` other than `GET /remote` and `GET /remote/session`. */
+  requests: RecordedRequest[];
+}
+
+export const REMOTE_URL = 'https://192.168.1.20:57667/';
+export const REMOTE_FINGERPRINT = '3F:A2:9C:11:5E:07:D4:B8:6A:20:91:CC:4E:73:F0:1B:88:5D:2A:E6:0C:97:B3:44:1F:6E:A8:52:D9:0B:37:C5';
 
 export interface ApiMock {
   /** Instrument list served by `GET /instruments` (mutable; takes effect on the next poll). */
@@ -146,6 +161,7 @@ export interface ApiMock {
   recordingRequests: RecordedRequest[];
   /** Samples per series id for `GET /recordings/{id}/data`. */
   samples: Map<number, { t: number[]; v: number[] }>;
+  remote: MockRemote;
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -266,6 +282,47 @@ async function handleRecordings(route: Route, api: ApiMock, segs: string[], url:
   return json(route, { detail: 'Not found' }, 404);
 }
 
+const remoteStatus = (r: MockRemote) => ({
+  enabled: r.enabled, port: 57667, password_set: r.password_set, listening: r.enabled, error: null,
+  urls: r.enabled ? [REMOTE_URL] : [], fingerprint: r.enabled ? REMOTE_FINGERPRINT : null, sessions: r.enabled ? r.sessions : [],
+});
+
+/** Remote access with the server's rules: admin routes are local only, enabling needs a password. */
+async function handleRemote(route: Route, api: ApiMock, segs: string[]) {
+  const req = route.request();
+  const method = req.method();
+  const r = api.remote;
+  const path = '/' + segs.join('/');
+  const body = (() => { try { return JSON.parse(req.postData() ?? 'null'); } catch { return null; } })();
+  const signIn = () => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Sign in</title><h1>Sign in to BenchMesh</h1>' });
+  if (path === '/remote/session') return json(route, r.session);
+  if (path === '/remote/login') return signIn();
+  if (!(method === 'GET' && path === '/remote')) r.requests.push({ method, path, body: req.postData() });
+  // the server answers 303 to /remote/login; Playwright does not intercept the redirected request,
+  // so the mock serves the page the redirect leads to
+  if (path === '/remote/logout' && method === 'POST') return signIn();
+  if (r.session.principal !== 'local') return json(route, { detail: 'Remote access settings can be changed only from the BenchMesh app on this computer' }, 403);
+  if (path === '/remote' && method === 'GET') return json(route, remoteStatus(r));
+  if (path === '/remote' && method === 'PUT') {
+    if (typeof body?.enabled !== 'boolean') return json(route, { detail: 'enabled must be a boolean' }, 422);
+    if (body.enabled && !r.password_set) return json(route, { detail: 'Set a password first' }, 409);
+    r.enabled = body.enabled;
+    if (!r.enabled) r.sessions = [];
+    return json(route, remoteStatus(r));
+  }
+  if (path === '/remote/password' && method === 'PUT') {
+    if (typeof body?.password !== 'string' || body.password.length < 10) return json(route, { detail: 'The password needs at least 10 characters' }, 400);
+    r.password_set = true;
+    r.sessions = [];
+    return route.fulfill({ status: 204 });
+  }
+  if (segs[1] === 'sessions' && method === 'DELETE') {
+    r.sessions = segs.length === 3 ? r.sessions.filter((x) => x.id !== segs[2]) : [];
+    return route.fulfill({ status: 204 });
+  }
+  return json(route, { detail: 'Not found' }, 404);
+}
+
 /** Install the API mock on `page` and return its handle. */
 export async function setupApiMocks(page: Target): Promise<ApiMock> {
   const api: ApiMock = {
@@ -277,6 +334,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
     recordings: [],
     recordingRequests: [],
     samples: new Map(),
+    remote: { session: { principal: 'local' }, enabled: false, password_set: false, sessions: [], requests: [] },
   };
 
   await page.route(
@@ -304,6 +362,8 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return json(route, { status: 'ok' });
         case 'recordings':
           return handleRecordings(route, api, segs, url);
+        case 'remote':
+          return handleRemote(route, api, segs);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
         default:

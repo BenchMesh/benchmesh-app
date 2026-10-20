@@ -25,6 +25,7 @@ pub mod mcp;
 pub mod openapi;
 pub mod opspec;
 pub mod recordings;
+pub mod remote;
 pub mod run;
 
 /// For the desktop app's `main`: the elevated Windows driver-install run (see `bm_transport::winusb`).
@@ -66,11 +67,26 @@ pub struct AppState {
     pub community: Arc<community::Community>,
     /// Flows, runs, the assistant and MCP settings (`automation/`).
     pub automation: Arc<automation::Automation>,
+    /// Remote access from the local network (`remote/`).
+    pub remote: Arc<remote::Remote>,
 }
 
 pub(crate) type S = Arc<AppState>;
 
+/// The API + UI for the loopback listener: requests are `Principal::Local`; other web sites
+/// are refused (guard.rs).
 pub fn router(state: S) -> Router {
+    routes(&state).layer(axum::middleware::from_fn(guard::guard)).with_state(state)
+}
+
+/// The same API + UI for the network listener of remote access: every request passes the
+/// remote gate (session, scopes; `remote/mod.rs`).
+pub fn network_router(state: S) -> Router {
+    let gate = axum::middleware::from_fn_with_state(state.remote.clone(), remote::gate);
+    routes(&state).layer(gate).with_state(state)
+}
+
+fn routes(state: &S) -> Router<S> {
     let mut r = Router::new()
         .route("/", get(root))
         .route("/status", get(status))
@@ -104,15 +120,16 @@ pub fn router(state: S) -> Router {
         .route("/redoc", get(api_docs))
         .route("/mcp", get(mcp::get).post(mcp::post))
         .merge(recordings::routes())
-        .merge(automation::routes());
+        .merge(automation::routes())
+        .merge(remote::routes());
     if let Some(ui) = &state.ui_dir {
         // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
         // stale index.html after an upgrade.
         let no_cache = || SetResponseHeaderLayer::overriding(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
         r = r.nest_service("/ui", ServiceBuilder::new().layer(no_cache()).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
-    // no CORS: only pages served by this server use the API; other sites are refused (guard.rs)
-    r.layer(axum::middleware::from_fn(guard::guard)).with_state(state)
+    // no CORS: only pages served by this server use the API
+    r
 }
 
 // ---- helpers ------------------------------------------------------------------------
@@ -676,15 +693,22 @@ async fn install_usbtmc_driver(Json(body): Json<Value>) -> Response {
 
 // ---- websocket ----------------------------------------------------------------------
 
-async fn ws_registry(State(s): State<S>, ws: WebSocketUpgrade) -> Response {
-    ws.on_upgrade(move |socket| registry_stream(s, socket))
+async fn ws_registry(State(s): State<S>, p: remote::Principal, ws: WebSocketUpgrade) -> Response {
+    ws.on_upgrade(move |socket| registry_stream(s, p, socket))
 }
 
-/// Push the registry every interval (the UI marks data stale after ~1 s of silence).
-async fn registry_stream(s: S, mut socket: WebSocket) {
+/// Push the registry every interval (the UI marks data stale after ~1 s of silence); ends
+/// with the remote session.
+async fn registry_stream(s: S, p: remote::Principal, mut socket: WebSocket) {
     let mut tick = tokio::time::interval(s.ws_interval);
     loop {
-        tick.tick().await;
+        tokio::select! {
+            _ = tick.tick() => {}
+            _ = p.revoked() => {
+                let _ = socket.send(Message::Close(None)).await;
+                return;
+            }
+        }
         let snapshot = s.devices.registry.lock().unwrap().to_json().to_string();
         if socket.send(Message::Text(snapshot.into())).await.is_err() {
             return;
@@ -716,11 +740,17 @@ async fn metrics_device(State(s): State<S>, Path(id): Path<String>) -> Response 
     }
 }
 
-async fn ws_metrics(State(s): State<S>, ws: WebSocketUpgrade) -> Response {
+async fn ws_metrics(State(s): State<S>, p: remote::Principal, ws: WebSocketUpgrade) -> Response {
     ws.on_upgrade(move |mut socket| async move {
         let mut tick = tokio::time::interval(s.metrics_interval);
         loop {
-            tick.tick().await;
+            tokio::select! {
+                _ = tick.tick() => {}
+                _ = p.revoked() => {
+                    let _ = socket.send(Message::Close(None)).await;
+                    return;
+                }
+            }
             let snapshot = Value::Object(metrics_map(&s)).to_string();
             if socket.send(Message::Text(snapshot.into())).await.is_err() {
                 return;

@@ -5,15 +5,18 @@
  * - Instruments: Instrument configuration
  * - Supported: instruments BenchMesh has definitions for, with each model's support status
  * - Miscellaneous: App settings (history retention, etc.)
+ * - Remote access: control the bench from other computers (only in the app on this computer)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear, VscChecklist } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist, VscRemote } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
+import { RemoteSettings } from '../remote/RemoteSettings';
+import { useRemote } from '../remote/RemoteProvider';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'supported' | 'miscellaneous';
+type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'remote';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -71,10 +74,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
     setHistoryRetention(value);
   };
 
+  // remote access settings are admin: only the local principal on a server that has them
+  const remote = useRemote();
+  const remoteSettings = remote?.principal === 'local' && remote.status !== null;
   const tabs = [
     { id: 'instruments', label: 'Instruments', icon: VscTools },
     { id: 'supported', label: 'Supported', icon: VscChecklist },
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
+    ...(remoteSettings ? [{ id: 'remote', label: 'Remote access', icon: VscRemote }] : []),
   ] as const;
 
   return (
@@ -148,6 +155,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
             {/* Future sections can be added here */}
           </div>
         )}
+
+        {activeTab === 'remote' && remoteSettings && <RemoteSettings />}
       </div>
     </div>
   );

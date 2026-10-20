@@ -9,7 +9,7 @@ use bm_driver::actor::ActorConfig;
 
 use crate::config::{validate_entry, ConfigFile};
 use crate::devices::{hardware_connectors, simulated_connectors, Devices};
-use crate::{router, AppState};
+use crate::{network_router, router, AppState};
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
@@ -34,6 +34,7 @@ pub struct RunningServer {
     pub addr: SocketAddr,
     devices: Arc<Devices>,
     recordings: Arc<crate::recordings::Recordings>,
+    remote: Arc<crate::remote::Remote>,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
     thread: Option<std::thread::JoinHandle<()>>,
     /// Problems with individual config entries (devices skipped at start).
@@ -53,6 +54,7 @@ impl RunningServer {
     }
 
     fn shutdown_now(&mut self) {
+        self.remote.stop();
         self.recordings.shutdown();
         if let Some(tx) = self.shutdown.take() {
             let _ = tx.send(());
@@ -112,6 +114,7 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         config_lock: Default::default(),
         community: Default::default(),
         automation: crate::automation::Automation::new(devices.clone(), recordings.clone(), opts.data_dir.clone()),
+        remote: Arc::new(crate::remote::Remote::new(opts.data_dir.clone())),
     });
     // community status of the models (website, read-only); a simulation stays offline
     if opts.simulate.is_none() {
@@ -132,12 +135,16 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
     let listener = match listener {
         Ok(l) => l,
         Err(e) => {
+            state.remote.stop();
             devices.stop_all();
             return Err(format!("cannot listen: {e}"));
         }
     };
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+    let remote = state.remote.clone();
+    // remote access: the network listener opens now if it is switched on, or later from the UI
+    remote.attach(network_router(state.clone()), rt.handle().clone());
     let app = router(state);
     let thread = std::thread::Builder::new()
         .name("bm-server".into())
@@ -151,5 +158,5 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
             });
         })
         .map_err(|e| e.to_string())?;
-    Ok(RunningServer { addr, devices, recordings, shutdown: Some(tx), thread: Some(thread), warnings })
+    Ok(RunningServer { addr, devices, recordings, remote, shutdown: Some(tx), thread: Some(thread), warnings })
 }

@@ -68,6 +68,15 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("put", "/automation/mcp", "automation", "Set MCP access {access}"),
     ("get", "/mcp", "ai-assistant", "MCP endpoint: 405 (no server stream; POST JSON-RPC)"),
     ("post", "/mcp", "ai-assistant", "MCP endpoint (Streamable HTTP, JSON responses): initialize, tools/list, tools/call"),
+    ("get", "/remote", "remote-access", "Remote access settings and state (this computer only) → {enabled, port, password_set, listening, error, urls, fingerprint, sessions: [{id, address, agent, since, last_seen}]}"),
+    ("put", "/remote", "remote-access", "Switch remote access on or off {enabled, port?} (this computer only; on needs a password: 409; off ends every session) → as GET"),
+    ("put", "/remote/password", "remote-access", "Set the remote access password {password} (at least 10 characters; this computer only; ends every session) → 204"),
+    ("delete", "/remote/sessions", "remote-access", "End every remote session (this computer only) → 204"),
+    ("delete", "/remote/sessions/{id}", "remote-access", "End one remote session (this computer only) → 204"),
+    ("get", "/remote/session", "remote-access", "Who is asking → {principal: local} or {principal: remote, address, since}; 401 on the network address without a session"),
+    ("get", "/remote/login", "remote-access", "Sign-in page of the network address (HTML)"),
+    ("post", "/remote/login", "remote-access", "Sign in with the form field `password` → 303 to /ui/ with the session cookie, or back to the sign-in page"),
+    ("post", "/remote/logout", "remote-access", "End this remote session → 303 to the sign-in page"),
     ("get", "/openapi.json", "system", "This specification (JSON)"),
     ("get", "/openapi.yaml", "system", "This specification (YAML)"),
     ("get", "/docs", "system", "API reference (redirects to the UI)"),
@@ -86,6 +95,7 @@ const TAGS: &[(&str, &str)] = &[
     ("recordings", "Data recording"),
     ("automation", "Flows, runs, the flow assistant and MCP settings"),
     ("ai-assistant", "AI assistant context and the MCP endpoint"),
+    ("remote-access", "Remote access from the local network: settings (this computer only), sign-in, sessions"),
     ("websockets", "Real-time WebSocket streams"),
 ];
 
@@ -140,7 +150,7 @@ mod tests {
     /// Every `.route("path", method(...))` in the router source must be documented.
     #[test]
     fn every_router_route_is_documented() {
-        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs")];
+        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs"), include_str!("remote/mod.rs")];
         let mut in_router = BTreeSet::new();
         for src in sources {
             for line in src.lines().filter(|l| l.trim_start().starts_with(".route(\"")) {

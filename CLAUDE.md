@@ -50,11 +50,24 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 (`frontend/src/ui/update/`). Releases are signed with the updater key (CI secrets
 `TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]`); losing that key means installed apps can no longer update.
 
-**Cross-site guard:** the API has no authentication, so `crates/bm-server/src/guard.rs` refuses
-what a foreign web page could make the browser send: a `Host` that is not a loopback name, IP
-literal, single-label / `.local` name or listed in `BENCHMESH_ALLOWED_HOSTS` (DNS rebinding), and
-any request whose `Origin` is neither the server's own nor a loopback origin (form posts,
-`fetch`, WebSocket upgrades). There is no CORS layer: the UI is same-origin.
+**Cross-site guard:** the loopback listener (127.0.0.1:57666, the app window) has no
+authentication, so `crates/bm-server/src/guard.rs` refuses what a foreign web page could make the
+browser send: a `Host` that is not a loopback name (DNS rebinding), and any request whose `Origin`
+is neither the server's own nor a loopback origin (form posts, `fetch`, WebSocket upgrades). There
+is no CORS layer: the UI is same-origin. Nothing unauthenticated listens on the network.
+
+**Remote access** (contract and threat model `ai_context/REMOTE_ACCESS.md`, `crates/bm-server/src/remote/`,
+UI `frontend/src/ui/remote/`): off by default; switched on in Instruments → Remote access with a password, the server
+opens a second listener, HTTPS (rustls, self-signed certificate in `<data dir>/remote-tls/`, its
+fingerprint shown in the app) on every interface, port 57667, accepting only local-network
+addresses. Browsers sign in (`/remote/login`, PBKDF2 hash in `<data dir>/remote.json`, rate
+limited) and get a `__Host-` session cookie; `remote::gate` checks Host/Origin, the session and the
+route's scope (`remote/scope.rs`: unclassified routes are `admin` = this computer only; remote
+sessions hold every scope except `admin`: remote access itself, MCP, assistant keys, the Windows
+driver install). The app window and remote browsers work at the same time; the top bar shows
+**Remote: N** with **Disconnect all and switch off**; ending a session closes its WebSockets.
+Headless: `benchmesh-server remote-password` (stdin). Future online accounts map onto the same
+principals/scopes (see the contract).
 
 **Automation, assistant, MCP** (contract `ai_context/AUTOMATION.md`): flows are JSON documents
 (`benchmesh.flow/v1`: params, setup / steps / cleanup-always-runs; steps set, read, wait, let,
@@ -204,9 +217,7 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 | `BENCHMESH_DEVICES` | device definitions directory (default `./devices`, in the app its bundled copy) |
 | `BENCHMESH_UI` | UI directory for the app (default its bundled copy; `bm-server --ui`) |
 | `BENCHMESH_SIMULATE` | capture to simulate instead of real hardware (`--simulate`) |
-| `API_PORT` | `bm-server` port (default 57666; `--port`) |
-| `BENCHMESH_LISTEN` | app listen address (default `127.0.0.1`; `0.0.0.0` opts into LAN access) |
-| `BENCHMESH_ALLOWED_HOSTS` | extra `Host` names the cross-site guard accepts |
+| `API_PORT` | `bm-server` loopback port (default 57666; `--port`); other computers use remote access |
 | `BENCHMESH_ONLINE` / `BENCHMESH_ONLINE_URL` | `off` disables the community status / its base URL |
 | `BENCHMESH_URL` | server address for the MCP stdio bridge |
 | `BENCHMESH_NATIVE_WAYLAND` | `1`: run the app on native Wayland instead of XWayland |

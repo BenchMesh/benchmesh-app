@@ -76,6 +76,11 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **URL**: https://github.com/seanmonstar/reqwest, https://github.com/rustls/rustls, https://github.com/briansmith/ring
 - Already shipped with the desktop app through `tauri-plugin-updater`; now also a direct dependency of `bm-server`.
 
+### tokio-rustls, rcgen (with yasna, time), if-addrs (bm-server: remote access over HTTPS)
+- **License**: MIT OR Apache-2.0 (tokio-rustls, rcgen, yasna, time); if-addrs: MIT OR BSD-3-Clause
+- **URL**: https://github.com/rustls/tokio-rustls, https://github.com/rustls/rcgen, https://github.com/qnighy/yasna.rs, https://github.com/time-rs/time, https://github.com/messense/if-addrs
+- The HTTPS listener of remote access, its self-signed certificate, and the computer's network addresses shown in the app. Password hashing and session tokens use `ring` (above).
+
 ### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
 - **License**: Apache-2.0 OR MIT (used under MIT)
 - **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace

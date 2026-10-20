@@ -28,10 +28,15 @@ regex.workspace = true
 # community status from the website (rustls/ring: the TLS stack the desktop app's updater already ships)
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rcgen = { version = "0.14.7", default-features = false, features = ["ring"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring"] }
+if-addrs = "0.15.0"
+ring = "0.17.14"
 
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }
 bm-store = { path = "../bm-store" }
 tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.30"
+tokio = { workspace = true, features = ["io-util"] }
 futures-util = "0.3"
