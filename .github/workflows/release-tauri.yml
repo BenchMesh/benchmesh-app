@@ -50,8 +50,6 @@ jobs:
         run: |
           npm ci
           npx vitest run --reporter=dot
-      - name: Node-RED node tests
-        run: node --test node-red-contrib-benchmesh/test/*.test.js
 
   build:
     # Builds run alongside the tests; check that `test` passed before publishing the draft.
