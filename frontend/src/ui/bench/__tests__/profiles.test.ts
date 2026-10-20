@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import fixtures from './bench-fixtures.json'
-import { psuProfile, ellProfile, dmmProfile, awgProfile, oscProfile, setterMap, modeGlyph } from '../profiles'
+import { psuProfile, ellProfile, dmmProfile, awgProfile, oscProfile, setterMap, modeGlyph, displayDigits } from '../profiles'
 
 const fx = (key: keyof typeof fixtures) => {
   const f = fixtures[key] as { features: any; methods: any[] }
@@ -31,13 +31,24 @@ describe('PSU profile (same panel, per-model limits)', () => {
 describe('ELL profile', () => {
   it('lists settable modes in CC/CV/CR/CP order with their setpoint ranges', () => {
     const p = ellProfile(...fx('owon-oel1515:ELL'))
-    expect(p.modes.map((m) => m.key)).toEqual(['CURR', 'VOLT', 'RES', 'POW'])
-    expect(p.modes.map((m) => m.short)).toEqual(['CC', 'CV', 'CR', 'CP'])
+    // DYN has no setpoint here but the mode setter offers it: selectable, parameters on the load
+    expect(p.modes.map((m) => m.key)).toEqual(['CURR', 'VOLT', 'RES', 'POW', 'DYN'])
+    expect(p.modes.map((m) => m.short)).toEqual(['CC', 'CV', 'CR', 'CP', 'DYN'])
+    expect(p.modes[4]).toMatchObject({ op: null, spec: null, name: 'Dynamic' })
     const res = p.modes.find((m) => m.key === 'RES')!
     expect(res).toMatchObject({ op: 'res', name: 'Constant Resistance' })
     expect(res.spec).toMatchObject({ min: 0.05, max: 1000, intDigits: 4, decimals: 2, unit: 'Ω' })
     expect(p.modes[0].spec).toMatchObject({ max: 15, intDigits: 2, decimals: 3, unit: 'A' })
-    expect(p).toMatchObject({ input: true, remote: true, sense: true, remoteRequired: true })
+    expect(p).toMatchObject({ input: true, short: true, remote: true, sense: true, remoteRequired: true })
+  })
+
+  it('never offers a short-circuit mode, nor modes the mode setter does not take', () => {
+    const features = { modes: { CURR: { setpoint: { min: 0, max: 5 } }, SHORT: { ui_name: 'Short circuit' }, LED: { ui_name: 'LED' } } }
+    const setters = setterMap([
+      { name: 'mode', http_method: 'POST', value: { type: 'enum', values: ['CURR', 'SHORT'] } },
+      { name: 'curr', http_method: 'POST', value: { type: 'number', min: 0, max: 30 } },
+    ])
+    expect(ellProfile(features, setters).modes.map((m) => m.key)).toEqual(['CURR'])
   })
 })
 
@@ -57,6 +68,13 @@ describe('DMM profile', () => {
     expect(p.tempSensors.map((s) => s.value)).toEqual(['KITS90', 'PT100'])
     expect(p.tempScales.map((s) => s.value)).toEqual(['C', 'F', 'K'])
   })
+  it('display digits from features.counts (digits or a count), else 5', () => {
+    expect(displayDigits(undefined)).toBe(5)
+    expect(displayDigits(6)).toBe(6)
+    expect(displayDigits(55000)).toBe(5)
+    expect(displayDigits(220000)).toBe(6)
+    expect(dmmProfile({ counts: 1200000 }, {}).counts).toBe(7)
+  })
   it('falls back to a short key for unknown functions', () => {
     expect(modeGlyph('WEIRD', {})).toBe('WEIR')
   })
@@ -70,6 +88,14 @@ describe('AWG profile', () => {
     expect(p.amplitude).toMatchObject({ min: 0.001, max: 20, intDigits: 2, decimals: 3, unit: 'Vpp' })
     expect(p.offset).toMatchObject({ min: -10, max: 10, decimals: 3 })
     expect(p.channelColors).toEqual({ 1: '#FFD700', 2: '#4169E1' })
+  })
+
+  it('phase, symmetry, the raw frequency limits (period range) and the level limit', () => {
+    const p = awgProfile(...fx('owon-dge2070:AWG'))
+    expect(p.frequencyLimits).toEqual({ min: 1e-6, max: 70e6 })
+    expect(p.phase).toMatchObject({ min: 0, max: 360, unit: '°' })
+    expect(p.symmetry).toMatchObject({ min: 0, max: 100, unit: '%' })
+    expect(p.levelLimit).toBe(10)
   })
 })
 

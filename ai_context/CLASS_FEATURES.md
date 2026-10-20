@@ -145,7 +145,7 @@ with the formula) in `/instruments/{CLS}/{id}` features, `/methods` (`emulated: 
 
 ## Order of work (proposal)
 
-1. **UI wins on what is already bound:** AWG period toggle, Vrms/dBm/high-low display and entry,
+1. **Done 2026-10-20 - UI wins on what is already bound:** AWG period toggle, Vrms/dBm/high-low display and entry,
    phase/symmetry/load; ELL short and modeless modes; DMM statistics per reading and the other
    DMM bugs; OSC BW-limit values.
 2. **Class `derive` (L1) with provenance:** delete the duplicated POUT expressions and the browser

@@ -4,7 +4,7 @@ import { WireConsole } from './WireConsole'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector } from '../kit'
 import { Instrument } from '../types'
-import { channelStatus, isOnline, useChannelApi, useInstrumentMeta } from './api'
+import { useChannelStatus, isOnline, useChannelApi, useInstrumentMeta } from './api'
 import { PanelSize, SIZES } from './layout'
 import { psuProfile, dmmProfile, ellProfile, awgProfile, oscProfile, lcrProfile, salProfile, Setters } from './profiles'
 import { PsuPanel } from './panels/PsuPanel'
@@ -49,7 +49,7 @@ function ChannelPanel({ instrument, klass, ch, registry, features, setters, onli
   instrument: Instrument; klass: string; ch: string; registry: any; features: any; setters: Setters; online: boolean
 }) {
   const api = useChannelApi(klass, instrument.id, ch)
-  const status = channelStatus(registry, instrument.id, klass, ch)
+  const status = useChannelStatus(registry, instrument.id, klass, ch)
   const k = klass.toUpperCase()
   const profile = useMemo(() => {
     if (k === 'PSU') return psuProfile(features, setters)

@@ -371,6 +371,10 @@ async fn registry_websocket_streams_python_shape() {
     assert_eq!(msg["t1"]["IDN"], "TENMA 72-2540 V2.1");
     assert_eq!(msg["t1"]["PSU"]["status_ch1"]["OUTPUT"], "OFF");
     assert_eq!(msg["l1"]["ELL"]["status_ch1"]["MODE"], "CURR");
+    // when the channel was last updated (ms since the epoch): the UI counts new readings by it
+    let at = msg["t1"]["PSU"]["updated_ch1"].as_u64().expect("updated_ch1");
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
+    assert!(at <= now && now - at < 60_000, "{at} vs {now}");
     // a second frame follows within the interval
     let started = Instant::now();
     next_text(&mut ws).await;

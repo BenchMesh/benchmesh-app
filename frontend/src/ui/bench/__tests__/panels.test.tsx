@@ -5,7 +5,7 @@ import fixtures from './bench-fixtures.json'
 import { psuProfile, ellProfile, dmmProfile, awgProfile, setterMap } from '../profiles'
 import { PsuPanel } from '../panels/PsuPanel'
 import { EllPanel } from '../panels/EllPanel'
-import { DmmPanel, fullScale } from '../panels/DmmPanel'
+import { DmmPanel, fullScale, rangeValue } from '../panels/DmmPanel'
 import { AwgChannel } from '../panels/AwgPanel'
 import { GenericPanel } from '../panels/GenericPanel'
 import type { ChannelApi } from '../api'
@@ -81,6 +81,24 @@ describe('EllPanel', () => {
     await waitFor(() => expect(api.set).toHaveBeenCalledWith('mode', 'CURR'))
   })
 
+  it('a mode without a setpoint here says where to set it', () => {
+    render(<EllPanel status={{ MODE: 'DYN', REMOTE: 'ON', INPUT: 'OFF' }} profile={profile} api={mockApi()} online />)
+    expect(screen.getByText(/Dynamic: its parameters are set on the instrument/)).toBeInTheDocument()
+    expect(screen.queryByRole('spinbutton')).toBeNull()
+  })
+
+  it('short circuit: read from the load, two presses to switch on, read back', async () => {
+    const api = mockApi({ short: 'OFF' })
+    render(<EllPanel status={{ MODE: 'CURR', REMOTE: 'ON', INPUT: 'OFF' }} profile={profile} api={api} online />)
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('short'))
+    const sw = screen.getByRole('button', { name: /Short/ })
+    fireEvent.click(sw)
+    expect(api.set).not.toHaveBeenCalledWith('short', 'ON')
+    fireEvent.click(sw)
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('short', 'ON'))
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(3))
+  })
+
   it('shows why a request was refused', async () => {
     const api = mockApi()
     api.set.mockRejectedValueOnce(new Error('Load is not in remote mode'))
@@ -135,6 +153,33 @@ describe('DmmPanel', () => {
     expect(fullScale('AUTO', 3.3)).toBe(10)
     expect(fullScale('AUTO', -9.7e-5)).toBeCloseTo(1e-4)
     expect(fullScale(null, null)).toBeNull()
+    // meters that report a range index: the label gives the full scale (Rigol DM3000 "2" = 20V)
+    const idx = [{ value: 'AUTO', display: 'AUTO' }, { value: '1', display: '2V' }, { value: '2', display: '20V' }, { value: '0', display: '200mV' }]
+    expect(fullScale('2', 3.3, idx)).toBe(20)
+    expect(fullScale('0', 0.1, idx)).toBeCloseTo(0.2)
+    expect(rangeValue('10000µF')).toBeCloseTo(0.01)
+    expect(rangeValue('500KΩ')).toBe(5e5)
+    expect(rangeValue('AUTO')).toBeNull()
+  })
+
+  it('labels a temperature with the scale chosen on the meter', async () => {
+    const api = mockApi()
+    const profile = dmmProfile(...fx('owon-xdm1241:DMM'))
+    const temp = profile.modes.find((m) => m.key.toUpperCase().startsWith('TEMP'))!
+    render(<DmmPanel status={{ MEAS: si('77.0'), MODE: temp.key }} profile={profile} api={api} online />)
+    const f = profile.tempScales.find((t) => t.value === 'F')!
+    fireEvent.click(screen.getByRole('button', { name: f.display }))
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('temp_scale', 'F'))
+    await waitFor(() => expect(screen.getAllByText(f.display).length).toBeGreaterThan(1))
+  })
+
+  it('re-reads the rate when the function changes (meters keep one per function)', async () => {
+    const api = mockApi({ rate: 'M' })
+    const profile = dmmProfile(...fx('owon-xdm1241:DMM'))
+    const { rerender } = render(<DmmPanel status={{ MEAS: si('1'), MODE: 'VOLT' }} profile={profile} api={api} online />)
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1))
+    rerender(<DmmPanel status={{ MEAS: si('1'), MODE: 'CURR' }} profile={profile} api={api} online />)
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2))
   })
 })
 
@@ -151,6 +196,81 @@ describe('AwgChannel', () => {
     fireEvent.keyDown(freq, { key: 'ArrowUp' })
     fireEvent.keyDown(freq, { key: 'Enter' })
     await waitFor(() => expect(api.set).toHaveBeenCalledWith('frequency', 1001))
+  })
+
+  const awg = (status: Record<string, unknown>, api = mockApi()) => {
+    render(<AwgChannel ch="1" status={{ OUTPUT: 'OFF', SHAPE: 'SIN', FREQ: si('1000'), AMPL: si('2'), OFFS: si('0.5'), ...status }}
+      profile={awgProfile(...fx('owon-dge2070:AWG'))} api={api} online />)
+    return api
+  }
+  const enter = (name: string, digits: string) => {
+    const ed = screen.getByRole('spinbutton', { name })
+    fireEvent.focus(ed)
+    fireEvent.click(screen.getAllByTestId('digit').find((d) => ed.contains(d))!)
+    for (const k of digits) fireEvent.keyDown(ed, { key: k })
+    fireEvent.keyDown(ed, { key: 'Enter' })
+  }
+
+  it('enters the period and sends the frequency', async () => {
+    localStorage.clear()
+    const api = awg({})
+    fireEvent.click(screen.getByRole('button', { name: 'T' }))
+    const period = screen.getByRole('spinbutton', { name: 'Period' })
+    expect(period).toHaveAttribute('aria-valuenow', '1')
+    expect(period).toHaveAttribute('aria-valuetext', '1 ms')
+    enter('Period', '002500')
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('frequency', 400))
+    // the choice is kept
+    expect(JSON.parse(localStorage.getItem('benchmesh:awg-entry')!)).toMatchObject({ freq: 'PERIOD' })
+    localStorage.clear()
+  })
+
+  it('the entry choice applies to every channel', () => {
+    localStorage.clear()
+    const profile = awgProfile(...fx('owon-dge2070:AWG'))
+    const st = { OUTPUT: 'OFF', SHAPE: 'SIN', FREQ: si('1000'), AMPL: si('2'), OFFS: si('0') }
+    render(<><AwgChannel ch="1" status={st} profile={profile} api={mockApi()} online /><AwgChannel ch="2" status={st} profile={profile} api={mockApi()} online /></>)
+    fireEvent.click(screen.getAllByRole('button', { name: 'T' })[0])
+    expect(screen.getAllByRole('spinbutton', { name: 'Period' })).toHaveLength(2)
+    localStorage.clear()
+  })
+
+  it('enters Vrms and high / low levels, refuses dBm at High-Z, shows what it calculates', async () => {
+    localStorage.clear()
+    const api = awg({ LOAD: 'HIGHZ' })
+    expect(screen.getByRole('button', { name: 'dBm' })).toBeDisabled()
+    expect(screen.getByText('HIGH-Z')).toBeInTheDocument()
+    expect(screen.getByText(/T 1 ms/)).toBeInTheDocument()
+    expect(screen.getByText(/707.1 mVrms/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Vrms' }))
+    expect(screen.getByRole('spinbutton', { name: 'Amplitude' })).toHaveAttribute('aria-valuenow', '0.7071')
+    enter('Amplitude', '10000')
+    await waitFor(() => expect(api.set).toHaveBeenCalledWith('amplitude', 2.82843))
+    fireEvent.click(screen.getByRole('button', { name: 'H/L' }))
+    expect(screen.getByRole('spinbutton', { name: 'High level' })).toHaveAttribute('aria-valuenow', '1.5')
+    expect(screen.queryByRole('spinbutton', { name: 'Offset' })).toBeNull()
+    api.set.mockClear()
+    // high 3.000 V with low -0.5 V: offset 1.25, amplitude 3.5 (grows: offset first)
+    enter('High level', '03000')
+    await waitFor(() => expect(api.set.mock.calls).toEqual([['offset', 1.25], ['amplitude', 3.5]]))
+    localStorage.clear()
+  })
+
+  it('offers dBm into 50 ohm, symmetry only for a ramp, and phase', () => {
+    localStorage.clear()
+    awg({ LOAD: '50', SHAPE: 'RAMP', SYMM: 20, PHASE: 90 })
+    expect(screen.getByRole('button', { name: 'dBm' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Vrms' })).toBeEnabled()
+    expect(screen.getByRole('spinbutton', { name: 'Symmetry' })).toHaveAttribute('aria-valuenow', '20')
+    expect(screen.getByRole('spinbutton', { name: 'Phase' })).toHaveAttribute('aria-valuenow', '90')
+  })
+
+  it('no Vrms for noise, and a hint when the amplitude is not reported in Vpp', () => {
+    localStorage.clear()
+    awg({ SHAPE: 'PRN', AMPL: null })
+    expect(screen.getByRole('button', { name: 'Vrms' })).toBeDisabled()
+    expect(screen.queryByRole('spinbutton', { name: 'Symmetry' })).toBeNull()
+    expect(screen.getByText(/not reported in Vpp/)).toBeInTheDocument()
   })
 })
 

@@ -61,8 +61,15 @@ function OscChannel({ id, ch, status, profile, online }: {
               options={profile.probes.map((p) => ({ value: p, label: `${p}×`, title: `Probe ${p}:1` }))} onChange={(v) => run(set('probe', v))} />
           )}
           <div className="kit-row">
-            {profile.bwlimit && <MicroSwitch label="BW 20M" checked={status.BWLIMIT != null && status.BWLIMIT !== 'OFF'} disabled={!online}
-              title="Bandwidth limit" onChange={(v) => set('bwlimit', v ? '20M' : 'OFF')} />}
+            {profile.bwlimit && profile.bwlimits.length === 1 && (
+              <MicroSwitch label={`BW ${profile.bwlimits[0]}`} checked={status.BWLIMIT != null && status.BWLIMIT !== 'OFF'} disabled={!online}
+                title="Bandwidth limit" onChange={(v) => set('bwlimit', v ? profile.bwlimits[0] : 'OFF')} />
+            )}
+            {profile.bwlimit && profile.bwlimits.length > 1 && (
+              <Selector variant="chips" label={`CH${ch} bandwidth limit`} value={typeof status.BWLIMIT === 'string' ? status.BWLIMIT : null} disabled={!online}
+                options={['OFF', ...profile.bwlimits].map((b) => ({ value: b, label: b === 'OFF' ? 'BW full' : b, title: b === 'OFF' ? 'No bandwidth limit' : `Bandwidth limit ${b}` }))}
+                onChange={(v) => run(set('bwlimit', v))} />
+            )}
             {profile.invert && <MicroSwitch label="Invert" checked={status.INVERT === 'ON'} disabled={!online}
               onChange={(v) => set('invert', v ? 'ON' : 'OFF')} />}
           </div>

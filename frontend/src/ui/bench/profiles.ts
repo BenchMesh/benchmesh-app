@@ -74,21 +74,24 @@ export type PsuProfile = ReturnType<typeof psuProfile>
 const ELL_ORDER = ['CURR', 'VOLT', 'RES', 'POW']
 const ELL_SHORT: Record<string, string> = { CURR: 'CC', VOLT: 'CV', RES: 'CR', POW: 'CP' }
 
+export interface EllMode { key: string; op: string | null; short: string; name: string; spec: NumberSpec | null }
+
 export function ellProfile(features: any, setters: Setters) {
-  const modes = Object.entries<any>(features?.modes ?? {})
-    .filter(([key, m]) => m?.setpoint && setters[key.toLowerCase()])
-    .map(([key, m]) => ({
-      key,
-      op: key.toLowerCase(),
-      short: ELL_SHORT[key] ?? key,
-      name: m.ui_name ?? key,
-      spec: numberSpec(setters[key.toLowerCase()], m.setpoint)!,
-    }))
-    .filter((m) => m.spec)
+  const settable = setters.mode?.value?.type === 'enum' ? setters.mode.value.values ?? [] : null
+  const modes: EllMode[] = Object.entries<any>(features?.modes ?? {})
+    .map(([key, m]) => {
+      const op = key.toLowerCase()
+      const spec = m?.setpoint && setters[op] ? numberSpec(setters[op], m.setpoint) : null
+      return { key, op: spec ? op : null, short: ELL_SHORT[key] ?? key, name: m?.ui_name ?? key, spec }
+    })
+    // a mode without a setpoint here (dynamic, LED, ...) only when the mode setter offers it;
+    // a short-circuit *mode* never: the Short switch (two presses) is the way to short the input
+    .filter((m) => (m.spec || settable?.includes(m.key)) && m.key !== 'SHORT')
     .sort((a, b) => (ELL_ORDER.indexOf(a.key) + 99) % 99 - (ELL_ORDER.indexOf(b.key) + 99) % 99)
   return {
     modes,
     input: !!setters.input,
+    short: enumSetter(setters, 'short'),
     remote: enumSetter(setters, 'remote'),
     sense: enumSetter(setters, 'remote_compensation'),
     remoteRequired: features?.compulsory_lock === true,
@@ -97,6 +100,11 @@ export function ellProfile(features: any, setters: Setters) {
 export type EllProfile = ReturnType<typeof ellProfile>
 
 // ---- DMM -------------------------------------------------------------------------------
+
+/** Digits a reading shows: `features.counts` as digits (6) or as a count (55000 -> 5); else 5. */
+export function displayDigits(counts: unknown): number {
+  return isNum(counts) && counts > 0 ? (counts > 9 ? Math.ceil(Math.log10(counts + 1)) : counts) : 5
+}
 
 /** Dial label for a meter function. */
 export function modeGlyph(key: string, m: { unit?: string; note?: string }): string {
@@ -145,7 +153,7 @@ export function dmmProfile(features: any, setters: Setters) {
     tempScales: setters.temp_scale && Array.isArray(temp.Scale)
       ? (temp.Scale as { symbol: string; unit: string; display: string }[]).map((s) => ({ value: s.symbol, display: s.unit }))
       : [],
-    counts: 5,
+    counts: displayDigits(features?.counts),
   }
 }
 export type DmmProfile = ReturnType<typeof dmmProfile>
@@ -154,11 +162,20 @@ export type DmmProfile = ReturnType<typeof dmmProfile>
 
 export function awgProfile(features: any, setters: Setters) {
   const shapes = setters.shape?.value?.values ?? []
+  const f = setters.frequency?.value
+  const amplitude = numberSpec(setters.amplitude)
+  const offset = numberSpec(setters.offset)
   return {
     shapes: [...shapes].sort((a, b) => (WAVE_SHAPES.indexOf(a) + 99) % 99 - (WAVE_SHAPES.indexOf(b) + 99) % 99),
     frequency: numberSpec(setters.frequency),
-    amplitude: numberSpec(setters.amplitude),
-    offset: numberSpec(setters.offset),
+    /** The setter's own limits (the editor's are rounded to its digits): the period range. */
+    frequencyLimits: f && isNum(f.min) && isNum(f.max) && f.min > 0 ? { min: f.min, max: f.max } : null,
+    amplitude,
+    offset,
+    /** High / low level entry: both levels within the offset range widened by half the amplitude. */
+    levelLimit: amplitude && offset ? Math.max(Math.abs(offset.min), Math.abs(offset.max), amplitude.max / 2) : null,
+    phase: numberSpec(setters.phase, { unit: '°' }),
+    symmetry: numberSpec(setters.symmetry, { unit: '%' }),
     output: !!setters.output,
     channelColors: (features?.channel_colors ?? {}) as Record<string, string>,
   }
@@ -194,6 +211,9 @@ export function oscProfile(features: any, setters: Setters, channels: number) {
     measurements: Array.isArray(features?.measurements) ? (features.measurements as string[]) : [],
     display: enumSetter(setters, 'display'),
     bwlimit: enumSetter(setters, 'bwlimit'),
+    /** Bandwidth limits the setter offers besides OFF, lowest first (20M, 100M, 200M, ...). */
+    bwlimits: ordered(setters, 'bwlimit', []).filter((v) => v !== 'OFF')
+      .sort((a, b) => (parseFloat(a) || 0) * (/G/i.test(a) ? 1e3 : 1) - (parseFloat(b) || 0) * (/G/i.test(b) ? 1e3 : 1)),
     invert: enumSetter(setters, 'invert'),
     offset: !!setters.offset,
     timebaseOffset: !!setters.timebase_offset,
@@ -297,7 +317,7 @@ export function lcrProfile(features: any, setters: Setters) {
   const secRank = (s: string | null) => { const i = LCR_SECONDARY_ORDER.indexOf(s ?? ''); return i < 0 ? 99 : i }
   const functions = keys.map((k) => lcrFunction(k, fdefs[k]))
     .sort((a, b) => groupRank(a.group) - groupRank(b.group) || secRank(a.secondary) - secRank(b.secondary) || (a.circuit ?? '').localeCompare(b.circuit ?? ''))
-  const counts = isNum(features?.counts) ? (features.counts > 9 ? Math.ceil(Math.log10(features.counts + 1)) : features.counts) : 5
+  const counts = displayDigits(features?.counts)
   const rangeNames = Array.isArray(features?.ranges) ? features.ranges : []
   const ranges = ordered(setters, 'range', ['AUTO', 'HOLD']).map((v) => {
     const d = rangeNames.find((r: Option) => String(r.value) === v)?.display

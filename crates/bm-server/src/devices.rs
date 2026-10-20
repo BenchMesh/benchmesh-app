@@ -106,8 +106,13 @@ pub struct Registry {
     pub version: u64,
 }
 
+fn unix_ms() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+}
+
 impl Registry {
-    /// The registry as the UI consumes it: `{dev: {IDN, CLASS: {status_chN: {...}}}}`.
+    /// The registry as the UI consumes it: `{dev: {IDN, CLASS: {status_chN: {...}, updated_chN: ms}}}`
+    /// (`updated_chN`: when that channel's status was last updated, ms since the epoch).
     pub fn to_json(&self) -> Value {
         let mut out = Map::new();
         for (id, d) in &self.devices {
@@ -116,9 +121,15 @@ impl Registry {
                 if let Some(idn) = &d.idn {
                     e.insert("IDN".into(), json!(idn));
                 }
+                let now = (Instant::now(), unix_ms());
                 for (class, chans) in &d.status {
-                    let m: Map<String, Value> =
+                    let mut m: Map<String, Value> =
                         chans.iter().map(|(ch, s)| (format!("status_ch{ch}"), json!(s))).collect();
+                    // when each channel was last updated: a new reading, also when its values repeat
+                    for (ch, at) in d.status_at.get(class).into_iter().flatten() {
+                        let ms = now.1.saturating_sub(now.0.saturating_duration_since(*at).as_millis() as u64);
+                        m.insert(format!("updated_ch{ch}"), json!(ms));
+                    }
                     e.insert(class.clone(), Value::Object(m));
                 }
             }

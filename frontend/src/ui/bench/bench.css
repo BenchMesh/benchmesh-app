@@ -266,3 +266,8 @@ html, body { background: var(--kit-ground); }
 
 /* text for screen readers only (e.g. names of symbol buttons) */
 .bench-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bench-awg__field { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 8px; }
+.bench-awg__load { font: 600 .68rem/1 var(--kit-font-num); letter-spacing: .1em; color: var(--kit-ink-2); border: 1px solid var(--kit-panel-edge); border-radius: 3px; padding: 3px 5px; }
+.bench-awg__note { font-size: .74rem; color: var(--kit-ink-2); }
+.bench-awg__derived { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: .74rem/1.3 var(--kit-font-num); color: var(--kit-ink-2); }
+.bench-calc { font: 700 .58rem/1 var(--kit-font-num); letter-spacing: .12em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 3px; padding: 2px 4px; opacity: .8; }

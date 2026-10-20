@@ -4,8 +4,23 @@ import { DmmProfile } from '../profiles'
 import { ChannelApi, useAction } from '../api'
 import { Recordable } from '../../recording/signal'
 
-/** Full scale of the active range: the range value, or the decade above the reading in AUTO. */
-export function fullScale(range: string | null, reading: number | null): number | null {
+const PREFIX: Record<string, number> = { p: 1e-12, n: 1e-9, 'µ': 1e-6, u: 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, G: 1e9 }
+
+/** Value of a range label such as `200mV`, `2kΩ` or `10000µF` (null when it is not one). */
+export function rangeValue(display: string | undefined): number | null {
+  const m = /^\s*([0-9]+(?:\.[0-9]+)?)\s*([pnµumkKMG]?)\s*[A-Za-zΩ°]*\s*$/.exec(display ?? '')
+  if (!m) return null
+  return Number(m[1]) * (m[2] ? PREFIX[m[2]] : 1)
+}
+
+/**
+ * Full scale of the active range: the range value, the value of its label for meters that
+ * report a range index (`2` = "20V"), or the decade above the reading in AUTO.
+ */
+export function fullScale(range: string | null, reading: number | null, options: { value: string; display: string }[] = []): number | null {
+  const label = range != null ? options.find((o) => o.value === range)?.display : undefined
+  const fromLabel = label != null && label !== range ? rangeValue(label) : null
+  if (fromLabel != null && fromLabel > 0) return fromLabel
   const r = range != null ? Number(range) : NaN
   if (Number.isFinite(r) && r > 0) return r
   if (reading == null || reading === 0) return null
@@ -70,19 +85,24 @@ export function DmmPanel({ status, profile, api, online }: {
     setRange('AUTO')
   }
   const stats = useStats(holdOn ? null : shown, status, mode)
-  // read whenever the meter comes online (added, app start, reconnect)
+  // read whenever the meter comes online (added, app start, reconnect) and per function
+  // (meters keep a rate per function)
   useEffect(() => {
     if (!profile.rates.length || !online) return
-    api.get('rate').then((v) => typeof v === 'string' && setRate(v.trim().toUpperCase())).catch(() => {})
-  }, [api, profile.rates.length, online])
+    let cancelled = false
+    api.get('rate').then((v) => { if (!cancelled && typeof v === 'string') setRate(v.trim().toUpperCase()) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [api, profile.rates.length, online, mode])
 
-  const unit = info?.unit ?? ''
   const isTemp = mode.toUpperCase().startsWith('TEMP')
+  // the meter converts to the chosen temperature scale: label the reading with it
+  const tempUnit = isTemp && scale ? profile.tempScales.find((t) => t.value === scale)?.display : undefined
+  const unit = tempUnit ?? info?.unit ?? ''
   const main = prefixed(shown, profile.counts, overload)
-  const fs = fullScale(activeRange, raw)
+  const ranges = profile.ranges[mode] ?? []
+  const fs = fullScale(activeRange, raw, ranges)
   const fsText = fs != null ? (() => { const p = prefixed(fs, 3); return `${p.text.trim().replace(/\.0+$/, '')} ${p.prefix}${unit}` })() : ''
   const fmt = (x: number) => { const p = prefixed(x, profile.counts); return `${p.text.trim()} ${p.prefix}${unit}` }
-  const ranges = profile.ranges[mode] ?? []
 
   return (
     <div className="bench-dmm">

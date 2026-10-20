@@ -7,7 +7,7 @@
 //!   `POST /instruments/{CLS}/{id}/{ch}/{op}/{value}` → 204
 //! - `GET  /drivers`, `/drivers/{id}`, `/config`, `POST /config`, `POST /devices`,
 //!   `PUT|DELETE /devices/{id}`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
-//! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}}}}` every interval
+//! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}, updated_chN: ms}}}` every interval
 //! - `/ui` static UI (`/docs` opens its API reference)
 //!
 //! Errors are `{"detail": "..."}`. Driver errors map to HTTP: bad argument 400,

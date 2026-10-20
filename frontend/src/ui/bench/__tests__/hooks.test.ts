@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useHistory, useSetpoint, ChannelApi } from '../api'
+import { useHistory, useSetpoint, useChannelStatus, ChannelApi } from '../api'
 import { useStats } from '../panels/DmmPanel'
 
 describe('useHistory', () => {
@@ -57,5 +57,27 @@ describe('useSetpoint', () => {
     rerender({ online: true })
     await waitFor(() => expect(result.current[0]).toBe(7))
     expect(api.get).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('useChannelStatus', () => {
+  it('keeps the same status object until the channel is updated again', () => {
+    const reg = (at: number, v: string) => ({ d: { DMM: { status_ch1: { MEAS: v }, updated_ch1: at } } })
+    const { result, rerender } = renderHook(({ r }) => useChannelStatus(r, 'd', 'DMM', '1'), { initialProps: { r: reg(1000, '1') } })
+    const first = result.current
+    // the registry is re-sent with the same reading: same object (not a new sample)
+    rerender({ r: reg(1000, '1') })
+    expect(result.current).toBe(first)
+    // a new reading with the same value: a new object
+    rerender({ r: reg(1500, '1') })
+    expect(result.current).not.toBe(first)
+    expect(result.current).toEqual({ MEAS: '1' })
+  })
+
+  it('without update times (older servers, mocks) every message is passed on', () => {
+    const { result, rerender } = renderHook(({ r }) => useChannelStatus(r, 'd', 'DMM', '1'), { initialProps: { r: { d: { DMM: { status_ch1: { MEAS: '1' } } } } } })
+    const first = result.current
+    rerender({ r: { d: { DMM: { status_ch1: { MEAS: '1' } } } } })
+    expect(result.current).not.toBe(first)
   })
 })

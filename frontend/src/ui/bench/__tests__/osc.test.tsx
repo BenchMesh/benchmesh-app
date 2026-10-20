@@ -87,3 +87,21 @@ describe('OscPanel', () => {
     expect(screen.getByRole('button', { name: /Stopped/ })).toBeDisabled()
   })
 })
+
+describe('bandwidth limit', () => {
+  it('one limit: a switch named after it; several: chips with every value of the setter', async () => {
+    expect(profile.bwlimits).toEqual(['20M'])
+    const methods = fx.methods.map((m) => (m.name === 'bwlimit' && m.http_method === 'POST'
+      ? { ...m, value: { type: 'enum', values: ['250M', 'OFF', '20M'] } } : m))
+    const p = oscProfile(fx.features, setterMap(methods), 4)
+    expect(p.bwlimits).toEqual(['20M', '250M'])
+    render(
+      <RequestLogProvider>
+        <OscPanel id="rigol-dho804" channels={['1', '2', '3', '4']} registry={registry} profile={p} online />
+      </RequestLogProvider>,
+    )
+    const chips = screen.getByRole('group', { name: 'CH1 bandwidth limit' })
+    fireEvent.click(within(chips).getByRole('button', { name: '250M' }))
+    await waitFor(() => expect(posts).toContain('/OSC/rigol-dho804/1/bwlimit/250M'))
+  })
+})

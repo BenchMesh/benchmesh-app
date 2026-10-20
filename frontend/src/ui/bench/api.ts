@@ -56,6 +56,23 @@ export function channelStatus(registry: any, id: string, klass: string, ch: stri
   return registry?.[id]?.[klass]?.[`status_ch${ch}`] ?? {}
 }
 
+/**
+ * The channel's status, the same object until the instrument reports again (`updated_chN`):
+ * the registry is re-sent every interval, and per-reading statistics and histories (`tick`)
+ * must count readings, not messages - also when a new reading repeats the last values.
+ */
+export function useChannelStatus(registry: any, id: string, klass: string, ch: string): Record<string, any> {
+  const status = channelStatus(registry, id, klass, ch)
+  const updated = registry?.[id]?.[klass]?.[`updated_ch${ch}`]
+  const [last, setLast] = useState<{ updated: unknown; status: Record<string, any> }>({ updated, status })
+  if (typeof updated !== 'number') return status
+  if (last.updated !== updated) {
+    setLast({ updated, status })
+    return status
+  }
+  return last.status
+}
+
 export function isOnline(registry: any, instrument: { id: string; health?: { is_alive?: boolean } }): boolean {
   const idn = registry?.[instrument.id]?.IDN
   return Boolean(idn && String(idn).trim()) && instrument.health?.is_alive !== false

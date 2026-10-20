@@ -13,8 +13,11 @@ There is no class-level schema in the Python code; this document is the first on
 
 ### Registry (`/ws/registry`, pushed every `BM_WS_INTERVAL`=0.2 s, full dump)
 ```
-{ dev_id: { "IDN": str, "<CLASS>": { "status_ch<N>": { ...driver poll dict... } } } }
+{ dev_id: { "IDN": str, "<CLASS>": { "status_ch<N>": { ...driver poll dict... }, "updated_ch<N>": ms } } }
 ```
+- `updated_ch<N>` (2026-10-20): when that channel's status was last updated (ms since the epoch). The
+  snapshot is re-sent every interval; the UI keeps a channel's status object until this changes, so
+  per-reading statistics and histories count readings, not messages.
 - N = 1..`features.channels`. Multi-class devices (`polling[].multi_class`) poll once with ch=1 and write each `result[CLASS]` to `status_ch1` only (`poll_worker.py:84-106`).
 - `IDN` always written (may be `""`). UI "online" ⇔ IDN is a non-empty string (`InstrumentPod.tsx:20-23`, `StatusBar.tsx:30`).
 - On link drop `IDN` and all `status_ch*` keys are removed (`registry.py:47-53`).

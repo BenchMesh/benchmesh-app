@@ -81,7 +81,7 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/openapi.yaml", "system", "This specification (YAML)"),
     ("get", "/docs", "system", "API reference (redirects to the UI)"),
     ("get", "/redoc", "system", "API reference (redirects to the UI)"),
-    ("get", "/ws/registry", "websockets", "WebSocket: live registry {device: {IDN, CLASS: {status_chN}}} every 0.2 s"),
+    ("get", "/ws/registry", "websockets", "WebSocket: live registry {device: {IDN, CLASS: {status_chN, updated_chN}}} every 0.2 s (updated_chN: last update, ms since the epoch)"),
     ("get", "/ws/metrics", "websockets", "WebSocket: metrics summary every 30 s"),
     ("get", "/ws/recordings", "websockets", "WebSocket: snapshot, then samples per tick, recording changes and deletions"),
 ];
