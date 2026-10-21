@@ -118,6 +118,9 @@ test.describe('Safety disclaimer', () => {
 
     const title = page.getByRole('heading', { name: /Important Safety Information/ });
     await expect(title).toBeVisible();
+    const welcome = page.getByRole('dialog', { name: /Thank you for trying BenchMesh/ });
+    await expect(welcome).toBeVisible();
+    await expect(welcome.getByRole('link', { name: 'support@benchmesh.online' })).toBeVisible();
     await page.getByRole('checkbox', { name: "Don't show this message again" }).check();
     await page.getByRole('button', { name: 'I Agree and Continue' }).click();
     await expect(title).toBeHidden();
