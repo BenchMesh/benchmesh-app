@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BenchMesh title bar mockup</title>
+<!-- the app's real fonts, tokens (all three skins) and bench styles -->
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/b612/400.css">
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/b612/700.css">
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/b612-mono/400.css">
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/b612-mono/700.css">
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/chakra-petch/500.css">
+<link rel="stylesheet" href="../../frontend/node_modules/@fontsource/chakra-petch/600.css">
+<link rel="stylesheet" href="../../frontend/src/ui/kit/kit.css">
+<link rel="stylesheet" href="../../frontend/src/ui/bench/bench.css">
+<link rel="stylesheet" href="../../frontend/src/ui/remote/remote.css">
+<style>
+  /* ---- mockup page (not part of the proposal) ---- */
+  [hidden] { display: none !important; }
+  body { margin: 0; background: #6d7378; font-family: system-ui, sans-serif; color: #111; }
+  .mock-ctl { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; padding: 12px 20px; background: #f4f4f4; border-bottom: 1px solid #ccc; font-size: 13px; }
+  .mock-ctl fieldset { border: 0; margin: 0; padding: 0; display: flex; gap: 6px; align-items: center; }
+  .mock-ctl legend { float: left; font-weight: 600; margin-right: 6px; }
+  .mock-ctl button { font: inherit; padding: 4px 10px; border: 1px solid #aaa; border-radius: 4px; background: #fff; color: #111; cursor: pointer; }
+  .mock-ctl button[aria-pressed="true"] { background: #222; color: #fff; border-color: #222; }
+  .mock-stage { padding: 28px 20px 40px; display: flex; justify-content: center; }
+  .mock-window { width: min(1280px, 100%); border-radius: 8px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.45); border: 1px solid rgba(0,0,0,.4); }
+  .mock-notes { max-width: 1280px; margin: 0 auto 40px; padding: 0 20px; color: #f2f2f2; font-size: 13px; line-height: 1.55; }
+  .mock-notes code { background: rgba(0,0,0,.25); padding: 1px 4px; border-radius: 3px; }
+
+  /* the native macOS title bar (only drawn on the macOS variant) */
+  .mac-native { height: 28px; display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; background: linear-gradient(#ececec, #dcdcdc); border-bottom: 1px solid #b9b9b9; font: 600 13px/1 -apple-system, system-ui, sans-serif; color: #4a4a4a; }
+  .mac-native .lights { display: flex; gap: 8px; padding-left: 12px; }
+  .mac-native .lights i { width: 12px; height: 12px; border-radius: 50%; }
+  .mac-native .lights i:nth-child(1) { background: #ff5f57; } .mac-native .lights i:nth-child(2) { background: #febc2e; } .mac-native .lights i:nth-child(3) { background: #28c840; }
+  .mac-native span { text-align: center; }
+  [data-skin="led"] .mac-native, [data-skin="glass"] .mac-native { background: linear-gradient(#3a3a3c, #2f2f31); border-color: #1b1b1c; color: #c8c8c8; }
+
+  /* ================= PROPOSAL ================= */
+
+  /* row 1: our title bar (Windows / Linux: replaces the OS title bar; macOS: below the native one) */
+  .bench-title {
+    display: flex; align-items: stretch; height: 48px; padding-left: 16px;
+    background: var(--kit-ground); border-bottom: 1px solid color-mix(in srgb, var(--kit-panel-edge) 55%, transparent);
+    user-select: none; -webkit-user-select: none;
+  }
+  /* brand: mark, name and version share one baseline */
+  .bench-title__brand { display: inline-flex; align-items: baseline; gap: 9px; align-self: center; }
+  .bench-title__brand svg { width: 33px; height: 33px; flex: none; position: relative; top: 3px; } /* digit's bottom segment sits on the text baseline */
+  .bench-title__name { font: 600 1.8rem/1 var(--kit-font-title); letter-spacing: .04em; color: var(--kit-ink); }
+  .bench-title__version {
+    font: italic 400 .82rem/1 var(--kit-font-label); color: var(--kit-ink-3); background: none; border: 0; padding: 0 2px; cursor: pointer; margin-left: 2px;
+  }
+  .bench-title__version:hover { color: var(--kit-ink-2); text-decoration: underline; }
+  .bench-title__drag { flex: 1; }                       /* data-tauri-drag-region */
+  /* in-app controls of the title bar (VS Code layout-button pattern) */
+  .bench-title__app { display: flex; align-items: center; gap: 4px; padding-right: 14px; }
+  .bench-title__tool {
+    display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px;
+    background: none; border: 1px solid transparent; border-radius: var(--kit-r-ctl); color: var(--kit-ink-2); cursor: pointer;
+    font: 700 .7rem/1 var(--kit-font-num); letter-spacing: .1em; text-transform: uppercase;
+  }
+  .bench-title__tool svg { width: 16px; height: 16px; }
+  .bench-title__tool:hover { background: var(--kit-ctl); border-color: var(--kit-panel-edge); color: var(--kit-ink); }
+  .bench-title__tool[aria-pressed="true"] { color: var(--kit-accent); border-color: var(--kit-accent); background: color-mix(in srgb, var(--kit-accent) 10%, transparent); }
+  /* window controls: separated from the app controls by a gap and a hairline */
+  .bench-title__win { display: flex; align-items: stretch; border-left: 1px solid color-mix(in srgb, var(--kit-panel-edge) 70%, transparent); margin-left: 6px; }
+  .bench-title__win button { width: 46px; display: grid; place-items: center; background: none; border: 0; color: var(--kit-ink); cursor: default; }
+  .bench-title__win svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 1; fill: none; shape-rendering: crispEdges; }
+  .bench-title__win button:hover { background: color-mix(in srgb, var(--kit-ink) 10%, transparent); }
+  .bench-title__win button.close:hover { background: #c42b1c; color: #fff; }
+  [data-os="mac"] .bench-title { height: 44px; }
+
+  /* row 2: status on the left, drawers on the right (former top bar, sticky) */
+  .bench-top--row2 { padding-top: 7px; padding-bottom: 7px; }
+
+  /* fake rack, only to show context */
+  .mock-rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; padding: 16px; background: var(--kit-ground); min-height: 330px; }
+  .mock-panel { background: var(--kit-panel); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-panel); box-shadow: var(--kit-panel-shadow); padding: 12px; }
+  .mock-panel h3 { margin: 0 0 10px; font: 600 .9rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; color: var(--kit-ink); }
+  .mock-glass { height: 110px; border-radius: 6px; background: linear-gradient(var(--kit-glass-top), var(--kit-glass-bottom)); border: 1px solid var(--kit-glass-edge); box-shadow: var(--kit-glass-shadow); display: grid; place-items: center; font: 400 2.6rem/1 var(--kit-font-num); color: var(--kit-seg-on); }
+  .mock-misc { padding: 16px; background: var(--kit-panel); border-top: 1px solid var(--kit-panel-edge); }
+  .mock-misc h4 { margin: 0 0 10px; font: 600 .85rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; color: var(--kit-ink); }
+</style>
+</head>
+<body>
+
+<div class="mock-ctl">
+  <fieldset><legend>Platform</legend>
+    <button data-os="win" aria-pressed="true">Windows / Linux</button>
+    <button data-os="mac" aria-pressed="false">macOS</button>
+  </fieldset>
+  <fieldset><legend>Skin</legend>
+    <button data-skin="" aria-pressed="true">Reflective LCD (light)</button>
+    <button data-skin="led" aria-pressed="false">LED segment (dark)</button>
+    <button data-skin="glass" aria-pressed="false">Cockpit glass (dark)</button>
+  </fieldset>
+  <fieldset><legend>Width</legend>
+    <button data-w="1280" aria-pressed="true">1280</button>
+    <button data-w="900" aria-pressed="false">900</button>
+    <button data-w="620" aria-pressed="false">620</button>
+  </fieldset>
+</div>
+
+<div class="mock-stage">
+  <div class="mock-window" id="win" data-os="win">
+
+    <div class="mac-native" hidden><div class="lights"><i></i><i></i><i></i></div><span>BenchMesh</span><span></span></div>
+
+    <!-- ROW 1: title bar -->
+    <div class="bench-title" data-tauri-drag-region>
+      <span class="bench-title__brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(32 32) skewX(-8) translate(-32 -32)">
+          <polygon points="20.5,11 23.8,7.7 36.2,7.7 39.5,11 36.2,14.3 23.8,14.3" style="fill:var(--kit-brand-seg);opacity:var(--kit-brand-ghost)"/>
+          <polygon points="41,12.5 44.3,15.8 44.3,27.2 41,30.5 37.7,27.2 37.7,15.8" style="fill:var(--kit-brand-seg);opacity:var(--kit-brand-ghost)"/>
+          <polygon points="41,33.5 44.3,36.8 44.3,48.2 41,51.5 37.7,48.2 37.7,36.8" style="fill:var(--kit-brand-seg)"/>
+          <polygon points="20.5,53 23.8,49.7 36.2,49.7 39.5,53 36.2,56.3 23.8,56.3" style="fill:var(--kit-brand-seg)"/>
+          <polygon points="19,33.5 22.3,36.8 22.3,48.2 19,51.5 15.7,48.2 15.7,36.8" style="fill:var(--kit-brand-seg)"/>
+          <polygon points="19,12.5 22.3,15.8 22.3,27.2 19,30.5 15.7,27.2 15.7,15.8" style="fill:var(--kit-brand-seg)"/>
+          <polygon points="20.5,32 23.8,28.7 36.2,28.7 39.5,32 36.2,35.3 23.8,35.3" style="fill:var(--kit-brand-seg)"/>
+          <circle cx="49" cy="53" r="3.5" style="fill:var(--kit-brand-dp)"/></g></svg>
+        <span class="bench-title__name">BenchMesh</span>
+        <button type="button" class="bench-title__version" title="About and feedback">v0.1.8</button>
+      </span>
+      <span class="bench-title__drag" data-tauri-drag-region></span>
+      <div class="bench-title__app">
+        <button type="button" class="bench-title__tool" id="arrange" aria-pressed="false" title="Arrange the panels">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="2.5" width="5.5" height="5" rx="1"/><rect x="9" y="2.5" width="5.5" height="11" rx="1"/><rect x="1.5" y="9.5" width="5.5" height="4" rx="1"/></svg>
+          <span>Arrange</span>
+        </button>
+      </div>
+      <div class="bench-title__win" id="wincontrols">
+        <button type="button" aria-label="Minimize"><svg viewBox="0 0 10 10"><path d="M0 5.5h10"/></svg></button>
+        <button type="button" aria-label="Maximize" id="max"><svg viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9"/></svg></button>
+        <button type="button" class="close" aria-label="Close"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10"/></svg></button>
+      </div>
+    </div>
+
+    <!-- ROW 2: status (left) and drawers (right) -->
+    <header class="bench-top bench-top--row2">
+      <span class="bench-pill" data-ok="true"><i></i>API</span>
+      <span class="bench-pill" data-ok="true"><i></i>live</span>
+      <span class="remote-badge"><span class="remote-badge__label">Remote: 1</span></span>
+      <div class="bench-tools">
+        <nav class="bench-actions" aria-label="Main">
+          <button type="button" class="bench-btn">Instruments</button>
+          <button type="button" class="bench-btn">Recording</button>
+          <button type="button" class="bench-btn">Automation</button>
+          <button type="button" class="bench-btn">Log</button>
+          <button type="button" class="bench-btn">API</button>
+          <button type="button" class="bench-btn">Feedback</button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="mock-rack">
+      <div class="mock-panel"><h3>Power supply · Tenma</h3><div class="mock-glass">12.00 V</div></div>
+      <div class="mock-panel"><h3>Multimeter · OWON</h3><div class="mock-glass">3.3012</div></div>
+      <div class="mock-panel"><h3>Electronic load · DL3021</h3><div class="mock-glass">0.500 A</div></div>
+    </div>
+
+    <!-- where the skin switch moves to -->
+    <div class="mock-misc">
+      <h4>Instruments → Miscellaneous (new home of the skin switch)</h4>
+      <div class="bench-group"><div class="bench-group__row">
+        <span class="kit-label">Skin</span>
+        <div class="kit-seg" role="radiogroup" aria-label="Skin">
+          <button type="button" data-skin="" aria-pressed="true">Reflective LCD</button>
+          <button type="button" data-skin="led" aria-pressed="false">LED segment</button>
+          <button type="button" data-skin="glass" aria-pressed="false">Cockpit glass</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mock-notes">
+  <p><b>Windows / Linux:</b> OS title bar off (<code>decorations: false</code>); row 1 is ours and is the drag region (double-click maximises). Minimise / maximise / close call the Tauri window API.
+  <b>macOS:</b> native title bar and traffic lights stay; row 1 shows only brand, version and Arrange.</p>
+  <p>Row 1: mark 33 px (was 22), name 1.8 rem (was 1.2), version italic in the tertiary ink on the same baseline. Arrange sits in the title bar as an app control, set apart from the window controls by a gap and a hairline.
+  Row 2: API / live / run / Remote on the left, drawer buttons on the right. Skin switch moves to Instruments → Miscellaneous.</p>
+</div>
+
+<script>
+  const win = document.getElementById('win')
+  const group = (sel, on) => document.querySelectorAll(sel).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(sel).forEach((x) => x.setAttribute('aria-pressed', x === b)); on(b)
+  }))
+  const setSkin = (s) => {
+    if (s) document.documentElement.dataset.skin = s; else delete document.documentElement.dataset.skin
+    document.querySelectorAll('[data-skin]').forEach((x) => x.tagName === 'BUTTON' && x.setAttribute('aria-pressed', x.dataset.skin === s))
+  }
+  document.querySelectorAll('button[data-skin]').forEach((b) => b.addEventListener('click', () => setSkin(b.dataset.skin)))
+  group('[data-os]:is(button)', (b) => {
+    const mac = b.dataset.os === 'mac'
+    win.dataset.os = b.dataset.os
+    win.querySelector('.mac-native').hidden = !mac
+    document.getElementById('wincontrols').hidden = mac
+  })
+  group('[data-w]', (b) => { win.style.width = b.dataset.w + 'px' })
+  const arrange = document.getElementById('arrange')
+  arrange.addEventListener('click', () => {
+    const on = arrange.getAttribute('aria-pressed') !== 'true'
+    arrange.setAttribute('aria-pressed', on); arrange.querySelector('span').textContent = on ? 'Done' : 'Arrange'
+  })
+</script>
+</body>
+</html>

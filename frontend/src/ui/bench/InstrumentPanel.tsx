@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { CloseIcon, ConsoleIcon, DetachIcon, FoldIcon, PinIcon, UnfoldIcon } from './icons'
+import { CloseIcon, ConsoleIcon, DetachIcon, FoldIcon, ParkIcon, PinIcon, UnfoldIcon } from './icons'
 import { WireConsole } from './WireConsole'
 import { getClassDescription } from '../instrumentClasses'
 import { Selector } from '../kit'
@@ -16,6 +16,8 @@ import { OscPanel } from './panels/OscPanel'
 import { LcrPanel } from './panels/LcrPanel'
 import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
+import { useParkControl } from './parking'
+import { useRun } from '../automation/RunProvider'
 
 const CONSOLES_KEY = 'benchmesh:consoles'
 
@@ -90,6 +92,32 @@ export interface WindowControls {
   onClose?: () => void
   /** In its own window: the header moves the (undecorated) window. */
   onDragStart?: () => void
+  /** After the instrument was parked (its own window closes). */
+  onParked?: () => void
+}
+
+/**
+ * Park the instrument (header, before Fold): refused while the running flow uses it; with an
+ * output on, the first press asks and a second one parks. Messages take their own header line.
+ */
+function ParkButton({ instrument, registry, onParked }: { instrument: Instrument; registry: any; onParked?: () => void }) {
+  const run = useRun()
+  const park = useParkControl(instrument, registry, run?.status, onParked)
+  const title = park.blockedBy
+    ? `Used by the running flow "${park.blockedBy}": it cannot be parked until the flow ends`
+    : park.asking ? 'Press again to park' : 'Park: disconnect and stop all traffic; it waits in the parking strip on the left'
+  return (
+    <>
+      <button type="button" className={`bench-wbtn bench-wbtn--park${park.asking ? ' bench-wbtn--asking' : ''}`} onClick={() => void park.press()}
+        disabled={Boolean(park.blockedBy) || park.busy} aria-label={park.asking ? 'Park anyway' : 'Park instrument'} title={title}><ParkIcon /></button>
+      {(park.asking || park.error) && (
+        <span className={`bench-panel__notice${park.error ? ' kit-error' : ''}`} role="alert">
+          {park.error ?? `${park.asking!.join(', ')} ${park.asking!.length > 1 ? 'are' : 'is'} on and stays on, unwatched, while parked. Press park again to park anyway.`}
+          <button type="button" className="bench-icon" onClick={park.dismiss} aria-label="Dismiss">✕</button>
+        </span>
+      )}
+    </>
+  )
 }
 
 /**
@@ -148,6 +176,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
               <button type="button" className="bench-wbtn" aria-pressed={win.onTop.on} onClick={win.onTop.toggle}
                 aria-label="Keep on top" title={win.onTop.on ? 'Kept on top of other windows' : 'Keep on top of other windows'}><PinIcon /></button>
             )}
+            {!arrange && <ParkButton instrument={instrument} registry={registry} onParked={win.onParked} />}
             <button type="button" className="bench-wbtn" onClick={win.onFold} aria-expanded={!folded}
               aria-label={folded ? 'Unfold' : 'Fold'} title={folded ? 'Unfold' : 'Fold to the header'}>{folded ? <UnfoldIcon /> : <FoldIcon />}</button>
             {win.onDetach && (

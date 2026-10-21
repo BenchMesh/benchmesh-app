@@ -7,6 +7,7 @@ import { closeWindow, isDesktop, resizeWindow, setWindowOnTop, startWindowDrag, 
 import { InstrumentPanel } from './InstrumentPanel'
 import { clearDetached, useDetachedHeartbeat } from './detach'
 import { loadLayout } from './layout'
+import { isParked } from './parking'
 import { RecordingsProvider } from '../recording/RecordingsProvider'
 import { RemoteProvider } from '../remote/RemoteProvider'
 
@@ -52,6 +53,15 @@ export function PanelWindow({ panelKey }: { panelKey: string }) {
       unfoldedSize.current = null
     }
   }, [folded])
+
+  // parked (here or anywhere else): the window closes; the instrument waits in the bench's parking strip
+  const parked = instrument ? isParked(instrument, registry) : false
+  useEffect(() => {
+    if (parked) {
+      clearDetached(panelKey)
+      closeWindow()
+    }
+  }, [parked, panelKey])
 
   const toggleOnTop = () => {
     const next = !onTop

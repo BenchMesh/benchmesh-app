@@ -8,7 +8,7 @@ use std::time::Duration;
 use bm_driver::actor::ActorConfig;
 
 use crate::config::{validate_entry, ConfigFile};
-use crate::devices::{hardware_connectors, simulated_connectors, Devices};
+use crate::devices::{hardware_connectors, hardware_presence, simulated_connectors, Devices};
 use crate::{network_router, router, AppState};
 
 #[derive(Debug, Clone)]
@@ -85,6 +85,9 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
     };
     let mut devices = Devices::new(catalog, connectors, ActorConfig::default());
     devices.hardware = opts.simulate.is_none();
+    if devices.hardware {
+        devices.presence = hardware_presence();
+    }
     let devices = Arc::new(devices);
     let mut warnings = Vec::new();
     for e in entries {

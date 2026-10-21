@@ -139,6 +139,9 @@ fn main() {
                 .title("BenchMesh")
                 .inner_size(1600.0, 1000.0)
                 .min_inner_size(900.0, 600.0)
+                // Windows / Linux: the UI draws the title bar and the window controls
+                // (frontend/src/ui/bench/TitleBar.tsx); macOS keeps its native title bar
+                .decorations(cfg!(target_os = "macos"))
                 .build()?;
             Ok(())
         })

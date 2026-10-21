@@ -619,3 +619,119 @@ fn riden_setpoints_are_written_as_scaled_registers_and_read_back() {
     let err = e.get("PSU", "current_limit", 1).unwrap_err();
     assert!(err.to_string().contains("illegal data address"), "{err}");
 }
+
+// ---- parking ---------------------------------------------------------------------------
+
+/// Presence answers taken in turn (the last one repeats); counts the checks.
+fn presence_seq(answers: Vec<Result<&'static str, &'static str>>, checks: Arc<Mutex<usize>>) -> bm_driver::actor::Presence {
+    Box::new(move || {
+        let mut n = checks.lock().unwrap();
+        *n += 1;
+        let a = answers[(*n - 1).min(answers.len() - 1)];
+        a.map(str::to_string).map_err(str::to_string)
+    })
+}
+
+fn wait_for(erx: &std::sync::mpsc::Receiver<Event>, what: &str, f: impl Fn(&Event) -> bool) -> Event {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        if let Ok(e) = erx.recv_timeout(Duration::from_millis(200)) {
+            if f(&e) {
+                return e;
+            }
+        }
+    }
+    panic!("no {what} event");
+}
+
+#[test]
+fn a_parked_actor_releases_the_link_sends_nothing_and_refuses_requests() {
+    let opened = Arc::new(Mutex::new(Vec::<Arc<Mutex<WireLog>>>::new()));
+    let o2 = opened.clone();
+    let connector = fixed_connector("sim", move || {
+        let t = SimTransport::new(Box::new(oel("current")));
+        o2.lock().unwrap().push(t.log.clone());
+        Ok(Box::new(t) as Box<dyn Transport>)
+    });
+    let checks = Arc::new(Mutex::new(0));
+    let parking = bm_driver::actor::Parking { presence: presence_seq(vec![Ok("sim")], checks.clone()), parked: false };
+    let (etx, erx) = channel();
+    let cfg = ActorConfig { presence_every: Duration::from_millis(50), ..Default::default() };
+    let h = DeviceHandle::spawn_with("oel", def("owon_oel"), connector, parking, Box::new(move |e| etx.send(e).unwrap()), cfg);
+    wait_for(&erx, "connected", |e| matches!(e, Event::Connected { .. }));
+    assert_eq!(*checks.lock().unwrap(), 0, "no presence checks while connected");
+
+    h.client().park(true).unwrap();
+    match wait_for(&erx, "parked", |e| matches!(e, Event::Parked { .. })) {
+        Event::Parked { present, detail } => assert!(present && detail == "sim", "{present} {detail}"),
+        _ => unreachable!(),
+    }
+    let log = opened.lock().unwrap()[0].clone();
+    assert_eq!(log.lock().unwrap().texts().last().unwrap(), "SYSTem:LOCal\r", "the panel is returned to the user");
+    let sent = log.lock().unwrap().texts().len();
+    match h.get("ELL", "input", 1) {
+        Err(Error::Refused(m)) => assert!(m.contains("oel is parked"), "{m}"),
+        other => panic!("expected refused, got {other:?}"),
+    }
+    assert!(matches!(h.set("ELL", "curr", 1, "0.1"), Err(Error::Refused(_))));
+    h.client().park(true).unwrap(); // parking twice changes nothing
+    std::thread::sleep(Duration::from_millis(600));
+    assert_eq!(log.lock().unwrap().texts().len(), sent, "no traffic while parked");
+    assert_eq!(opened.lock().unwrap().len(), 1, "no reconnects while parked");
+    assert!(*checks.lock().unwrap() >= 3, "presence is checked on schedule");
+
+    h.client().park(false).unwrap();
+    wait_for(&erx, "unparked", |e| matches!(e, Event::Unparked));
+    wait_for(&erx, "connected", |e| matches!(e, Event::Connected { .. }));
+    assert_eq!(opened.lock().unwrap().len(), 2, "unparking connects again");
+    assert_eq!(h.get("ELL", "input", 1).unwrap().value(), "OFF");
+    h.stop();
+}
+
+#[test]
+fn an_actor_started_parked_never_opens_its_port_and_reports_presence_changes() {
+    let opens = Arc::new(Mutex::new(0));
+    let o2 = opens.clone();
+    let connector: bm_driver::actor::Connector = Box::new(move || {
+        *o2.lock().unwrap() += 1;
+        Err("not expected".into())
+    });
+    let checks = Arc::new(Mutex::new(0));
+    let presence = presence_seq(vec![Ok("/dev/ttyUSB0"), Ok("/dev/ttyUSB0"), Err("unplugged"), Err("unplugged"), Ok("/dev/ttyUSB1")], checks.clone());
+    let (etx, erx) = channel();
+    let cfg = ActorConfig { presence_every: Duration::from_millis(30), ..Default::default() };
+    let parking = bm_driver::actor::Parking { presence, parked: true };
+    let h = DeviceHandle::spawn_with("xdm", def("owon_xdm"), connector, parking, Box::new(move |e| etx.send(e).unwrap()), cfg);
+    let mut seen = Vec::new();
+    while seen.len() < 3 {
+        if let Event::Parked { present, detail } = wait_for(&erx, "parked", |e| matches!(e, Event::Parked { .. })) {
+            seen.push((present, detail));
+        }
+    }
+    assert_eq!(seen, vec![(true, "/dev/ttyUSB0".to_string()), (false, "unplugged".to_string()), (true, "/dev/ttyUSB1".to_string())], "changes only");
+    let t = Instant::now();
+    h.stop();
+    assert!(t.elapsed() < Duration::from_secs(1), "a parked actor stops at once");
+    assert_eq!(*opens.lock().unwrap(), 0, "a parked instrument is never connected");
+}
+
+#[test]
+fn parking_stops_the_reconnect_attempts_of_a_missing_instrument() {
+    let tries = Arc::new(Mutex::new(0));
+    let t2 = tries.clone();
+    let connector: bm_driver::actor::Connector = Box::new(move || {
+        *t2.lock().unwrap() += 1;
+        Err("no free port matches usb 1a86:7523".into())
+    });
+    let (etx, erx) = channel();
+    let cfg = ActorConfig { reconnect_backoff: Duration::from_millis(30), presence_every: Duration::from_millis(30), ..Default::default() };
+    let parking = bm_driver::actor::Parking { presence: Box::new(|| Err("not attached".into())), parked: false };
+    let h = DeviceHandle::spawn_with("xdm", def("owon_xdm"), connector, parking, Box::new(move |e| etx.send(e).unwrap()), cfg);
+    wait_for(&erx, "disconnected", |e| matches!(e, Event::Disconnected { .. }));
+    h.client().park(true).unwrap();
+    wait_for(&erx, "parked", |e| matches!(e, Event::Parked { present: false, .. }));
+    let before = *tries.lock().unwrap();
+    std::thread::sleep(Duration::from_millis(300));
+    assert_eq!(*tries.lock().unwrap(), before, "no connect attempts while parked");
+    h.stop();
+}

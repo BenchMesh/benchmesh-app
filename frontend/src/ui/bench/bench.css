@@ -14,23 +14,52 @@ html, body { background: var(--kit-ground); }
 }
 
 /* ---- top bar ---------------------------------------------------------------------- */
-.bench-top {
+/* head: row 1 title bar (TitleBar.tsx) and row 2 status + drawers, kept in view together */
+.bench-head {
   position: sticky; top: 0; z-index: 20;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
   background: color-mix(in srgb, var(--kit-ground) 88%, transparent);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--kit-panel-edge);
 }
-.bench-brand { display: inline-flex; align-items: center; gap: 7px; font: 600 1.2rem/1 var(--kit-font-title); letter-spacing: .04em; margin-right: 6px; }
+.bench-title {
+  display: flex; align-items: stretch; height: 48px; padding-left: max(16px, env(safe-area-inset-left, 0px));
+  border-bottom: 1px solid color-mix(in srgb, var(--kit-panel-edge) 55%, transparent);
+  user-select: none; -webkit-user-select: none;
+}
+.bench-title:not([data-own-controls]) { padding-right: max(4px, env(safe-area-inset-right, 0px)); }
+/* mark, name and version share one baseline; the digit's bottom segment sits on it */
+.bench-title__brand { display: inline-flex; align-items: baseline; gap: 9px; align-self: center; min-width: 0; }
+.bench-title__brand svg { flex: none; position: relative; top: 3px; }
+.bench-title__name { font: 600 1.8rem/1 var(--kit-font-title); letter-spacing: .04em; color: var(--kit-ink); white-space: nowrap; }
+.bench-title__version { font: italic 400 .82rem/1 var(--kit-font-label); color: var(--kit-ink-3); background: none; border: 0; padding: 0 2px; margin-left: 2px; cursor: pointer; }
+.bench-title__version:hover, .bench-title__version:focus-visible { color: var(--kit-ink-2); text-decoration: underline; }
+.bench-title__drag { flex: 1; min-width: 12px; }
+/* the app's own title-bar controls (VS Code pattern), apart from the window controls */
+.bench-title__app { display: flex; align-items: center; gap: 4px; padding-right: 14px; }
+.bench-title__tool {
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px;
+  background: none; border: 1px solid transparent; border-radius: var(--kit-r-ctl); color: var(--kit-ink-2); cursor: pointer;
+  font: 700 .7rem/1 var(--kit-font-num); letter-spacing: .1em; text-transform: uppercase;
+}
+.bench-title__tool svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.3; }
+.bench-title__tool:hover:not(:disabled) { background: var(--kit-ctl); border-color: var(--kit-panel-edge); color: var(--kit-ink); }
+.bench-title__tool[aria-pressed="true"] { color: var(--kit-accent); border-color: var(--kit-accent); background: color-mix(in srgb, var(--kit-accent) 10%, transparent); }
+.bench-title__tool:disabled { opacity: .45; cursor: not-allowed; }
+.bench-title__win { display: flex; align-items: stretch; margin-left: 6px; border-left: 1px solid color-mix(in srgb, var(--kit-panel-edge) 70%, transparent); }
+.bench-title__win button { width: 46px; display: grid; place-items: center; background: none; border: 0; color: var(--kit-ink); }
+.bench-title__win svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1; shape-rendering: crispEdges; }
+.bench-title__win button:hover { background: color-mix(in srgb, var(--kit-ink) 10%, transparent); }
+.bench-title__win .bench-title__close:hover { background: #c42b1c; color: #fff; }
+.bench-top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px));
+}
 .bench-pill { display: inline-flex; align-items: center; gap: 6px; font: 400 .72rem/1 var(--kit-font-num); color: var(--kit-ink-2); }
 .bench-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--kit-alert); }
 .bench-pill[data-ok="true"] i { background: var(--kit-ok); }
 .bench-pill i, .bench-panel__link i { box-shadow: 0 0 calc(6px * var(--kit-glow)) currentColor; color: var(--kit-alert); }
 .bench-pill[data-ok="true"] i, .bench-panel__link[data-online="true"] i { color: var(--kit-ok); }
 .bench-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-left: auto; min-width: 0; }
-.bench-skin { display: inline-flex; align-items: center; gap: 6px; }
-.bench-skin .kit-seg button { padding: 6px 9px; font-size: .66rem; }
 .bench-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .bench-btn {
   background: var(--kit-ctl); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
@@ -212,6 +241,62 @@ html, body { background: var(--kit-ground); }
 .bench-panel--folded { gap: 0; }
 .bench-panel__head--drag { cursor: grab; user-select: none; -webkit-user-select: none; }
 
+.bench-wbtn:disabled { opacity: .35; cursor: not-allowed; }
+.bench-wbtn:disabled:hover { background: none; border-color: transparent; color: var(--kit-ink-3); }
+.bench-wbtn--asking { color: var(--kit-warn); border-color: var(--kit-warn); }
+/* a message of a header control (park): its own line at the end of the header */
+.bench-panel__notice {
+  order: 99; width: 100%; display: flex; align-items: center; gap: 6px;
+  font: 400 .72rem/1.35 var(--kit-font-num); color: var(--kit-warn);
+}
+
+/* ---- parking: parked instruments in a slim strip left of the rack ------------------- */
+.bench-body { flex: 1; display: flex; min-width: 0; }
+.bench-body > .bench-main { flex: 1; min-width: 0; }
+.bench-parking {
+  flex: none; width: 34px; align-self: flex-start; z-index: 15;
+  position: sticky; top: var(--bench-top-h, 96px);
+  max-height: calc(100vh - var(--bench-top-h, 96px));
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 0 14px max(4px, env(safe-area-inset-left, 0px));
+  border-right: 1px solid var(--kit-panel-edge);
+  background: var(--kit-ground);
+}
+.bench-parking__toggle {
+  display: grid; justify-items: center; gap: 2px; width: 28px; padding: 5px 0; cursor: pointer;
+  background: var(--kit-ctl); color: var(--kit-ink-2); border: 1px solid var(--kit-panel-edge); border-radius: 5px;
+  font: 700 .66rem/1 var(--kit-font-num);
+}
+.bench-parking__toggle:hover, .bench-parking__toggle[aria-expanded="true"] { color: var(--kit-accent); border-color: var(--kit-accent); }
+.bench-parking__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow: auto; min-height: 0; }
+.bench-parking__tab {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; width: 28px; padding: 7px 0; cursor: pointer;
+  background: var(--kit-panel); color: var(--kit-ink-2); border: 1px solid var(--kit-panel-edge); border-radius: 5px;
+}
+.bench-parking__tab:hover { color: var(--kit-ink); border-color: var(--kit-ink-3); }
+.bench-parking__name {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  max-height: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 .7rem/1 var(--kit-font-num); letter-spacing: .04em;
+}
+.bench-parking__tab i, .bench-parking__dot {
+  flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--kit-ink-3);
+}
+.bench-parking [data-present="true"] { background: var(--kit-ok); box-shadow: 0 0 calc(6px * var(--kit-glow)) var(--kit-ok); }
+.bench-parking [data-present="false"] { background: var(--kit-alert); }
+.bench-parking__sheet {
+  position: absolute; top: 0; left: 100%; width: min(360px, calc(100vw - 48px));
+  max-height: calc(100vh - var(--bench-top-h, 96px) - 12px); overflow: auto;
+  background: var(--kit-panel); border: 1px solid var(--kit-panel-edge); border-radius: 0 var(--kit-r-panel) var(--kit-r-panel) 0;
+  box-shadow: var(--kit-sheet-shadow);
+}
+.bench-parking__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--kit-panel-edge);
+}
+.bench-parking__head h2 { margin: 0; font: 600 1rem/1 var(--kit-font-title); letter-spacing: .06em; text-transform: uppercase; }
+.bench-parking__item { gap: 8px; }
+
 /* ---- panels in their own windows ------------------------------------------------- */
 .bench-detached { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 12px; }
 .bench-detached__item { display: inline-flex; align-items: center; gap: 2px; }
@@ -274,10 +359,6 @@ html, body { background: var(--kit-ground); }
 .bench-awg__note { font-size: .74rem; color: var(--kit-ink-2); }
 .bench-awg__derived { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: .74rem/1.3 var(--kit-font-num); color: var(--kit-ink-2); }
 .bench-calc { font: 700 .58rem/1 var(--kit-font-num); letter-spacing: .12em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 3px; padding: 2px 4px; opacity: .8; }
-
-/* version in the top bar */
-.bench-version { font: 400 .72rem/1 var(--kit-font-num); color: var(--kit-ink-2); background: none; border: 0; padding: 2px 4px; cursor: pointer; }
-.bench-version:hover, .bench-version:focus-visible { color: var(--kit-ink); text-decoration: underline; }
 
 /* Drawer page of text and controls (About and feedback, Remote access): the standard inset,
    rhythm and text style. Pages put their content in .bench-page and boxes in .bench-group. */

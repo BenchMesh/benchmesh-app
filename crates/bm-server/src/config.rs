@@ -1,5 +1,6 @@
-//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|host|match, baud?, serial?}]}`
-//! (`host`: `tcpip` instruments, `name-or-address[:port]`).
+//! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|host|match, baud?, serial?, parked?}]}`
+//! (`host`: `tcpip` instruments, `name-or-address[:port]`; `parked: true`: not connected, see
+//! `ai_context/PARKING.md`).
 //! `match` = the instrument's identity (`ai_context/migration/IDENTITY.md`); `port`/`device` is
 //! then only the last known port.
 //! Device entries are kept as raw JSON objects (unknown keys survive round trips).
@@ -54,6 +55,9 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
     let driver = str_field(d, "driver").unwrap_or_default();
     if !known_drivers.iter().any(|k| k == driver) {
         return Err(format!("unknown driver {driver:?}; available: {known_drivers:?}"));
+    }
+    if d.get("parked").is_some_and(|p| !p.is_boolean()) {
+        return Err("`parked` must be true or false".into());
     }
     let identified = match d.get("match") {
         None => false,
@@ -125,5 +129,14 @@ mod tests {
         ] {
             assert!(validate_entry(&entry(bad.clone()), &drivers).is_err(), "{bad}");
         }
+    }
+
+    #[test]
+    fn parked_is_a_boolean() {
+        let drivers = vec!["tenma_72".to_string()];
+        let e = |p: serde_json::Value| entry(serde_json::json!({"id": "t", "driver": "tenma_72", "port": "/dev/ttyACM0", "parked": p}));
+        assert!(validate_entry(&e(serde_json::json!(true)), &drivers).is_ok());
+        assert!(validate_entry(&e(serde_json::json!(false)), &drivers).is_ok());
+        assert_eq!(validate_entry(&e(serde_json::json!("yes")), &drivers).unwrap_err(), "`parked` must be true or false");
     }
 }

@@ -62,6 +62,8 @@ export interface VocabClass { channels: number; fields: Record<string, VocabFiel
 
 export interface VocabDevice {
   id: string; name: string; vendor: string; model?: string | null; online: boolean
+  /** Parked: a run that uses it is refused until it is unparked. */
+  parked?: boolean
   classes: Record<string, VocabClass>
 }
 
@@ -76,6 +78,8 @@ export interface RunEvent { seq: number; t: number; level: 'info' | 'warn' | 'er
 export interface RunStatus {
   id?: number
   flow?: { id: string | null; name: string }
+  /** The instruments the flow addresses (they cannot be parked while it runs). */
+  devices?: string[]
   state: RunState
   started_at?: number
   ended_at?: number | null

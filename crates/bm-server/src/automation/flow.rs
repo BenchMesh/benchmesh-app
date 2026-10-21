@@ -334,6 +334,21 @@ impl Flow {
         }
         out
     }
+
+    /// The instruments the flow addresses (set / read steps, recorded series).
+    pub fn devices(&self) -> BTreeSet<String> {
+        let mut out = BTreeSet::new();
+        for s in self.walk() {
+            match &s.kind {
+                Kind::Set { at, .. } | Kind::Read { at, .. } => {
+                    out.insert(at.device.clone());
+                }
+                Kind::RecordStart { series, .. } => out.extend(series.iter().map(|x| x.device.clone())),
+                _ => {}
+            }
+        }
+        out
+    }
 }
 
 fn is_identifier(s: &str) -> bool {
@@ -687,8 +702,10 @@ fn check_address(path: &str, at: &Address, vocab: &Vocab, issues: &mut Vec<Issue
             if at.channel == 0 || at.channel > c.channels {
                 issues.push(error(path, format!("{} {} has channel{} 1-{}, not {}", at.device, at.class, if c.channels > 1 { "s" } else { "" }, c.channels, at.channel)));
             }
-            if vocab.device(&at.device).is_some_and(|d| !d.online) {
-                issues.push(warning(path, format!("{} is offline right now", at.device)));
+            match vocab.device(&at.device) {
+                Some(d) if d.parked => issues.push(warning(path, format!("{} is parked: unpark it before running the flow", at.device))),
+                Some(d) if !d.online => issues.push(warning(path, format!("{} is offline right now", at.device))),
+                _ => {}
             }
             Some(c.clone())
         }
@@ -820,8 +837,8 @@ pub(crate) mod tests {
         let dmm = Class { channels: 1, fields: BTreeMap::from([("MEAS".into(), si())]), operations: BTreeMap::new() };
         Vocab {
             devices: vec![
-                Device { id: "load".into(), name: "Load".into(), vendor: "OWON".into(), model: None, online: true, classes: BTreeMap::from([("ELL".into(), ell)]) },
-                Device { id: "dmm".into(), name: "DMM".into(), vendor: "OWON".into(), model: None, online: false, classes: BTreeMap::from([("DMM".into(), dmm)]) },
+                Device { id: "load".into(), name: "Load".into(), vendor: "OWON".into(), model: None, online: true, parked: false, classes: BTreeMap::from([("ELL".into(), ell)]) },
+                Device { id: "dmm".into(), name: "DMM".into(), vendor: "OWON".into(), model: None, online: false, parked: false, classes: BTreeMap::from([("DMM".into(), dmm)]) },
             ],
         }
     }

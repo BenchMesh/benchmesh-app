@@ -9,9 +9,9 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 export type Skin = 'lcd' | 'led' | 'glass'
 
 export const SKINS: { value: Skin; label: string; title: string }[] = [
-  { value: 'lcd', label: 'LCD', title: 'Reflective LCD: dark segments on grey-green glass' },
-  { value: 'led', label: 'LED', title: 'LED segment: glowing digits on a dark rack' },
-  { value: 'glass', label: 'Glass', title: 'Cockpit glass: calm dark panels, B612 numbers' },
+  { value: 'lcd', label: 'Reflective LCD', title: 'Reflective LCD: dark segments on grey-green glass' },
+  { value: 'led', label: 'LED segment', title: 'LED segment: glowing digits on a dark rack' },
+  { value: 'glass', label: 'Cockpit glass', title: 'Cockpit glass: calm dark panels, B612 numbers' },
 ]
 
 export const SKIN_STORAGE_KEY = 'benchmesh:skin'

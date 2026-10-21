@@ -12,7 +12,7 @@ use bm_transport::{lock, port_kind, Endpoint};
 use serde_json::{json, Value};
 
 use crate::config::{str_field, DeviceEntry};
-use crate::devices::{identity_of, Devices};
+use crate::devices::{identity_of, parked_of, Devices};
 
 /// A configured instrument as Detect sees it.
 pub struct Known {
@@ -113,7 +113,9 @@ fn model_for<'a>(def: &'a DeviceDef, idn: &str) -> Option<&'a bm_devicedef::Mode
 
 fn configured_on<'a>(port: &Port, known: &'a [Known]) -> Option<&'a Known> {
     let connected = known.iter().find(|k| k.connected.as_ref().is_some_and(|(p, _)| lock::same_port(p, &port.path)));
-    connected.or_else(|| {
+    // a parked instrument is recognised by its identity wherever it is plugged in
+    let parked = || known.iter().find(|k| parked_of(&k.entry) && identity_of(&k.entry).is_some_and(|id| id.usb.matches(&port.usb)));
+    connected.or_else(parked).or_else(|| {
         known.iter().find(|k| {
             k.connected.is_none()
                 && str_field(&k.entry, "port").or_else(|| str_field(&k.entry, "device")).is_some_and(|p| lock::same_port(p, &port.path))
@@ -128,6 +130,9 @@ fn probe_port(i: usize, port: &Port, catalog: &Catalog, known: &[Known], probe: 
         if let Some((_, idn)) = &k.connected {
             let driver = str_field(&k.entry, "driver").unwrap_or_default().to_string();
             return Ok(Some(Found { driver, model: k.model.clone().unwrap_or_default(), idn: idn.clone() }));
+        }
+        if parked_of(&k.entry) {
+            return Err(format!("{} is parked: not probed (unpark it to use it)", str_field(&k.entry, "id").unwrap_or_default()));
         }
     }
     if lock::is_held(&port.path) {
@@ -433,6 +438,21 @@ mod tests {
         let (_, last) = reports.last().unwrap();
         assert_eq!(last["progress"]["state"], "done");
         assert_eq!(last["port"], "test-detect/ttyUSB7");
+    }
+
+    #[test]
+    fn a_parked_instrument_is_not_probed_wherever_it_is_plugged_in() {
+        let ports = vec![port(PortKind::Serial, "test-detect/ttyUSB5", "1a86", "7523", None, "0264")];
+        let known = vec![Known {
+            entry: entry(json!({"id": "xdm", "driver": "owon_xdm", "port": "test-detect/ttyUSB0", "parked": true,
+                                "match": {"usb": {"vid": "1a86", "pid": "7523", "revision": "0264"}}})),
+            connected: None,
+            model: None,
+        }];
+        let probe = |_: &Port, _: &DeviceDef| -> Result<String, Miss> { panic!("probed a parked instrument") };
+        let out = detect(&ports, &catalog(), &known, &probe, &|_, _| {});
+        assert_eq!(out[0]["configured_as"], "xdm");
+        assert_eq!(out[0]["error"], "xdm is parked: not probed (unpark it to use it)");
     }
 
     #[test]

@@ -25,7 +25,7 @@ function useColumns(ref: React.RefObject<HTMLElement>) {
  * In arrange mode panels can be dragged (or moved with ◀ ▶), resized, hidden and, with more than
  * one channel, set to show their channels side by side or stacked.
  */
-export function Rack({ panels, instruments, registry, layout, onLayout, arranging, detached, onDetach }: {
+export function Rack({ panels, instruments, registry, layout, onLayout, arranging, detached, parked, onDetach }: {
   panels: PanelRef[]
   instruments: Instrument[]
   registry: any
@@ -34,6 +34,8 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
   arranging: boolean
   /** Panels shown in their own window: left out of the rack (not rendered at all). */
   detached: string[]
+  /** Parked instruments: their panels wait in the parking strip and keep their place here. */
+  parked: Set<string>
   onDetach: (key: string, title: string, size: { width: number; height: number }) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -41,7 +43,7 @@ export function Rack({ panels, instruments, registry, layout, onLayout, arrangin
   const [dragging, setDragging] = useState<string | null>(null)
   const [target, setTarget] = useState<string | null>(null)
   const byKey = new Map(panels.map((p) => [p.key, p]))
-  const visible = layout.order.filter((k) => byKey.has(k) && !layout.hidden.includes(k) && !detached.includes(k))
+  const visible = layout.order.filter((k) => byKey.has(k) && !layout.hidden.includes(k) && !detached.includes(k) && !parked.has(byKey.get(k)!.instrumentId))
   const hidden = layout.hidden.filter((k) => byKey.has(k))
   const label = (k: string) => {
     const p = byKey.get(k)!

@@ -22,7 +22,7 @@ pub fn of(method: &Method, path: &str) -> Scope {
         ["ui", ..] | ["instruments", ..] | ["drivers", ..] | ["metrics", ..] => Scope::Instruments,
         ["ws", "registry"] | ["ws", "metrics"] | ["ai", "context"] | ["ai", "system-prompt"] => Scope::Instruments,
         ["remote", "session"] | ["remote", "logout"] | ["remote", "login"] => Scope::Instruments,
-        ["devices", _, "wire"] => Scope::Instruments,
+        ["devices", _, "wire"] | ["devices", _, "park"] => Scope::Instruments,
         ["config"] | ["devices", ..] | ["serial-ports"] => Scope::Configuration,
         ["usbtmc-devices"] if method == Method::GET => Scope::Configuration,
         ["recordings", ..] | ["ws", "recordings"] => Scope::Recordings,
@@ -47,6 +47,8 @@ mod tests {
         assert_eq!(s("GET", "/ui/assets/index.js"), Scope::Instruments);
         assert_eq!(s("GET", "/"), Scope::Instruments);
         assert_eq!(s("GET", "/devices/psu-1/wire"), Scope::Instruments);
+        assert_eq!(s("POST", "/devices/psu-1/park"), Scope::Instruments, "parking is using the bench, not configuring it");
+        assert_eq!(s("DELETE", "/devices/psu-1/park"), Scope::Instruments);
         assert_eq!(s("DELETE", "/devices/psu-1"), Scope::Configuration);
         assert_eq!(s("POST", "/devices/detect"), Scope::Configuration);
         assert_eq!(s("GET", "/usbtmc-devices"), Scope::Configuration);

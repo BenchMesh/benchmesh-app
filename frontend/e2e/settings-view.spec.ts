@@ -55,3 +55,14 @@ test.describe('History retention setting', () => {
     await expect(drawer.getByLabel(/History Retention/)).toHaveValue('5');
   });
 });
+
+test.describe('Skin setting', () => {
+  test('switches the skin from Miscellaneous and persists it', async ({ mockPage }) => {
+    const drawer = await openMiscellaneous(mockPage);
+    const skins = drawer.getByRole('group', { name: 'Skin' });
+    await expect(skins.getByRole('button')).toHaveText(['Reflective LCD', 'LED segment', 'Cockpit glass']);
+    await skins.getByRole('button', { name: 'LED segment' }).click();
+    await expect(mockPage.locator('html')).toHaveAttribute('data-skin', 'led');
+    expect(await mockPage.evaluate(() => localStorage.getItem('benchmesh:skin'))).toBe('led');
+  });
+});

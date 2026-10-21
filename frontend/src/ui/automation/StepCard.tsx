@@ -137,7 +137,7 @@ function AddressPicker({ value, onChange }: { value: Step; onChange: (at: { devi
   return (
     <>
       <Select label="Instrument" value={value.device ?? ''} onChange={(device) => onChange({ device })}
-        options={(vocab?.devices ?? []).map((x) => ({ value: x.id, label: `${x.name}${x.name !== x.id ? ` (${x.id})` : ''}${x.online ? '' : ' · offline'}` }))} />
+        options={(vocab?.devices ?? []).map((x) => ({ value: x.id, label: `${x.name}${x.name !== x.id ? ` (${x.id})` : ''}${x.parked ? ' · parked' : x.online ? '' : ' · offline'}` }))} />
       <Select label="Class" value={value.class ?? ''} onChange={(cls) => onChange({ class: cls })}
         options={Object.keys(d?.classes ?? {}).map((k) => ({ value: k, label: k }))} />
       {channels > 1 && (

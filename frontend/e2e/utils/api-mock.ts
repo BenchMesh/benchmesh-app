@@ -153,7 +153,7 @@ export interface ApiMock {
   posts: RecordedRequest[];
   /** Every `/devices` request (add / update / remove instrument). */
   deviceRequests: RecordedRequest[];
-  /** Instrument operation paths (as recorded in `posts`) that should fail with the given reply. */
+  /** Instrument operation paths (as recorded in `posts`) and `/devices/...` paths that should fail with the given reply. */
   failures: Map<string, { status: number; detail: string }>;
   /** Recordings served by the v2 recordings API (mutable; newest first in replies). */
   recordings: MockRecording[];
@@ -357,9 +357,14 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return json(route, mockPorts);
         case 'usbtmc-devices':
           return json(route, []);
-        case 'devices':
+        case 'devices': {
           api.deviceRequests.push({ method, path: url.pathname, body: req.postData() });
+          const fail = api.failures.get(url.pathname);
+          if (fail) return json(route, { detail: fail.detail }, fail.status);
+          // park / unpark: the WebSocket registry is the test's to update (`__pushRegistry`)
+          if (segs[2] === 'park') return json(route, { id: segs[1], parked: method === 'POST' });
           return json(route, { status: 'ok' });
+        }
         case 'recordings':
           return handleRecordings(route, api, segs, url);
         case 'remote':

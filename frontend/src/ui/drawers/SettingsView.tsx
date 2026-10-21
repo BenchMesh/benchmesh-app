@@ -4,7 +4,7 @@
  * Tabs:
  * - Instruments: Instrument configuration
  * - Supported: instruments BenchMesh has definitions for, with each model's support status
- * - Miscellaneous: App settings (history retention, etc.)
+ * - Miscellaneous: App settings (skin, history retention)
  * - Metrics: how busy each instrument's connection is
  * - Remote access: control the bench from other computers (only in the app on this computer)
  */
@@ -14,6 +14,7 @@ import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse } from 'react-icon
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
 import { MetricsView } from './MetricsView';
+import { SkinSetting } from './SkinSetting';
 import type { Instrument } from '../types';
 import { RemoteSettings } from '../remote/RemoteSettings';
 import { useRemote } from '../remote/RemoteProvider';
@@ -126,6 +127,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
 
         {activeTab === 'miscellaneous' && (
           <div className="settings-view__sections">
+            <SkinSetting />
+
             {/* History & Logs Section */}
             <div className="settings-view__section">
               <h3 className="settings-view__section-title">History & Logs</h3>

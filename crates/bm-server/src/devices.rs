@@ -1,11 +1,13 @@
-//! Configured devices: one device thread each, plus the registry the UI polls.
+//! Configured devices: one device thread each, plus the registry the UI polls. A parked device
+//! (`parked: true` in its config entry) keeps its thread but no link: only its presence is
+//! checked (`ai_context/PARKING.md`).
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bm_devicedef::{Catalog, DeviceDef, Model};
-use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, Connector, DeviceClient, DeviceHandle, Event};
+use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, Connector, DeviceClient, DeviceHandle, Event, Parking, Presence};
 use bm_driver::wirelog::WireLog;
 use bm_transport::identity::Identity;
 use bm_transport::Endpoint;
@@ -34,6 +36,35 @@ pub fn hardware_connectors() -> ConnectorFactory {
             None => Err("the definition offers no single link for this entry".to_string()),
         })
     })
+}
+
+/// Finds a parked device without talking to it (see [`Presence`]).
+pub type PresenceFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Presence + Send + Sync>;
+
+/// Real ports: port enumeration for USB instruments, a TCP connect for LAN instruments.
+pub fn hardware_presence() -> PresenceFactory {
+    Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {
+        let link = def.link.single();
+        let ep = Endpoint {
+            path: str_field(entry, "port").or_else(|| str_field(entry, "device")).or_else(|| str_field(entry, "host")).unwrap_or_default().to_string(),
+            ..Default::default()
+        };
+        let id = identity_of(entry);
+        Box::new(move || match &link {
+            Some(link) => bm_transport::presence::presence(link, &ep, id.as_ref()),
+            None => Err("the definition offers no single link for this entry".to_string()),
+        })
+    })
+}
+
+/// Simulations and tests: always there.
+fn simulated_presence() -> PresenceFactory {
+    Arc::new(|_: &DeviceEntry, _: &DeviceDef| Box::new(|| Ok("simulated".to_string())))
+}
+
+/// The entry is parked (`parked: true`).
+pub fn parked_of(entry: &DeviceEntry) -> bool {
+    entry.get("parked").and_then(|p| p.as_bool()).unwrap_or(false)
 }
 
 /// `connector` with every transport it opens recorded in `log` (failed opens too).
@@ -97,6 +128,12 @@ pub struct DeviceState {
     pub status_at: BTreeMap<String, BTreeMap<u8, Instant>>,
     /// Latest metrics snapshot from the device thread.
     pub metrics: Option<Value>,
+    /// Parked: no link, only presence checks.
+    pub parked: bool,
+    /// While parked: attached / reachable (`None` until first checked).
+    pub present: Option<bool>,
+    /// While parked: where it was found, or why not.
+    pub presence: Option<String>,
 }
 
 #[derive(Default)]
@@ -117,6 +154,9 @@ impl Registry {
         let mut out = Map::new();
         for (id, d) in &self.devices {
             let mut e = Map::new();
+            if d.parked {
+                e.insert("parked".into(), json!({"present": d.present, "detail": d.presence}));
+            }
             if d.connected {
                 if let Some(idn) = &d.idn {
                     e.insert("IDN".into(), json!(idn));
@@ -168,6 +208,24 @@ impl Registry {
                 d.metrics = Some(m);
                 return; // not a registry change (no version bump)
             }
+            Event::Parked { present, detail } => {
+                d.parked = true;
+                d.present = Some(present);
+                d.presence = Some(detail);
+                d.connected = false;
+                d.idn = None;
+                d.port = None;
+                d.status.clear();
+                d.status_at.clear();
+                d.metrics = None;
+                d.consecutive_failures = 0;
+                d.last_error = None;
+            }
+            Event::Unparked => {
+                d.parked = false;
+                d.present = None;
+                d.presence = None;
+            }
             Event::Disconnected { reason } => {
                 d.connected = false;
                 d.idn = None;
@@ -199,6 +257,8 @@ impl Managed {
 pub struct Devices {
     pub catalog: Catalog,
     pub connectors: ConnectorFactory,
+    /// Presence checks of parked devices.
+    pub presence: PresenceFactory,
     pub registry: Arc<Mutex<Registry>>,
     pub managed: Mutex<Vec<(String, Managed)>>,
     pub actor: ActorConfig,
@@ -212,7 +272,7 @@ pub struct Devices {
 
 impl Devices {
     pub fn new(catalog: Catalog, connectors: ConnectorFactory, actor: ActorConfig) -> Self {
-        Devices { catalog, connectors, registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default(), detect: Default::default() }
+        Devices { catalog, connectors, presence: simulated_presence(), registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default(), detect: Default::default() }
     }
 
     pub fn driver_ids(&self) -> Vec<String> {
@@ -225,21 +285,27 @@ impl Devices {
         let driver = str_field(&entry, "driver").unwrap_or_default();
         let def = self.catalog.devices.get(driver).ok_or(format!("unknown driver {driver:?}"))?.1.for_transport(str_field(&entry, "transport"))?;
         let def = Arc::new(def);
-        let connector = recorded((self.connectors)(&entry, &def), self.wire_log(&id));
+        let log = self.wire_log(&id);
+        let connector = recorded((self.connectors)(&entry, &def), log.clone());
+        let parked = parked_of(&entry);
+        let parking = Parking { presence: (self.presence)(&entry, &def), parked };
         let registry = self.registry.clone();
         let rid = id.clone();
         {
             let mut r = registry.lock().unwrap();
-            r.devices.insert(id.clone(), DeviceState::default());
+            r.devices.insert(id.clone(), DeviceState { parked, ..Default::default() });
             r.version += 1;
         }
-        let handle = DeviceHandle::spawn(
-            &id,
-            def.clone(),
-            connector,
-            Box::new(move |ev| registry.lock().unwrap().apply(&rid, ev)),
-            self.actor.clone(),
-        );
+        let events = move |ev: Event| {
+            match &ev {
+                Event::Parked { present: true, detail } => log.info(&format!("parked: link closed; attached at {detail}")),
+                Event::Parked { present: false, detail } => log.info(&format!("parked: link closed; not found: {detail}")),
+                Event::Unparked => log.info("unparked: connecting"),
+                _ => {}
+            }
+            registry.lock().unwrap().apply(&rid, ev)
+        };
+        let handle = DeviceHandle::spawn_with(&id, def.clone(), connector, parking, Box::new(events), self.actor.clone());
         self.managed.lock().unwrap().push((id, Managed { entry, def, handle }));
         Ok(())
     }
@@ -258,6 +324,36 @@ impl Devices {
         r.devices.remove(id);
         r.version += 1;
         found
+    }
+
+    /// Whether a configured device is parked (its config entry).
+    pub fn is_parked(&self, id: &str) -> bool {
+        self.managed.lock().unwrap().iter().any(|(i, m)| i == id && parked_of(&m.entry))
+    }
+
+    /// Mark a device parked / unparked in its entry and the registry; the device thread is told
+    /// separately (`client.park`). `None`: no such device.
+    pub fn mark_parked(&self, id: &str, parked: bool) -> Option<DeviceClient> {
+        let client = {
+            let mut list = self.managed.lock().unwrap();
+            let m = list.iter_mut().find(|(i, _)| i == id).map(|(_, m)| m)?;
+            if parked {
+                m.entry.insert("parked".into(), json!(true));
+            } else {
+                m.entry.remove("parked");
+            }
+            m.client()
+        };
+        let mut r = self.registry.lock().unwrap();
+        if let Some(d) = r.devices.get_mut(id) {
+            d.parked = parked;
+            if !parked {
+                d.present = None;
+                d.presence = None;
+            }
+        }
+        r.version += 1;
+        Some(client)
     }
 
     /// The wire log of a device id (created on first use).
@@ -333,5 +429,20 @@ mod tests {
         assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), Some(&json!(2.0)));
         r.apply("d", Event::Disconnected { reason: "io".into() });
         assert_eq!(r.fresh_value("d", "PSU", 1, "VOUT", age), None, "disconnected");
+    }
+
+    #[test]
+    fn a_parked_device_shows_its_presence_and_no_status() {
+        let mut r = Registry::default();
+        r.apply("d", Event::Connected { idn: "X".into(), model: "M".into(), port: "p".into() });
+        r.apply("d", status(1.5));
+        r.apply("d", Event::Disconnected { reason: "io".into() });
+        r.apply("d", Event::Parked { present: false, detail: "unplugged".into() });
+        let d = &r.devices["d"];
+        assert!(d.parked && !d.connected && d.status.is_empty());
+        assert_eq!((d.consecutive_failures, d.last_error.clone()), (0, None), "parking is not a failure");
+        assert_eq!(r.to_json()["d"], json!({"parked": {"present": false, "detail": "unplugged"}}));
+        r.apply("d", Event::Unparked);
+        assert_eq!(r.to_json()["d"], json!({}));
     }
 }

@@ -6,7 +6,7 @@
 //! - `GET  /instruments/{CLS}/{id}/{ch}/{op}` → `{"path","value"}`;
 //!   `POST /instruments/{CLS}/{id}/{ch}/{op}/{value}` → 204
 //! - `GET  /drivers`, `/drivers/{id}`, `/config`, `POST /config`, `POST /devices`,
-//!   `PUT|DELETE /devices/{id}`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
+//!   `PUT|DELETE /devices/{id}`, `POST|DELETE /devices/{id}/park`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
 //! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}, updated_chN: ms}}}` every interval
 //! - `/ui` static UI (`/docs` opens its API reference)
 //!
@@ -105,6 +105,7 @@ fn routes(state: &S) -> Router<S> {
         .route("/devices/{id}", put(update_device).delete(delete_device))
         .route("/devices/detect", post(detect_devices).get(detect_status))
         .route("/devices/{id}/wire", get(wire_log).delete(clear_wire_log))
+        .route("/devices/{id}/park", post(park_device).delete(unpark_device))
         .route("/serial-ports", get(serial_ports))
         .route("/usbtmc-devices", get(usbtmc_devices))
         .route("/usbtmc-devices/driver", post(install_usbtmc_driver))
@@ -188,7 +189,9 @@ async fn status(State(s): State<S>) -> Json<Value> {
     let r = s.devices.registry.lock().unwrap();
     let total = s.devices.managed.lock().unwrap().len();
     let connected = r.devices.values().filter(|d| d.connected).count();
-    Json(json!({"devices_total": total, "connected": connected, "disconnected": total - connected.min(total)}))
+    let parked = r.devices.values().filter(|d| d.parked).count();
+    let disconnected = total.saturating_sub(connected + parked);
+    Json(json!({"devices_total": total, "connected": connected, "disconnected": disconnected, "parked": parked}))
 }
 
 async fn version() -> Json<Value> {
@@ -223,14 +226,21 @@ fn instrument_list(s: &AppState, class_filter: Option<&str>) -> Vec<Value> {
             item.insert("port".into(), json!(port));
             item.insert("transport".into(), json!(def.link.kinds().first().copied().unwrap_or_default()));
         }
-        let health = match (st.connected, st.consecutive_failures) {
-            (true, _) => "healthy",
-            (false, 0) => "unknown",
-            (false, _) => "dead",
+        let health = match (st.parked, st.connected, st.consecutive_failures) {
+            (true, _, _) => "parked",
+            (_, true, _) => "healthy",
+            (_, false, 0) => "unknown",
+            (_, false, _) => "dead",
         };
         let mut h = json!({"status": health, "consecutive_failures": st.consecutive_failures, "is_alive": st.connected});
         if let Some(err) = &st.last_error {
             h["last_error"] = json!(err);
+        }
+        if st.parked {
+            // presence of a parked instrument: found without talking to it
+            h["present"] = json!(st.present);
+            h["presence"] = json!(st.presence);
+            item.insert("parked".into(), json!(true));
         }
         item.insert("health".into(), h);
         if let Some(m) = &model {
@@ -518,6 +528,11 @@ async fn update_device(State(s): State<S>, Path(id): Path<String>, Json(body): J
     let Some(pos) = all.iter().position(|x| str_field(x, "id") == Some(id.as_str())) else {
         return detail(StatusCode::NOT_FOUND, format!("Device {id} not found"));
     };
+    // an edit that does not mention `parked` keeps the instrument parked (or not)
+    let mut e = e;
+    if let (None, Some(p)) = (e.get("parked"), all[pos].get("parked")) {
+        e.insert("parked".into(), p.clone());
+    }
     all[pos] = e.clone();
     if let Err(m) = s.config.save(&all) {
         return detail(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save config: {m}"));
@@ -550,6 +565,47 @@ async fn delete_device(State(s): State<S>, Path(id): Path<String>) -> Response {
     let rid = id.clone();
     blocking(move || devs.stop(&rid)).await;
     Json(json!({"status": "success", "message": format!("Device {id} removed")})).into_response()
+}
+
+// ---- parking ------------------------------------------------------------------------------
+
+/// Park an instrument: its link is closed (after its `on_disconnect` steps), nothing is sent to
+/// it any more and only its presence is checked; saved in its config entry. Refused (409) while
+/// the running flow uses it.
+async fn park_device(State(s): State<S>, Path(id): Path<String>) -> Response {
+    set_parked(s, id, true).await
+}
+
+/// Unpark: the instrument is connected again.
+async fn unpark_device(State(s): State<S>, Path(id): Path<String>) -> Response {
+    set_parked(s, id, false).await
+}
+
+async fn set_parked(s: S, id: String, parked: bool) -> Response {
+    let _g = s.config_lock.lock().await;
+    if s.devices.lookup(&id).is_none() {
+        return detail(StatusCode::NOT_FOUND, format!("Unknown device id {id:?}"));
+    }
+    let was = s.devices.is_parked(&id);
+    // the run check and the mark are one step: a run that uses the instrument cannot start between them
+    let client = match s.automation.runner.unless_used(&id, parked, || s.devices.mark_parked(&id, parked)) {
+        Ok(Some(c)) => c,
+        Ok(None) => return detail(StatusCode::NOT_FOUND, format!("Unknown device id {id:?}")),
+        Err(flow) => return detail(StatusCode::CONFLICT, format!("{id} is used by the running flow {flow:?}: stop the flow before parking it")),
+    };
+    if let Err(m) = s.config.save(&s.devices.entries()) {
+        s.devices.mark_parked(&id, was);
+        eprintln!("parking {id}: config not saved: {m}");
+        return detail(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save config: {m}"));
+    }
+    match blocking(move || client.park(parked)).await {
+        // a timeout: the device thread is busy with a long exchange; the request is queued and carried out
+        Ok(()) | Err(bm_driver::Error::Timeout { .. }) => Json(json!({"id": id, "parked": parked})).into_response(),
+        Err(e) => {
+            eprintln!("parking {id}: {e}");
+            detail(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
+    }
 }
 
 // ---- wire log (the instrument console) -------------------------------------------------

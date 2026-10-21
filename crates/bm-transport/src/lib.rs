@@ -11,7 +11,8 @@
 //!   screenshot capture).
 //!
 //! Every open transport holds its port ([`lock`]); configured instruments are found by
-//! [`identity`] on whatever port they are plugged into ([`attempts`]).
+//! [`identity`] on whatever port they are plugged into ([`attempts`]). A parked instrument is
+//! only looked for ([`presence`]), never opened.
 
 use std::io::{self, Read, Write};
 use std::sync::Arc;
@@ -24,6 +25,7 @@ use bm_driver::engine::Transport;
 pub mod discover;
 pub mod identity;
 pub mod lock;
+pub mod presence;
 pub mod usbtmc_nusb;
 pub mod usbtmc_proto;
 pub mod visa;
@@ -148,7 +150,7 @@ impl TcpTransport {
 }
 
 /// `host` → `host:port`; `host:port`, `[v6]:port` unchanged.
-fn tcp_target(path: &str, port: u16) -> io::Result<String> {
+pub(crate) fn tcp_target(path: &str, port: u16) -> io::Result<String> {
     let p = path.trim();
     if p.is_empty() {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "TCP instrument needs a host"));

@@ -70,6 +70,8 @@ pub struct Run {
     pub id: u64,
     pub flow_id: Option<String>,
     pub flow_name: String,
+    /// The instruments the flow addresses (they cannot be parked while it runs).
+    pub devices: BTreeSet<String>,
     pub started_at: i64,
     info: Mutex<Info>,
     /// Abort requests: 1 = abort (cleanup still runs), 2+ = also stop the cleanup.
@@ -101,7 +103,7 @@ impl Run {
         let i = self.info.lock().unwrap();
         let events: Vec<&Value> = i.events.iter().filter(|e| e["seq"].as_u64().unwrap_or(0) > after).collect();
         json!({
-            "id": self.id, "flow": {"id": self.flow_id, "name": self.flow_name}, "state": i.state.as_str(),
+            "id": self.id, "flow": {"id": self.flow_id, "name": self.flow_name}, "devices": self.devices, "state": i.state.as_str(),
             "started_at": self.started_at, "ended_at": i.ended_at, "path": i.path, "vars": i.vars,
             "error": i.error, "prompt": i.prompt, "recording_id": i.recording_id, "last_seq": i.seq, "events": events,
         })
@@ -123,6 +125,8 @@ pub enum StartError {
     Invalid(Vec<Issue>),
     NeedsArm(Vec<Energize>),
     Params(String),
+    /// Instruments the flow uses that are parked.
+    Parked(Vec<String>),
 }
 
 pub struct Runner {
@@ -156,6 +160,12 @@ impl Runner {
         if cur.as_ref().is_some_and(|r| r.state().active()) {
             return Err(StartError::Busy);
         }
+        // checked under `current`: parking checks the run under the same lock (`unless_used`)
+        let devices = parsed.devices();
+        let parked: Vec<String> = devices.iter().filter(|d| self.devices.is_parked(d)).cloned().collect();
+        if !parked.is_empty() {
+            return Err(StartError::Parked(parked));
+        }
         let id = {
             let mut n = self.next_id.lock().unwrap();
             *n += 1;
@@ -166,6 +176,7 @@ impl Runner {
             id,
             flow_id,
             flow_name: parsed.name.clone(),
+            devices,
             started_at: now_ms(),
             info: Mutex::new(Info { state: State::Running, path: String::new(), vars: vars.clone(), error: None, recording_id: None, ended_at: None, prompt: None, events: VecDeque::new(), seq: 0 }),
             abort,
@@ -190,6 +201,16 @@ impl Runner {
         };
         tokio::spawn(exec.execute(parsed));
         Ok(run)
+    }
+
+    /// Run `f` unless parking `device` (`parking`) would take it from the active run (`Err`: that
+    /// run's flow name). No run can start while `f` runs.
+    pub fn unless_used<T>(&self, device: &str, parking: bool, f: impl FnOnce() -> T) -> Result<T, String> {
+        let cur = self.current.lock().unwrap();
+        match cur.as_ref() {
+            Some(r) if parking && r.state().active() && r.devices.contains(device) => Err(r.flow_name.clone()),
+            _ => Ok(f()),
+        }
     }
 
     /// Abort the active run (a second abort also stops its cleanup). False: nothing running.

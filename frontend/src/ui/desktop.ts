@@ -12,6 +12,10 @@ type TauriWindow = {
   startResizeDragging(direction: string): Promise<void>
   setAlwaysOnTop(on: boolean): Promise<void>
   setSize(size: unknown): Promise<void>
+  minimize(): Promise<void>
+  toggleMaximize(): Promise<void>
+  isMaximized(): Promise<boolean>
+  onResized(cb: () => void): Promise<() => void>
   once(event: string, cb: (e: { payload: unknown }) => void): Promise<unknown>
 }
 
@@ -75,6 +79,32 @@ export async function closePanelWindow(key: string) {
   if (t) { await (await t.webviewWindow.WebviewWindow.getByLabel(panelLabel(key)))?.close(); return }
   popups.get(key)?.close()
   popups.delete(key)
+}
+
+/**
+ * The app draws its own title bar (row 1 of the bench) with window controls: the desktop app on
+ * Windows and Linux, whose main window has no OS decorations. On macOS the native title bar stays.
+ */
+export const isMac = () => /Mac/i.test(navigator.userAgent)
+export const hasOwnWindowControls = () => isDesktop() && !isMac()
+
+export function minimizeWindow() {
+  void tauri()?.window.getCurrentWindow().minimize()
+}
+
+export function toggleMaximizeWindow() {
+  void tauri()?.window.getCurrentWindow().toggleMaximize()
+}
+
+/** Calls `cb` with the maximized state now and after every resize; returns the unsubscribe. */
+export function watchMaximized(cb: (maximized: boolean) => void): () => void {
+  const w = tauri()?.window.getCurrentWindow()
+  if (!w) return () => {}
+  let live = true
+  const check = () => { void w.isMaximized().then((m) => { if (live) cb(m) }) }
+  check()
+  const off = w.onResized(check)
+  return () => { live = false; void off.then((f) => f()) }
 }
 
 // ---- the current (detached) window ----------------------------------------------------------

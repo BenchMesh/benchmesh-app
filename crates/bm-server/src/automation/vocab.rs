@@ -62,6 +62,8 @@ pub struct Device {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     pub online: bool,
+    /// Parked: no link until unparked (a run using it is refused).
+    pub parked: bool,
     pub classes: BTreeMap<String, Class>,
 }
 
@@ -124,6 +126,7 @@ impl Vocab {
                 vendor: def.vendor.clone(),
                 model: state.and_then(|s| s.model.clone()).or_else(|| model.map(|m| m.name)),
                 online: state.is_some_and(|s| s.connected),
+                parked: state.is_some_and(|s| s.parked),
                 classes,
                 id,
             });

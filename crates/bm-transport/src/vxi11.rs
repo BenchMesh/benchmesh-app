@@ -166,6 +166,11 @@ fn split_host(path: &str) -> io::Result<(String, u16)> {
     }
 }
 
+/// `host[:port]` → the portmapper's `host:port` (what a presence check connects to).
+pub fn portmapper_target(path: &str) -> io::Result<String> {
+    split_host(path).map(|(h, p)| join(&h, p))
+}
+
 fn join(host: &str, port: u16) -> String {
     if host.contains(':') { format!("[{host}]:{port}") } else { format!("{host}:{port}") }
 }

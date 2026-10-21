@@ -87,6 +87,10 @@ impl Automation {
             Err(StartError::Busy) => Err((StatusCode::CONFLICT, json!({"detail": "a flow is already running - abort it first"}))),
             Err(StartError::Invalid(issues)) => Err((StatusCode::UNPROCESSABLE_ENTITY, json!({"detail": "the flow has errors", "issues": issues}))),
             Err(StartError::Params(m)) => Err((StatusCode::UNPROCESSABLE_ENTITY, json!({"detail": m}))),
+            Err(StartError::Parked(list)) => Err((
+                StatusCode::CONFLICT,
+                json!({"detail": format!("unpark {} first: the flow uses {}", list.join(", "), if list.len() == 1 { "it" } else { "them" }), "parked": list}),
+            )),
             Err(StartError::NeedsArm(list)) => Err((
                 StatusCode::CONFLICT,
                 json!({"detail": "this flow can switch outputs on: start it with \"arm\": true after the user agreed", "energizes": list}),

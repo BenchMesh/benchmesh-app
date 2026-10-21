@@ -1,21 +1,39 @@
 import { test, expect } from './fixtures/base';
 import { setupApiMocks, setupWebSocketMock } from './utils/api-mock';
 
+test.describe('Title bar', () => {
+  test('shows the brand, the version on its baseline and Arrange; no window controls in a browser', async ({ mockPage }) => {
+    const title = mockPage.locator('.bench-title');
+    await expect(title.getByText('BenchMesh', { exact: true })).toBeVisible();
+    await expect(title.getByRole('button', { name: 'Arrange' })).toBeVisible();
+    await expect(title.getByRole('group', { name: 'Window' })).toHaveCount(0);
+    const version = title.locator('.bench-title__version');
+    if (await version.count()) {
+      const baseline = (sel: string) => title.locator(sel).evaluate((el) => {
+        const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect()
+        return b.bottom - parseFloat(getComputedStyle(el).fontSize) * 0.2
+      });
+      // same text line: bottoms within a couple of pixels after allowing for the font size
+      expect(Math.abs((await baseline('.bench-title__name')) - (await baseline('.bench-title__version')))).toBeLessThan(6);
+    }
+  });
+});
+
 test.describe('Top bar', () => {
-  test('shows the brand and healthy API / live status pills', async ({ mockPage }) => {
+  test('shows healthy API / live status pills', async ({ mockPage }) => {
     const top = mockPage.locator('header.bench-top');
-    await expect(top.getByText('BenchMesh', { exact: true })).toBeVisible();
     const pills = top.locator('.bench-pill');
     await expect(pills).toHaveText(['API', 'live']);
     await expect(pills.nth(0)).toHaveAttribute('data-ok', 'true');
     await expect(pills.nth(1)).toHaveAttribute('data-ok', 'true');
   });
 
-  test('shows all navigation buttons', async ({ mockPage }) => {
+  test('shows all navigation buttons; the skin switch lives in Instruments - Miscellaneous', async ({ mockPage }) => {
     const nav = mockPage.getByRole('navigation', { name: 'Main' });
-    for (const name of ['Arrange', 'Instruments', 'Recording', 'Log', 'API', 'Feedback']) {
+    for (const name of ['Instruments', 'Recording', 'Automation', 'Log', 'API', 'Feedback']) {
       await expect(nav.getByRole('button', { name, exact: true })).toBeVisible();
     }
+    await expect(mockPage.locator('header.bench-top').getByRole('group', { name: 'Skin' })).toHaveCount(0);
   });
 });
 

@@ -4,7 +4,13 @@ export type Instrument = {
   name?: string
   IDN?: string
   classes: { class: string; channels: string[]; ui_component?: string }[]
-  health?: { is_alive?: boolean; status?: string; consecutive_failures?: number }
+  health?: {
+    is_alive?: boolean; status?: string; consecutive_failures?: number; last_error?: string
+    /** Parked: attached / reachable (found without talking to it); where, or why not. */
+    present?: boolean | null; presence?: string | null
+  }
+  /** Parked: no link, nothing sent to it, only its presence is checked (`POST|DELETE /devices/{id}/park`). */
+  parked?: boolean
   /** Port / path / host of the current connection, and its transport (serial, usbtmc, tcpip, vxi11). */
   port?: string
   transport?: string

@@ -114,8 +114,8 @@ Run state: `idle` (no run yet), `running`, `waiting` (prompt), `cleanup`, `finis
 | POST | `/automation/flows` | flow → `{id, flow, issues}` (saved even with warnings; errors → 422 `{detail, issues}`) |
 | GET/PUT/DELETE | `/automation/flows/{id}` | the stored flow / replace / delete |
 | POST | `/automation/validate` | flow → `{ok, issues: [{path, level, message}], energizes: [...]}` |
-| POST | `/automation/run` | `{flow_id}` or `{flow}`, `params?`, `arm?` → 202 run status |
-| GET | `/automation/run?after=<seq>` | run status `{id, flow, state, started_at, ended_at, path, vars, error, recording_id, events}` |
+| POST | `/automation/run` | `{flow_id}` or `{flow}`, `params?`, `arm?` → 202 run status; 409 `{detail, parked}` when the flow uses a parked instrument (`ai_context/PARKING.md`) |
+| GET | `/automation/run?after=<seq>` | run status `{id, flow, devices, state, started_at, ended_at, path, vars, error, recording_id, events}` (`devices`: the instruments the flow addresses; they cannot be parked while it runs) |
 | POST | `/automation/run/abort`, `/automation/run/continue` | 204 |
 | GET/PUT | `/automation/assistant` | `{provider, model, models: {provider: model}, base_url, keys: {anthropic: "sk-…a1b2" \| null, …}, providers}` (`model`, `base_url` are the current provider's; model, base URL and key are stored per provider); PUT `{provider?, model?, base_url?, api_key?}` applies to the (new) provider; `api_key: ""` deletes the key |
 | GET | `/automation/assistant/models` | the provider's model list (`[{id, name}]`) |

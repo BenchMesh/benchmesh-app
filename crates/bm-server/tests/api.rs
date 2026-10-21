@@ -226,7 +226,7 @@ async fn features_methods_and_drivers() {
     let (_, v, _) = call(&f, "GET", "/drivers/owon_xdm", None, None).await;
     assert!(v.as_array().unwrap().contains(&json!("XDM1241")));
     let (_, v, _) = call(&f, "GET", "/status", None, None).await;
-    assert_eq!(v, json!({"devices_total": 2, "connected": 2, "disconnected": 0}));
+    assert_eq!(v, json!({"devices_total": 2, "connected": 2, "disconnected": 0, "parked": 0}));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -983,4 +983,107 @@ async fn mcp_refuses_browser_requests_from_other_sites() {
         .unwrap();
     let resp = router(f.state.clone()).oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+// ---- parking ---------------------------------------------------------------------------
+
+async fn until(f: &Fixture, what: &str, ok: impl Fn(&Value) -> bool) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let reg = f.state.devices.registry.lock().unwrap().to_json();
+        if ok(&reg) {
+            return reg;
+        }
+        assert!(Instant::now() < deadline, "timed out waiting for {what}: {reg}");
+        tokio::time::sleep(Duration::from_millis(30)).await;
+    }
+}
+
+fn instrument(list: &Value, id: &str) -> Value {
+    list.as_array().unwrap().iter().find(|i| i["id"] == id).cloned().unwrap()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_parked_instrument_is_left_alone_until_unparked_and_stays_parked_across_edits() {
+    let f = fixture("park");
+    let (code, v, _) = call(&f, "POST", "/devices/l1/park", None, None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    assert_eq!(v, json!({"id": "l1", "parked": true}));
+    let reg = until(&f, "presence", |r| r["l1"]["parked"]["present"] == true).await;
+    assert_eq!(reg["l1"], json!({"parked": {"present": true, "detail": "simulated"}}), "no IDN, no status while parked");
+    assert!(reg["t1"]["PSU"].is_object(), "other instruments are untouched");
+
+    let (_, list, _) = call(&f, "GET", "/instruments", None, None).await;
+    let l1 = instrument(&list, "l1");
+    assert_eq!(l1["parked"], true);
+    assert_eq!(l1["health"], json!({"status": "parked", "is_alive": false, "consecutive_failures": 0, "present": true, "presence": "simulated"}));
+    assert_eq!(l1["classes"][0]["class"], "ELL", "a parked instrument is still listed with its classes");
+    assert_eq!(instrument(&list, "t1").get("parked"), None);
+
+    let (code, v, _) = call(&f, "GET", "/instruments/ELL/l1/1/input", None, None).await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    assert!(v["detail"].as_str().unwrap().contains("l1 is parked"), "{v}");
+    assert_eq!(call(&f, "POST", "/instruments/ELL/l1/1/curr/0.1", None, None).await.0, StatusCode::CONFLICT);
+
+    // saved, idempotent, counted
+    assert_eq!(f.state.config.load().unwrap().iter().find(|e| e["id"] == "l1").unwrap()["parked"], true);
+    assert_eq!(call(&f, "POST", "/devices/l1/park", None, None).await.0, StatusCode::OK);
+    assert_eq!(call(&f, "GET", "/status", None, None).await.1["parked"], 1);
+    let (_, wire, _) = call(&f, "GET", "/devices/l1/wire", None, None).await;
+    assert!(wire["entries"].as_array().unwrap().iter().any(|e| e["data"] == "parked: link closed; attached at simulated"), "{wire}");
+
+    // an edit without `parked` (the Instruments form) keeps it parked
+    let edit = json!({"id": "l1", "name": "Load 2", "driver": "owon_oel", "transport": "serial", "port": "/dev/null"});
+    assert_eq!(call(&f, "PUT", "/devices/l1", Some(edit), None).await.0, StatusCode::OK);
+    until(&f, "parked after edit", |r| r["l1"]["parked"]["present"] == true).await;
+    assert_eq!(f.state.config.load().unwrap().iter().find(|e| e["id"] == "l1").unwrap()["name"], "Load 2");
+
+    let (code, v, _) = call(&f, "DELETE", "/devices/l1/park", None, None).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(v, json!({"id": "l1", "parked": false}));
+    until(&f, "reconnect", |r| r["l1"]["ELL"]["status_ch1"].is_object()).await;
+    assert_eq!(call(&f, "GET", "/instruments/ELL/l1/1/input", None, None).await.0, StatusCode::OK);
+    assert_eq!(f.state.config.load().unwrap().iter().find(|e| e["id"] == "l1").unwrap().get("parked"), None);
+    assert_eq!(call(&f, "DELETE", "/devices/l1/park", None, None).await.0, StatusCode::OK, "unparking twice is harmless");
+
+    assert_eq!(call(&f, "POST", "/devices/nope/park", None, None).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(call(&f, "DELETE", "/devices/nope/park", None, None).await.0, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_device_configured_parked_is_never_connected() {
+    let f = fixture("park-start");
+    let mut entries = f.state.config.load().unwrap();
+    entries[1].insert("parked".into(), json!(true));
+    let (code, v, _) = call(&f, "POST", "/config", Some(json!({"devices": entries})), None).await;
+    assert_eq!(code, StatusCode::OK, "{v}");
+    until(&f, "parked", |r| r["l1"]["parked"]["present"] == true).await;
+    let (_, wire, _) = call(&f, "GET", "/devices/l1/wire", None, None).await;
+    let after_restart: Vec<&Value> = wire["entries"].as_array().unwrap().iter().skip_while(|e| !e["data"].as_str().unwrap_or("").starts_with("parked")).collect();
+    assert!(after_restart.iter().all(|e| e["dir"] == "info"), "nothing sent to a parked instrument: {after_restart:?}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_instrument_in_use_by_the_running_flow_cannot_be_parked() {
+    let f = fixture("park-run");
+    let flow = psu_flow(json!([{"do": "wait", "seconds": 60}]));
+    assert_eq!(call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "arm": true})), None).await.0, StatusCode::ACCEPTED);
+    let run = wait_state(&f, "running").await;
+    assert_eq!(run["devices"], json!(["t1"]));
+    let (code, v, _) = call(&f, "POST", "/devices/t1/park", None, None).await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    assert_eq!(v["detail"], "t1 is used by the running flow \"PSU test\": stop the flow before parking it");
+    assert!(!f.state.devices.is_parked("t1"));
+    assert_eq!(call(&f, "POST", "/devices/l1/park", None, None).await.0, StatusCode::OK, "an instrument the flow does not use can be parked");
+    assert_eq!(call(&f, "POST", "/automation/run/abort", None, None).await.0, StatusCode::NO_CONTENT);
+    run_end(&f).await;
+    assert_eq!(call(&f, "POST", "/devices/t1/park", None, None).await.0, StatusCode::OK, "after the run it can");
+
+    // a flow that uses a parked instrument: a warning when validated, refused when started
+    let (_, v, _) = call(&f, "POST", "/automation/validate", Some(flow.clone()), None).await;
+    assert!(v["issues"].as_array().unwrap().iter().any(|i| i["level"] == "warning" && i["message"] == "t1 is parked: unpark it before running the flow"), "{v}");
+    let (code, v, _) = call(&f, "POST", "/automation/run", Some(json!({"flow": flow, "arm": true})), None).await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    assert_eq!(v["detail"], "unpark t1 first: the flow uses it");
+    assert_eq!(v["parked"], json!(["t1"]));
 }
