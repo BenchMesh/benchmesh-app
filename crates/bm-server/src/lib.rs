@@ -821,7 +821,7 @@ async fn ws_metrics(State(s): State<S>, p: remote::Principal, ws: WebSocketUpgra
     })
 }
 
-/// API reference lives in the UI (Swagger UI bundled with the frontend: works offline).
+/// API reference lives in the UI (a drawer rendering /openapi.json: works offline).
 async fn api_docs(State(s): State<S>) -> Response {
     if s.ui_dir.is_some() {
         Redirect::temporary("/ui/?openDocs=true").into_response()

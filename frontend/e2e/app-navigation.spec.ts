@@ -108,14 +108,6 @@ test.describe('Modals', () => {
     await expect(psu.getByText('11.2 ms')).toBeVisible();
   });
 
-  test('API reference opens with the server\'s endpoints and closes', async ({ mockPage }) => {
-    await mockPage.getByRole('button', { name: 'API', exact: true }).click();
-    const docs = mockPage.locator('.docs-modal-content');
-    await expect(docs).toBeVisible();
-    await expect(docs.getByRole('heading', { name: 'API reference' })).toBeVisible();
-    await mockPage.locator('.modal-close').click();
-    await expect(docs).toBeHidden();
-  });
 });
 
 test.describe('Safety disclaimer', () => {

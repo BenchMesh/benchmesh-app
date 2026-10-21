@@ -1,6 +1,8 @@
 //! OpenAPI 3.1 description of the API, built from a route table (served at
-//! `/openapi.json` and `/openapi.yaml`; the UI renders it with Swagger UI). A test
-//! checks that every route registered in the router is documented here.
+//! `/openapi.json` and `/openapi.yaml`; the UI's API reference drawer renders it and sends
+//! requests). A test checks that every route registered in the router is documented here.
+//! Extensions for the reference: `x-websocket: true` (a WebSocket stream, not a request) and
+//! `x-no-try: <reason>` (cannot be sent from the UI of this computer).
 
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
@@ -88,6 +90,17 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/ws/recordings", "websockets", "WebSocket: snapshot, then samples per tick, recording changes and deletions"),
 ];
 
+/// (method, path, reason): operations the API reference does not send, with why.
+const NOT_FROM_THE_UI: &[(&str, &str, &str)] = &[
+    ("get", "/", "Redirects a browser to the UI"),
+    ("get", "/docs", "Redirects a browser to this reference"),
+    ("get", "/redoc", "Redirects a browser to this reference"),
+    ("get", "/mcp", "MCP clients POST JSON-RPC; GET answers 405 by design"),
+    ("get", "/remote/login", "Only on the remote access address (HTTPS, port 57667)"),
+    ("post", "/remote/login", "Only on the remote access address (HTTPS, port 57667)"),
+    ("post", "/remote/logout", "Only for a remote browser session"),
+];
+
 const TAGS: &[(&str, &str)] = &[
     ("system", "Service status, version, documentation"),
     ("configuration", "Device configuration, drivers, port discovery"),
@@ -120,6 +133,12 @@ pub fn spec() -> Value {
             && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
         {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
+        }
+        if path.starts_with("/ws/") {
+            op["x-websocket"] = json!(true);
+        }
+        if let Some((_, _, reason)) = NOT_FROM_THE_UI.iter().find(|(m, p, _)| m == method && p == path) {
+            op["x-no-try"] = json!(reason);
         }
         paths.entry(path.to_string()).or_insert_with(|| json!({}))[*method] = op;
     }
@@ -182,5 +201,16 @@ mod tests {
         assert!(s["paths"]["/recordings"]["post"]["requestBody"].is_object());
         assert!(s["paths"]["/recordings/{id}"]["patch"]["requestBody"].is_object());
         assert!(s["paths"]["/recordings/{id}/stop"]["post"].get("requestBody").is_none());
+        assert_eq!(s["paths"]["/ws/registry"]["get"]["x-websocket"], true);
+        assert!(s["paths"]["/mcp"]["get"]["x-no-try"].is_string());
+        assert!(s["paths"]["/mcp"]["post"].get("x-no-try").is_none());
+        assert!(s["paths"]["/status"]["get"].get("x-websocket").is_none());
+    }
+
+    #[test]
+    fn operations_not_sent_from_the_ui_exist() {
+        for (m, p, _) in NOT_FROM_THE_UI {
+            assert!(ROUTES.iter().any(|(rm, rp, _, _)| rm == m && rp == p), "{m} {p} is not a route");
+        }
     }
 }

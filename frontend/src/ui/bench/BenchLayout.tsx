@@ -24,9 +24,13 @@ import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, s
 
 // loaded when first opened (with its chart)
 const RecordingsDrawer = lazy(() => import('../recording/RecordingsDrawer').then((m) => ({ default: m.RecordingsDrawer })))
+const ApiReference = lazy(() => import('../apidocs/ApiReference').then((m) => ({ default: m.ApiReference })))
 const AutomationDrawer = lazy(() => import('../automation/AutomationDrawer').then((m) => ({ default: m.AutomationDrawer })))
 
-type DrawerKind = 'instruments' | 'log' | 'recordings' | 'automation' | 'about' | null
+type DrawerKind = 'instruments' | 'log' | 'recordings' | 'automation' | 'about' | 'api' | null
+
+// ?openDocs=true (where /docs redirects) opens the API reference
+const initialDrawer = (): DrawerKind => (new URLSearchParams(window.location.search).get('openDocs') === 'true' ? 'api' : null)
 
 function Drawer({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   useEffect(() => {
@@ -56,19 +60,18 @@ interface Props {
   error: string | null
   wsDiag: { ok: boolean; msg: string }
   onConfigUpdated: () => void
-  onOpenDocs: () => void
 }
 
-/** The application shell: title bar (brand, version, Arrange, window controls), top bar (with the automation run indicator and the remote access badge), the instrument rack, the recorder dock, and drawers for setup, recordings, automation, the request log and about / feedback. */
+/** The application shell: title bar (brand, version, Arrange, window controls), top bar (with the automation run indicator and the remote access badge), the instrument rack, the recorder dock, and drawers for setup, recordings, automation, the request log, the API reference and about / feedback. */
 export function BenchLayout(props: Props) {
   return <SkinProvider><RemoteProvider><RunProvider><BenchShell {...props} /></RunProvider></RemoteProvider></SkinProvider>
 }
 
-function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenDocs }: Props) {
+function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated }: Props) {
   const panels = useMemo(() => panelsOf(instruments), [instruments])
   const [saved, setLayout] = useState<Layout>(() => loadLayout())
   const [arranging, setArranging] = useState(false)
-  const [drawer, setDrawer] = useState<DrawerKind>(null)
+  const [drawer, setDrawer] = useState<DrawerKind>(initialDrawer)
   const [autoAdd, setAutoAdd] = useState(false)
   const version = useAppVersion()
 
@@ -123,7 +126,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
               <button type="button" className="bench-btn" aria-pressed={drawer === 'recordings'} onClick={() => setDrawer('recordings')}>Recording</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'automation'} onClick={() => setDrawer('automation')}>Automation</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'log'} onClick={() => setDrawer('log')}>Log</button>
-              <button type="button" className="bench-btn" onClick={onOpenDocs}>API</button>
+              <button type="button" className="bench-btn" aria-pressed={drawer === 'api'} onClick={() => setDrawer('api')}>API</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'about'} onClick={() => setDrawer('about')}>Feedback</button>
             </nav>
           </div>
@@ -181,6 +184,11 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
       {drawer === 'about' && (
         <Drawer title="About and feedback" onClose={() => setDrawer(null)}>
           <AboutView />
+        </Drawer>
+      )}
+      {drawer === 'api' && (
+        <Drawer title="API reference" wide onClose={() => setDrawer(null)}>
+          <Suspense fallback={<span className="bench-hint">Loading…</span>}><ApiReference apiBase={apiBase} instruments={instruments} /></Suspense>
         </Drawer>
       )}
       {drawer === 'log' && (

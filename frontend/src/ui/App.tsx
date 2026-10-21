@@ -1,20 +1,15 @@
-import React, { useState, lazy, Suspense } from 'react'
+import React, { useState } from 'react'
 import { RequestLogProvider } from './RequestLogContext'
 import { BenchLayout } from './bench/BenchLayout'
 import { DisclaimerModal } from './DisclaimerModal'
 import { useApiBase, useInstruments, useRegistrySocket } from './data'
 import { RecordingsProvider } from './recording/RecordingsProvider'
 
-// Lazy load modal components to reduce initial bundle size
-const DocsViewer = lazy(() => import('./DocsViewer').then(m => ({ default: m.DocsViewer })))
-
 export default function App() {
   const apiBase = useApiBase()
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { data: instruments, loading, error } = useInstruments(apiBase, refreshTrigger)
   const { registry, wsDiag } = useRegistrySocket(apiBase)
-  // ?openDocs=true opens the API docs directly
-  const [docsModalOpen, setDocsModalOpen] = useState(() => new URLSearchParams(window.location.search).get('openDocs') === 'true')
 
   // Disclaimer modal state - shows on first app load if not previously accepted
   const [disclaimerOpen, setDisclaimerOpen] = useState(() => {
@@ -47,14 +42,7 @@ export default function App() {
           error={error}
           wsDiag={wsDiag}
           onConfigUpdated={handleConfigUpdated}
-          onOpenDocs={() => setDocsModalOpen(true)}
         />
-
-        {docsModalOpen && (
-          <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-            <DocsViewer onClose={() => setDocsModalOpen(false)} apiBase={apiBase} />
-          </Suspense>
-        )}
 
         {/* Disclaimer modal - highest priority, shown on first app load */}
         <DisclaimerModal isOpen={disclaimerOpen} onAccept={handleDisclaimerAccept} />

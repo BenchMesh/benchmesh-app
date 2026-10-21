@@ -103,11 +103,6 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **Copyright**: Copyright (c) Meta Platforms, Inc. and affiliates
 - **URL**: https://github.com/facebook/react
 
-### swagger-ui-react
-- **License**: Apache-2.0
-- **Copyright**: Copyright 2023 SmartBear Software
-- **URL**: https://github.com/swagger-api/swagger-ui
-
 ### echarts
 - **License**: Apache-2.0
 - **Copyright**: Copyright (c) 2017-2024 The Apache Software Foundation

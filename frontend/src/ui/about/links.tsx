@@ -5,12 +5,13 @@
  */
 import React from 'react'
 
-export type Page = 'issues' | 'new-issue' | 'releases'
+export type Page = 'issues' | 'new-issue' | 'releases' | 'docs'
 
 export const PAGE_URLS: Record<Page, string> = {
   issues: 'https://github.com/MarkoVcode/BenchMesh/issues',
   'new-issue': 'https://github.com/MarkoVcode/BenchMesh/issues/new',
   releases: 'https://github.com/MarkoVcode/BenchMesh/releases/latest',
+  docs: 'https://benchmesh.online/docs',
 }
 
 type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>

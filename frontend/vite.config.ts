@@ -34,8 +34,6 @@ export default defineConfig({
         // The recordings chart (echarts, tree-shaken) is not listed: it stays in the lazily
         // loaded chunk of `recording/RecordingChart.tsx`.
         manualChunks: {
-          // API reference (DocsViewer)
-          'vendor-docs': ['swagger-ui-react'],
           // Core React libraries
           'vendor-react': ['react', 'react-dom'],
         }

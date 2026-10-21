@@ -125,7 +125,11 @@ Bench/hardware notes and wire captures: `captures/` (golden transcripts replayed
   can switch an output/input on (the UI requires two presses for those). Implemented in
   `crates/bm-server/src/opspec.rs` (also used by `/ai/context` and the automation vocabulary).
 - `/openapi.json` / `/openapi.yaml` describe every route (`crates/bm-server/src/openapi.rs`; a
-  test fails when a route is missing); `/docs` opens the UI's API reference drawer.
+  test fails when a route is missing; extensions `x-websocket` and `x-no-try: <reason>` for what
+  cannot be sent from the UI); `/docs` opens the UI's API reference drawer (top bar **API**,
+  `frontend/src/ui/apidocs/`: endpoints by tag, filter, parameters with instrument suggestions,
+  JSON body, Send - two presses for anything but GET - with status, time and response, curl
+  line, first message of a WebSocket; pure model `openapi.ts`).
 
 ## Configuration and user data
 

@@ -112,6 +112,25 @@ const mockPorts = [
   { device: '/dev/ttyUSB3', description: 'USB Serial Port 3', manufacturer: 'CH340', serial_number: '67890', hwid: 'USB VID:PID=1a86:7523' },
 ];
 
+/** A small `/openapi.json` like the server's (crates/bm-server/src/openapi.rs), with its extensions. */
+export const mockOpenApi = {
+  openapi: '3.1.0',
+  info: { title: 'BenchMesh API', version: '0.1.7', description: 'Lab instrument control.' },
+  tags: [
+    { name: 'system', description: 'Service status, version, documentation' },
+    { name: 'instrument-control', description: 'Read and set instrument operations' },
+    { name: 'recordings', description: 'Data recording' },
+    { name: 'websockets', description: 'Real-time WebSocket streams' },
+  ],
+  paths: {
+    '/': { get: { tags: ['system'], summary: 'Redirect to the UI', parameters: [], 'x-no-try': 'Redirects a browser to the UI' } },
+    '/status': { get: { tags: ['system'], summary: 'Device connection counts', parameters: [] } },
+    '/instruments/{klass}/{id}/{ch}/{op}': { get: { tags: ['instrument-control'], summary: 'Read an operation → {path, value}', parameters: ['klass', 'id', 'ch', 'op'].map((name) => ({ name, in: 'path', required: true })) } },
+    '/recordings': { post: { tags: ['recordings'], summary: 'Create a recording {name, description?, interval_s 1-3600}', parameters: [], requestBody: { content: { 'application/json': { schema: { type: 'object' } } } } } },
+    '/ws/registry': { get: { tags: ['websockets'], summary: 'WebSocket: live registry', parameters: [], 'x-websocket': true } },
+  },
+};
+
 const API_PREFIXES = [
   '/instruments', '/drivers', '/config', '/devices', '/serial-ports', '/usbtmc-devices',
   '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote',
@@ -371,6 +390,8 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return handleRemote(route, api, segs);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
+        case 'openapi.json':
+          return json(route, mockOpenApi);
         case 'version':
           return json(route, { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', name: 'BenchMesh' });
         default:
