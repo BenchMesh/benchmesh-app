@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { appendEntries, bytesOf, escaped, evidence, isBinary, lineText, showBytes, type WireEntry } from '../wire'
-import { WireConsole } from '../WireConsole'
+import { WireConsole, CONSOLE_LINES, logFileName } from '../WireConsole'
 
 const t0 = new Date(2026, 9, 18, 21, 5, 7, 42).getTime()
 const e = (seq: number, dir: WireEntry['dir'], data: string): WireEntry => ({ seq, t: t0 + seq, dir, data, len: data.length })
@@ -67,5 +67,51 @@ describe('WireConsole', () => {
     expect(copied).toContain('App: BenchMesh 0.1.5')
     expect(copied).toContain('← TENMA 72-2540 V2.1')
     expect(await screen.findByRole('status')).toHaveTextContent('Copied 3 lines')
+  })
+
+  it('asks for the newest lines first, then only what is new', async () => {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      const u = String(url)
+      urls.push(u)
+      const body = u.endsWith('/version') ? { version: '0.1.7' } : { entries: urls.length < 3 ? [e(7, 'tx', '*IDN?')] : [], next: 7, dropped: true }
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
+    })
+    render(<WireConsole meta={{ instrument: 'rigol', klass: 'OSC' }} />)
+    await screen.findByText(/earlier entries are not shown/)
+    const wire = urls.filter((u) => u.includes('/wire'))
+    expect(wire[0]).toMatch(new RegExp(`/devices/rigol/wire\\?limit=${CONSOLE_LINES}$`))
+    await waitFor(() => expect(urls.filter((u) => u.includes('/wire?after=7')).length).toBeGreaterThan(0))
+  })
+
+  it('saves everything the server kept as a text file', async () => {
+    const urls: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      const u = String(url)
+      urls.push(u)
+      const all = { entries: [e(1, 'info', 'opened /dev/usbtmc5'), e(2, 'tx', '*IDN?'), e(3, 'info', 'write failed (timeout), USB recovery: device clear ok')], next: 3, dropped: false }
+      const body = u.endsWith('/version') ? { version: '0.1.7' } : u.includes('after=0') ? all : { entries: [], next: 3, dropped: false }
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
+    })
+    let saved: Blob | null = null
+    const create = vi.fn((b: Blob) => { saved = b; return 'blob:x' })
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<WireConsole meta={{ instrument: 'rigol', klass: 'OSC', model: 'DHO804' }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Saved 3 lines')
+    expect(urls.some((u) => u.endsWith('/devices/rigol/wire?after=0'))).toBe(true)
+    expect(click).toHaveBeenCalledOnce()
+    const text = await new Promise<string>((done) => {
+      const r = new FileReader()
+      r.onload = () => done(String(r.result))
+      r.readAsText(saved!)
+    })
+    expect(text).toContain('Instrument: rigol (OSC) model DHO804')
+    expect(text).toContain('USB recovery: device clear ok')
+  })
+
+  it('names the saved file after the instrument and the time', () => {
+    expect(logFileName('rigol dho/804', new Date('2026-10-21T00:12:03Z'))).toBe('benchmesh-console-rigol_dho_804-2026-10-21T00-12-03.txt')
   })
 })

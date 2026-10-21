@@ -681,7 +681,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
                 </select>
                 <button
                   type="button"
-                  className="instrument-config__refresh-btn"
+                  className="bench-btn bench-btn--icon"
                   onClick={loadSerialPorts}
                   disabled={loadingPorts}
                   title="Refresh serial ports"
@@ -786,7 +786,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               </select>
               <button
                 type="button"
-                className="instrument-config__refresh-btn"
+                className="bench-btn bench-btn--icon"
                 onClick={loadUsbTmcDevices}
                 disabled={loadingUsbTmc}
                 title="Refresh USB TMC devices"
@@ -878,22 +878,32 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
         {/* Per-device action buttons and status */}
         <div className="instrument-config__device-actions">
           {isDeviceNew(device.id) ? (
-            // NEW device: Show "Add Instrument" button
-            <button
-              type="button"
-              className="instrument-config__save-btn"
-              onClick={() => saveNewDevice(device)}
-              disabled={deviceStates[device.id]?.saving}
-              title="Add this instrument to the service"
-            >
-              {deviceStates[device.id]?.saving ? 'Adding...' : 'Add Instrument'}
-            </button>
+            // NEW device: "Add Instrument" and "Cancel"
+            <>
+              <button
+                type="button"
+                className="bench-btn bench-btn--primary"
+                onClick={() => saveNewDevice(device)}
+                disabled={deviceStates[device.id]?.saving}
+                title="Add this instrument to the service"
+              >
+                {deviceStates[device.id]?.saving ? 'Adding...' : 'Add Instrument'}
+              </button>
+              <button
+                type="button"
+                className="bench-btn"
+                onClick={() => removeDeviceLocally(index)}
+                title="Cancel adding this device"
+              >
+                Cancel
+              </button>
+            </>
           ) : isDeviceModified(device) ? (
             // EXISTING modified: Show "Save & Apply" and "Remove" buttons
             <>
               <button
                 type="button"
-                className="instrument-config__save-btn"
+                className="bench-btn bench-btn--primary"
                 onClick={() => saveExistingDevice(device)}
                 disabled={deviceStates[device.id]?.saving}
                 title="Save changes and reconnect device"
@@ -902,7 +912,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               </button>
               <button
                 type="button"
-                className="instrument-config__remove-btn"
+                className="bench-btn bench-btn--danger"
                 onClick={() => removeDeviceFromServer(device.id)}
                 disabled={deviceStates[device.id]?.saving}
                 title="Remove this instrument"
@@ -914,7 +924,7 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
             // EXISTING unchanged: Show "Remove" button only
             <button
               type="button"
-              className="instrument-config__remove-btn"
+              className="bench-btn bench-btn--danger"
               onClick={() => removeDeviceFromServer(device.id)}
               disabled={deviceStates[device.id]?.saving}
               title="Remove this instrument"
@@ -932,17 +942,6 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
           )}
         </div>
 
-        {/* Local remove for unsaved devices */}
-        {isDeviceNew(device.id) && (
-          <button
-            type="button"
-            className="instrument-config__cancel-btn"
-            onClick={() => removeDeviceLocally(index)}
-            title="Cancel adding this device"
-          >
-            Cancel
-          </button>
-        )}
       </div>
     );
   }
@@ -988,9 +987,11 @@ export function InstrumentConfigView({ apiBase, onConfigUpdated, autoAddNew, onA
               </Accordion>
             )}
 
-            <button className="instrument-config__add-btn" onClick={addDevice} data-testid="add-instrument-btn">
-              + Add Instrument
-            </button>
+            <div className="instrument-config__add">
+              <button type="button" className="bench-btn bench-btn--primary" onClick={addDevice} data-testid="add-instrument-btn">
+                + Add Instrument
+              </button>
+            </div>
           </>
         )}
       </div>

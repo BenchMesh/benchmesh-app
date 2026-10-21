@@ -21,7 +21,7 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("post", "/devices/detect", "configuration", "Start identifying the instruments on the attached USB ports in the background (identify queries only, never to ports in use; one exchange per distinct probe) → 202 with the job; a running job is not restarted"),
     ("get", "/devices/detect", "configuration", "Detect progress → {running, elapsed_ms, ports: [{port, kind, usb, configured_as, locked, instrument, match, certainty, error, progress: {state: queued|probing|done, tried, total, current}}]}"),
     ("put", "/devices/{id}", "configuration", "Update a device (saved and reconnected)"),
-    ("get", "/devices/{id}/wire", "monitoring", "Instrument console: bytes sent / received and port events after `after` (seq) → {entries: [{seq, t (ms), dir: tx|rx|info, data (Latin-1 bytes / text), len}], next, dropped}"),
+    ("get", "/devices/{id}/wire", "monitoring", "Instrument console: bytes sent / received and port events after `after` (seq), at most the newest `limit` → {entries: [{seq, t (ms), dir: tx|rx|info, data (Latin-1 bytes / text), len}], next, dropped}"),
     ("delete", "/devices/{id}/wire", "monitoring", "Clear an instrument's console (204)"),
     ("delete", "/devices/{id}", "configuration", "Remove a device"),
     ("get", "/serial-ports", "configuration", "Serial ports (query `exclude=a,b`)"),

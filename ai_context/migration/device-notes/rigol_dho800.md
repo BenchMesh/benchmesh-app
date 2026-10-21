@@ -58,5 +58,19 @@ measurement" (e.g. FREQ on a flat line) → status null.
   device clear did not help, and the scope **dropped off USB and came back ≈ 50 s later**
   (re-enumerated; settings intact). Operation disabled in the definition. Next step: the userspace
   USBTMC transport (`nusb`, same item as the DGE screenshot) with proper multi-transfer reads.
+- **USB lockup during normal use** (2026-10-21, kernel usbtmc, app polling the panel): twice in
+  ten minutes a read request timed out (`usbtmc 1-2:1.0: send_request_dev_dep_msg_in returned
+  -110`), after which every write timed out (`Unable to send data, error -110`) until the cable
+  was replugged; the scope did not drop off USB by itself. The trigger is not known yet (the wire
+  log then kept only 46 s). Since then the transport runs one USB recovery when a write times out
+  or stalls (abort bulk-out/in, clear halts, device clear; `bm-transport` usbtmc.rs and
+  usbtmc_proto.rs), the wire log keeps about 19 minutes of this scope, and the console's Save
+  writes it to a file. Bench result the same night (a third lockup, caused by a development
+  rebuild killing the app mid-exchange): the recovery made the scope take commands again
+  (abort bulk-out answered "not in progress", clear halts and device clear ok) but it never
+  replied; it then dropped off USB and failed to enumerate (-71). After a cable replug it
+  answered with stale bTags and then not at all - the scope powers its own USB side, so a
+  replug does not reset its firmware. Only switching the scope off and on brought it back.
+  The recovery stays (cheap, may help lighter stalls); the cure is not to interrupt sessions.
 - Edge trigger only (other trigger types not modelled). Digital channels (D0-D15), math, decoders,
   memory depth and RAW/MAXimum waveform reads are not modelled.

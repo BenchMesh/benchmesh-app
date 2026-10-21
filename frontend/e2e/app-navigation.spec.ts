@@ -13,7 +13,7 @@ test.describe('Top bar', () => {
 
   test('shows all navigation buttons', async ({ mockPage }) => {
     const nav = mockPage.getByRole('navigation', { name: 'Main' });
-    for (const name of ['Arrange', 'Instruments', 'Recording', 'Log', 'Metrics', 'API']) {
+    for (const name of ['Arrange', 'Instruments', 'Recording', 'Log', 'API', 'Feedback']) {
       await expect(nav.getByRole('button', { name, exact: true })).toBeVisible();
     }
   });
@@ -60,13 +60,17 @@ test.describe('Drawers', () => {
 });
 
 test.describe('Modals', () => {
-  test('Metrics modal opens, shows device metrics and closes', async ({ mockPage }) => {
-    await mockPage.getByRole('button', { name: 'Metrics', exact: true }).click();
-    const heading = mockPage.getByRole('heading', { name: 'Serial Port Utilization Metrics' });
-    await expect(heading).toBeVisible();
-    await expect(mockPage.locator('.modal-content').getByRole('heading', { name: 'test-psu-1' })).toBeVisible();
-    await mockPage.locator('.modal-close').click();
-    await expect(heading).toBeHidden();
+  test('Metrics are a tab of the Instruments drawer, per instrument', async ({ mockPage }) => {
+    await expect(mockPage.getByRole('button', { name: 'Metrics', exact: true })).toHaveCount(0);
+    await mockPage.getByRole('button', { name: 'Instruments', exact: true }).click();
+    const drawer = mockPage.getByRole('dialog', { name: 'Instruments' });
+    await drawer.getByTestId('settings-tab-metrics').click();
+    const view = drawer.getByTestId('metrics-view');
+    await expect(view.getByText('live - updates every 30 s')).toBeVisible();
+    const psu = view.getByRole('group', { name: /Test PSU|test-psu-1/ });
+    await expect(psu.getByText('Link busy')).toBeVisible();
+    await expect(psu.getByText('12.5 %')).toHaveAttribute('data-state', 'ok');
+    await expect(psu.getByText('11.2 ms')).toBeVisible();
   });
 
   test('API reference opens with the server\'s endpoints and closes', async ({ mockPage }) => {

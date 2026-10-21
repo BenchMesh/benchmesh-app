@@ -5,24 +5,29 @@
  * - Instruments: Instrument configuration
  * - Supported: instruments BenchMesh has definitions for, with each model's support status
  * - Miscellaneous: App settings (history retention, etc.)
+ * - Metrics: how busy each instrument's connection is
  * - Remote access: control the bench from other computers (only in the app on this computer)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear, VscChecklist, VscRemote } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
+import { MetricsView } from './MetricsView';
+import type { Instrument } from '../types';
 import { RemoteSettings } from '../remote/RemoteSettings';
 import { useRemote } from '../remote/RemoteProvider';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'remote';
+type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'remote';
 
 interface SettingsViewProps {
   apiBase: string;
   onConfigUpdated: () => void;
   autoAddInstrument?: boolean;
   onAutoAddComplete?: () => void;
+  /** Configured instruments (names for the Metrics tab). */
+  instruments?: Instrument[];
 }
 
 // History retention options in days
@@ -36,7 +41,7 @@ const RETENTION_OPTIONS = [
 const DEFAULT_RETENTION_DAYS = 3;
 const STORAGE_KEY_RETENTION = 'benchmesh:historyRetentionDays';
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpdated, autoAddInstrument, onAutoAddComplete }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpdated, autoAddInstrument, onAutoAddComplete, instruments }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('instruments');
   const [historyRetention, setHistoryRetention] = useState<number>(() => {
     // Load from localStorage on mount
@@ -81,6 +86,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
     { id: 'instruments', label: 'Instruments', icon: VscTools },
     { id: 'supported', label: 'Supported', icon: VscChecklist },
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
+    { id: 'metrics', label: 'Metrics', icon: VscPulse },
     ...(remoteSettings ? [{ id: 'remote', label: 'Remote access', icon: VscRemote }] : []),
   ] as const;
 
@@ -155,6 +161,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
             {/* Future sections can be added here */}
           </div>
         )}
+
+        {activeTab === 'metrics' && <MetricsView instruments={instruments} />}
 
         {activeTab === 'remote' && remoteSettings && <RemoteSettings />}
       </div>

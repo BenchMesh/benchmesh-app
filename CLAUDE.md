@@ -164,9 +164,10 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel` - modes without a setpoint, Short (two presses); `AwgChannel` - frequency or period, amplitude as Vpp / Vrms / dBm / high-low levels, phase, ramp symmetry, load, pulse duty/width/edges, mode CW / MOD (AM/FM/PM: modulating wave, frequency, depth or deviation) / SWEEP (start, stop, time, spacing, trigger) / BURST (N cycles or infinite, period, trigger), each control only when the definition binds it: conversions in `bench/awgMath.ts`, values the instrument does not report tagged CALC; `OscPanel` - one screen for all channels, `LcrPanel` - primary/secondary readouts, function keys L/C/R/Z/DCR → secondary → SER/PAR, frequency/level, range/speed, open/short correction with a prompt, bias; `SalPanel` - spectrum screen (`kit/SpectrumScreen`: dB graticule, max-hold ghost, marker diamond, click to place), marker readout, annotation bar, soft-key groups FREQ/BW/AMPT/SWEEP/TRACE/MKR/TG; `GenericPanel`) |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden / channel layout of multi-channel panels (side by side or stacked), persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx` | shell: top bar, **Arrange** mode (drag, ◀ ▶, width, channels ⇆ / ⇅, hide), drawers (Instruments config, Request log) |
-| `drawers/` | instrument configuration + settings (incl. **Detect**: `DetectView.tsx`, `detect.ts`), request log |
+| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), Remote access; request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
 | `kit/brand.ts`, `kit/BrandMark.tsx` | the logo ("Readout": seven-segment b, ghost segments, amber decimal point): one geometry, colours on dark / on light; `BrandMark` follows the skin (`--kit-brand-*`) or takes fixed colours (website). `node scripts/logo/build.mjs` writes `docs/static/logo/*.svg`, `frontend/public/favicon.svg` and the app icons (`crates/benchmesh-app/icons`, via Inkscape + `cargo tauri icon`); a test fails when they are stale |
+| `about/` | top-bar version (`GET /version`, `version.ts`) and the **Feedback** drawer (`AboutView.tsx`: version, Copy version, GitHub issues links). External pages open by name (`links.tsx`): in the desktop app the system browser via the `open_page` command (fixed list, `crates/benchmesh-app/src/links.rs`, capability `links.json`), in a browser a new tab |
 | `automation/` | Automation drawer (top bar **Automation**, contract `ai_context/AUTOMATION.md`): saved flows (new, duplicate, delete, import/export JSON), flow editor (parameter form, Setup / Steps / Cleanup step cards with vocabulary pickers, live validation shown at each step's path, JSON view; pure document model `flowModel.ts`), run panel (arm dialog for energising flows, live log, variables, prompt Continue, Abort / Escape), assistant (user's own LLM key, result loaded as unsaved), settings tab (provider, key - only its hint is ever shown, model, base URL; MCP access + connection snippets). `RunProvider.tsx` polls `/automation/run` for the whole UI: top-bar `▶ flow - state` + red **Stop** while a run is active |
 
 Panel **window controls** (header, top right): fold to the header line (saved with the layout;
@@ -182,15 +183,26 @@ allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out.
 
 **Instrument console** (panel header, console icon): an optional pane at the bottom of the panel
 showing what is sent to (→) and received from (←) the instrument, plus port events (•), from
-`GET /devices/{id}/wire?after=<seq>` (per-device ring of 2000 entries, `bm_driver::wirelog`;
-reply chunks joined in the UI). Auto / Text / Hex view, pause, clear, and **Copy**: paste-ready
-evidence with instrument, model, identify reply, link and app version (`bench/wire.ts`,
-`bench/WireConsole.tsx`). Open state per panel in `localStorage` `benchmesh:consoles`.
+`GET /devices/{id}/wire?after=<seq>&limit=<n>` (per-device ring of 50 000 entries / 8 MiB, about
+19 minutes of a polled oscilloscope and longer for meters, `bm_driver::wirelog`; reply chunks
+joined in the UI, which shows the last 5000 lines). Auto / Text / Hex view, pause, clear, **Copy**:
+paste-ready evidence with instrument, model, identify reply, link and app version, and **Save**:
+the same for everything the server kept, as a text file (`bench/wire.ts`, `bench/WireConsole.tsx`).
+Transports add their own events as info lines (`Transport::take_notes`), e.g. a USBTMC recovery:
+a write that times out or stalls gets abort bulk-out/in, clear halts and a device clear, then one
+more try, else an error telling the user to replug (`bm-transport` usbtmc.rs, usbtmc_proto.rs). Open state per panel in `localStorage` `benchmesh:consoles`.
 
 Every control that changes the instrument waits for **confirmation**: after the request is sent it
 pulses discreetly until the instrument's reported value (registry status, or a read-back for
 setpoints) equals the requested one, and shows a small red dot if that does not happen within 6 s
 (`kit/confirm.ts`). Pass the reported value, never a locally assumed one.
+
+Drawer pages of text and controls use the shared page standard in `bench/bench.css`: content in
+`.bench-page` (16 px inset, 14 px rhythm, `.bench-hint` text), boxes in `.bench-group`, rows in
+`.bench-group__row` (About and feedback, Metrics, Remote access); `e2e/about-feedback.spec.ts` fails when a
+drawer's content comes closer than 8 px to the drawer's sides. Buttons are kit buttons (`bench-btn`, `--primary` for
+the main action, `--danger` for removal, `--icon` for a glyph), fields the kit field (`kit-field`, `kit-label`,
+`kit-input`); the Instruments form styles its fields with the same tokens.
 
 Adding a class panel: write `bench/panels/<Cls>Panel.tsx` from kit components, a `<cls>Profile()`
 in `profiles.ts` (with tests against `bench/__tests__/bench-fixtures.json`, captured from the

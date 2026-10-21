@@ -124,7 +124,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
       if (!p.match) return <span className="detect__done">configured as {p.configured_as}</span>;
       return (
         <button
-          type="button" className="detect__btn" onClick={() => lock(p)} disabled={st?.busy}
+          type="button" className="bench-btn" onClick={() => lock(p)} disabled={st?.busy}
           title="Find it by its identity on any USB port instead of by this port path"
         >
           {st?.busy ? 'Locking…' : 'Lock to this instrument'}
@@ -133,7 +133,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
     }
     if (!p.instrument || !p.match) return null;
     return (
-      <button type="button" className="detect__btn" onClick={() => add(p)} disabled={st?.busy} title="Add this instrument to the configuration">
+      <button type="button" className="bench-btn" onClick={() => add(p)} disabled={st?.busy} title="Add this instrument to the configuration">
         {st?.busy ? 'Adding…' : 'Add'}
       </button>
     );
@@ -143,7 +143,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
     <section className="detect" aria-label="Detect instruments" data-testid="detect-view">
       <div className="detect__bar">
         <button
-          type="button" className={`detect__run${running ? ' detect__run--busy' : ''}`}
+          type="button" className={`bench-btn${running ? ' detect__run--busy' : ''}`}
           onClick={detect} disabled={running} aria-busy={running} data-testid="detect-btn"
         >
           {running ? 'Detecting…' : 'Detect instruments'}

@@ -52,7 +52,7 @@ export function InstallDriverButton({ apiBase, device, onInstalled }: Props) {
   return (
     <div className="install-driver" data-testid="install-driver">
       <button
-        type="button" className="detect__btn" onClick={install} disabled={state !== 'idle'}
+        type="button" className="bench-btn" onClick={install} disabled={state !== 'idle'}
         title="Give this instrument Microsoft's generic WinUSB driver (Windows asks for administrator approval once)"
       >
         {state === 'busy' ? 'Waiting for Windows approval…' : state === 'done' ? '✓ Driver installed' : 'Install driver'}

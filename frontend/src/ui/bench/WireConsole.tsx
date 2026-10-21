@@ -1,14 +1,22 @@
 /**
  * Instrument console: an optional pane at the bottom of an instrument panel that shows what
  * goes to and comes from the instrument (`GET /devices/{id}/wire`, polled while open), with
- * pause, clear, text / hex view and Copy (paste-ready evidence for troubleshooting).
+ * pause, clear, text / hex view, Copy (paste-ready evidence for troubleshooting) and Save
+ * (everything the server kept, about the last 20 minutes or more, as a text file).
  */
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { apiBaseUrl } from '../../api/base'
 import { Selector } from '../kit'
+import { fetchVersion } from '../about/version'
 import { appendEntries, evidence, lineText, type EvidenceMeta, type WireEntry, type WireLine, type WireView } from './wire'
 
 const POLL_MS = 500
+/** Lines the console shows; Save writes everything the server kept. */
+export const CONSOLE_LINES = 5000
+
+type WireReply = { entries: WireEntry[]; next: number; dropped: boolean }
+
+const wirePath = (id: string) => `${apiBaseUrl()}/devices/${encodeURIComponent(id)}/wire`
 
 /** The console's lines while `enabled` (polling paused with `paused`). */
 export function useWireLog(id: string, enabled: boolean, paused: boolean) {
@@ -19,14 +27,16 @@ export function useWireLog(id: string, enabled: boolean, paused: boolean) {
     let live = true
     const tick = async () => {
       try {
-        const r = await fetch(`${apiBaseUrl()}/devices/${encodeURIComponent(id)}/wire?after=${after.current}`)
+        // the first request takes the newest entries only, later ones whatever is new
+        const q = after.current ? `after=${after.current}` : `limit=${CONSOLE_LINES}`
+        const r = await fetch(`${wirePath(id)}?${q}`)
         if (!r.ok || !live) return
-        const v: { entries: WireEntry[]; next: number; dropped: boolean } = await r.json()
+        const v: WireReply = await r.json()
         if (!live) return
         after.current = v.next
         if (v.entries.length || v.dropped) {
-          const gap: WireEntry[] = v.dropped ? [{ seq: 0, t: Date.now(), dir: 'info', data: 'earlier entries were dropped (the console keeps the last 2000)', len: 0 }] : []
-          setLines((old) => appendEntries(old, [...gap, ...v.entries]))
+          const gap: WireEntry[] = v.dropped ? [{ seq: 0, t: Date.now(), dir: 'info', data: `earlier entries are not shown (the console shows the last ${CONSOLE_LINES} lines; Save writes everything kept)`, len: 0 }] : []
+          setLines((old) => appendEntries(old, [...gap, ...v.entries], CONSOLE_LINES))
         }
       } catch { /* server unreachable: the panel shows offline */ }
     }
@@ -36,9 +46,32 @@ export function useWireLog(id: string, enabled: boolean, paused: boolean) {
   }, [id, enabled, paused])
   const clear = async () => {
     setLines([])
-    try { await fetch(`${apiBaseUrl()}/devices/${encodeURIComponent(id)}/wire`, { method: 'DELETE' }) } catch { /* local clear is enough */ }
+    try { await fetch(wirePath(id), { method: 'DELETE' }) } catch { /* local clear is enough */ }
   }
   return { lines, clear }
+}
+
+/** Everything the server kept for `id`, as console lines. */
+export async function fullLog(id: string): Promise<WireLine[]> {
+  const r = await fetch(`${wirePath(id)}?after=0`)
+  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  const v: WireReply = await r.json()
+  return appendEntries([], v.entries, Number.POSITIVE_INFINITY)
+}
+
+/** A file name such as `benchmesh-console-rigol-dho804-2026-10-21T00-12-03.txt`. */
+export function logFileName(instrument: string, at: Date): string {
+  const stamp = at.toISOString().slice(0, 19).replace(/:/g, '-')
+  return `benchmesh-console-${instrument.replace(/[^\w.-]+/g, '_')}-${stamp}.txt`
+}
+
+function saveText(text: string, name: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -75,8 +108,9 @@ export function WireConsole({ meta }: { meta: EvidenceMeta }) {
   const stick = useRef(true)
 
   useEffect(() => {
-    fetch(`${apiBaseUrl()}/version`).then((r) => (r.ok ? r.json() : null))
-      .then((v) => v && setApp(v.displayVersion ?? `BenchMesh ${v.version ?? ""}`)).catch(() => {})
+    let live = true
+    void fetchVersion().then((v) => live && v && setApp(v.display))
+    return () => { live = false }
   }, [])
   // follow new lines unless the user scrolled up to read
   useLayoutEffect(() => {
@@ -90,6 +124,17 @@ export function WireConsole({ meta }: { meta: EvidenceMeta }) {
     setTimeout(() => setCopied(null), 2500)
   }
 
+  const save = async () => {
+    try {
+      const all = await fullLog(meta.instrument)
+      saveText(evidence({ ...meta, app }, all, view), logFileName(meta.instrument, new Date()))
+      setCopied(`Saved ${all.length} lines`)
+    } catch (e) {
+      setCopied(`Save failed: ${e instanceof Error ? e.message : e}`)
+    }
+    setTimeout(() => setCopied(null), 2500)
+  }
+
   return (
     <section className="wire-console" aria-label="Instrument console" data-testid="wire-console">
       <div className="wire-console__bar">
@@ -100,6 +145,8 @@ export function WireConsole({ meta }: { meta: EvidenceMeta }) {
         <button type="button" className="bench-icon wire-console__btn" onClick={() => void clear()} title="Clear the console">Clear</button>
         <button type="button" className="bench-icon wire-console__btn wire-console__copy" onClick={() => void copy()} disabled={!lines.length}
           title="Copy as text with instrument, model and app version (for a bug report or forum post)">Copy</button>
+        <button type="button" className="bench-icon wire-console__btn" onClick={() => void save()}
+          title="Save everything kept for this instrument (about the last 20 minutes or more) as a text file">Save</button>
         {copied && <span className="wire-console__note" role="status">{copied}</span>}
       </div>
       <div ref={box} className="wire-console__log" tabIndex={0} aria-live="off"

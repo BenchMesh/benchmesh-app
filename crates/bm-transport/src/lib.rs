@@ -79,6 +79,10 @@ impl Transport for Held {
     fn read(&mut self, timeout: Duration) -> io::Result<Vec<u8>> {
         self.inner.read(timeout)
     }
+
+    fn take_notes(&mut self) -> Vec<String> {
+        self.inner.take_notes()
+    }
 }
 
 /// The kind of port a definition's link is found on.

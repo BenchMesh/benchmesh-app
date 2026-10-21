@@ -28,6 +28,20 @@ pub trait Pipe: Send {
     /// After a timeout: tell the device to drop the reply to `tag` (INITIATE_ABORT_BULK_IN +
     /// CHECK_ABORT_BULK_IN_STATUS). Best effort.
     fn abort_in(&mut self, tag: u8);
+    /// After a bulk-OUT transfer (`tag`) failed: abort it, clear halted endpoints, device clear.
+    /// Best effort; returns how each step went, for the wire log.
+    fn recover(&mut self, tag: u8) -> String;
+}
+
+/// Bulk-OUT timeout of one message.
+const OUT_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// The error of a write that failed again after a USB recovery: what the user can still do.
+pub fn not_recovered(e: io::Error) -> io::Error {
+    io::Error::new(
+        e.kind(),
+        format!("the instrument stopped answering on USB and did not recover ({e}); unplug and replug its USB cable, or switch it off and on"),
+    )
 }
 
 /// bTag: 1..=255, never 0.
@@ -80,12 +94,13 @@ pub struct Session<P: Pipe> {
     tag: u8,
     /// Bulk-IN transfer size (a multiple of the endpoint's max packet size).
     chunk: usize,
+    notes: Vec<String>,
 }
 
 impl<P: Pipe> Session<P> {
     pub fn new(pipe: P, max_packet: usize) -> Self {
         let mp = max_packet.max(1);
-        Session { pipe, tag: 0, chunk: (64 * 1024 / mp).max(1) * mp }
+        Session { pipe, tag: 0, chunk: (64 * 1024 / mp).max(1) * mp, notes: Vec::new() }
     }
 
     /// One DEV_DEP_MSG_IN transfer (header + payload, possibly over several bulk transfers).
@@ -113,9 +128,19 @@ impl<P: Pipe> Session<P> {
 }
 
 impl<P: Pipe> Transport for Session<P> {
+    /// A message the device does not take gets one USB recovery and is sent once more.
     fn write(&mut self, data: &[u8]) -> io::Result<()> {
         let tag = next_tag(&mut self.tag);
-        self.pipe.bulk_out(&msg_out(tag, data), Duration::from_secs(2))
+        let e = match self.pipe.bulk_out(&msg_out(tag, data), OUT_TIMEOUT) {
+            Ok(()) => return Ok(()),
+            Err(e) => e,
+        };
+        let done = self.pipe.recover(tag);
+        self.notes.push(format!("write failed ({e}), USB recovery: {done}"));
+        let tag = next_tag(&mut self.tag);
+        self.pipe.bulk_out(&msg_out(tag, data), OUT_TIMEOUT).map_err(not_recovered)?;
+        self.notes.push("recovered: the instrument takes commands again".into());
+        Ok(())
     }
 
     /// One whole message; empty = nothing before the timeout.
@@ -124,7 +149,7 @@ impl<P: Pipe> Transport for Session<P> {
         let mut message = Vec::new();
         loop {
             let tag = next_tag(&mut self.tag);
-            self.pipe.bulk_out(&request_in(tag, MAX_MESSAGE), Duration::from_secs(2))?;
+            self.pipe.bulk_out(&request_in(tag, MAX_MESSAGE), OUT_TIMEOUT)?;
             loop {
                 match self.read_transfer(deadline)? {
                     None => {
@@ -143,6 +168,10 @@ impl<P: Pipe> Transport for Session<P> {
                 }
             }
         }
+    }
+
+    fn take_notes(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.notes)
     }
 }
 
@@ -180,6 +209,9 @@ mod tests {
         aborts: Vec<u8>,
         /// Answer the next request this many requests late (a reply that missed its read).
         silent_requests: usize,
+        /// Bulk-OUT transfers that fail (a device that stopped taking data), and recoveries.
+        failing_out: usize,
+        recoveries: Vec<u8>,
         max_packet: usize,
     }
 
@@ -207,6 +239,10 @@ mod tests {
     impl Pipe for SimPipe {
         fn bulk_out(&mut self, data: &[u8], _: Duration) -> io::Result<()> {
             let mut d = self.0.lock().unwrap();
+            if d.failing_out > 0 {
+                d.failing_out -= 1;
+                return Err(io::Error::new(io::ErrorKind::TimedOut, "USBTMC write: timeout"));
+            }
             let h = &data[..HEADER];
             assert_eq!(h[1], !h[2]);
             let size = u32::from_le_bytes([h[4], h[5], h[6], h[7]]) as usize;
@@ -259,6 +295,11 @@ mod tests {
         fn abort_in(&mut self, tag: u8) {
             self.0.lock().unwrap().aborts.push(tag);
         }
+
+        fn recover(&mut self, tag: u8) -> String {
+            self.0.lock().unwrap().recoveries.push(tag);
+            "abort bulk-out ok".into()
+        }
     }
 
     fn session(dev: Device) -> (Session<SimPipe>, std::sync::Arc<std::sync::Mutex<Device>>) {
@@ -310,6 +351,23 @@ mod tests {
         }
         s.write(b"Q2?\n").unwrap();
         assert_eq!(s.read(T).unwrap(), b"fresh\n");
+    }
+
+    #[test]
+    fn a_write_the_device_does_not_take_is_recovered_and_sent_again() {
+        let (mut s, d) = session(Device { max_packet: 512, failing_out: 1, answers: ["ok\n".into()].into(), ..Default::default() });
+        s.write(b"*IDN?\n").unwrap();
+        assert_eq!(d.lock().unwrap().recoveries, [1], "recovery for the failed transfer's tag");
+        assert_eq!(s.take_notes(), ["write failed (USBTMC write: timeout), USB recovery: abort bulk-out ok", "recovered: the instrument takes commands again"]);
+        assert_eq!(s.read(T).unwrap(), b"ok\n");
+        assert!(s.take_notes().is_empty());
+    }
+
+    #[test]
+    fn a_device_that_does_not_recover_says_what_to_do() {
+        let (mut s, _) = session(Device { max_packet: 512, failing_out: 2, ..Default::default() });
+        let e = s.write(b"*IDN?\n").unwrap_err();
+        assert!(e.to_string().contains("unplug and replug"), "{e}");
     }
 
     #[test]

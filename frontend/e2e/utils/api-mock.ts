@@ -366,6 +366,8 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return handleRemote(route, api, segs);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
+        case 'version':
+          return json(route, { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', name: 'BenchMesh' });
         default:
           return json(route, { detail: 'Not mocked' }, 404);
       }

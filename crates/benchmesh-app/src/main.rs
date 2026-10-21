@@ -14,7 +14,8 @@
 //!   by the UI; capability `capabilities/panels.json`). Closing the main window closes them too.
 //! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
 //!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
-//! - Updates: one check per start, offered by the UI (`update.rs`).
+//! - Updates: one check per start, offered by the UI (`update.rs`). Feedback / releases pages
+//!   open in the system browser by name (`links.rs`, capability `capabilities/links.json`).
 //! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 //! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
@@ -29,6 +30,7 @@ use std::time::Duration;
 use bm_server::run::{start, RunningServer, ServerOptions};
 use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
+mod links;
 mod update;
 
 struct Server(Mutex<Option<RunningServer>>);
@@ -104,7 +106,7 @@ fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(update::PendingState::default())
-        .invoke_handler(tauri::generate_handler![update::update_check, update::update_install, update::update_open_page])
+        .invoke_handler(tauri::generate_handler![update::update_check, update::update_install, update::update_open_page, links::open_page])
         // the main window owns the app: closing it closes detached instrument windows too
         .on_window_event(|window, event| {
             if window.label() == "main" && matches!(event, WindowEvent::Destroyed) {

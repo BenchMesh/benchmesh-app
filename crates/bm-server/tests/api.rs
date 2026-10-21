@@ -311,6 +311,14 @@ async fn the_wire_log_shows_what_went_to_and_from_an_instrument() {
     assert!(entries[0]["data"].as_str().unwrap().starts_with("opened "));
     assert!(entries.iter().any(|e| e["dir"] == "tx" && e["data"] == "*IDN?"), "identify sent");
     let next = seen["next"].as_u64().unwrap();
+    let (_, newest, _) = call(&f, "GET", "/devices/t1/wire?limit=1", None, None).await;
+    let newest = newest["entries"].as_array().unwrap().clone();
+    assert_eq!(newest.len(), 1, "limit: the newest entries only");
+    assert!(newest[0]["seq"].as_u64().unwrap() >= next);
+    for bad in ["0", "x", "-1"] {
+        let (code, v, _) = call(&f, "GET", &format!("/devices/t1/wire?limit={bad}"), None, None).await;
+        assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY, "limit={bad}: {v}");
+    }
     let (_, later, _) = call(&f, "GET", &format!("/devices/t1/wire?after={next}"), None, None).await;
     assert!(later["entries"].as_array().unwrap().iter().all(|e| e["seq"].as_u64().unwrap() > next));
     let (code, _, _) = call(&f, "DELETE", "/devices/t1/wire", None, None).await;

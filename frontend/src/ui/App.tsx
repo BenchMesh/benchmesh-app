@@ -7,7 +7,6 @@ import { RecordingsProvider } from './recording/RecordingsProvider'
 
 // Lazy load modal components to reduce initial bundle size
 const DocsViewer = lazy(() => import('./DocsViewer').then(m => ({ default: m.DocsViewer })))
-const MetricsViewer = lazy(() => import('./MetricsViewer').then(m => ({ default: m.MetricsViewer })))
 
 export default function App() {
   const apiBase = useApiBase()
@@ -16,7 +15,6 @@ export default function App() {
   const { registry, wsDiag } = useRegistrySocket(apiBase)
   // ?openDocs=true opens the API docs directly
   const [docsModalOpen, setDocsModalOpen] = useState(() => new URLSearchParams(window.location.search).get('openDocs') === 'true')
-  const [metricsModalOpen, setMetricsModalOpen] = useState(false)
 
   // Disclaimer modal state - shows on first app load if not previously accepted
   const [disclaimerOpen, setDisclaimerOpen] = useState(() => {
@@ -49,19 +47,12 @@ export default function App() {
           error={error}
           wsDiag={wsDiag}
           onConfigUpdated={handleConfigUpdated}
-          onOpenMetrics={() => setMetricsModalOpen(true)}
           onOpenDocs={() => setDocsModalOpen(true)}
         />
 
         {docsModalOpen && (
           <Suspense fallback={<div className="modal-loading">Loading...</div>}>
             <DocsViewer onClose={() => setDocsModalOpen(false)} apiBase={apiBase} />
-          </Suspense>
-        )}
-
-        {metricsModalOpen && (
-          <Suspense fallback={<div className="modal-loading">Loading...</div>}>
-            <MetricsViewer onClose={() => setMetricsModalOpen(false)} apiBase={apiBase} />
           </Suspense>
         )}
 

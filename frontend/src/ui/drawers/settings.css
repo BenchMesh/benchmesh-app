@@ -346,6 +346,8 @@
 
 .settings-view__tabs {
   display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-bottom: 1px solid var(--sidebar-border);
   background-color: var(--sidebar-background);
 }
@@ -356,7 +358,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 10px 12px;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 500;
   color: var(--sidebar-foreground);
@@ -645,110 +648,51 @@
   gap: 12px;
 }
 
-.instrument-config__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+/* Instrument form fields: the kit field standard (kit-field / kit-label / kit-input / bench-hint) */
+.instrument-config__field { display: grid; gap: 5px; min-width: 0; }
 
 .instrument-config__field label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--sidebar-foreground);
-  opacity: 0.9;
+  font: 700 .64rem/1 var(--kit-font-num); letter-spacing: .14em; text-transform: uppercase; color: var(--kit-ink-3);
 }
 
 .instrument-config__field input,
 .instrument-config__field select {
-  padding: 6px 8px;
-  font-size: 12px;
-  color: var(--sidebar-foreground);
-  background-color: var(--editor-background);
-  border: 1px solid var(--sidebar-border);
-  border-radius: 3px;
-  transition: all 0.2s ease;
+  background: var(--kit-ctl-hi); color: var(--kit-ink); border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  padding: 7px 9px; font: 400 .85rem/1.2 var(--kit-font-num); min-width: 0; width: 100%; box-sizing: border-box; outline: none;
 }
 
-.instrument-config__field input:focus,
-.instrument-config__field select:focus {
-  outline: none;
-  border-color: var(--activity-bar-active);
-  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
-}
+.instrument-config__field input:focus-visible,
+.instrument-config__field select:focus-visible { outline: 2px solid var(--kit-accent); outline-offset: 1px; }
 
 .instrument-config__field input:disabled,
-.instrument-config__field select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.instrument-config__field select:disabled { opacity: .5; cursor: not-allowed; }
 
-.instrument-config__field-hint {
-  font-size: 10px;
-  color: var(--sidebar-foreground);
-  opacity: 0.6;
-}
+.instrument-config__hint,
+.instrument-config__field-hint { font: 400 .72rem/1.35 var(--kit-font-num); color: var(--kit-ink-2); }
 
-.instrument-config__field-row {
-  display: flex;
-  gap: 6px;
-}
+/* A picker with its refresh button: the button stays beside the field */
+.instrument-config__field-with-button,
+.instrument-config__field-row { display: flex; gap: 6px; align-items: stretch; min-width: 0; }
 
-.instrument-config__field-row input,
-.instrument-config__field-row select {
-  flex: 1;
-}
+.instrument-config__field-with-button > input,
+.instrument-config__field-with-button > select,
+.instrument-config__field-row > input,
+.instrument-config__field-row > select { flex: 1 1 0; }
 
-.instrument-config__refresh-btn {
-  padding: 6px 8px;
-  background-color: var(--sidebar-background);
-  border: 1px solid var(--sidebar-border);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--sidebar-foreground);
-}
+.instrument-config__field-with-button > button,
+.instrument-config__field-row > button { flex: none; }
 
-.instrument-config__refresh-btn:hover {
-  background-color: var(--activity-bar-hover);
-}
-
-.instrument-config__refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.instrument-config__remove-btn {
-  padding: 6px 12px;
-  font-size: 11px;
-  background-color: transparent;
-  color: var(--error);
-  border: 1px solid var(--error);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex: 1;
-}
-
-.instrument-config__remove-btn:hover {
-  background-color: var(--error);
-  color: white;
-}
-
-.instrument-config__remove-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Per-device actions container */
+/* Per-device actions: kit buttons in a row, feedback below */
 .instrument-config__device-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  flex-direction: column;
   margin-top: 16px;
 }
+.instrument-config__device-actions > .instrument-config__inline-error,
+.instrument-config__device-actions > .instrument-config__inline-success { flex-basis: 100%; }
+.instrument-config__add { margin-top: 10px; }
 
 /* Inline feedback messages */
 .instrument-config__inline-error {
@@ -771,25 +715,7 @@
   margin-top: 6px;
 }
 
-/* Cancel button for new devices */
-.instrument-config__cancel-btn {
-  width: 100%;
-  padding: 6px 12px;
-  font-size: 11px;
-  background-color: transparent;
-  color: var(--sidebar-foreground);
-  border: 1px solid var(--sidebar-border);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 8px;
-  opacity: 0.7;
-}
 
-.instrument-config__cancel-btn:hover {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.05);
-}
 
 .instrument-config__message {
   padding: 8px 12px;
@@ -845,23 +771,6 @@
   border-bottom: 1px solid var(--kit-panel-edge);
 }
 .detect__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.detect__run,
-.detect__btn {
-  padding: 5px 10px;
-  font: 700 .68rem/1 var(--kit-font-num);
-  letter-spacing: .08em;
-  color: var(--kit-ink);
-  background: var(--kit-ctl);
-  border: 1px solid var(--kit-panel-edge);
-  border-radius: var(--kit-r-ctl, 4px);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.detect__run:hover:not(:disabled),
-.detect__btn:hover:not(:disabled) { background: var(--kit-ctl-hi); border-color: var(--kit-accent); }
-.detect__run:disabled,
-.detect__btn:disabled { cursor: progress; }
-.detect__btn:disabled { opacity: .6; }
 .detect__run--busy { color: var(--kit-accent); border-color: var(--kit-accent); animation: kit-await 1.2s ease-in-out infinite; }
 .detect__hint { font-size: 10px; color: var(--kit-ink-3); }
 .detect__empty { margin: 0; font-size: 11px; color: var(--kit-ink-3); }
@@ -934,3 +843,5 @@
 .detect__bar-track { height: 4px; border-radius: 2px; background: var(--kit-ctl); overflow: hidden; }
 .detect__bar-track i { display: block; height: 100%; background: var(--kit-accent); transition: width .3s ease; }
 .detect__current { font: 400 10px/1.3 var(--kit-font-num); color: var(--kit-ink-2); overflow-wrap: anywhere; }
+
+.instrument-config__field label .required { color: var(--kit-alert); margin-left: 2px; }

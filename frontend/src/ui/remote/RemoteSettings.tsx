@@ -23,7 +23,7 @@ export function RemoteSettings() {
   const s = remote?.status
   if (!remote || remote.principal !== 'local' || !s) return null
   return (
-    <section className="remote-settings" aria-label="Remote access settings" data-testid="remote-settings">
+    <section className="bench-page" aria-label="Remote access settings" data-testid="remote-settings">
       <h3 className="settings-view__section-title">Remote access</h3>
       <p className="bench-hint">
         Control this bench from a browser on your local network. HTTPS with a password; only addresses of your local network are accepted.
@@ -31,7 +31,7 @@ export function RemoteSettings() {
       <PasswordForm status={s} />
       <EnableSwitch status={s} />
       {s.enabled && <ListenerInfo status={s} />}
-      <div className="remote-settings__group">
+      <div className="bench-group">
         <span className="kit-label">Connected</span>
         <SessionList sessions={s.sessions} />
         {s.sessions.length > 0 && <DisconnectAll />}
@@ -71,7 +71,7 @@ function PasswordForm({ status }: { status: RemoteStatus }) {
   }
 
   return (
-    <form className="remote-settings__group" onSubmit={save} aria-label="Remote access password">
+    <form className="bench-group" onSubmit={save} aria-label="Remote access password">
       <span className="kit-label">Password</span>
       <span className="bench-hint" data-testid="password-state">{status.password_set ? 'Password set' : 'No password set yet.'}</span>
       <div className="remote-settings__fields">
@@ -91,7 +91,7 @@ function PasswordForm({ status }: { status: RemoteStatus }) {
       <span id={ids.problem} className={touched && problem ? 'kit-error' : 'bench-hint'} role={touched && problem ? 'alert' : undefined}>
         {touched && problem ? problem : `At least ${MIN_PASSWORD} characters.${status.password_set ? ' Changing it signs every remote browser out.' : ''}`}
       </span>
-      <div className="remote-settings__row">
+      <div className="bench-group__row">
         <button type="submit" className="bench-btn bench-btn--primary" disabled={busy || !password} aria-busy={busy}>
           {status.password_set ? 'Change password' : 'Set password'}
         </button>
@@ -114,8 +114,8 @@ function EnableSwitch({ status }: { status: RemoteStatus }) {
     }
   }
   return (
-    <div className="remote-settings__group">
-      <div className="remote-settings__row">
+    <div className="bench-group">
+      <div className="bench-group__row">
         <MicroSwitch label="Remote access" checked={status.enabled} onChange={toggle} disabled={!status.password_set}
           title={status.password_set ? 'Open or close the network listener' : 'Set a password first'} />
         <span className="bench-hint" data-testid="remote-state">{stateText(status)}</span>
@@ -134,7 +134,7 @@ export function stateText(s: RemoteStatus): string {
 
 function ListenerInfo({ status }: { status: RemoteStatus }) {
   return (
-    <div className="remote-settings__group">
+    <div className="bench-group">
       {status.urls.length > 0 && (
         <>
           <span className="kit-label">Open in a browser on another computer</span>
@@ -172,7 +172,7 @@ function DisconnectAll() {
     try { await remote.client.disconnectAll(); await remote.refresh() } catch (e) { setError(errorText(e)) }
   }
   return (
-    <div className="remote-settings__row">
+    <div className="bench-group__row">
       <button type="button" className="bench-btn" onClick={() => void run()}>Disconnect all</button>
       {error && <span className="kit-error" role="alert">{error}</span>}
     </div>

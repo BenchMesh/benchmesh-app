@@ -14,8 +14,6 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
-const RELEASES_PAGE: &str = "https://github.com/MarkoVcode/BenchMesh/releases/latest";
-
 /// Download progress for the UI (`downloaded` bytes of `total`, absent when unknown).
 const PROGRESS_EVENT: &str = "update://progress";
 
@@ -112,12 +110,7 @@ pub async fn update_install(app: AppHandle, pending: State<'_, PendingState>) ->
 /// Open the releases page in the system browser.
 #[tauri::command]
 pub fn update_open_page() {
-    #[cfg(target_os = "linux")]
-    let _ = std::process::Command::new("xdg-open").arg(RELEASES_PAGE).spawn();
-    #[cfg(target_os = "macos")]
-    let _ = std::process::Command::new("open").arg(RELEASES_PAGE).spawn();
-    #[cfg(windows)]
-    let _ = std::process::Command::new("cmd").args(["/C", "start", "", RELEASES_PAGE]).spawn();
+    let _ = crate::links::open(crate::links::RELEASES);
 }
 
 #[cfg(test)]

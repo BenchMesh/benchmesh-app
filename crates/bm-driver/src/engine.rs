@@ -26,6 +26,11 @@ pub trait Transport: Send {
     /// Bytes that arrived within `timeout`; empty = nothing arrived. Message-based
     /// transports (USBTMC) return exactly one device message per call.
     fn read(&mut self, timeout: Duration) -> std::io::Result<Vec<u8>>;
+    /// What the transport did on its own since the last call (a USB recovery, say), for the
+    /// instrument's wire log.
+    fn take_notes(&mut self) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 /// Result of an operation.

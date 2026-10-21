@@ -556,8 +556,9 @@ async fn delete_device(State(s): State<S>, Path(id): Path<String>) -> Response {
 
 /// What was sent to and received from a device: entries after `after` (sequence number).
 /// Bytes come as a Latin-1 string (one char per byte, binary preserved); `info` entries are
-/// text (port opened / closed / errors). `dropped`: entries between `after` and the first
-/// one returned were already discarded.
+/// text (port opened / closed / errors, USB recoveries). `limit`: at most the newest that
+/// many. `dropped`: entries after `after` are missing (already discarded, or left out by
+/// `limit`).
 async fn wire_log(State(s): State<S>, Path(id): Path<String>, Query(q): Query<std::collections::HashMap<String, String>>) -> Response {
     if s.devices.lookup(&id).is_none() {
         return detail(StatusCode::NOT_FOUND, format!("Unknown device id {id:?}"));
@@ -567,7 +568,12 @@ async fn wire_log(State(s): State<S>, Path(id): Path<String>, Query(q): Query<st
         Some(Ok(a)) => a,
         Some(Err(_)) => return detail(StatusCode::UNPROCESSABLE_ENTITY, "`after` must be a sequence number"),
     };
-    let (entries, dropped) = s.devices.wire_log(&id).since(after);
+    let limit = match q.get("limit").map(|l| l.parse::<usize>()) {
+        None => None,
+        Some(Ok(l)) if l > 0 => Some(l),
+        Some(_) => return detail(StatusCode::UNPROCESSABLE_ENTITY, "`limit` must be a positive number of entries"),
+    };
+    let (entries, dropped) = s.devices.wire_log(&id).since(after, limit);
     let next = entries.last().map(|e| e.seq).unwrap_or(after);
     let list: Vec<Value> = entries
         .iter()

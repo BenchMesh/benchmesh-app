@@ -14,13 +14,15 @@ import { UpdatePrompt } from '../update/UpdatePrompt'
 import { RunIndicator, RunProvider } from '../automation/RunProvider'
 import { RemoteProvider } from '../remote/RemoteProvider'
 import { RemoteBadge } from '../remote/RemoteBadge'
+import { AboutView } from '../about/AboutView'
+import { useAppVersion } from '../about/version'
 import { BenchLayout as Layout, EMPTY_LAYOUT, loadLayout, panelsOf, reconcile, saveLayout } from './layout'
 
 // loaded when first opened (with its chart)
 const RecordingsDrawer = lazy(() => import('../recording/RecordingsDrawer').then((m) => ({ default: m.RecordingsDrawer })))
 const AutomationDrawer = lazy(() => import('../automation/AutomationDrawer').then((m) => ({ default: m.AutomationDrawer })))
 
-type DrawerKind = 'instruments' | 'log' | 'recordings' | 'automation' | null
+type DrawerKind = 'instruments' | 'log' | 'recordings' | 'automation' | 'about' | null
 
 function Drawer({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   useEffect(() => {
@@ -50,7 +52,6 @@ interface Props {
   error: string | null
   wsDiag: { ok: boolean; msg: string }
   onConfigUpdated: () => void
-  onOpenMetrics: () => void
   onOpenDocs: () => void
 }
 
@@ -66,17 +67,18 @@ function SkinSwitch() {
   )
 }
 
-/** The application shell: top bar (with the automation run indicator and the remote access badge), the instrument rack, the recorder dock, and drawers for setup, recordings, automation and the request log. */
+/** The application shell: top bar (with the automation run indicator and the remote access badge), the instrument rack, the recorder dock, and drawers for setup, recordings, automation, the request log and about / feedback. */
 export function BenchLayout(props: Props) {
   return <SkinProvider><RemoteProvider><RunProvider><BenchShell {...props} /></RunProvider></RemoteProvider></SkinProvider>
 }
 
-function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenMetrics, onOpenDocs }: Props) {
+function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, onConfigUpdated, onOpenDocs }: Props) {
   const panels = useMemo(() => panelsOf(instruments), [instruments])
   const [saved, setLayout] = useState<Layout>(() => loadLayout())
   const [arranging, setArranging] = useState(false)
   const [drawer, setDrawer] = useState<DrawerKind>(null)
   const [autoAdd, setAutoAdd] = useState(false)
+  const version = useAppVersion()
 
   // The layout follows the configured instruments: new ones appear, removed ones go.
   const layout = useMemo(() => (loading ? saved : reconcile(saved, panels)), [saved, panels, loading])
@@ -103,6 +105,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
       <UpdatePrompt />
       <header className="bench-top">
         <span className="bench-brand"><BrandMark size={22} />BenchMesh</span>
+        {version?.version && <button type="button" className="bench-version" onClick={() => setDrawer('about')} title="About and feedback">v{version.version}</button>}
         <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>
         <span className="bench-pill" data-ok={wsDiag.ok}><i />{wsDiag.ok ? 'live' : wsDiag.msg}</span>
         <RunIndicator onOpen={() => setDrawer('automation')} />
@@ -117,8 +120,8 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
             <button type="button" className="bench-btn" aria-pressed={drawer === 'recordings'} onClick={() => setDrawer('recordings')}>Recording</button>
             <button type="button" className="bench-btn" aria-pressed={drawer === 'automation'} onClick={() => setDrawer('automation')}>Automation</button>
             <button type="button" className="bench-btn" onClick={() => setDrawer('log')}>Log</button>
-            <button type="button" className="bench-btn" onClick={onOpenMetrics}>Metrics</button>
             <button type="button" className="bench-btn" onClick={onOpenDocs}>API</button>
+            <button type="button" className="bench-btn" aria-pressed={drawer === 'about'} onClick={() => setDrawer('about')}>Feedback</button>
           </nav>
         </div>
       </header>
@@ -155,7 +158,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
 
       {drawer === 'instruments' && (
         <Drawer title="Instruments" onClose={() => setDrawer(null)}>
-          <SettingsView apiBase={apiBase} onConfigUpdated={onConfigUpdated} autoAddInstrument={autoAdd} onAutoAddComplete={() => setAutoAdd(false)} />
+          <SettingsView apiBase={apiBase} onConfigUpdated={onConfigUpdated} autoAddInstrument={autoAdd} onAutoAddComplete={() => setAutoAdd(false)} instruments={instruments} />
         </Drawer>
       )}
       {drawer === 'recordings' && (
@@ -166,6 +169,11 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
       {drawer === 'automation' && (
         <Drawer title="Automation" wide onClose={() => setDrawer(null)}>
           <Suspense fallback={<span className="bench-hint">Loading…</span>}><AutomationDrawer onOpenRecordings={() => setDrawer('recordings')} /></Suspense>
+        </Drawer>
+      )}
+      {drawer === 'about' && (
+        <Drawer title="About and feedback" onClose={() => setDrawer(null)}>
+          <AboutView />
         </Drawer>
       )}
       {drawer === 'log' && (
