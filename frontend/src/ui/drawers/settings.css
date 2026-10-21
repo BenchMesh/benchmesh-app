@@ -456,6 +456,8 @@
   opacity: 0.7;
 }
 
+.settings-view__check { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--kit-accent, var(--activity-bar-active)); cursor: pointer; }
+
 .settings-view__dropdown {
   padding: 6px 10px;
   font-size: 12px;

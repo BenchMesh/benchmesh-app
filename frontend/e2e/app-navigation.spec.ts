@@ -129,5 +129,15 @@ test.describe('Safety disclaimer', () => {
     await page.reload();
     await expect(page.getByRole('article').first()).toBeVisible();
     await expect(title).toBeHidden();
+
+    // Instruments - Miscellaneous brings it back
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Instruments' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Instruments' });
+    await drawer.getByTestId('settings-tab-miscellaneous').click();
+    const show = drawer.getByRole('checkbox', { name: /Show at start/ });
+    await expect(show).not.toBeChecked();
+    await show.check();
+    await page.reload();
+    await expect(title).toBeVisible();
   });
 });

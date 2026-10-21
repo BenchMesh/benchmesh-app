@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { RequestLogProvider } from './RequestLogContext'
 import { BenchLayout } from './bench/BenchLayout'
 import { DisclaimerModal } from './DisclaimerModal'
+import { disclaimerHidden, setDisclaimerHidden } from './disclaimer'
 import { useApiBase, useInstruments, useRegistrySocket } from './data'
 import { RecordingsProvider } from './recording/RecordingsProvider'
 
@@ -11,14 +12,8 @@ export default function App() {
   const { data: instruments, loading, error } = useInstruments(apiBase, refreshTrigger)
   const { registry, wsDiag } = useRegistrySocket(apiBase)
 
-  // Disclaimer modal state - shows on first app load if not previously accepted
-  const [disclaimerOpen, setDisclaimerOpen] = useState(() => {
-    try {
-      return localStorage.getItem('benchmesh:disclaimer-accepted') !== 'true'
-    } catch {
-      return true
-    }
-  })
+  // Start screen (welcome and safety information) unless hidden with "don't show again"
+  const [disclaimerOpen, setDisclaimerOpen] = useState(() => !disclaimerHidden())
 
   function handleConfigUpdated() {
     setRefreshTrigger(prev => prev + 1)
@@ -26,9 +21,7 @@ export default function App() {
 
   function handleDisclaimerAccept(dontShowAgain: boolean) {
     setDisclaimerOpen(false)
-    if (dontShowAgain) {
-      try { localStorage.setItem('benchmesh:disclaimer-accepted', 'true') } catch { /* storage unavailable */ }
-    }
+    if (dontShowAgain) setDisclaimerHidden(true)
   }
 
   return (
