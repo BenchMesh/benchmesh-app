@@ -44,6 +44,7 @@ test.describe('About and feedback', () => {
     await expect(drawer.getByTestId('app-version')).toHaveText('BenchMesh 0.1.7');
     await expect(drawer.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/MarkoVcode/BenchMesh/issues/new');
     await expect(drawer.getByRole('link', { name: 'See open issues' })).toHaveAttribute('href', 'https://github.com/MarkoVcode/BenchMesh/issues');
+    await expect(drawer.getByRole('link', { name: 'support@benchmesh.online' })).toHaveAttribute('href', 'mailto:support@benchmesh.online');
     await drawer.getByRole('button', { name: 'Close' }).click();
     await mockPage.getByRole('button', { name: 'Feedback', exact: true }).click();
     await expect(mockPage.getByRole('dialog', { name: 'About and feedback' })).toBeVisible();

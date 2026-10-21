@@ -5,14 +5,17 @@
  */
 import React from 'react'
 
-export type Page = 'issues' | 'new-issue' | 'releases' | 'docs'
+export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'email'
 
 export const PAGE_URLS: Record<Page, string> = {
   issues: 'https://github.com/MarkoVcode/BenchMesh/issues',
   'new-issue': 'https://github.com/MarkoVcode/BenchMesh/issues/new',
   releases: 'https://github.com/MarkoVcode/BenchMesh/releases/latest',
   docs: 'https://benchmesh.online/docs',
+  email: 'mailto:support@benchmesh.online',
 }
+
+export const SUPPORT_EMAIL = 'support@benchmesh.online'
 
 type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
 
@@ -29,5 +32,7 @@ export function PageLink({ page, className, children }: { page: Page; className?
     e.preventDefault()
     void invoke('open_page', { page }).catch(() => window.open(PAGE_URLS[page], '_blank', 'noopener'))
   }
-  return <a href={PAGE_URLS[page]} target="_blank" rel="noreferrer" className={className} onClick={onClick}>{children}</a>
+  // web pages in a new tab; the mail link hands over to the mail app (a new tab would stay empty)
+  const tab = PAGE_URLS[page].startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {}
+  return <a href={PAGE_URLS[page]} {...tab} className={className} onClick={onClick}>{children}</a>
 }

@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AboutView } from '../AboutView'
-import { PageLink, PAGE_URLS } from '../links'
+import { PageLink, PAGE_URLS, SUPPORT_EMAIL } from '../links'
 import { fetchVersion } from '../version'
 
 const answer = (body: unknown, status = 200) => vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status }))
@@ -33,6 +33,19 @@ describe('About and feedback', () => {
     expect(screen.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/MarkoVcode/BenchMesh/issues/new')
     expect(screen.getByRole('link', { name: 'See open issues' })).toHaveAttribute('href', PAGE_URLS.issues)
     expect(screen.getByText(PAGE_URLS.issues)).toBeInTheDocument()
+  })
+
+  it('offers the support email: a mail link and Copy email', async () => {
+    answer({ version: '0.1.7' })
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.assign(navigator, { clipboard: { writeText } })
+    render(<AboutView />)
+    const mail = screen.getByRole('link', { name: 'support@benchmesh.online' })
+    expect(mail).toHaveAttribute('href', 'mailto:support@benchmesh.online')
+    expect(mail).not.toHaveAttribute('target')
+    fireEvent.click(screen.getByRole('button', { name: 'Copy email' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(SUPPORT_EMAIL))
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })
 
   it('copies the version', async () => {

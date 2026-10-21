@@ -379,6 +379,7 @@ html, body { background: var(--kit-ground); }
 .bench-group__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .bench-group__row a.bench-btn { text-decoration: none; }
 .bench-about__version { margin: 0; font: 600 1.05rem/1.2 var(--kit-font-num); }
+.bench-about__email { font: 600 .95rem/1.2 var(--kit-font-num); }
 
 /* metric figures in a .bench-group (Instruments - Metrics) */
 .bench-metrics { display: grid; gap: 8px 16px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 0; }
