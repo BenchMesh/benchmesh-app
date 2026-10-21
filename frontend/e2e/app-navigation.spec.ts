@@ -56,6 +56,23 @@ test.describe('Drawers', () => {
     await expect(drawer).toBeHidden();
   });
 
+  test('drawers open below the title bar and menu, which stay usable and switch drawers', async ({ mockPage }) => {
+    await mockPage.getByRole('button', { name: 'Instruments', exact: true }).click();
+    const instruments = mockPage.getByRole('dialog', { name: 'Instruments' });
+    await expect(instruments).toBeVisible();
+    const head = await mockPage.locator('.bench-head').boundingBox();
+    const sheet = await instruments.locator('.bench-drawer__sheet').boundingBox();
+    expect(Math.abs(sheet!.y - (head!.y + head!.height))).toBeLessThan(1.5);
+    const menu = mockPage.getByRole('navigation', { name: 'Main' });
+    await expect(menu.getByRole('button', { name: 'Instruments', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+    // the menu is not covered: Log replaces the Instruments drawer
+    await menu.getByRole('button', { name: 'Log', exact: true }).click();
+    await expect(mockPage.getByRole('dialog', { name: 'Request log' })).toBeVisible();
+    await expect(instruments).toBeHidden();
+    await expect(menu.getByRole('button', { name: 'Log', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('Log drawer opens with the request log and closes on the scrim', async ({ mockPage }) => {
     await mockPage.getByRole('button', { name: 'Log', exact: true }).click();
     const drawer = mockPage.getByRole('dialog', { name: 'Request log' });

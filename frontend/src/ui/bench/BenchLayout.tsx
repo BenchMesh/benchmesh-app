@@ -119,10 +119,10 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
           <RemoteBadge />
           <div className="bench-tools">
             <nav className="bench-actions" aria-label="Main">
-              <button type="button" className="bench-btn" onClick={() => setDrawer('instruments')}>Instruments</button>
+              <button type="button" className="bench-btn" aria-pressed={drawer === 'instruments'} onClick={() => setDrawer('instruments')}>Instruments</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'recordings'} onClick={() => setDrawer('recordings')}>Recording</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'automation'} onClick={() => setDrawer('automation')}>Automation</button>
-              <button type="button" className="bench-btn" onClick={() => setDrawer('log')}>Log</button>
+              <button type="button" className="bench-btn" aria-pressed={drawer === 'log'} onClick={() => setDrawer('log')}>Log</button>
               <button type="button" className="bench-btn" onClick={onOpenDocs}>API</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'about'} onClick={() => setDrawer('about')}>Feedback</button>
             </nav>

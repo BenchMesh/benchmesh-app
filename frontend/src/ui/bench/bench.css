@@ -163,7 +163,8 @@ html, body { background: var(--kit-ground); }
 .bench-awg__chan .kit-chips button { padding: 4px 7px; color: var(--kit-ink-2); display: grid; place-items: center; }
 
 /* ---- drawers ---------------------------------------------------------------------- */
-.bench-drawer { position: fixed; inset: 0; z-index: 50; }
+/* below the head (title bar and menu stay in view and switch drawers); covers the bench */
+.bench-drawer { position: fixed; inset: var(--bench-top-h, 96px) 0 0 0; z-index: 50; }
 .bench-drawer__scrim { position: absolute; inset: 0; background: var(--kit-scrim); }
 .bench-drawer__sheet {
   position: absolute; top: 0; right: 0; bottom: 0; width: min(640px, 100vw);
