@@ -42,8 +42,14 @@ fn location(d: &DeviceInfo) -> String {
     }
 }
 
+/// The serial number string descriptor as the OS reports it elsewhere: some instruments (OWON
+/// DGE2070) pad it with NULs, which Windows drops from the instance ID but nusb keeps.
+fn clean_serial(serial: Option<&str>) -> Option<&str> {
+    serial.map(|s| s.trim_end_matches('\0').trim()).filter(|s| !s.is_empty())
+}
+
 pub fn path_of(vid: u16, pid: u16, serial: Option<&str>, location: &str) -> String {
-    match serial.filter(|s| !s.is_empty()) {
+    match clean_serial(serial) {
         Some(s) => format!("{PREFIX}{vid:04x}:{pid:04x}:{s}"),
         None => format!("{PREFIX}{vid:04x}:{pid:04x}@{location}"),
     }
@@ -73,7 +79,7 @@ pub fn ports() -> Vec<(Port, DeviceInfo)> {
                 product_id: Some(format!("{:04x}", d.product_id())),
                 manufacturer: d.manufacturer_string().map(str::to_string),
                 product: d.product_string().map(str::to_string),
-                serial: d.serial_number().map(str::to_string).filter(|s| !s.is_empty()),
+                serial: clean_serial(d.serial_number()).map(str::to_string),
                 revision: Some(format!("{:04x}", d.device_version())),
                 location: Some(location(&d)).filter(|l| !l.is_empty()),
             };
@@ -244,5 +250,15 @@ mod tests {
         assert_eq!(path_of(0x5345, 0x1235, None, "0x14320000"), "usb:5345:1235@0x14320000");
         assert_eq!(path_of(0x5345, 0x1235, Some(""), "1-1.3"), "usb:5345:1235@1-1.3");
         assert!(is_usbtmc(0xFE, 0x03) && !is_usbtmc(0xFE, 0x01));
+    }
+
+    #[test]
+    fn nul_padded_serial_matches_the_windows_path() {
+        // OWON DGE2070: "25130086" followed by NULs in the string descriptor
+        let padded = format!("25130086{}", "\0".repeat(22));
+        assert_eq!(path_of(0x5345, 0x1235, Some(&padded), "x"), "usb:5345:1235:25130086");
+        assert_eq!(clean_serial(Some(&padded)), Some("25130086"));
+        assert_eq!(clean_serial(Some(" 42 \0")), Some("42"));
+        assert_eq!(path_of(0x5345, 0x1235, Some("\0\0"), "1-1.3"), "usb:5345:1235@1-1.3");
     }
 }
