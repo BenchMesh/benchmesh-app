@@ -47,7 +47,6 @@ use bm_devicedef::Repr;
 use bm_driver::engine::Output;
 use serde_json::{json, Map, Value};
 use tower::ServiceBuilder;
-use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::services::ServeDir;
 
 use crate::config::{str_field, validate_entry, ConfigFile, DeviceEntry};
@@ -124,16 +123,32 @@ fn routes(state: &S) -> Router<S> {
         .merge(automation::routes())
         .merge(remote::routes());
     if let Some(ui) = &state.ui_dir {
-        // Always revalidate UI files (304 when unchanged); otherwise browsers keep serving a
-        // stale index.html after an upgrade.
-        let no_cache = || SetResponseHeaderLayer::overriding(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-        r = r.nest_service("/ui", ServiceBuilder::new().layer(no_cache()).service(ServeDir::new(ui).append_index_html_on_directories(true)));
+        r = r.nest_service("/ui", ServiceBuilder::new().map_request(fresh_ui_request).map_response(unstored_ui_response).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
     // no CORS: only pages served by this server use the API
     r
 }
 
 // ---- helpers ------------------------------------------------------------------------
+
+/// UI files are always sent whole: no conditional request reaches `ServeDir`. Different builds
+/// serve different files at the same address (an update, an older version started again, the dev
+/// app), and a copy cached from a newer build looks "not modified" by date, so a 304 would keep
+/// an index.html whose assets this build does not have: a white window.
+fn fresh_ui_request<B>(mut req: axum::http::Request<B>) -> axum::http::Request<B> {
+    for h in [header::IF_MODIFIED_SINCE, header::IF_NONE_MATCH, header::IF_UNMODIFIED_SINCE, header::IF_MATCH, header::IF_RANGE] {
+        req.headers_mut().remove(h);
+    }
+    req
+}
+
+/// ... and never stored: served from this computer, caching gains nothing.
+fn unstored_ui_response<B>(mut resp: Response<B>) -> Response<B> {
+    let h = resp.headers_mut();
+    h.remove(header::LAST_MODIFIED);
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    resp
+}
 
 pub(crate) fn detail(code: StatusCode, msg: impl Into<String>) -> Response {
     (code, Json(json!({"detail": msg.into()}))).into_response()

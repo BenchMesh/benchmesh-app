@@ -54,7 +54,8 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 authentication, so `crates/bm-server/src/guard.rs` refuses what a foreign web page could make the
 browser send: a `Host` that is not a loopback name (DNS rebinding), and any request whose `Origin`
 is neither the server's own nor a loopback origin (form posts, `fetch`, WebSocket upgrades). There
-is no CORS layer: the UI is same-origin. Nothing unauthenticated listens on the network.
+is no CORS layer: the UI is same-origin. UI files are sent `no-store`, never 304 (`lib.rs` `fresh_ui_request`): different builds share the
+address and the webview cache, and a stale index.html asks for assets the running build lacks (white window). Nothing unauthenticated listens on the network.
 
 **Remote access** (contract and threat model `ai_context/REMOTE_ACCESS.md`, `crates/bm-server/src/remote/`,
 UI `frontend/src/ui/remote/`): off by default; switched on in Instruments → Remote access with a password, the server

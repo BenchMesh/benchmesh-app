@@ -364,7 +364,25 @@ async fn ui_is_served() {
     let resp = router(f.state.clone()).oneshot(Request::get("/").body(Body::empty()).unwrap()).await.unwrap();
     assert!(resp.status().is_redirection());
     let resp = router(f.state.clone()).oneshot(Request::get("/ui/").body(Body::empty()).unwrap()).await.unwrap();
-    assert_eq!(resp.headers().get(header::CACHE_CONTROL).unwrap(), "no-cache", "UI must be revalidated after upgrades");
+    assert_eq!(resp.headers().get(header::CACHE_CONTROL).unwrap(), "no-store", "UI files are never kept by the browser");
+    assert!(resp.headers().get(header::LAST_MODIFIED).is_none(), "no date to revalidate against");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn ui_never_answers_not_modified() {
+    // A copy cached from another BenchMesh build on the same address (a newer version, the dev
+    // app) carries a later date than this build's files: a 304 would keep that page, whose
+    // assets this build does not have (white window).
+    let f = fixture("ui-304");
+    let req = Request::get("/ui/")
+        .header(header::IF_MODIFIED_SINCE, "Fri, 01 Jan 2100 00:00:00 GMT")
+        .header(header::IF_NONE_MATCH, "\"stale\"")
+        .body(Body::empty())
+        .unwrap();
+    let resp = router(f.state.clone()).oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    assert!(String::from_utf8_lossy(&body).contains("BenchMesh UI"));
 }
 
 #[tokio::test(flavor = "multi_thread")]
