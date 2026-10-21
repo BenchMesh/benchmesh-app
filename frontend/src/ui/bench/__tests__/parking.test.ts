@@ -13,9 +13,9 @@ describe('parking', () => {
   })
 
   it('reports presence, null until checked', () => {
-    expect(parkedState(psu, { psu: { parked: { present: false, detail: 'unplugged' } } })).toEqual({ present: false, detail: 'unplugged' })
-    expect(parkedState({ ...psu, parked: true, health: { present: true, presence: 'COM5' } }, {})).toEqual({ present: true, detail: 'COM5' })
-    expect(parkedState({ ...psu, parked: true, health: { present: null, presence: null } }, {})).toEqual({ present: null, detail: '' })
+    expect(parkedState(psu, { psu: { parked: { present: false, detail: 'unplugged', of: 'port' } } })).toEqual({ present: false, detail: 'unplugged', of: 'port' })
+    expect(parkedState({ ...psu, parked: true, health: { present: true, presence: 'COM5', presence_of: 'port' } }, {})).toEqual({ present: true, detail: 'COM5', of: 'port' })
+    expect(parkedState({ ...psu, parked: true, health: { present: null, presence: null } }, {})).toEqual({ present: null, detail: '', of: 'instrument' })
   })
 
   it('lists the outputs that are on', () => {

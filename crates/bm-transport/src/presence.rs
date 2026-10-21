@@ -1,6 +1,12 @@
 //! Is a parked instrument there? Found without a byte to the instrument: a USB instrument by
 //! port enumeration (its identity, or its fixed port), a LAN instrument by opening and closing
 //! a TCP connection.
+//!
+//! What that proves differs by link ([`proves`]): a USBTMC device is the instrument's own USB
+//! electronics and a LAN connection is accepted by the instrument, so both mean the instrument
+//! is on. A serial port only means its USB interface is attached: USB-serial chips (CH340, FTDI,
+//! the instrument's own interface board) are often powered by the computer, and the port stays
+//! there with the instrument switched off.
 
 use std::io;
 use std::net::{TcpStream, ToSocketAddrs};
@@ -15,6 +21,29 @@ use crate::{lock, port_kind, tcp_target, vxi11, Endpoint};
 
 /// How long a LAN presence check waits for the connection.
 const CONNECT: Duration = Duration::from_secs(2);
+
+/// What a successful presence check shows: the instrument itself, or only its port.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Proves {
+    Instrument,
+    Port,
+}
+
+impl Proves {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Proves::Instrument => "instrument",
+            Proves::Port => "port",
+        }
+    }
+}
+
+pub fn proves(link: &Link) -> Proves {
+    match link {
+        Link::Serial(_) => Proves::Port,
+        Link::Usbtmc(_) | Link::Tcp(_) | Link::Vxi11(_) => Proves::Instrument,
+    }
+}
 
 /// `Ok(where it is)` or `Err(why it is not found)`.
 pub fn presence(link: &Link, ep: &Endpoint, id: Option<&Identity>) -> Result<String, String> {
@@ -68,6 +97,17 @@ fn reachable(target: io::Result<String>) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_serial_port_leaves_the_instrument_unproven() {
+        use bm_devicedef::UsbtmcLink;
+        use serde_json::{from_value, json};
+        assert_eq!(proves(&Link::Serial(from_value(json!({"baud": 9600})).unwrap())), Proves::Port);
+        assert_eq!(proves(&Link::Usbtmc(UsbtmcLink::default())), Proves::Instrument);
+        assert_eq!(proves(&Link::Tcp(from_value(json!({"port": 5025})).unwrap())), Proves::Instrument);
+        assert_eq!(proves(&Link::Vxi11(from_value(json!({})).unwrap())), Proves::Instrument);
+        assert_eq!(Proves::Port.as_str(), "port");
+    }
 
     #[test]
     fn a_lan_instrument_is_present_while_it_accepts_connections() {

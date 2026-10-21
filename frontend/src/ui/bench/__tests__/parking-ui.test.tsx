@@ -86,11 +86,19 @@ describe('parking strip', () => {
     expect(container.querySelector('.bench-parking')).toBeNull()
   })
 
+  it('a serial port that is attached does not claim the instrument is there (it may be off)', () => {
+    wrap(<ParkingStrip parked={[parked]} registry={{ tenma: { parked: { present: true, detail: '/dev/ttyACM0', of: 'port' } } }} />)
+    const tab = screen.getByRole('button', { name: 'Tenma, parked, port attached, instrument unknown' })
+    expect(tab.querySelector('i')).toHaveAttribute('data-presence', 'port')
+    fireEvent.click(tab)
+    expect(screen.getByTestId('presence')).toHaveTextContent('Port attached at /dev/ttyACM0. The instrument may be switched off')
+  })
+
   it('shows name and presence closed, details and Unpark open', async () => {
     reply = { status: 200, body: { id: 'tenma', parked: false } }
     wrap(<ParkingStrip parked={[parked]} registry={{ tenma: { parked: { present: false, detail: 'not attached: no serial port matches usb 0416:5011' } } }} />)
     const tab = screen.getByRole('button', { name: 'Tenma, parked, not found' })
-    expect(tab.querySelector('i')).toHaveAttribute('data-present', 'false')
+    expect(tab.querySelector('i')).toHaveAttribute('data-presence', 'absent')
     fireEvent.click(tab)
     const sheet = screen.getByRole('dialog', { name: 'Parking' })
     expect(sheet).toHaveTextContent('Not found: not attached: no serial port matches usb 0416:5011')
@@ -101,9 +109,11 @@ describe('parking strip', () => {
   })
 
   it('words presence for every state', () => {
-    expect(presenceText({ present: true, detail: '/dev/ttyUSB0' })).toBe('Attached at /dev/ttyUSB0')
-    expect(presenceText({ present: false, detail: 'unplugged' })).toBe('Not found: unplugged')
-    expect(presenceText({ present: null, detail: '' })).toBe('Checking whether it is attached…')
+    expect(presenceText({ present: true, detail: '/dev/usbtmc0', of: 'instrument' })).toBe('Attached at /dev/usbtmc0')
+    // a serial port proves only the USB interface: the instrument may be off
+    expect(presenceText({ present: true, detail: '/dev/ttyUSB0', of: 'port' })).toMatch(/^Port attached at \/dev\/ttyUSB0\. The instrument may be switched off/)
+    expect(presenceText({ present: false, detail: 'unplugged', of: 'port' })).toBe('Not found: unplugged')
+    expect(presenceText({ present: null, detail: '', of: 'instrument' })).toBe('Checking whether it is attached…')
   })
 })
 

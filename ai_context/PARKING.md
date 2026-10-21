@@ -19,9 +19,10 @@ not needed and its traffic should not slow the others down.
 | Both | Idempotent (parking twice changes nothing). `404` for an unknown id. `500` when `config.yaml` cannot be saved (the state is not changed then). Scope `Instruments` (remote sessions may park). |
 | At start | A parked instrument's port is never opened. |
 | Presence | Checked every 5 s (`ActorConfig::presence_every`) without a byte to the instrument (`bm_transport::presence`). A USB instrument with `match` is found by port enumeration (its identity); a fixed `port`/`device` by the system's port list or the device node. A LAN instrument (`tcpip`, `vxi11`) by opening and closing a TCP connection to its port (the portmapper for VXI-11). In a simulation it is always present. Changes are written to the instrument console as info lines. |
+| What presence proves | `presence_of` (from the link, `bm_transport::presence::proves`): `instrument` for USBTMC (the USB device is the instrument's own electronics) and LAN (the instrument accepts the connection): present means switched on. `port` for serial: present only means the USB interface is attached. USB-serial chips (CH340, FTDI, an instrument's own interface board) are often powered by the computer, so the port is there with the instrument switched off; whether it is on is known only once it answers after unparking. The UI shows that state amber, not green. |
 | Requests | `GET`/`POST /instruments/{CLS}/{id}/...` of a parked instrument answer `409` "`<id>` is parked: unpark it to use it". |
-| `GET /instruments` | Lists the instrument (classes, model) with `parked: true` and `health: {status: "parked", is_alive: false, present: bool \| null, presence: "<where / why not>"}`. |
-| `/ws/registry` | `{<id>: {parked: {present, detail}}}`: no `IDN`, no status. |
+| `GET /instruments` | Lists the instrument (classes, model) with `parked: true` and `health: {status: "parked", is_alive: false, present: bool \| null, presence: "<where / why not>", presence_of: "instrument" \| "port"}`. |
+| `/ws/registry` | `{<id>: {parked: {present, detail, of}}}` (`of` = `presence_of`): no `IDN`, no status. |
 | `/status` | `parked` count. A parked instrument is not counted as `disconnected`. |
 | Config edits | `PUT /devices/{id}` without `parked` keeps the current state (the Instruments form does not know the field). `POST /config` takes the entries as given. |
 
@@ -66,7 +67,10 @@ not needed and its traffic should not slow the others down.
 - **Parking strip** (`bench/ParkingStrip.tsx`, shown only while something is parked): a 34 px
   column left of the rack, sticky below the top bar. It has a toggle with the count, then one
   tab per instrument with a presence dot and its name written vertically. Opening it shows a
-  sheet with name, model, classes, presence ("Attached at ..." / "Not found: ..." / "Checking
-  ...") and **Unpark**. Escape closes the sheet.
+  sheet with name, model, classes, presence ("Attached at ..." green / "Port attached at ...
+  The instrument may be switched off ..." amber / "Not found: ..." red / "Checking ...") and
+  **Unpark**. Escape closes the sheet.
+- **Offline panel** (not parked): "Offline - reconnecting" with the reason (`bench/offline.ts`);
+  a port that opens but stays silent says "No answer. Is it switched on? ..."
 - **State:** taken from the live registry (pushed every second) once it lists the instrument,
   from `GET /instruments` until then (`bench/parking.ts`).

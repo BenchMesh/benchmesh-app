@@ -6,8 +6,9 @@ export type Instrument = {
   classes: { class: string; channels: string[]; ui_component?: string }[]
   health?: {
     is_alive?: boolean; status?: string; consecutive_failures?: number; last_error?: string
-    /** Parked: attached / reachable (found without talking to it); where, or why not. */
-    present?: boolean | null; presence?: string | null
+    /** Parked: attached / reachable (found without talking to it); where, or why not; what that
+     *  proves - the instrument, or only its port (serial: the instrument may be switched off). */
+    present?: boolean | null; presence?: string | null; presence_of?: 'instrument' | 'port'
   }
   /** Parked: no link, nothing sent to it, only its presence is checked (`POST|DELETE /devices/{id}/park`). */
   parked?: boolean

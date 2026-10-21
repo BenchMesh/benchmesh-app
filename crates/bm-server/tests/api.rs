@@ -1010,13 +1010,14 @@ async fn a_parked_instrument_is_left_alone_until_unparked_and_stays_parked_acros
     assert_eq!(code, StatusCode::OK, "{v}");
     assert_eq!(v, json!({"id": "l1", "parked": true}));
     let reg = until(&f, "presence", |r| r["l1"]["parked"]["present"] == true).await;
-    assert_eq!(reg["l1"], json!({"parked": {"present": true, "detail": "simulated"}}), "no IDN, no status while parked");
+    assert_eq!(reg["l1"], json!({"parked": {"present": true, "detail": "simulated", "of": "port"}}), "no IDN, no status while parked");
     assert!(reg["t1"]["PSU"].is_object(), "other instruments are untouched");
 
     let (_, list, _) = call(&f, "GET", "/instruments", None, None).await;
     let l1 = instrument(&list, "l1");
     assert_eq!(l1["parked"], true);
-    assert_eq!(l1["health"], json!({"status": "parked", "is_alive": false, "consecutive_failures": 0, "present": true, "presence": "simulated"}));
+    // a serial link: presence shows the port, not that the instrument is switched on
+    assert_eq!(l1["health"], json!({"status": "parked", "is_alive": false, "consecutive_failures": 0, "present": true, "presence": "simulated", "presence_of": "port"}));
     assert_eq!(l1["classes"][0]["class"], "ELL", "a parked instrument is still listed with its classes");
     assert_eq!(instrument(&list, "t1").get("parked"), None);
 
@@ -1030,7 +1031,7 @@ async fn a_parked_instrument_is_left_alone_until_unparked_and_stays_parked_acros
     assert_eq!(call(&f, "POST", "/devices/l1/park", None, None).await.0, StatusCode::OK);
     assert_eq!(call(&f, "GET", "/status", None, None).await.1["parked"], 1);
     let (_, wire, _) = call(&f, "GET", "/devices/l1/wire", None, None).await;
-    assert!(wire["entries"].as_array().unwrap().iter().any(|e| e["data"] == "parked: link closed; attached at simulated"), "{wire}");
+    assert!(wire["entries"].as_array().unwrap().iter().any(|e| e["data"] == "parked: link closed; port attached at simulated (the instrument may be switched off)"), "{wire}");
 
     // an edit without `parked` (the Instruments form) keeps it parked
     let edit = json!({"id": "l1", "name": "Load 2", "driver": "owon_oel", "transport": "serial", "port": "/dev/null"});

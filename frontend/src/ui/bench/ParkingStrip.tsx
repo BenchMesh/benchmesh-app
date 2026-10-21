@@ -2,13 +2,21 @@ import React, { useEffect, useState } from 'react'
 import { Instrument } from '../types'
 import { getClassDescription } from '../instrumentClasses'
 import { ParkIcon } from './icons'
-import { parkedState, ParkedState, useParking } from './parking'
+import { parkedState, ParkedState, presenceKind, useParking } from './parking'
 
 /** One line about a parked instrument's presence. */
 export function presenceText(s: ParkedState): string {
-  if (s.present === null) return 'Checking whether it is attached…'
-  return s.present ? `Attached${s.detail ? ` at ${s.detail}` : ''}` : `Not found${s.detail ? `: ${s.detail}` : ''}`
+  const at = s.detail ? ` at ${s.detail}` : ''
+  switch (presenceKind(s)) {
+    case 'checking': return 'Checking whether it is attached…'
+    case 'absent': return `Not found${s.detail ? `: ${s.detail}` : ''}`
+    case 'port': return `Port attached${at}. The instrument may be switched off: its USB interface can be powered by the computer. Unpark to find out.`
+    case 'instrument': return `Attached${at}`
+  }
 }
+
+/** Short state for the tab's accessible name. */
+const PRESENCE_WORD = { checking: 'checking', instrument: 'attached', port: 'port attached, instrument unknown', absent: 'not found' } as const
 
 /**
  * Parked instruments, collected in a slim strip on the left of the bench (shown only while one
@@ -55,8 +63,8 @@ export function ParkingStrip({ parked, registry }: { parked: Instrument[]; regis
           return (
             <li key={i.id}>
               <button type="button" className="bench-parking__tab" onClick={() => setOpen(true)} title={`${name(i)} (parked): ${presenceText(s)}`}
-                aria-label={`${name(i)}, parked, ${s.present === null ? 'checking' : s.present ? 'attached' : 'not found'}`}>
-                <i data-present={String(s.present)} />
+                aria-label={`${name(i)}, parked, ${PRESENCE_WORD[presenceKind(s)]}`}>
+                <i data-presence={presenceKind(s)} />
                 <span className="bench-parking__name">{name(i)}</span>
               </button>
             </li>
@@ -72,14 +80,15 @@ export function ParkingStrip({ parked, registry }: { parked: Instrument[]; regis
           <div className="bench-page">
             <p className="bench-hint">
               Parked instruments are disconnected: nothing is sent to them, BenchMesh only checks every few seconds whether
-              they are attached. Unpark one to connect it again; its panels return to their place.
+              they are attached. For a serial instrument that shows only its port (amber): whether the instrument is
+              switched on is known once it answers. Unpark one to connect it again; its panels return to their place.
             </p>
             {parked.map((i) => {
               const s = parkedState(i, registry)
               return (
                 <section key={i.id} className="bench-group bench-parking__item" aria-label={name(i)}>
                   <div className="bench-group__row">
-                    <span className="bench-parking__dot" data-present={String(s.present)} aria-hidden="true" />
+                    <span className="bench-parking__dot" data-presence={presenceKind(s)} aria-hidden="true" />
                     <strong>{name(i)}</strong>
                     <span className="bench-hint">{[i.model, i.classes.map((c) => getClassDescription(c.class)).join(', ')].filter(Boolean).join(' · ')}</span>
                   </div>

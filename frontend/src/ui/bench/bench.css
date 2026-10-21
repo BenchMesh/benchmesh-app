@@ -133,7 +133,10 @@ html, body { background: var(--kit-ground); }
   position: absolute; top: 46px; left: 50%; transform: translateX(-50%);
   background: var(--kit-panel); border: 1px solid var(--kit-panel-edge); border-radius: 999px; padding: 4px 12px;
   font: 700 .66rem/1 var(--kit-font-num); letter-spacing: .14em; text-transform: uppercase; color: var(--kit-alert);
+  display: grid; justify-items: center; gap: 4px; max-width: calc(100% - 24px); text-align: center;
 }
+.bench-panel__offline:has(.bench-panel__offline-why) { border-radius: 10px; padding: 6px 12px; }
+.bench-panel__offline-why { font: 400 .72rem/1.3 var(--kit-font-label); letter-spacing: 0; text-transform: none; color: var(--kit-ink-2); }
 
 /* ---- class panels ----------------------------------------------------------------- */
 .bench-psu { display: grid; gap: 12px; min-width: 0; align-items: start; }
@@ -283,8 +286,10 @@ html, body { background: var(--kit-ground); }
 .bench-parking__tab i, .bench-parking__dot {
   flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--kit-ink-3);
 }
-.bench-parking [data-present="true"] { background: var(--kit-ok); box-shadow: 0 0 calc(6px * var(--kit-glow)) var(--kit-ok); }
-.bench-parking [data-present="false"] { background: var(--kit-alert); }
+/* presence: the instrument seen (green), only its port (amber: may be switched off), not found (red) */
+.bench-parking [data-presence="instrument"] { background: var(--kit-ok); box-shadow: 0 0 calc(6px * var(--kit-glow)) var(--kit-ok); }
+.bench-parking [data-presence="port"] { background: var(--kit-warn); box-shadow: 0 0 calc(6px * var(--kit-glow)) var(--kit-warn); }
+.bench-parking [data-presence="absent"] { background: var(--kit-alert); }
 .bench-parking__sheet {
   position: absolute; top: 0; left: 100%; width: min(360px, calc(100vw - 48px));
   max-height: calc(100vh - var(--bench-top-h, 96px) - 12px); overflow: auto;

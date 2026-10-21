@@ -10,6 +10,7 @@ use bm_devicedef::{Catalog, DeviceDef, Model};
 use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, Connector, DeviceClient, DeviceHandle, Event, Parking, Presence};
 use bm_driver::wirelog::WireLog;
 use bm_transport::identity::Identity;
+use bm_transport::presence::{proves, Proves};
 use bm_transport::Endpoint;
 use serde_json::{json, Map, Value};
 
@@ -134,6 +135,9 @@ pub struct DeviceState {
     pub present: Option<bool>,
     /// While parked: where it was found, or why not.
     pub presence: Option<String>,
+    /// What a successful presence check proves for this link: `instrument` (USBTMC, LAN) or only
+    /// its `port` (serial: the USB interface can be powered by the computer, instrument off).
+    pub presence_of: &'static str,
 }
 
 #[derive(Default)]
@@ -155,7 +159,7 @@ impl Registry {
         for (id, d) in &self.devices {
             let mut e = Map::new();
             if d.parked {
-                e.insert("parked".into(), json!({"present": d.present, "detail": d.presence}));
+                e.insert("parked".into(), json!({"present": d.present, "detail": d.presence, "of": d.presence_of}));
             }
             if d.connected {
                 if let Some(idn) = &d.idn {
@@ -291,13 +295,18 @@ impl Devices {
         let parking = Parking { presence: (self.presence)(&entry, &def), parked };
         let registry = self.registry.clone();
         let rid = id.clone();
+        let presence_of = def.link.single().map_or(Proves::Instrument, |l| proves(&l));
         {
             let mut r = registry.lock().unwrap();
-            r.devices.insert(id.clone(), DeviceState { parked, ..Default::default() });
+            let presence_of = presence_of.as_str();
+            r.devices.insert(id.clone(), DeviceState { parked, presence_of, ..Default::default() });
             r.version += 1;
         }
         let events = move |ev: Event| {
             match &ev {
+                Event::Parked { present: true, detail } if presence_of == Proves::Port => {
+                    log.info(&format!("parked: link closed; port attached at {detail} (the instrument may be switched off)"))
+                }
                 Event::Parked { present: true, detail } => log.info(&format!("parked: link closed; attached at {detail}")),
                 Event::Parked { present: false, detail } => log.info(&format!("parked: link closed; not found: {detail}")),
                 Event::Unparked => log.info("unparked: connecting"),
@@ -434,6 +443,7 @@ mod tests {
     #[test]
     fn a_parked_device_shows_its_presence_and_no_status() {
         let mut r = Registry::default();
+        r.devices.insert("d".into(), DeviceState { presence_of: "port", ..Default::default() });
         r.apply("d", Event::Connected { idn: "X".into(), model: "M".into(), port: "p".into() });
         r.apply("d", status(1.5));
         r.apply("d", Event::Disconnected { reason: "io".into() });
@@ -441,7 +451,7 @@ mod tests {
         let d = &r.devices["d"];
         assert!(d.parked && !d.connected && d.status.is_empty());
         assert_eq!((d.consecutive_failures, d.last_error.clone()), (0, None), "parking is not a failure");
-        assert_eq!(r.to_json()["d"], json!({"parked": {"present": false, "detail": "unplugged"}}));
+        assert_eq!(r.to_json()["d"], json!({"parked": {"present": false, "detail": "unplugged", "of": "port"}}));
         r.apply("d", Event::Unparked);
         assert_eq!(r.to_json()["d"], json!({}));
     }

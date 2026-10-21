@@ -240,6 +240,7 @@ fn instrument_list(s: &AppState, class_filter: Option<&str>) -> Vec<Value> {
             // presence of a parked instrument: found without talking to it
             h["present"] = json!(st.present);
             h["presence"] = json!(st.presence);
+            h["presence_of"] = json!(st.presence_of);
             item.insert("parked".into(), json!(true));
         }
         item.insert("health".into(), h);

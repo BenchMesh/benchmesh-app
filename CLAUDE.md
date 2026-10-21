@@ -93,7 +93,7 @@ confirmed counts as `confirmed`) and Instruments → Supported shows it with the
 
 **Parking** (contract `ai_context/PARKING.md`): `POST|DELETE /devices/{id}/park` sets `parked: true` in
 the config entry; the device thread closes the link (after `on_disconnect`), sends nothing and only checks
-presence every 5 s (`bm_transport::presence`: port enumeration / TCP connect), requests answer 409, a
+presence every 5 s (`bm_transport::presence`: port enumeration / TCP connect; for a serial link that proves only the port - `presence_of: port`, shown amber - since a USB-serial interface powered by the computer stays attached with the instrument off), requests answer 409, a
 parked instrument is never opened at start. Refused while the running flow uses the instrument; a run
 using a parked one is refused. UI: park icon before Fold, parked panels wait in the parking strip left of
 the rack (`bench/ParkingStrip.tsx`, `bench/parking.ts`) and return to their place when unparked.

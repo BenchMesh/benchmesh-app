@@ -31,7 +31,7 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/serial-ports", "configuration", "Serial ports (query `exclude=a,b`)"),
     ("get", "/usbtmc-devices", "configuration", "USBTMC devices (query `exclude=a,b`) → [{device, name, vendor_id, product_id, manufacturer, product, serial, note, driver_installable}]"),
     ("post", "/usbtmc-devices/driver", "configuration", "Give a Windows USBTMC instrument Microsoft's WinUSB driver {device} (Windows asks for administrator approval; waits for it) → {device, installed}; 403 approval declined, 404 not attached, 409 needs no driver"),
-    ("get", "/instruments", "instruments", "Instruments with classes, channels and health (ETag / 304); a parked instrument has `parked: true` and health {status: parked, present, presence}"),
+    ("get", "/instruments", "instruments", "Instruments with classes, channels and health (ETag / 304); a parked instrument has `parked: true` and health {status: parked, present, presence, presence_of: instrument|port} (port: a serial interface is attached; the instrument itself may be off)"),
     ("get", "/instruments/{klass}", "instruments", "Instruments of one class"),
     ("get", "/instruments/{klass}/{id}", "instruments", "UI features of an instrument class (modes, ranges, limits)"),
     ("get", "/instruments/{klass}/{id}/methods", "instruments", "Operations of an instrument class"),

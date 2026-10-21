@@ -9,8 +9,21 @@ import { loggedFetch, useRequestLog } from '../RequestLogContext'
 import { Instrument } from '../types'
 import { isActiveState, RunStatus } from '../automation/types'
 
-/** Presence of a parked instrument: `present` null until first checked; `detail` where, or why not. */
-export interface ParkedState { present: boolean | null; detail: string }
+/**
+ * Presence of a parked instrument: `present` null until first checked; `detail` where, or why not;
+ * `of` what being present proves - the `instrument` (USBTMC, LAN) or only its `port` (serial: the
+ * USB interface can be powered by the computer while the instrument is switched off).
+ */
+export interface ParkedState { present: boolean | null; detail: string; of: 'instrument' | 'port' }
+
+/** The four presence states the parking shows. */
+export type PresenceKind = 'checking' | 'instrument' | 'port' | 'absent'
+
+export function presenceKind(s: ParkedState): PresenceKind {
+  if (s.present === null) return 'checking'
+  if (!s.present) return 'absent'
+  return s.of
+}
 
 /**
  * Whether the instrument is parked: the live registry decides once it lists the instrument
@@ -24,8 +37,8 @@ export function isParked(instrument: Instrument, registry: any): boolean {
 /** Presence of a parked instrument (live registry first). */
 export function parkedState(instrument: Instrument, registry: any): ParkedState {
   const live = registry?.[instrument.id]?.parked
-  const src = live ?? { present: instrument.health?.present, detail: instrument.health?.presence }
-  return { present: typeof src.present === 'boolean' ? src.present : null, detail: src.detail ?? '' }
+  const src = live ?? { present: instrument.health?.present, detail: instrument.health?.presence, of: instrument.health?.presence_of }
+  return { present: typeof src.present === 'boolean' ? src.present : null, detail: src.detail ?? '', of: src.of === 'port' ? 'port' : 'instrument' }
 }
 
 /** Status fields that say an output (or a load input, an LCR bias) is switched on. */

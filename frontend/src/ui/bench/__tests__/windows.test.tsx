@@ -42,6 +42,16 @@ describe('panel header window controls', () => {
   })
 })
 
+describe('offline panel', () => {
+  it('says why: a silent port is most likely an instrument that is switched off', () => {
+    const off = { ...tenma, health: { status: 'dead', is_alive: false, last_error: 'timeout (0 bytes received)' } }
+    wrap(<InstrumentPanel instrument={off} klass="PSU" registry={{}} />)
+    const label = screen.getByRole('status')
+    expect(label).toHaveTextContent('Offline - reconnecting')
+    expect(label).toHaveTextContent('No answer. Is it switched on?')
+  })
+})
+
 describe('PanelWindow (an instrument in its own window)', () => {
   it('splits panel keys at the last colon', () => {
     expect(splitPanelKey('tenma-72-2540:PSU')).toEqual(['tenma-72-2540', 'PSU'])

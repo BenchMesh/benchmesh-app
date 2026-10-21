@@ -17,6 +17,7 @@ import { LcrPanel } from './panels/LcrPanel'
 import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
 import { useParkControl } from './parking'
+import { offlineReason } from './offline'
 import { useRun } from '../automation/RunProvider'
 
 const CONSOLES_KEY = 'benchmesh:consoles'
@@ -224,7 +225,12 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
           ))}
         </div>
       )}</div>}
-      {!online && !folded && <div className="bench-panel__offline">Offline - reconnecting</div>}
+      {!online && !folded && (
+        <div className="bench-panel__offline" role="status">
+          Offline - reconnecting
+          {offlineReason(instrument.health) && <span className="bench-panel__offline-why">{offlineReason(instrument.health)}</span>}
+        </div>
+      )}
       {showConsole && !folded && (
         <WireConsole meta={{ instrument: instrument.id, klass, model: instrument.model ?? modelOf(idn), idn, support: instrument.support,
           link: instrument.port ? `${instrument.transport ?? ''} ${instrument.port}`.trim() : undefined }} />
