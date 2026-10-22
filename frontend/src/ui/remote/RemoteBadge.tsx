@@ -6,7 +6,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { errorText } from '../automation/client'
 import { logoutUrl } from './client'
-import { useRemote } from './RemoteProvider'
+import { useRemote, useViewOnly } from './RemoteProvider'
 import { SessionList } from './SessionList'
 import './remote.css'
 
@@ -21,6 +21,7 @@ export function LogoutButton() {
 
 export function RemoteBadge() {
   const remote = useRemote()
+  const viewOnly = useViewOnly()
   const [opened, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -44,7 +45,9 @@ export function RemoteBadge() {
   if (remote.principal === 'remote') {
     return (
       <div className="remote-badge" role="status" aria-label="Remote access">
-        <span className="remote-badge__label" title="This bench is controlled from a browser over the network">Remote</span>
+        {viewOnly
+          ? <span className="remote-badge__label" title="Signed in with the view-only password: you see the bench and change nothing">Remote - view only</span>
+          : <span className="remote-badge__label" title="This bench is controlled from a browser over the network">Remote</span>}
         <LogoutButton />
       </div>
     )
@@ -60,7 +63,7 @@ export function RemoteBadge() {
   return (
     <div className="remote-badge" ref={root}>
       <button type="button" className="remote-badge__open" aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((o) => !o)}
-        title={sessions.map((s) => s.address).join(', ')}>
+        title={sessions.map((s) => s.role === 'view' ? `${s.address} (view only)` : s.address).join(', ')}>
         Remote: {sessions.length}
       </button>
       {open && (

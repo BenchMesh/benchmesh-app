@@ -26,6 +26,7 @@
   font: 400 .74rem/1.35 var(--kit-font-num); color: var(--kit-ink-2);
 }
 .remote-sessions__who b { color: var(--kit-ink); }
+.remote-sessions__role { color: var(--kit-warn); text-transform: uppercase; letter-spacing: .06em; }
 
 .remote-settings__fields { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .remote-ok { color: var(--kit-accent); }

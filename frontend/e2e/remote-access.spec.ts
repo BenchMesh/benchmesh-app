@@ -50,6 +50,22 @@ test.describe('Remote access settings (app on this computer)', () => {
     await expect(section.getByText('Nobody is connected.')).toBeVisible();
   });
 
+  test('a view-only password next to the remote access password', async ({ mockPage, api }) => {
+    Object.assign(api.remote, { password_set: true });
+    const section = await openRemoteSettings(mockPage);
+    const form = section.getByRole('form', { name: 'View-only password' });
+    await expect(form.getByTestId('view-password-state')).toHaveText(/change nothing\. Not set\./);
+    await form.getByLabel('View-only password', { exact: true }).fill('look only please');
+    await form.getByLabel('Repeat view-only password').fill('look only please');
+    await form.getByRole('button', { name: 'Set view-only password' }).click();
+    await expect(form.getByText('Password saved.')).toBeVisible();
+    await expect(form.getByTestId('view-password-state')).toHaveText('Password set');
+    expect(api.remote.requests).toContainEqual({ method: 'PUT', path: '/remote/view-password', body: JSON.stringify({ password: 'look only please' }) });
+    await form.getByRole('button', { name: 'Remove' }).click();
+    await expect(form.getByText('View-only password removed.')).toBeVisible();
+    expect(api.remote.view_password_set).toBe(false);
+  });
+
   test('is not offered by a server without remote access', async ({ page, api }) => {
     await page.route('**/remote', (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"Not found"}' }));
     await gotoBench(page, api.instruments.length);
@@ -120,5 +136,17 @@ test.describe('A remote browser', () => {
     await top.getByRole('button', { name: 'Log out' }).click();
     await expect(mockPage.getByRole('heading', { name: 'Sign in to BenchMesh' })).toBeVisible();
     expect(api.remote.requests.some((r) => r.method === 'POST' && r.path === '/remote/logout')).toBe(true);
+  });
+
+  test('signed in with the view-only password: sees the bench, gets no controls', async ({ page, api }) => {
+    api.remote.session = { principal: 'remote', role: 'view', address: '192.168.1.31', since: Date.now() };
+    await gotoBench(page, api.instruments.length);
+    await expect(page.locator('header.bench-top').getByText('Remote - view only')).toBeVisible();
+    const panels = page.locator('article.bench-panel');
+    await expect(panels.first()).toBeVisible();
+    await expect(page.locator('article.bench-panel:not(.bench-panel--view)')).toHaveCount(0);
+    await expect(page.locator('.bench-panel__body:not([inert])')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Park instrument' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '+ New recording' })).toHaveCount(0);
   });
 });

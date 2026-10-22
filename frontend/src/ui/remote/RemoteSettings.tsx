@@ -1,7 +1,8 @@
 /**
  * Settings → Remote access (local principal only): the password, the enable switch, what the
  * network listener does, its addresses and certificate fingerprint, and who is connected.
- * The existing password is never shown; the server keeps only its hash.
+ * An optional view-only password signs in browsers that see the bench and change nothing.
+ * The existing passwords are never shown; the server keeps only their hashes.
  */
 import React, { useId, useState } from 'react'
 import { ApiError, errorText } from '../automation/client'
@@ -28,7 +29,8 @@ export function RemoteSettings() {
       <p className="bench-hint">
         Control this bench from a browser on your local network. HTTPS with a password; only addresses of your local network are accepted.
       </p>
-      <PasswordForm status={s} />
+      <PasswordForm status={s} kind="control" />
+      {s.password_set && <PasswordForm status={s} kind="view" />}
       <EnableSwitch status={s} />
       {s.enabled && <ListenerInfo status={s} />}
       <div className="bench-group">
@@ -44,8 +46,24 @@ export function RemoteSettings() {
   )
 }
 
-function PasswordForm({ status }: { status: RemoteStatus }) {
+const FORMS = {
+  control: {
+    title: 'Password', form: 'Remote access password', isSet: (s: RemoteStatus) => s.password_set, unset: 'No password set yet.',
+    signsOut: 'every remote browser', set: 'Set password', change: 'Change password',
+    label: (isSet: boolean) => (isSet ? 'New password' : 'Password'), repeat: 'Repeat password',
+  },
+  view: {
+    title: 'View-only password', form: 'View-only password', isSet: (s: RemoteStatus) => s.view_password_set,
+    unset: 'Optional: browsers that sign in with it see the bench and change nothing. Not set.',
+    signsOut: 'every view-only browser', set: 'Set view-only password', change: 'Change view-only password',
+    label: (isSet: boolean) => (isSet ? 'New view-only password' : 'View-only password'), repeat: 'Repeat view-only password',
+  },
+}
+
+function PasswordForm({ status, kind }: { status: RemoteStatus; kind: keyof typeof FORMS }) {
   const remote = useRemote()!
+  const f = FORMS[kind]
+  const isSet = f.isSet(status)
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')
   const [touched, setTouched] = useState(false)
@@ -61,40 +79,54 @@ function PasswordForm({ status }: { status: RemoteStatus }) {
     setBusy(true)
     setMsg(null)
     try {
-      await remote.client.setPassword(password)
+      await (kind === 'view' ? remote.client.setViewPassword(password) : remote.client.setPassword(password))
       setPassword('')
       setRepeat('')
       setTouched(false)
-      setMsg({ ok: true, text: status.sessions.length ? 'Password saved; every remote browser was signed out.' : 'Password saved.' })
+      const signedOut = kind === 'view' ? status.sessions.some((x) => x.role === 'view') : status.sessions.length > 0
+      setMsg({ ok: true, text: signedOut ? `Password saved; ${f.signsOut} was signed out.` : 'Password saved.' })
+      await remote.refresh()
+    } catch (err) { setMsg({ ok: false, text: errorText(err) }) } finally { setBusy(false) }
+  }
+
+  const remove = async () => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      await remote.client.removeViewPassword()
+      setMsg({ ok: true, text: 'View-only password removed.' })
       await remote.refresh()
     } catch (err) { setMsg({ ok: false, text: errorText(err) }) } finally { setBusy(false) }
   }
 
   return (
-    <form className="bench-group" onSubmit={save} aria-label="Remote access password">
-      <span className="kit-label">Password</span>
-      <span className="bench-hint" data-testid="password-state">{status.password_set ? 'Password set' : 'No password set yet.'}</span>
+    <form className="bench-group" onSubmit={save} aria-label={f.form}>
+      <span className="kit-label">{f.title}</span>
+      <span className="bench-hint" data-testid={kind === 'view' ? 'view-password-state' : 'password-state'}>{isSet ? 'Password set' : f.unset}</span>
       <div className="remote-settings__fields">
         <div className="kit-field">
-          <label className="kit-label" htmlFor={ids.password}>{status.password_set ? 'New password' : 'Password'}</label>
+          <label className="kit-label" htmlFor={ids.password}>{f.label(isSet)}</label>
           <input id={ids.password} className="kit-input" type="password" autoComplete="new-password" value={password}
             aria-invalid={touched && password.length < MIN_PASSWORD} aria-describedby={ids.problem}
             onChange={(e) => setPassword(e.target.value)} />
         </div>
         <div className="kit-field">
-          <label className="kit-label" htmlFor={ids.repeat}>Repeat password</label>
+          <label className="kit-label" htmlFor={ids.repeat}>{f.repeat}</label>
           <input id={ids.repeat} className="kit-input" type="password" autoComplete="new-password" value={repeat}
             aria-invalid={touched && !!repeat && password !== repeat} aria-describedby={ids.problem}
             onChange={(e) => setRepeat(e.target.value)} />
         </div>
       </div>
       <span id={ids.problem} className={touched && problem ? 'kit-error' : 'bench-hint'} role={touched && problem ? 'alert' : undefined}>
-        {touched && problem ? problem : `At least ${MIN_PASSWORD} characters.${status.password_set ? ' Changing it signs every remote browser out.' : ''}`}
+        {touched && problem ? problem : `At least ${MIN_PASSWORD} characters${kind === 'view' ? ', not the remote access password' : ''}.${isSet ? ` Changing it signs ${f.signsOut} out.` : ''}`}
       </span>
       <div className="bench-group__row">
         <button type="submit" className="bench-btn bench-btn--primary" disabled={busy || !password} aria-busy={busy}>
-          {status.password_set ? 'Change password' : 'Set password'}
+          {isSet ? f.change : f.set}
         </button>
+        {kind === 'view' && isSet && (
+          <button type="button" className="bench-btn bench-btn--danger" onClick={() => void remove()} disabled={busy}>Remove</button>
+        )}
         {msg && <span className={msg.ok ? 'bench-hint remote-ok' : 'kit-error'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</span>}
       </div>
     </form>

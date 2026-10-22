@@ -2,7 +2,9 @@
 //! `ai_context/REMOTE_ACCESS.md`). Off by default; switched on in the app with a password, it
 //! opens a second listener (HTTPS, every interface, port 57667) where every request passes
 //! [`gate`]: local-network `Host`/`Origin`, a session cookie, and the route's [`scope`]. The
-//! loopback listener stays as it is and its requests are [`Principal::Local`].
+//! loopback listener stays as it is and its requests are [`Principal::Local`]. An optional second,
+//! view-only password signs in sessions that may only look ([`Role::View`]: GET requests and
+//! WebSockets, nothing that changes the bench).
 
 pub mod limiter;
 pub mod net;
@@ -30,12 +32,13 @@ use tokio::sync::Semaphore;
 use self::net::{Peer, Tls};
 use self::password::PasswordHash;
 use self::scope::Scope;
-use self::sessions::{SessionView, Sessions};
+use self::sessions::{Role, SessionView, Sessions};
 use crate::{detail, S};
 
 pub const DEFAULT_PORT: u16 = 57667;
 const COOKIE: &str = "__Host-bm_session";
 const LOCAL_ONLY: &str = "this setting can be changed only from the BenchMesh app on this computer";
+const VIEW_ONLY: &str = "this session is view only: sign in with the remote access password to change anything";
 
 /// Who sent a request. Decided by the listener it arrived on and its session, never by the client.
 #[derive(Debug, Clone)]
@@ -79,6 +82,9 @@ struct Settings {
     port: u16,
     #[serde(default)]
     password: Option<PasswordHash>,
+    /// Signs in view-only sessions; only together with `password`.
+    #[serde(default)]
+    view_password: Option<PasswordHash>,
 }
 
 fn default_port() -> u16 {
@@ -87,7 +93,7 @@ fn default_port() -> u16 {
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { enabled: false, port: DEFAULT_PORT, password: None }
+        Settings { enabled: false, port: DEFAULT_PORT, password: None, view_password: None }
     }
 }
 
@@ -203,8 +209,22 @@ impl Remote {
         self.sessions.end_all();
     }
 
-    fn password(&self) -> Option<PasswordHash> {
-        self.settings.lock().unwrap().password.clone()
+    /// The control and the view-only password.
+    fn passwords(&self) -> (Option<PasswordHash>, Option<PasswordHash>) {
+        let s = self.settings.lock().unwrap();
+        (s.password.clone(), s.view_password.clone())
+    }
+
+    /// Set (`Some`) or remove (`None`) the view-only password; ends every view-only session.
+    pub fn set_view_password(&self, hash: Option<PasswordHash>) -> Result<(), String> {
+        let s = {
+            let mut s = self.settings.lock().unwrap();
+            s.view_password = hash;
+            s.clone()
+        };
+        self.save(&s)?;
+        self.sessions.end_role(Role::View);
+        Ok(())
     }
 
     /// Set the password (ends every session) - also used by `benchmesh-server remote-password`.
@@ -233,6 +253,7 @@ impl Remote {
             "enabled": s.enabled,
             "port": port,
             "password_set": s.password.is_some(),
+            "view_password_set": s.view_password.is_some(),
             "listening": l.addr.is_some(),
             "error": l.error,
             "urls": if l.addr.is_some() { urls } else { vec![] },
@@ -292,6 +313,9 @@ pub async fn gate(State(r): State<Arc<Remote>>, ConnectInfo(Peer(peer)): Connect
             let _ = v;
             return secured(detail(StatusCode::FORBIDDEN, LOCAL_ONLY));
         }
+        Some(v) if v.role == Role::View && !looks_only(req.method(), &path) => {
+            return secured(detail(StatusCode::FORBIDDEN, VIEW_ONLY));
+        }
         Some(v) => Principal::Remote(v),
         None if path == "/remote/login" => Principal::Visitor(peer.ip()),
         None => {
@@ -303,12 +327,18 @@ pub async fn gate(State(r): State<Arc<Remote>>, ConnectInfo(Peer(peer)): Connect
     secured(next.run(req).await)
 }
 
+/// What a view-only session may send: reads (GET, which also opens WebSockets) and signing out.
+fn looks_only(method: &Method, path: &str) -> bool {
+    matches!(*method, Method::GET | Method::HEAD) || (method == Method::POST && matches!(path, "/remote/logout" | "/remote/login"))
+}
+
 // ---- routes ---------------------------------------------------------------------------
 
 pub fn routes() -> Router<S> {
     Router::new()
         .route("/remote", get(get_status).put(put_settings))
         .route("/remote/password", put(put_password))
+        .route("/remote/view-password", put(put_view_password).delete(delete_view_password))
         .route("/remote/sessions", delete(end_all))
         .route("/remote/sessions/{id}", delete(end_one))
         .route("/remote/session", get(session))
@@ -373,13 +403,67 @@ async fn put_password(State(s): State<S>, p: Principal, Json(b): Json<PasswordBo
     if let Some(why) = password::refusal(&b.password) {
         return detail(StatusCode::BAD_REQUEST, why);
     }
-    let hash = match tokio::task::spawn_blocking(move || password::hash(&b.password)).await {
+    let (_, view) = s.remote.passwords();
+    let hash = match hash_unless_same(b.password, view).await {
         Ok(h) => h,
-        Err(e) => return detail(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+        Err(r) => return r,
     };
     match s.remote.set_password(hash, false) {
         Ok(()) => {
             eprintln!("remote access: password changed, every session ended");
+            StatusCode::NO_CONTENT.into_response()
+        }
+        Err(e) => detail(StatusCode::INTERNAL_SERVER_ERROR, format!("saving remote access settings: {e}")),
+    }
+}
+
+/// Hash a new password, refused (409) when it is the other one: the two must tell the roles apart.
+async fn hash_unless_same(new: String, other: Option<PasswordHash>) -> Result<PasswordHash, Response> {
+    let done = tokio::task::spawn_blocking(move || {
+        if other.is_some_and(|o| password::verify(&o, &new)) {
+            return None;
+        }
+        Some(password::hash(&new))
+    })
+    .await;
+    match done {
+        Ok(Some(h)) => Ok(h),
+        Ok(None) => Err(detail(StatusCode::CONFLICT, "the remote access password and the view-only password must differ")),
+        Err(e) => Err(detail(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
+}
+
+async fn put_view_password(State(s): State<S>, p: Principal, Json(b): Json<PasswordBody>) -> Response {
+    if let Some(r) = local_only(&p) {
+        return r;
+    }
+    if let Some(why) = password::refusal(&b.password) {
+        return detail(StatusCode::BAD_REQUEST, why);
+    }
+    let (control, _) = s.remote.passwords();
+    if control.is_none() {
+        return detail(StatusCode::CONFLICT, "set the remote access password first");
+    }
+    let hash = match hash_unless_same(b.password, control).await {
+        Ok(h) => h,
+        Err(r) => return r,
+    };
+    match s.remote.set_view_password(Some(hash)) {
+        Ok(()) => {
+            eprintln!("remote access: view-only password set, view-only sessions ended");
+            StatusCode::NO_CONTENT.into_response()
+        }
+        Err(e) => detail(StatusCode::INTERNAL_SERVER_ERROR, format!("saving remote access settings: {e}")),
+    }
+}
+
+async fn delete_view_password(State(s): State<S>, p: Principal) -> Response {
+    if let Some(r) = local_only(&p) {
+        return r;
+    }
+    match s.remote.set_view_password(None) {
+        Ok(()) => {
+            eprintln!("remote access: view-only password removed, view-only sessions ended");
             StatusCode::NO_CONTENT.into_response()
         }
         Err(e) => detail(StatusCode::INTERNAL_SERVER_ERROR, format!("saving remote access settings: {e}")),
@@ -407,7 +491,7 @@ async fn end_one(State(s): State<S>, p: Principal, Path(id): Path<String>) -> Re
 
 async fn session(p: Principal) -> Response {
     match p {
-        Principal::Remote(v) => Json(json!({"principal": "remote", "address": v.address.to_string(), "since": v.since})).into_response(),
+        Principal::Remote(v) => Json(json!({"principal": "remote", "role": v.role, "address": v.address.to_string(), "since": v.since})).into_response(),
         Principal::Visitor(_) => detail(StatusCode::UNAUTHORIZED, "sign in first"),
         Principal::Local => Json(json!({"principal": "local"})).into_response(),
     }
@@ -456,18 +540,26 @@ async fn login(State(s): State<S>, p: Principal, headers: HeaderMap, Form(f): Fo
     if let Err(wait) = r.limiter.check(ip, Instant::now()) {
         return see_other(&format!("/remote/login?e=wait&s={}", wait.as_secs().max(1)));
     }
-    let Some(hash) = r.password() else { return see_other("/remote/login?e=off") };
+    let (Some(control), view) = r.passwords() else { return see_other("/remote/login?e=off") };
     let Ok(_slot) = r.verifying.try_acquire() else { return see_other("/remote/login?e=busy") };
-    let ok = tokio::task::spawn_blocking(move || password::verify(&hash, &f.password)).await.unwrap_or(false);
-    if !ok {
+    let role = tokio::task::spawn_blocking(move || {
+        if password::verify(&control, &f.password) {
+            Some(Role::Control)
+        } else {
+            view.filter(|v| password::verify(v, &f.password)).map(|_| Role::View)
+        }
+    })
+    .await
+    .unwrap_or(None);
+    let Some(role) = role else {
         r.limiter.failed(ip, Instant::now());
         eprintln!("remote access: wrong password from {ip}");
         return see_other("/remote/login?e=wrong");
-    }
+    };
     r.limiter.succeeded(ip);
     let agent = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("");
-    let token = r.sessions.create(ip, agent, now_ms());
-    eprintln!("remote access: {ip} signed in");
+    let token = r.sessions.create(ip, agent, role, now_ms());
+    eprintln!("remote access: {ip} signed in ({})", if role == Role::View { "view only" } else { "control" });
     let cookie = format!("{COOKIE}={token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age={}", sessions::MAX_AGE_MS / 1000);
     (StatusCode::SEE_OTHER, [(header::LOCATION, "/ui/".to_string()), (header::SET_COOKIE, cookie)]).into_response()
 }
@@ -499,6 +591,16 @@ mod tests {
     }
 
     #[test]
+    fn a_view_only_session_may_read_and_sign_out() {
+        assert!(looks_only(&Method::GET, "/instruments/PSU/psu-1/1/voltage"));
+        assert!(looks_only(&Method::GET, "/ws/registry"));
+        assert!(looks_only(&Method::POST, "/remote/logout"));
+        for (m, p) in [(Method::POST, "/instruments/PSU/psu-1/1/output/ON"), (Method::PUT, "/devices/psu-1"), (Method::DELETE, "/recordings/1"), (Method::POST, "/automation/run"), (Method::PATCH, "/recordings/1")] {
+            assert!(!looks_only(&m, p), "{m} {p}");
+        }
+    }
+
+    #[test]
     fn settings_persist_without_the_password_in_clear() {
         let dir = std::env::temp_dir().join(format!("bm-remote-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -511,6 +613,9 @@ mod tests {
         let st = again.status();
         assert_eq!((st["enabled"].clone(), st["password_set"].clone(), st["port"].clone()), (json!(true), json!(true), json!(DEFAULT_PORT)));
         assert_eq!(st["listening"], false, "not attached to a server");
+        assert_eq!(st["view_password_set"], false);
+        again.set_view_password(Some(password::hash_with("a view password", 1000))).unwrap();
+        assert_eq!(Remote::new(Some(dir.clone())).status()["view_password_set"], true);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

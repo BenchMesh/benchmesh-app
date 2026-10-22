@@ -16,6 +16,7 @@ use serde_json::{json, Value};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const PASSWORD: &str = "bench password 1";
+const VIEW_PASSWORD: &str = "look but do not touch";
 
 fn repo() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
@@ -53,8 +54,8 @@ impl Bench {
         let dir = std::env::temp_dir().join(format!("bm-remote-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        // switched on with a password, on any free port
-        let settings = json!({"enabled": true, "port": 0, "password": hash_with(PASSWORD, 1000)});
+        // switched on with a password and a view-only password, on any free port
+        let settings = json!({"enabled": true, "port": 0, "password": hash_with(PASSWORD, 1000), "view_password": hash_with(VIEW_PASSWORD, 1000)});
         std::fs::write(dir.join("remote.json"), settings.to_string()).unwrap();
         let server = start(ServerOptions {
             config: dir.join("config.yaml"),
@@ -104,7 +105,11 @@ impl Bench {
     }
 
     async fn sign_in(&self) -> String {
-        let (head, _) = self.https("POST", "/remote/login", &["Content-Type: application/x-www-form-urlencoded"], &format!("password={}", PASSWORD.replace(' ', "+"))).await;
+        self.sign_in_with(PASSWORD).await
+    }
+
+    async fn sign_in_with(&self, password: &str) -> String {
+        let (head, _) = self.https("POST", "/remote/login", &["Content-Type: application/x-www-form-urlencoded"], &format!("password={}", password.replace(' ', "+"))).await;
         assert!(head.starts_with("HTTP/1.1 303"), "{head}");
         assert!(head.contains("location: /ui/"), "{head}");
         let cookie = head.lines().find_map(|l| l.strip_prefix("set-cookie: ")).expect("a session cookie").to_string();
@@ -225,4 +230,56 @@ async fn the_app_ends_sessions_and_their_websockets_and_switches_off() {
     // switching on needs no new password, and a password is needed in the first place
     let st = b.local("PUT", "/remote", Some(json!({"enabled": true, "port": 80})));
     assert!(st["detail"].as_str().unwrap().contains("1024"), "{st}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_view_only_password_shows_the_bench_and_changes_nothing() {
+    let b = tokio::task::spawn_blocking(|| Bench::start("view")).await.unwrap();
+    let cookie = b.sign_in_with(VIEW_PASSWORD).await;
+
+    let (_, who) = b.https("GET", "/remote/session", &[&cookie], "").await;
+    assert_eq!(serde_json::from_str::<Value>(&who).unwrap()["role"], "view");
+    for p in ["/status", "/instruments", "/recordings", "/automation/flows"] {
+        let (head, _) = b.https("GET", p, &[&cookie], "").await;
+        assert!(head.starts_with("HTTP/1.1 200"), "{p}: {head}");
+    }
+    let mut req = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(format!("wss://127.0.0.1:{}/ws/registry", b.remote.port())).unwrap();
+    req.headers_mut().insert("Cookie", cookie.trim_start_matches("Cookie: ").parse().unwrap());
+    let (mut ws, _) = tokio_tungstenite::client_async(req, b.tls_stream().await).await.unwrap();
+    assert!(ws.next().await.unwrap().unwrap().is_text(), "live values stream");
+
+    for (m, p, body) in [
+        ("POST", "/instruments/PSU/psu-1/1/output/ON", ""),
+        ("POST", "/devices", "{}"),
+        ("DELETE", "/devices/psu-1", ""),
+        ("POST", "/devices/psu-1/park", ""),
+        ("POST", "/recordings", "{}"),
+        ("POST", "/automation/run", "{}"),
+    ] {
+        let (head, body) = b.https(m, p, &[&cookie, "Content-Type: application/json"], body).await;
+        assert!(head.starts_with("HTTP/1.1 403"), "{m} {p}: {head}");
+        assert!(body.contains("view only"), "{m} {p}: {body}");
+    }
+
+    // the app tells the roles apart; the control password still controls
+    let st = b.local("GET", "/remote", None);
+    assert_eq!(st["view_password_set"], true);
+    assert_eq!(st["sessions"][0]["role"], "view", "{st}");
+    let control = b.sign_in().await;
+    let (head, _) = b.https("POST", "/devices/psu-1/park", &[&control], "").await;
+    assert!(!head.starts_with("HTTP/1.1 403"), "{head}");
+
+    // the two passwords must differ; changing or removing the view-only one ends only its sessions
+    let r = b.local("PUT", "/remote/view-password", Some(json!({"password": PASSWORD})));
+    assert!(r["detail"].as_str().unwrap().contains("must differ"), "{r}");
+    let r = b.local("PUT", "/remote/password", Some(json!({"password": VIEW_PASSWORD})));
+    assert!(r["detail"].as_str().unwrap().contains("must differ"), "{r}");
+    b.local("DELETE", "/remote/view-password", None);
+    let (head, _) = b.https("GET", "/status", &[&cookie], "").await;
+    assert!(head.starts_with("HTTP/1.1 401"), "view-only session ended: {head}");
+    let (head, _) = b.https("GET", "/status", &[&control], "").await;
+    assert!(head.starts_with("HTTP/1.1 200"), "control session kept: {head}");
+    let (head, _) = b.https("POST", "/remote/login", &["Content-Type: application/x-www-form-urlencoded"], &format!("password={}", VIEW_PASSWORD.replace(' ', "+"))).await;
+    assert!(head.contains("location: /remote/login?e=wrong"), "removed: {head}");
+    assert_eq!(b.local("GET", "/remote", None)["view_password_set"], false);
 }

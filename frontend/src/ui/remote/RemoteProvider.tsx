@@ -35,6 +35,12 @@ export const useRemote = () => useContext(Ctx)
 /** True for a browser on the network listener: admin-only controls are hidden (they would get 403). */
 export const useIsRemote = () => useContext(Ctx)?.principal === 'remote'
 
+/** True for a remote browser signed in with the view-only password: controls are not offered (the server refuses them). */
+export const useViewOnly = () => {
+  const r = useContext(Ctx)
+  return r?.principal === 'remote' && r.session?.role === 'view'
+}
+
 const goToLogin = () => window.location.assign(loginUrl())
 
 interface Props {

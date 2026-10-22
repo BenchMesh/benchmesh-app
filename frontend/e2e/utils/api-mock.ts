@@ -150,12 +150,13 @@ export interface MockRecording {
 }
 
 /** Remote access (ai_context/REMOTE_ACCESS.md): who the UI is, and the network listener's state. */
-export interface MockRemoteSession { id: string; address: string; agent: string; since: number; last_seen: number }
+export interface MockRemoteSession { id: string; role?: 'control' | 'view'; address: string; agent: string; since: number; last_seen: number }
 export interface MockRemote {
   /** `GET /remote/session`; `{principal: 'remote', ...}` makes the UI a remote browser (admin routes answer 403). */
-  session: { principal: 'local' } | { principal: 'remote'; address: string; since: number };
+  session: { principal: 'local' } | { principal: 'remote'; role?: 'control' | 'view'; address: string; since: number };
   enabled: boolean;
   password_set: boolean;
+  view_password_set?: boolean;
   sessions: MockRemoteSession[];
   /** Every request to `/remote...` other than `GET /remote` and `GET /remote/session`. */
   requests: RecordedRequest[];
@@ -321,7 +322,7 @@ async function handleScpi(route: Route, api: ApiMock) {
 }
 
 const remoteStatus = (r: MockRemote) => ({
-  enabled: r.enabled, port: 57667, password_set: r.password_set, listening: r.enabled, error: null,
+  enabled: r.enabled, port: 57667, password_set: r.password_set, view_password_set: r.view_password_set === true, listening: r.enabled, error: null,
   urls: r.enabled ? [REMOTE_URL] : [], fingerprint: r.enabled ? REMOTE_FINGERPRINT : null, sessions: r.enabled ? r.sessions : [],
 });
 
@@ -352,6 +353,18 @@ async function handleRemote(route: Route, api: ApiMock, segs: string[]) {
     if (typeof body?.password !== 'string' || body.password.length < 10) return json(route, { detail: 'The password needs at least 10 characters' }, 400);
     r.password_set = true;
     r.sessions = [];
+    return route.fulfill({ status: 204 });
+  }
+  if (path === '/remote/view-password' && method === 'PUT') {
+    if (typeof body?.password !== 'string' || body.password.length < 10) return json(route, { detail: 'The password needs at least 10 characters' }, 400);
+    if (!r.password_set) return json(route, { detail: 'set the remote access password first' }, 409);
+    r.view_password_set = true;
+    r.sessions = r.sessions.filter((x) => x.role !== 'view');
+    return route.fulfill({ status: 204 });
+  }
+  if (path === '/remote/view-password' && method === 'DELETE') {
+    r.view_password_set = false;
+    r.sessions = r.sessions.filter((x) => x.role !== 'view');
     return route.fulfill({ status: 204 });
   }
   if (segs[1] === 'sessions' && method === 'DELETE') {

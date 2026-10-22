@@ -6,31 +6,37 @@ import { shortAgent, sinceText } from '../format'
 afterEach(() => vi.restoreAllMocks())
 
 const STATUS = {
-  enabled: true, port: 57667, password_set: true, listening: true, error: null,
-  urls: ['https://192.168.1.20:57667/'], fingerprint: 'AB:CD', sessions: [{ id: 's1', address: '192.168.1.30', agent: 'x', since: 1, last_seen: 2 }],
+  enabled: true, port: 57667, password_set: true, view_password_set: false, listening: true, error: null,
+  urls: ['https://192.168.1.20:57667/'], fingerprint: 'AB:CD', sessions: [{ id: 's1', role: 'control', address: '192.168.1.30', agent: 'x', since: 1, last_seen: 2 }],
 }
 
 describe('remote client', () => {
   it('calls the contract routes', async () => {
     const calls = routeFetch({
-      'GET /remote/session': () => ({ body: { principal: 'remote', address: '192.168.1.30', since: 5 } }),
+      'GET /remote/session': () => ({ body: { principal: 'remote', role: 'view', address: '192.168.1.30', since: 5 } }),
       'GET /remote': () => ({ body: STATUS }),
       'PUT /remote': (b) => ({ body: { ...STATUS, enabled: b.enabled, sessions: [] } }),
       'PUT /remote/password': () => ({ status: 204 }),
+      'PUT /remote/view-password': () => ({ status: 204 }),
+      'DELETE /remote/view-password': () => ({ status: 204 }),
       'DELETE /remote/sessions/a%20b': () => ({ status: 204 }),
       'DELETE /remote/sessions': () => ({ status: 204 }),
     })
-    expect(await remoteClient.session()).toEqual({ principal: 'remote', address: '192.168.1.30', since: 5 })
+    expect(await remoteClient.session()).toEqual({ principal: 'remote', role: 'view', address: '192.168.1.30', since: 5 })
     expect(await remoteClient.status()).toEqual(STATUS)
     expect((await remoteClient.update({ enabled: false }))?.enabled).toBe(false)
     await remoteClient.setPassword('0123456789')
+    await remoteClient.setViewPassword('9876543210')
+    await remoteClient.removeViewPassword()
     await remoteClient.disconnect('a b')
     await remoteClient.disconnectAll()
     expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
-      'GET /remote/session', 'GET /remote', 'PUT /remote', 'PUT /remote/password', 'DELETE /remote/sessions/a%20b', 'DELETE /remote/sessions',
+      'GET /remote/session', 'GET /remote', 'PUT /remote', 'PUT /remote/password', 'PUT /remote/view-password',
+      'DELETE /remote/view-password', 'DELETE /remote/sessions/a%20b', 'DELETE /remote/sessions',
     ])
     expect(calls[2].body).toEqual({ enabled: false })
     expect(calls[3].body).toEqual({ password: '0123456789' })
+    expect(calls[4].body).toEqual({ password: '9876543210' })
   })
 
   it('rejects with the server detail and status', async () => {
@@ -42,14 +48,15 @@ describe('remote client', () => {
     expect(asSession({ principal: 'local' })).toEqual({ principal: 'local' })
     expect(asSession([])).toEqual({ principal: 'local' })
     expect(asSession(null)).toEqual({ principal: 'local' })
-    expect(asSession({ principal: 'remote' })).toEqual({ principal: 'remote', address: undefined, since: undefined })
+    expect(asSession({ principal: 'remote' })).toEqual({ principal: 'remote', role: 'control', address: undefined, since: undefined })
+    expect(asSession({ principal: 'remote', role: 'view' })?.role).toBe('view')
   })
 
   it('accepts only a status object and fills missing fields', () => {
     expect(asStatus([])).toBeNull()
     expect(asStatus({ detail: 'x' })).toBeNull()
     expect(asStatus({ enabled: false })).toEqual({
-      enabled: false, port: 57667, password_set: false, listening: false, error: null, urls: [], fingerprint: null, sessions: [],
+      enabled: false, port: 57667, password_set: false, view_password_set: false, listening: false, error: null, urls: [], fingerprint: null, sessions: [],
     })
   })
 })

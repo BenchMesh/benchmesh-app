@@ -25,6 +25,7 @@ export function SessionList({ sessions }: { sessions: RemoteSession[] }) {
           <li key={String(s.id)} className="remote-sessions__item">
             <span className="remote-sessions__who">
               <b>{s.address}</b>
+              {s.role === 'view' && <span className="remote-sessions__role">view only</span>}
               <span title={s.agent}>{shortAgent(s.agent)}</span>
               <span>since {sinceText(s.since)}</span>
             </span>

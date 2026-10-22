@@ -7,10 +7,14 @@ import { apiBaseUrl } from '../../api/base'
 import { ApiError } from '../automation/client'
 
 export type Principal = 'local' | 'remote'
+/** What a remote session's password allows: `view` sessions see the bench and change nothing. */
+export type Role = 'control' | 'view'
 
 /** `GET /remote/session`: who this UI is. */
 export interface SessionInfo {
   principal: Principal
+  /** remote only: which password signed it in */
+  role?: Role
   /** remote only: the address this browser connects from */
   address?: string
   /** remote only: sign-in time, ms since epoch */
@@ -20,6 +24,7 @@ export interface SessionInfo {
 /** One signed-in remote browser (`id` is not the token). Times in ms since epoch. */
 export interface RemoteSession {
   id: string | number
+  role: Role
   address: string
   agent: string
   since: number
@@ -31,6 +36,7 @@ export interface RemoteStatus {
   enabled: boolean
   port: number
   password_set: boolean
+  view_password_set: boolean
   listening: boolean
   error: string | null
   urls: string[]
@@ -60,7 +66,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 /** A `/remote/session` reply as the UI uses it; anything else (e.g. an older server) is the local principal. */
 export function asSession(x: any): SessionInfo {
   if (x?.principal === 'remote') {
-    return { principal: 'remote', address: typeof x.address === 'string' ? x.address : undefined, since: typeof x.since === 'number' ? x.since : undefined }
+    return { principal: 'remote', role: x.role === 'view' ? 'view' : 'control', address: typeof x.address === 'string' ? x.address : undefined, since: typeof x.since === 'number' ? x.since : undefined }
   }
   return { principal: 'local' }
 }
@@ -72,11 +78,14 @@ export function asStatus(x: any): RemoteStatus | null {
     enabled: x.enabled,
     port: typeof x.port === 'number' ? x.port : 57667,
     password_set: x.password_set === true,
+    view_password_set: x.view_password_set === true,
     listening: x.listening === true,
     error: typeof x.error === 'string' && x.error ? x.error : null,
     urls: Array.isArray(x.urls) ? x.urls.filter((u: unknown) => typeof u === 'string') : [],
     fingerprint: typeof x.fingerprint === 'string' && x.fingerprint ? x.fingerprint : null,
-    sessions: Array.isArray(x.sessions) ? x.sessions.filter((s: any) => s && s.id != null) : [],
+    sessions: Array.isArray(x.sessions)
+      ? x.sessions.filter((s: any) => s && s.id != null).map((s: any) => ({ ...s, role: s.role === 'view' ? 'view' : 'control' }))
+      : [],
   }
 }
 
@@ -85,6 +94,8 @@ export const remoteClient = {
   status: () => request<unknown>('GET', '/remote').then(asStatus),
   update: (u: { enabled: boolean; port?: number }) => request<unknown>('PUT', '/remote', u).then(asStatus),
   setPassword: (password: string) => request<void>('PUT', '/remote/password', { password }),
+  setViewPassword: (password: string) => request<void>('PUT', '/remote/view-password', { password }),
+  removeViewPassword: () => request<void>('DELETE', '/remote/view-password'),
   disconnect: (id: RemoteSession['id']) => request<void>('DELETE', `/remote/sessions/${encodeURIComponent(String(id))}`),
   disconnectAll: () => request<void>('DELETE', '/remote/sessions'),
 }

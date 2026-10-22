@@ -34,6 +34,9 @@ recording at any time; recordings may run for hours.
 
 ## Storage (`bm-store`, `~/.benchmesh/recordings.db`; simulation: in memory)
 
+The database and its `-wal` / `-shm` files are private to the user (0600 on Unix, set at every
+open): measurements can be confidential.
+
 ```sql
 recordings(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT,
            interval_s INTEGER NOT NULL, state TEXT NOT NULL,

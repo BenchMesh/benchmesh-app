@@ -30,7 +30,7 @@ Python/Electron/Node-RED system it replaced is kept only in git (tag `legacy-pyt
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
 | `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
 | `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, virtual SCPI instruments (`scpi/`), UI; `benchmesh-server` binary |
-| `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
+| `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`, 0600 with its journal: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
 
@@ -65,7 +65,9 @@ addresses. Browsers sign in (`/remote/login`, PBKDF2 hash in `<data dir>/remote.
 limited) and get a `__Host-` session cookie; `remote::gate` checks Host/Origin, the session and the
 route's scope (`remote/scope.rs`: unclassified routes are `admin` = this computer only; remote
 sessions hold every scope except `admin`: remote access itself, MCP, assistant keys, the Windows
-driver install). The app window and remote browsers work at the same time; the top bar shows
+driver install). An optional **view-only password** (`PUT|DELETE /remote/view-password`) signs in
+sessions of role `view`: the gate refuses everything but GET/HEAD (and sign-out) with 403, the UI
+shows **Remote - view only**, panel bodies `inert`, no park or new recording (`useViewOnly`). The app window and remote browsers work at the same time; the top bar shows
 **Remote: N** with **Disconnect all and switch off**; ending a session closes its WebSockets.
 Headless: `benchmesh-server remote-password` (stdin). Future online accounts map onto the same
 principals/scopes (see the contract).

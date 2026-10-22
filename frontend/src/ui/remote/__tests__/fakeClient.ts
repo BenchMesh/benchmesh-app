@@ -4,13 +4,13 @@ import { ApiError } from '../../automation/client'
 import type { RemoteClient, RemoteStatus, SessionInfo } from '../client'
 
 export const SESSIONS = [
-  { id: 's1', address: '192.168.1.30', agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36', since: Date.now() - 60000, last_seen: Date.now() },
-  { id: 's2', address: '192.168.1.31', agent: 'Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0', since: Date.now() - 30000, last_seen: Date.now() },
+  { id: 's1', role: 'control' as const, address: '192.168.1.30', agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36', since: Date.now() - 60000, last_seen: Date.now() },
+  { id: 's2', role: 'view' as const, address: '192.168.1.31', agent: 'Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0', since: Date.now() - 30000, last_seen: Date.now() },
 ]
 
 export function fakeRemote(over: Partial<RemoteStatus> = {}, session: SessionInfo = { principal: 'local' }) {
   const state: RemoteStatus = {
-    enabled: false, port: 57667, password_set: false, listening: false, error: null, urls: [], fingerprint: null, sessions: [], ...over,
+    enabled: false, port: 57667, password_set: false, view_password_set: false, listening: false, error: null, urls: [], fingerprint: null, sessions: [], ...over,
   }
   const listen = () => {
     state.listening = state.enabled
@@ -33,6 +33,16 @@ export function fakeRemote(over: Partial<RemoteStatus> = {}, session: SessionInf
       if (p.length < 10) throw new ApiError('too short', 400)
       state.password_set = true
       state.sessions = []
+    }),
+    setViewPassword: vi.fn(async (p: string) => {
+      if (p.length < 10) throw new ApiError('too short', 400)
+      if (!state.password_set) throw new ApiError('set the remote access password first', 409)
+      state.view_password_set = true
+      state.sessions = state.sessions.filter((s) => s.role !== 'view')
+    }),
+    removeViewPassword: vi.fn(async () => {
+      state.view_password_set = false
+      state.sessions = state.sessions.filter((s) => s.role !== 'view')
     }),
     disconnect: vi.fn(async (id) => { state.sessions = state.sessions.filter((s) => s.id !== id) }),
     disconnectAll: vi.fn(async () => { state.sessions = [] }),

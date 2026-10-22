@@ -19,6 +19,7 @@ import { SignalScope } from '../recording/signal'
 import { useParkControl } from './parking'
 import { offlineReason } from './offline'
 import { useRun } from '../automation/RunProvider'
+import { useViewOnly } from '../remote/RemoteProvider'
 
 const CONSOLES_KEY = 'benchmesh:consoles'
 
@@ -138,6 +139,8 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
   const [showConsole, setShowConsole] = useState(() => consoleOpen(consoleKey))
   const toggleConsole = () => { setConsoleOpen(consoleKey, !showConsole); setShowConsole(!showConsole) }
   const online = isOnline(registry, instrument)
+  // a view-only remote session sees the panel and cannot use it (`inert`: no pointer, no focus)
+  const viewOnly = useViewOnly()
   const cls = instrument.classes.find((c) => c.class === klass)
   const channels = (cls?.channels ?? []).map((p) => p.split('/').pop() || '1')
   const idn = registry?.[instrument.id]?.IDN ?? instrument.IDN
@@ -147,7 +150,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
   const multi = channels.length > 1
 
   return (
-    <article ref={el} className={`bench-panel bench-panel--${klass.toLowerCase()}${online ? '' : ' bench-panel--offline'}${folded ? ' bench-panel--folded' : ''}`}
+    <article ref={el} className={`bench-panel bench-panel--${klass.toLowerCase()}${online ? '' : ' bench-panel--offline'}${folded ? ' bench-panel--folded' : ''}${viewOnly ? ' bench-panel--view' : ''}`}
       aria-label={`${title}: ${instrument.name ?? instrument.id}`}>
       <header className={`bench-panel__head${win?.onDragStart ? ' bench-panel__head--drag' : ''}`}
         onPointerDown={(e) => {
@@ -177,7 +180,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
               <button type="button" className="bench-wbtn" aria-pressed={win.onTop.on} onClick={win.onTop.toggle}
                 aria-label="Keep on top" title={win.onTop.on ? 'Kept on top of other windows' : 'Keep on top of other windows'}><PinIcon /></button>
             )}
-            {!arrange && <ParkButton instrument={instrument} registry={registry} onParked={win.onParked} />}
+            {!arrange && !viewOnly && <ParkButton instrument={instrument} registry={registry} onParked={win.onParked} />}
             <button type="button" className="bench-wbtn" onClick={win.onFold} aria-expanded={!folded}
               aria-label={folded ? 'Unfold' : 'Fold'} title={folded ? 'Unfold' : 'Fold to the header'}>{folded ? <UnfoldIcon /> : <FoldIcon />}</button>
             {win.onDetach && (
@@ -207,7 +210,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
           </span>
         )}
       </header>
-      {folded ? null : <div className="bench-panel__body">{!meta ? (
+      {folded ? null : <div className="bench-panel__body" {...(viewOnly ? { inert: '' } : {})}>{!meta ? (
         <span className="bench-hint">Loading…</span>
       ) : !perChannel ? (
         // one screen for all channels: the scope panel is per instrument, not per channel

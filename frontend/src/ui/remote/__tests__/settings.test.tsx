@@ -155,3 +155,44 @@ describe('admin controls for a remote browser', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Install driver' })).toBeNull())
   })
 })
+
+describe('view-only password', () => {
+  it('is offered once the remote access password is set; set, then removed', async () => {
+    const { client, state } = fakeRemote({ password_set: true, sessions: structuredClone(SESSIONS) })
+    withRemote(client, <RemoteSettings />)
+    const form = await screen.findByRole('form', { name: 'View-only password' })
+    expect(within(form).getByTestId('view-password-state').textContent).toMatch(/change nothing\. Not set\./)
+    fireEvent.change(within(form).getByLabelText('View-only password'), { target: { value: 'look only please' } })
+    fireEvent.change(within(form).getByLabelText('Repeat view-only password'), { target: { value: 'look only please' } })
+    fireEvent.click(within(form).getByRole('button', { name: 'Set view-only password' }))
+    await within(form).findByText('Password saved; every view-only browser was signed out.')
+    expect(client.setViewPassword).toHaveBeenCalledWith('look only please')
+    expect(client.setPassword).not.toHaveBeenCalled()
+    expect(state.sessions.map((s) => s.id)).toEqual(['s1'])
+    expect(within(form).getByTestId('view-password-state').textContent).toBe('Password set')
+
+    fireEvent.click(within(form).getByRole('button', { name: 'Remove' }))
+    await within(form).findByText('View-only password removed.')
+    expect(state.view_password_set).toBe(false)
+  })
+
+  it('is not offered before the remote access password', async () => {
+    const { client } = fakeRemote()
+    withRemote(client, <RemoteSettings />)
+    await screen.findByRole('form', { name: 'Remote access password' })
+    expect(screen.queryByRole('form', { name: 'View-only password' })).toBeNull()
+  })
+
+  it('sessions show their role; a view-only browser sees it in the top bar', async () => {
+    const { client } = fakeRemote({ enabled: true, password_set: true, view_password_set: true, sessions: structuredClone(SESSIONS) })
+    withRemote(client, <RemoteSettings />)
+    const list = await screen.findByRole('list', { name: 'Remote sessions' })
+    const items = within(list).getAllByRole('listitem')
+    expect(within(items[0]).queryByText('view only')).toBeNull()
+    expect(within(items[1]).getByText('view only')).toBeTruthy()
+
+    const viewer = fakeRemote({}, { principal: 'remote', role: 'view', address: '192.168.1.31', since: 1 })
+    withRemote(viewer.client, <RemoteBadge />)
+    expect(await screen.findByText('Remote - view only')).toBeTruthy()
+  })
+})

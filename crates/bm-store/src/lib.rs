@@ -13,7 +13,7 @@
 //! ```
 //! WAL mode, foreign keys on. The v1 tables of the former Python service are dropped.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use rusqlite::{params, Connection, OptionalExtension};
@@ -202,12 +202,38 @@ pub struct Store {
     conn: Mutex<Connection>,
 }
 
+/// Recordings are the user's data: only the user may read the database (Unix 0600; Windows
+/// keeps the profile's own ACLs). A new file is created private; an existing one is tightened.
+fn make_private(path: &Path) -> Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        let err = |e: std::io::Error| StoreError::Db(format!("{}: {e}", path.display()));
+        if !path.exists() {
+            std::fs::OpenOptions::new().write(true).create(true).truncate(false).mode(0o600).open(path).map_err(err)?;
+        }
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).map_err(err)?;
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+    Ok(())
+}
+
 impl Store {
     pub fn open(path: &Path) -> Result<Store> {
         if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
             std::fs::create_dir_all(dir).map_err(|e| StoreError::Db(format!("{}: {e}", dir.display())))?;
         }
-        Self::init(Connection::open(path)?)
+        make_private(path)?;
+        let store = Self::init(Connection::open(path)?)?;
+        // SQLite gives -wal / -shm the database's mode; older installs made them 0644
+        for ext in ["-wal", "-shm"] {
+            let side = PathBuf::from(format!("{}{ext}", path.display()));
+            if side.exists() {
+                make_private(&side)?;
+            }
+        }
+        Ok(store)
     }
 
     pub fn in_memory() -> Result<Store> {
@@ -536,6 +562,34 @@ mod tests {
         let s = Store::in_memory().unwrap();
         let r = s.create_recording("run", "", interval, 1_000).unwrap();
         (s, r)
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_database_and_its_journal_are_private() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("bm-store-private-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        let db = dir.join("recordings.db");
+        {
+            let s = Store::open(&db).unwrap();
+            s.create_recording("a", "", 1, 1_000).unwrap();
+            assert_eq!(mode(&db), 0o600, "new database");
+            assert_eq!(mode(&dir.join("recordings.db-wal")), 0o600, "its journal");
+        }
+        // an older install made it 0644: opening tightens it
+        std::fs::set_permissions(&db, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let _s = Store::open(&db).unwrap();
+        assert_eq!(mode(&db), 0o600);
+        for side in ["recordings.db-wal", "recordings.db-shm"] {
+            let p = dir.join(side);
+            if p.exists() {
+                assert_eq!(mode(&p), 0o600, "{side}");
+            }
+        }
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

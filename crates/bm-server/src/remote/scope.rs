@@ -61,6 +61,7 @@ mod tests {
         assert_eq!(s("POST", "/mcp"), Scope::Admin);
         assert_eq!(s("PUT", "/remote"), Scope::Admin);
         assert_eq!(s("PUT", "/remote/password"), Scope::Admin);
+        assert_eq!(s("PUT", "/remote/view-password"), Scope::Admin);
         assert_eq!(s("DELETE", "/remote/sessions"), Scope::Admin);
         assert_eq!(s("GET", "/remote/session"), Scope::Instruments);
         assert_eq!(s("PUT", "/scpi"), Scope::Admin, "virtual SCPI ports are set up on this computer only");
@@ -90,6 +91,8 @@ mod tests {
                 "get /remote",
                 "put /remote",
                 "put /remote/password",
+                "put /remote/view-password",
+                "delete /remote/view-password",
                 "delete /remote/sessions",
                 "delete /remote/sessions/{id}",
             ]

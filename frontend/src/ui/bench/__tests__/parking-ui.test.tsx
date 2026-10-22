@@ -8,6 +8,8 @@ import { RequestLogProvider } from '../../RequestLogContext'
 import { RunProvider } from '../../automation/RunProvider'
 import { AutomationClient } from '../../automation/client'
 import { Instrument } from '../../types'
+import { RemoteProvider } from '../../remote/RemoteProvider'
+import { fakeRemote } from '../../remote/__tests__/fakeClient'
 
 const tenma: Instrument = { id: 'tenma', name: 'Tenma', IDN: 'TENMA 72-2540 V2.1', classes: [{ class: 'PSU', channels: ['/instruments/PSU/tenma/1'] }] }
 const live = (output: string) => ({ tenma: { IDN: 'TENMA 72-2540 V2.1', PSU: { status_ch1: { OUTPUT: output } } } })
@@ -123,5 +125,24 @@ describe('own window of a parked instrument', () => {
     const close = vi.spyOn(window, 'close').mockImplementation(() => {})
     wrap(<PanelWindow panelKey="tenma:PSU" />)
     await waitFor(() => expect(close).toHaveBeenCalled())
+  })
+})
+
+describe('a view-only remote session', () => {
+  it('sees the panel but gets no park control and an inert body', async () => {
+    const { client } = fakeRemote({}, { principal: 'remote', role: 'view', address: '192.168.1.31', since: 1 })
+    const { container } = wrap(<RemoteProvider client={client} onSessionEnded={() => {}}>{panel(live('OFF'))}</RemoteProvider>)
+    await waitFor(() => expect(container.querySelector('.bench-panel--view')).not.toBeNull())
+    expect(screen.queryByRole('button', { name: 'Park instrument' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Fold' })).toBeTruthy()
+    expect(container.querySelector('.bench-panel__body')?.hasAttribute('inert')).toBe(true)
+  })
+
+  it('a control session keeps every control', async () => {
+    const { client } = fakeRemote({}, { principal: 'remote', role: 'control', address: '192.168.1.30', since: 1 })
+    const { container } = wrap(<RemoteProvider client={client} onSessionEnded={() => {}}>{panel(live('OFF'))}</RemoteProvider>)
+    await waitFor(() => expect(client.session).toHaveBeenCalled())
+    expect(screen.getByRole('button', { name: 'Park instrument' })).toBeTruthy()
+    expect(container.querySelector('.bench-panel__body')?.hasAttribute('inert')).toBe(false)
   })
 })

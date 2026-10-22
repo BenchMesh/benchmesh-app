@@ -12,6 +12,10 @@ the same bench as the app window: panels, recordings, automation and instrument 
 The app window and remote browsers work at the same time; every change made in one shows in
 the others, as with two app windows today. A detached panel opens as a browser popup.
 
+An optional second password, the **view-only password**, signs in browsers that see the bench
+(panels, live values, recordings, flows, the instrument console) and change nothing: a
+supervisor, a student at the next bench, a screen on the wall.
+
 The local listener (`127.0.0.1:57666`, what the app window uses) stays as it is: loopback
 only, no password. **Nothing listens on the network without the password any more**:
 `BENCHMESH_LISTEN`, `BENCHMESH_ALLOWED_HOSTS` and `benchmesh-server --host` are removed.
@@ -24,7 +28,8 @@ session, never by anything the client says:
 | Principal | How | Scopes |
 |---|---|---|
 | `local` | the loopback listener (the app window, scripts and MCP clients on this computer) | all |
-| `remote` | the network listener with a valid session cookie | all except `admin` |
+| `remote` (role `control`) | the network listener with a session signed in with the remote access password | all except `admin` |
+| `remote` (role `view`) | the network listener with a session signed in with the view-only password | reads only: `GET`/`HEAD` (which includes WebSockets) of every scope except `admin`, plus sign-out |
 | (future) `online` | a BenchMesh online account (see below) | granted per account, e.g. `instruments` for chosen instruments |
 
 The scopes of the routes (`remote/scope.rs`; routes not listed there are `admin`, so a new route
@@ -43,7 +48,11 @@ is local-only until it is classified):
   administrator prompt on this computer)
 
 A remote request for an `admin` route gets `403 {"detail": "... only from the BenchMesh app on
-this computer"}`. The UI hides those controls for a remote principal.
+this computer"}`. The UI hides those controls for a remote principal. A view-only session's
+request with any other method gets `403 {"detail": "this session is view only: ..."}`, checked
+in `remote::gate` before any handler runs; no `GET` changes the bench (queries only read, and the
+WebSockets take nothing from the client). The UI shows **Remote - view only** in the top bar,
+makes the panel bodies `inert`, and offers no park control or new recording.
 
 ## Threats and what stops them
 
@@ -67,7 +76,9 @@ private networks.
 ## Settings and storage
 
 `<data dir>/remote.json` (0600): `{"enabled": bool, "port": 57667, "password": {"salt",
-"iterations", "hash"} (hex)}`. `<data dir>/remote-tls/cert.der` and `key.der` (0600): made
+"iterations", "hash"} (hex), "view_password": same or absent}`. A view-only password needs the
+remote access password, and the two must differ (a sign-in tries the remote access password
+first, then the view-only one). `<data dir>/remote-tls/cert.der` and `key.der` (0600): made
 once (it names `localhost` and the addresses the computer had then) and kept, so its fingerprint
 stays the one users accepted; delete the folder for a new one. When `enabled` is saved with a
 password, the network listener starts at once and again at every start. Headless:
@@ -77,25 +88,29 @@ password, the network listener starts at once and again at every start. Headless
 
 Admin (local only):
 
-- `GET /remote` → `{"enabled", "port" (the bound one while listening), "password_set", "listening", "error", "urls":
-  ["https://192.168.1.20:57667/"], "fingerprint": "AB:CD:...", "sessions": [{"id", "address",
+- `GET /remote` → `{"enabled", "port" (the bound one while listening), "password_set", "view_password_set", "listening", "error", "urls":
+  ["https://192.168.1.20:57667/"], "fingerprint": "AB:CD:...", "sessions": [{"id", "role" ("control" | "view"), "address",
   "agent", "since", "last_seen"}]}` (times in ms since epoch; `id` is not the token)
 - `PUT /remote` `{"enabled": bool, "port"?: n}` → as `GET`. Enabling needs a password (409);
   switching off ends every session.
-- `PUT /remote/password` `{"password"}` → 204; 400 when shorter than 10 characters; ends every
-  session.
+- `PUT /remote/password` `{"password"}` → 204; 400 when shorter than 10 characters; 409 when it
+  is the view-only password; ends every session.
+- `PUT /remote/view-password` `{"password"}` → 204; 400 when shorter than 10 characters; 409
+  without a remote access password or when it is that password; ends every view-only session.
+- `DELETE /remote/view-password` → 204; ends every view-only session.
 - `DELETE /remote/sessions/{id}`, `DELETE /remote/sessions` → 204
 
 Everyone (both listeners):
 
-- `GET /remote/session` → `{"principal": "local"}` or `{"principal": "remote", "address",
+- `GET /remote/session` → `{"principal": "local"}` or `{"principal": "remote", "role", "address",
   "since"}`; on the network listener without a session: 401.
 - `POST /remote/logout` → 303 to `/remote/login` (ends this session).
 
 Network listener only:
 
 - `GET /remote/login` → the sign-in page (plain HTML, no scripts).
-- `POST /remote/login` (form `password`) → 303 to `/ui/` with the session cookie, or 303 back to
+- `POST /remote/login` (form `password`: the remote access password signs in a `control`
+  session, the view-only password a `view` one) → 303 to `/ui/` with the session cookie, or 303 back to
   the login page with an error (wrong password, or wait N seconds).
 - Without a session, a page navigation goes to `/remote/login` (303); anything else is 401.
 

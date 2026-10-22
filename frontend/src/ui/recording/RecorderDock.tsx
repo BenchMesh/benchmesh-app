@@ -10,6 +10,7 @@ import { buildOption, chartSeries, LIVE_WINDOW_MS } from './chartModel'
 import { ConfirmButton, durationText, LazyChart, SeriesLegend, useChartTheme, useNow } from './charts'
 import { NewRecordingForm } from './NewRecordingForm'
 import { RecordingsApi, useRecordings } from './RecordingsProvider'
+import { useViewOnly } from '../remote/RemoteProvider'
 import { isActive, Recording, RecordingData } from './types'
 import './recording.css'
 
@@ -53,6 +54,7 @@ export function RecorderDock() {
 function Dock({ rec }: { rec: RecordingsApi }) {
   const [prefs, setPrefs] = useState(loadDockPrefs)
   const [creating, setCreating] = useState(false)
+  const viewOnly = useViewOnly()
   useEffect(() => { saveDockPrefs(prefs) }, [prefs])
   const active = rec.recordings.filter(isActive)
   const now = useNow(1000, active.length > 0)
@@ -79,7 +81,7 @@ function Dock({ rec }: { rec: RecordingsApi }) {
             </div>
           ))}
         </div>
-        <button type="button" className="bench-btn rec-dock__new" aria-expanded={creating} onClick={() => setCreating((c) => !c)}>+ New recording</button>
+        {!viewOnly && <button type="button" className="bench-btn rec-dock__new" aria-expanded={creating} onClick={() => setCreating((c) => !c)}>+ New recording</button>}
         <button type="button" className="bench-wbtn rec-dock__toggle" aria-expanded={prefs.expanded}
           aria-label={prefs.expanded ? 'Collapse recorder' : 'Expand recorder'} title={prefs.expanded ? 'Collapse' : 'Expand'}
           onClick={() => set({ expanded: !prefs.expanded })}>
