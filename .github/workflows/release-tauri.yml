@@ -142,6 +142,8 @@ jobs:
                "BenchMesh was blocked…" and click **Open Anyway** (confirm with your password).
                On macOS 14 and older, Control-click the app → **Open** → **Open** also works.
             This is needed once; later updates install from inside the app.
+            LAN instruments (macOS 15+): allow BenchMesh's Local Network access when asked, or later in
+            System Settings → Privacy & Security → Local Network.
             USB instruments: USBTMC instruments need no driver; USB-serial adapters (CH340, CP210x,
             FTDI) are supported by current macOS - older versions may need the chip vendor's driver.
 

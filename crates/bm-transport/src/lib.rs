@@ -143,7 +143,8 @@ impl TcpTransport {
                     stream.set_nodelay(true)?;
                     return Ok(TcpTransport { stream, buf: vec![0; 65536] });
                 }
-                Err(e) => last = io::Error::new(e.kind(), format!("{target}: {e}")),
+                Err(e) => last = access::explained(&e, access::Port::Network, &target, access::Platform::current())
+                    .unwrap_or_else(|| io::Error::new(e.kind(), format!("{target}: {e}"))),
             }
         }
         Err(last)

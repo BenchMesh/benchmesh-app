@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- macOS 15+: asked when BenchMesh first reaches a LAN instrument (Local Network permission);
+	     merged into the app's Info.plist by the Tauri bundler (next to tauri.conf.json) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>BenchMesh connects to lab instruments on your local network (SCPI socket, VXI-11).</string>
+</dict>
+</plist>

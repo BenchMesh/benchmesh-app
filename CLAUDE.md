@@ -120,11 +120,13 @@ of a fixed `port`/`device`; the instrument is then found on whatever port it is 
 every reconnect, on Linux/Windows/macOS without udev rules or admin rights.
 On Windows a USBTMC instrument without a usable driver gets **Install driver** (drawer / Detect):
 the server re-runs its executable elevated (`--install-winusb`, `bm_transport::winusb`) to bind
-Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. On Linux a port the user may not open
-(`/dev/usbtmcN` belongs to root, serial ports to `dialout`) fails with "no permission to use <port> … - see
-<help URL>" (`bm_transport::access`); the panel and Detect show the fixing command with Copy and a "How to fix" link
-(`bench/AccessFix.tsx`) to https://benchmesh.online/docs/linux#usb-permissions / #serial-permissions (the website's
-`/docs/linux`, same commands in its `src/lib/linux.ts`). `POST /devices/detect`
+Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. A port the OS refuses is explained (`bm_transport::access`,
+message ending " - see <help URL>"): Linux "Permission denied" (`/dev/usbtmcN` belongs to root, serial ports to
+`dialout`/`uucp`) and macOS 15+ "No route to host" to a LAN instrument (Local Network permission; the app bundle's
+`crates/benchmesh-app/Info.plist` gives the prompt's reason). The panel and Detect show the fix (`bench/AccessFix.tsx`):
+a command with Copy (Linux), **Open Local Network settings** (macOS desktop app), and "How to fix" to
+https://benchmesh.online/docs/linux#usb-permissions / #serial-permissions / docs/macos#local-network (same commands in
+the website's `src/lib/linux.ts`, section id in `src/lib/macos.ts`). `POST /devices/detect`
 identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
 them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
 lists what the OS reports.

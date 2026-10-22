@@ -92,7 +92,8 @@ impl Rpc {
                     stream.set_nodelay(true)?;
                     return Ok(Rpc { stream, xid: 1 });
                 }
-                Err(e) => last = io::Error::new(e.kind(), format!("{addr}: {e}")),
+                Err(e) => last = crate::access::explained(&e, crate::access::Port::Network, addr, crate::access::Platform::current())
+                    .unwrap_or_else(|| io::Error::new(e.kind(), format!("{addr}: {e}"))),
             }
         }
         Err(last)

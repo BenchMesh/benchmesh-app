@@ -165,3 +165,14 @@ fn main() {
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_mac_bundle_asks_for_the_local_network_with_a_reason() {
+        // merged into the app's Info.plist by the bundler; macOS 15+ shows it in the permission prompt
+        let plist = include_str!("../Info.plist");
+        assert!(plist.contains("<key>NSLocalNetworkUsageDescription</key>"));
+        assert!(plist.contains("lab instruments on your local network"));
+    }
+}

@@ -5,7 +5,7 @@
  */
 import React from 'react'
 
-export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'docs-scpi' | 'docs-python' | 'linux-usb' | 'linux-serial' | 'email'
+export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'docs-scpi' | 'docs-python' | 'linux-usb' | 'linux-serial' | 'macos-local-network' | 'macos-network-settings' | 'email'
 
 export const PAGE_URLS: Record<Page, string> = {
   issues: 'https://github.com/MarkoVcode/BenchMesh/issues',
@@ -17,6 +17,9 @@ export const PAGE_URLS: Record<Page, string> = {
   // the help links in the server's "no permission" messages (bm-transport access.rs)
   'linux-usb': 'https://benchmesh.online/docs/linux#usb-permissions',
   'linux-serial': 'https://benchmesh.online/docs/linux#serial-permissions',
+  'macos-local-network': 'https://benchmesh.online/docs/macos#local-network',
+  // System Settings → Privacy & Security → Local Network (the desktop app on a Mac only)
+  'macos-network-settings': 'x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork',
   email: 'mailto:support@benchmesh.online',
 }
 
