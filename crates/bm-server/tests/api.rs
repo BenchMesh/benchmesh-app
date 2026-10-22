@@ -119,6 +119,7 @@ fn fixture(name: &str) -> Fixture {
         config_lock: Default::default(),
         community: Default::default(),
         remote: Default::default(),
+        scpi: Default::default(),
     });
     let f = Fixture { state, dir };
     // wait until both devices are connected and polled
@@ -192,6 +193,22 @@ async fn get_and_post_operations() {
     assert_eq!(call(&f, "GET", "/instruments/PSU/t1/0/voltage", None, None).await.0, StatusCode::NOT_FOUND);
     assert_eq!(call(&f, "GET", "/instruments/PSU/t1/2/voltage", None, None).await.0, StatusCode::BAD_REQUEST);
     assert_eq!(call(&f, "GET", "/instruments/DMM/t1/1/voltage", None, None).await.0, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn live_status_reads_the_polled_values_without_asking_the_instrument() {
+    let f = fixture("status");
+    let (code, v, _) = call(&f, "GET", "/instruments/PSU/t1/status", None, None).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(v["device_id"], "t1");
+    assert_eq!(v["connected"], true);
+    assert_eq!(v["parked"], false);
+    let ch1 = &v["channels"]["1"];
+    assert!(ch1["status"]["VOUT"]["val"].is_string(), "{v}");
+    let updated = ch1["updated"].as_i64().unwrap();
+    assert!((bm_store::now_ms() - updated).abs() < 10_000, "{updated}");
+    assert_eq!(call(&f, "GET", "/instruments/DMM/t1/status", None, None).await.0, StatusCode::NOT_FOUND);
+    assert_eq!(call(&f, "GET", "/instruments/PSU/zz/status", None, None).await.0, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -35,8 +35,11 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("get", "/instruments/{klass}", "instruments", "Instruments of one class"),
     ("get", "/instruments/{klass}/{id}", "instruments", "UI features of an instrument class (modes, ranges, limits)"),
     ("get", "/instruments/{klass}/{id}/methods", "instruments", "Operations of an instrument class"),
+    ("get", "/instruments/{klass}/{id}/status", "instrument-control", "Latest polled status of an instrument class, nothing sent to the instrument → {device_id, class, connected, parked, channels: {\"1\": {updated (ms), status: {VOUT: {si, sci, val}, OUTPUT: \"ON\", ...}}}} (empty while offline)"),
     ("get", "/instruments/{klass}/{id}/{ch}/{op}", "instrument-control", "Read an operation → {path, value}"),
     ("post", "/instruments/{klass}/{id}/{ch}/{op}/{value}", "instrument-control", "Set an operation (204); 409 = precondition not met"),
+    ("get", "/scpi", "connectors", "Virtual SCPI instruments (this computer only): {access: off|read|control, base_port, host, instruments: [{id, name, port, address (VISA resource), listening, error}]}"),
+    ("put", "/scpi", "connectors", "Set virtual SCPI access {access?: off|read|control, base_port?: 1024-65000} (a new base renumbers the ports) → as GET; this computer only"),
     ("get", "/metrics", "monitoring", "Per-device performance metrics"),
     ("get", "/metrics/{id}", "monitoring", "Performance metrics of one device"),
     ("get", "/recordings", "recordings", "Recordings with series, sample count and last sample time (newest first)"),
@@ -110,6 +113,7 @@ const TAGS: &[(&str, &str)] = &[
     ("recordings", "Data recording"),
     ("automation", "Flows, runs, the flow assistant and MCP settings"),
     ("ai-assistant", "AI assistant context and the MCP endpoint"),
+    ("connectors", "Virtual SCPI instruments for VISA programs (MATLAB, LabVIEW, PyVISA): settings, this computer only"),
     ("remote-access", "Remote access from the local network: settings (this computer only), sign-in, sessions"),
     ("websockets", "Real-time WebSocket streams"),
 ];
@@ -171,7 +175,7 @@ mod tests {
     /// Every `.route("path", method(...))` in the router source must be documented.
     #[test]
     fn every_router_route_is_documented() {
-        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs"), include_str!("remote/mod.rs")];
+        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs"), include_str!("remote/mod.rs"), include_str!("scpi/mod.rs")];
         let mut in_router = BTreeSet::new();
         for src in sources {
             for line in src.lines().filter(|l| l.trim_start().starts_with(".route(\"")) {

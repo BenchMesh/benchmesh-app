@@ -346,8 +346,8 @@
 
 .settings-view__tabs {
   display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
+  /* every tab stays visible: a narrow drawer wraps them onto a second row */
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--sidebar-border);
   background-color: var(--sidebar-background);
 }
@@ -358,7 +358,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 10px 8px;
   white-space: nowrap;
   font-size: 12px;
   font-weight: 500;

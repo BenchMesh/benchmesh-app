@@ -166,7 +166,7 @@ function McpSettings({ client }: { client: AutomationClient }) {
   )
 }
 
-function Snippet({ title, text }: { title: string; text: string }) {
+export function Snippet({ title, text }: { title: string; text: string }) {
   const [copied, setCopied] = useState<boolean | null>(null)
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); setCopied(true) } catch { setCopied(false) }

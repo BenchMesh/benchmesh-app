@@ -2,11 +2,13 @@
 //! A fixed list: the UI is served over HTTP, so it names a page and never passes a URL.
 
 pub const RELEASES: &str = "https://github.com/MarkoVcode/BenchMesh/releases/latest";
-const PAGES: [(&str, &str); 5] = [
+const PAGES: [(&str, &str); 7] = [
     ("issues", "https://github.com/MarkoVcode/BenchMesh/issues"),
     ("new-issue", "https://github.com/MarkoVcode/BenchMesh/issues/new"),
     ("releases", RELEASES),
     ("docs", "https://benchmesh.online/docs"),
+    ("docs-scpi", "https://benchmesh.online/docs/scpi"),
+    ("docs-python", "https://benchmesh.online/docs/python"),
     ("email", "mailto:support@benchmesh.online"),
 ];
 
@@ -25,7 +27,7 @@ pub fn open(url: &str) -> std::io::Result<()> {
     child.map(|_| ())
 }
 
-/// Open one of the known pages (`issues`, `new-issue`, `releases`, `docs`, `email`: the mail app).
+/// Open one of the known pages (`issues`, `new-issue`, `releases`, `docs`, `docs-scpi`, `docs-python`, `email`: the mail app).
 #[tauri::command]
 pub fn open_page(page: String) -> Result<(), String> {
     let url = url_of(&page).ok_or_else(|| format!("unknown page {page:?}"))?;
@@ -41,6 +43,8 @@ mod tests {
         assert_eq!(url_of("new-issue"), Some("https://github.com/MarkoVcode/BenchMesh/issues/new"));
         assert!(url_of("issues").unwrap().ends_with("/issues"));
         assert_eq!(url_of("docs"), Some("https://benchmesh.online/docs"));
+        assert_eq!(url_of("docs-scpi"), Some("https://benchmesh.online/docs/scpi"));
+        assert_eq!(url_of("docs-python"), Some("https://benchmesh.online/docs/python"));
         assert_eq!(url_of("email"), Some("mailto:support@benchmesh.online"));
         assert_eq!(url_of("https://example.com"), None);
         assert_eq!(url_of(""), None);

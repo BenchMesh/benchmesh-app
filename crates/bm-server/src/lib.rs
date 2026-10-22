@@ -27,6 +27,7 @@ pub mod opspec;
 pub mod recordings;
 pub mod remote;
 pub mod run;
+pub mod scpi;
 
 /// For the desktop app's `main`: the elevated Windows driver-install run (see `bm_transport::winusb`).
 pub use bm_transport::winusb::helper_main as winusb_helper_main;
@@ -68,6 +69,8 @@ pub struct AppState {
     pub automation: Arc<automation::Automation>,
     /// Remote access from the local network (`remote/`).
     pub remote: Arc<remote::Remote>,
+    /// Virtual SCPI instruments on this computer (`scpi/`).
+    pub scpi: Arc<scpi::Scpi>,
 }
 
 pub(crate) type S = Arc<AppState>;
@@ -94,6 +97,7 @@ fn routes(state: &S) -> Router<S> {
         .route("/instruments/{klass}", get(instruments_of_class))
         .route("/instruments/{klass}/{id}", get(features))
         .route("/instruments/{klass}/{id}/methods", get(methods))
+        .route("/instruments/{klass}/{id}/status", get(live_status))
         .route("/instruments/{klass}/{id}/{ch}/{op}", get(op_get))
         .route("/instruments/{klass}/{id}/{ch}/{op}/{value}", post(op_set))
         .route("/drivers", get(drivers))
@@ -121,7 +125,8 @@ fn routes(state: &S) -> Router<S> {
         .route("/mcp", get(mcp::get).post(mcp::post))
         .merge(recordings::routes())
         .merge(automation::routes())
-        .merge(remote::routes());
+        .merge(remote::routes())
+        .merge(scpi::routes());
     if let Some(ui) = &state.ui_dir {
         r = r.nest_service("/ui", ServiceBuilder::new().map_request(fresh_ui_request).map_response(unstored_ui_response).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
@@ -353,6 +358,26 @@ async fn methods(State(s): State<S>, Path((klass, id)): Path<(String, String)>) 
     Json(json!({"device_id": id, "class": klass, "methods": list})).into_response()
 }
 
+/// The latest status the device thread polled for one class, per channel, with when it was
+/// updated (ms since 1970): what the bench shows, without sending anything to the instrument.
+async fn live_status(State(s): State<S>, Path((klass, id)): Path<(String, String)>) -> Response {
+    let Some((def, _, _)) = s.devices.lookup(&id) else { return detail(StatusCode::NOT_FOUND, "Unknown device id") };
+    if !def.classes.contains_key(&klass) {
+        return detail(StatusCode::NOT_FOUND, format!("Device {id} has no class {klass}"));
+    }
+    let reg = s.devices.registry.lock().unwrap();
+    let d = reg.devices.get(&id).cloned().unwrap_or_default();
+    let (now, ms) = (std::time::Instant::now(), bm_store::now_ms());
+    let mut channels = Map::new();
+    if d.connected {
+        for (ch, st) in d.status.get(&klass).into_iter().flatten() {
+            let updated = d.status_at.get(&klass).and_then(|m| m.get(ch)).map(|at| ms - now.saturating_duration_since(*at).as_millis() as i64);
+            channels.insert(ch.to_string(), json!({"updated": updated, "status": st}));
+        }
+    }
+    Json(json!({"device_id": id, "class": klass, "connected": d.connected, "parked": d.parked, "channels": channels})).into_response()
+}
+
 /// Error responses are boxed: `Response` is large.
 type Rejection = Box<Response>;
 
@@ -495,6 +520,7 @@ async fn post_config(State(s): State<S>, Json(body): Json<Value>) -> Response {
         started.into_iter().map(|e| devs.start(e)).collect::<Result<Vec<_>, _>>()
     })
     .await;
+    s.scpi.sync();
     if let Err(m) = res {
         return detail(StatusCode::INTERNAL_SERVER_ERROR, m);
     }
@@ -522,7 +548,9 @@ async fn add_device(State(s): State<S>, Json(body): Json<Value>) -> Response {
     if let Err(m) = s.config.save(&all) {
         return detail(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save config: {m}"));
     }
-    if let Err(m) = s.devices.start(e) {
+    let started = s.devices.start(e);
+    s.scpi.sync();
+    if let Err(m) = started {
         return detail(StatusCode::INTERNAL_SERVER_ERROR, m);
     }
     Json(json!({"status": "success", "message": format!("Device {id} added and started")})).into_response()
@@ -580,6 +608,7 @@ async fn delete_device(State(s): State<S>, Path(id): Path<String>) -> Response {
     let devs = s.devices.clone();
     let rid = id.clone();
     blocking(move || devs.stop(&rid)).await;
+    s.scpi.sync();
     Json(json!({"status": "success", "message": format!("Device {id} removed")})).into_response()
 }
 

@@ -1,0 +1,14 @@
+/* Instruments → Connectors. Every colour is a kit token, so all three skins apply. */
+
+.kit-input.connectors__port { width: 10ch; }
+.connectors__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.connectors__item {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px;
+  border: 1px solid transparent; border-radius: var(--kit-r-ctl, 6px); padding: 4px 6px;
+}
+.connectors__item--on { border-color: var(--kit-panel-edge); background: var(--kit-ctl); }
+.connectors__pick {
+  display: flex; flex-wrap: wrap; gap: 2px 10px; min-width: 0; padding: 0; border: 0; background: none;
+  color: var(--kit-ink); font: 400 .78rem/1.35 var(--kit-font-num); text-align: left; cursor: pointer;
+}
+.connectors__pick code { color: var(--kit-ink-2); overflow-wrap: anywhere; }

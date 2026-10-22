@@ -6,11 +6,12 @@
  * - Supported: instruments BenchMesh has definitions for, with each model's support status
  * - Miscellaneous: App settings (skin, start screen, history retention)
  * - Metrics: how busy each instrument's connection is
+ * - Connectors: virtual SCPI instruments for VISA programs and the Python package (only in the app on this computer)
  * - Remote access: control the bench from other computers (only in the app on this computer)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse, VscPlug } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
 import { MetricsView } from './MetricsView';
@@ -19,9 +20,10 @@ import { StartScreenSetting } from './StartScreenSetting';
 import type { Instrument } from '../types';
 import { RemoteSettings } from '../remote/RemoteSettings';
 import { useRemote } from '../remote/RemoteProvider';
+import { ConnectorsView } from '../connectors/ConnectorsView';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'remote';
+type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'remote';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -84,11 +86,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
   // remote access settings are admin: only the local principal on a server that has them
   const remote = useRemote();
   const remoteSettings = remote?.principal === 'local' && remote.status !== null;
+  // virtual SCPI ports listen on this computer: set up from here only
+  const local = remote?.principal !== 'remote';
   const tabs = [
     { id: 'instruments', label: 'Instruments', icon: VscTools },
     { id: 'supported', label: 'Supported', icon: VscChecklist },
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
     { id: 'metrics', label: 'Metrics', icon: VscPulse },
+    ...(local ? [{ id: 'connectors', label: 'Connectors', icon: VscPlug }] : []),
     ...(remoteSettings ? [{ id: 'remote', label: 'Remote access', icon: VscRemote }] : []),
   ] as const;
 
@@ -168,6 +173,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
         )}
 
         {activeTab === 'metrics' && <MetricsView instruments={instruments} />}
+
+        {activeTab === 'connectors' && local && <ConnectorsView />}
 
         {activeTab === 'remote' && remoteSettings && <RemoteSettings />}
       </div>

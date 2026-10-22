@@ -35,6 +35,7 @@ pub struct RunningServer {
     devices: Arc<Devices>,
     recordings: Arc<crate::recordings::Recordings>,
     remote: Arc<crate::remote::Remote>,
+    scpi: Arc<crate::scpi::Scpi>,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
     thread: Option<std::thread::JoinHandle<()>>,
     /// Problems with individual config entries (devices skipped at start).
@@ -55,6 +56,7 @@ impl RunningServer {
 
     fn shutdown_now(&mut self) {
         self.remote.stop();
+        self.scpi.stop();
         self.recordings.shutdown();
         if let Some(tx) = self.shutdown.take() {
             let _ = tx.send(());
@@ -118,6 +120,7 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         community: Default::default(),
         automation: crate::automation::Automation::new(devices.clone(), recordings.clone(), opts.data_dir.clone()),
         remote: Arc::new(crate::remote::Remote::new(opts.data_dir.clone())),
+        scpi: Arc::new(crate::scpi::Scpi::new(opts.data_dir.clone())),
     });
     // community status of the models (website, read-only); a simulation stays offline
     if opts.simulate.is_none() {
@@ -146,6 +149,9 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
     let addr = listener.local_addr().map_err(|e| e.to_string())?;
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let remote = state.remote.clone();
+    let scpi = state.scpi.clone();
+    // virtual SCPI instruments: their ports open now if they are switched on
+    scpi.attach(Arc::downgrade(&state), rt.handle().clone());
     // remote access: the network listener opens now if it is switched on, or later from the UI
     remote.attach(network_router(state.clone()), rt.handle().clone());
     let app = router(state);
@@ -161,5 +167,5 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
             });
         })
         .map_err(|e| e.to_string())?;
-    Ok(RunningServer { addr, devices, recordings, remote, shutdown: Some(tx), thread: Some(thread), warnings })
+    Ok(RunningServer { addr, devices, recordings, remote, scpi, shutdown: Some(tx), thread: Some(thread), warnings })
 }

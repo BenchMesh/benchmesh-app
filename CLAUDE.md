@@ -29,7 +29,7 @@ Python/Electron/Node-RED system it replaced is kept only in git (tag `legacy-pyt
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
 | `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
-| `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, UI; `benchmesh-server` binary |
+| `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, virtual SCPI instruments (`scpi/`), UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
@@ -83,6 +83,19 @@ OpenAI-compatible) and validates the returned flow (up to two self-corrections);
 it. `POST /mcp` (`mcp.rs`) is an MCP server (Streamable HTTP, JSON responses; access off / read
 (default) / control); `benchmesh --mcp` and `benchmesh-server mcp` are stdio bridges to it.
 
+**Connectors** (Instruments → Connectors, `frontend/src/ui/connectors/`): **virtual SCPI instruments**
+(contract `ai_context/SCPI.md`, `crates/bm-server/src/scpi/`): off by default (access off / read /
+control, `<data dir>/scpi.json`); every configured instrument gets a raw SCPI socket on
+`127.0.0.1` (`TCPIP0::127.0.0.1::<port>::SOCKET`, ports from `base_port` 5025, kept per instrument)
+so MATLAB, LabVIEW, PyVISA and TestStand use it like a LAN instrument whatever its own link. Dialect:
+`*IDN?`, `[CLS:][CHn:]<op>?` / `<op> <value>` (the definition's operations), `FETCh:<field>?`
+(latest polled status), `SYST:ERR?`, `SYST:HELP:HEAD?`; a failed query answers an empty line.
+A connection that sends an HTTP request line or header is closed (a web page cannot smuggle
+commands); setters for an instrument the running flow uses answer -221; `GET|PUT /scpi` are admin.
+The **Python package** `benchmesh` (PyPI, zero dependencies; separate repository, local copy
+`../benchmesh-python`) wraps the REST API: read / set / status / watch, recordings to pandas, flows,
+remote access with certificate pinning.
+
 **Website (BenchMeshOnline, `../BenchMeshOnline`):** the public instrument database is exported
 from the definitions (`cargo run -p bm-devicedef -- export devices --notes
 ai_context/website/instrument-notes.yaml`, schema `benchmesh.instruments/v1`, no wire details)
@@ -116,6 +129,8 @@ Bench/hardware notes and wire captures: `captures/` (golden transcripts replayed
 ## Instrument API
 
 - `GET /instruments`, `/instruments/{CLS}`, `/instruments/{CLS}/{id}` (features), `/instruments/{CLS}/{id}/methods`
+- `GET /instruments/{CLS}/{id}/status`: the latest polled status per channel with its update time
+  (ms), nothing sent to the instrument (what the bench shows; used by the Python package).
 - `GET /instruments/{CLS}/{id}/{ch}/{op}` runs the definition's **query** `op`; `POST
   /instruments/{CLS}/{id}/{ch}/{op}/{value}` runs its **setter**. Only operations the definition
   declares for that class can be called, a GET never runs a setter and a POST never runs a query;
@@ -135,7 +150,7 @@ Bench/hardware notes and wire captures: `captures/` (golden transcripts replayed
 ## Configuration and user data
 
 User data lives in `~/.benchmesh/` (`BENCHMESH_DATA_DIR`): `config.yaml` (the instruments),
-`recordings.db`, `flows/`, `automation.json`. A simulation (`--simulate <capture>`) keeps
+`recordings.db`, `flows/`, `automation.json`, `scpi.json`. A simulation (`--simulate <capture>`) keeps
 recordings, flows and settings in memory. `config.yaml`:
 
 ```yaml
@@ -178,7 +193,7 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/ParkingStrip.tsx`, `bench/parking.ts` | parked instruments (`ai_context/PARKING.md`): park control in the panel header (asks twice with an output on, disabled while the running flow uses the instrument), slim strip left of the rack with presence dot and name, sheet with details and Unpark |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden / channel layout of multi-channel panels (side by side or stacked), persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx`, `bench/TitleBar.tsx` | shell: a sticky head of two rows - the **title bar** (brand, version on its baseline, **Arrange** as an app control, then on Windows/Linux the window controls minimize / maximize / close; the bar drags the window, a double press maximizes) and the top bar (API / live / run / Remote on the left, drawer buttons on the right) - **Arrange** mode (drag, ◀ ▶, width, channels ⇆ / ⇅, hide), drawers (Instruments config, Request log; they open below the head, which stays usable: a menu button switches the open drawer). The desktop app's main window has no OS title bar on Windows and Linux (`decorations(false)` in `benchmesh-app` main.rs, permissions `capabilities/main-window.json`); macOS keeps its native title bar and the UI shows no window controls there (`desktop.ts` `hasOwnWindowControls`) |
-| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), Remote access; request log |
+| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), **Connectors** (`connectors/`: virtual SCPI access, addresses with MATLAB / PyVISA / LabVIEW code, the Python package; this computer only), Remote access; request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
 | `kit/brand.ts`, `kit/BrandMark.tsx` | the logo ("Readout": seven-segment b, ghost segments, amber decimal point): one geometry, colours on dark / on light; `BrandMark` follows the skin (`--kit-brand-*`) or takes fixed colours (website). `node scripts/logo/build.mjs` writes `docs/static/logo/*.svg`, `frontend/public/favicon.svg` and the app icons (`crates/benchmesh-app/icons`, via Inkscape + `cargo tauri icon`); a test fails when they are stale |
 | `about/` | title-bar version (`GET /version`, `version.ts`) and the **Feedback** drawer (`AboutView.tsx`: version, Copy version, GitHub issues links, contact email support@benchmesh.online with Copy email). External pages open by name (`links.tsx`): in the desktop app the system browser (or mail app) via the `open_page` command (fixed list, `crates/benchmesh-app/src/links.rs`, capability `links.json`), in a browser a new tab |

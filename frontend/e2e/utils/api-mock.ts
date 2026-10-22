@@ -133,7 +133,7 @@ export const mockOpenApi = {
 
 const API_PREFIXES = [
   '/instruments', '/drivers', '/config', '/devices', '/serial-ports', '/usbtmc-devices',
-  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote',
+  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote', '/scpi',
 ];
 
 export interface RecordedRequest { method: string; path: string; body?: string | null }
@@ -181,6 +181,8 @@ export interface ApiMock {
   /** Samples per series id for `GET /recordings/{id}/data`. */
   samples: Map<number, { t: number[]; v: number[] }>;
   remote: MockRemote;
+  /** Virtual SCPI settings (`GET|PUT /scpi`). */
+  scpi: { access: 'off' | 'read' | 'control'; base_port: number };
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -301,6 +303,23 @@ async function handleRecordings(route: Route, api: ApiMock, segs: string[], url:
   return json(route, { detail: 'Not found' }, 404);
 }
 
+/** Virtual SCPI instruments: one port per mocked instrument from the base port. */
+async function handleScpi(route: Route, api: ApiMock) {
+  const req = route.request();
+  if (req.method() === 'PUT') {
+    const body = (() => { try { return JSON.parse(req.postData() ?? 'null'); } catch { return null; } })();
+    if (body?.access !== undefined && !['off', 'read', 'control'].includes(body.access)) return json(route, { detail: 'access: use off, read or control' }, 422);
+    if (body?.access) api.scpi.access = body.access;
+    if (typeof body?.base_port === 'number') api.scpi.base_port = body.base_port;
+  }
+  const on = api.scpi.access !== 'off';
+  const instruments = api.instruments.map((i: any, n: number) => {
+    const port = api.scpi.base_port + n;
+    return { id: i.id, name: i.name ?? i.id, port, address: `TCPIP0::127.0.0.1::${port}::SOCKET`, listening: on, error: null };
+  });
+  return json(route, { ...api.scpi, host: '127.0.0.1', instruments });
+}
+
 const remoteStatus = (r: MockRemote) => ({
   enabled: r.enabled, port: 57667, password_set: r.password_set, listening: r.enabled, error: null,
   urls: r.enabled ? [REMOTE_URL] : [], fingerprint: r.enabled ? REMOTE_FINGERPRINT : null, sessions: r.enabled ? r.sessions : [],
@@ -354,6 +373,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
     recordingRequests: [],
     samples: new Map(),
     remote: { session: { principal: 'local' }, enabled: false, password_set: false, sessions: [], requests: [] },
+    scpi: { access: 'off', base_port: 5025 },
   };
 
   await page.route(
@@ -388,6 +408,8 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return handleRecordings(route, api, segs, url);
         case 'remote':
           return handleRemote(route, api, segs);
+        case 'scpi':
+          return handleScpi(route, api);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
         case 'openapi.json':

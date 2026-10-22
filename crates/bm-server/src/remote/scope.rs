@@ -63,6 +63,7 @@ mod tests {
         assert_eq!(s("PUT", "/remote/password"), Scope::Admin);
         assert_eq!(s("DELETE", "/remote/sessions"), Scope::Admin);
         assert_eq!(s("GET", "/remote/session"), Scope::Instruments);
+        assert_eq!(s("PUT", "/scpi"), Scope::Admin, "virtual SCPI ports are set up on this computer only");
         assert_eq!(s("GET", "/something-new"), Scope::Admin, "unknown routes are local-only");
     }
 
@@ -79,6 +80,8 @@ mod tests {
             admin,
             [
                 "post /usbtmc-devices/driver",
+                "get /scpi",
+                "put /scpi",
                 "put /automation/assistant",
                 "get /automation/mcp",
                 "put /automation/mcp",
