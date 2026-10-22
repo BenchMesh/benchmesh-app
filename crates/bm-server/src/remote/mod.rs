@@ -406,7 +406,7 @@ async fn put_password(State(s): State<S>, p: Principal, Json(b): Json<PasswordBo
     let (_, view) = s.remote.passwords();
     let hash = match hash_unless_same(b.password, view).await {
         Ok(h) => h,
-        Err(r) => return r,
+        Err((status, why)) => return detail(status, why),
     };
     match s.remote.set_password(hash, false) {
         Ok(()) => {
@@ -418,7 +418,7 @@ async fn put_password(State(s): State<S>, p: Principal, Json(b): Json<PasswordBo
 }
 
 /// Hash a new password, refused (409) when it is the other one: the two must tell the roles apart.
-async fn hash_unless_same(new: String, other: Option<PasswordHash>) -> Result<PasswordHash, Response> {
+async fn hash_unless_same(new: String, other: Option<PasswordHash>) -> Result<PasswordHash, (StatusCode, String)> {
     let done = tokio::task::spawn_blocking(move || {
         if other.is_some_and(|o| password::verify(&o, &new)) {
             return None;
@@ -428,8 +428,8 @@ async fn hash_unless_same(new: String, other: Option<PasswordHash>) -> Result<Pa
     .await;
     match done {
         Ok(Some(h)) => Ok(h),
-        Ok(None) => Err(detail(StatusCode::CONFLICT, "the remote access password and the view-only password must differ")),
-        Err(e) => Err(detail(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+        Ok(None) => Err((StatusCode::CONFLICT, "the remote access password and the view-only password must differ".into())),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }
 
@@ -446,7 +446,7 @@ async fn put_view_password(State(s): State<S>, p: Principal, Json(b): Json<Passw
     }
     let hash = match hash_unless_same(b.password, control).await {
         Ok(h) => h,
-        Err(r) => return r,
+        Err((status, why)) => return detail(status, why),
     };
     match s.remote.set_view_password(Some(hash)) {
         Ok(()) => {
