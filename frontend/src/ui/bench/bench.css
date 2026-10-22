@@ -4,8 +4,10 @@
 
 html, body { background: var(--kit-ground); }
 
+/* the window never scrolls: the head (title bar + top bar) and the recorder dock are fixed rows,
+   only .bench-body (parking strip + rack) scrolls - its scrollbar starts below the head */
 .bench {
-  min-height: 100vh;
+  height: 100vh; height: 100dvh; overflow: hidden;
   background: var(--kit-ground);
   color: var(--kit-ink);
   font: 400 14px/1.45 var(--kit-font-label);
@@ -16,7 +18,7 @@ html, body { background: var(--kit-ground); }
 /* ---- top bar ---------------------------------------------------------------------- */
 /* head: row 1 title bar (TitleBar.tsx) and row 2 status + drawers, kept in view together */
 .bench-head {
-  position: sticky; top: 0; z-index: 20;
+  flex: none; position: relative; z-index: 20;
   background: color-mix(in srgb, var(--kit-ground) 88%, transparent);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--kit-panel-edge);
@@ -261,11 +263,11 @@ html, body { background: var(--kit-ground); }
 }
 
 /* ---- parking: parked instruments in a slim strip left of the rack ------------------- */
-.bench-body { flex: 1; display: flex; min-width: 0; }
+.bench-body { flex: 1; display: flex; min-width: 0; min-height: 0; overflow: auto; }
 .bench-body > .bench-main { flex: 1; min-width: 0; }
 .bench-parking {
   flex: none; width: 34px; align-self: flex-start; z-index: 15;
-  position: sticky; top: var(--bench-top-h, 96px);
+  position: sticky; top: 0; /* in the scrolling .bench-body */
   max-height: calc(100vh - var(--bench-top-h, 96px));
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 14px 0 14px max(4px, env(safe-area-inset-left, 0px));

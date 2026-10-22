@@ -19,6 +19,27 @@ test.describe('Title bar', () => {
   });
 });
 
+test.describe('Scrolling', () => {
+  test('only the content scrolls: the title bar and the top bar never move and the scrollbar starts below them', async ({ mockPage }) => {
+    await mockPage.setViewportSize({ width: 900, height: 360 });
+    const body = mockPage.locator('.bench-body');
+    await expect(mockPage.locator('.bench-panel').first()).toBeVisible();
+    const m = await mockPage.evaluate(() => {
+      const head = document.querySelector('.bench-head')!.getBoundingClientRect();
+      const b = document.querySelector('.bench-body')!;
+      const doc = document.scrollingElement!;
+      return { headBottom: head.bottom, bodyTop: b.getBoundingClientRect().top, overflow: b.scrollHeight > b.clientHeight, docScrolls: doc.scrollHeight > doc.clientHeight };
+    });
+    expect(m.overflow).toBe(true);
+    expect(m.docScrolls).toBe(false);
+    expect(Math.abs(m.bodyTop - m.headBottom)).toBeLessThan(1);
+    await body.evaluate((e) => e.scrollTo(0, e.scrollHeight));
+    expect(await body.evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    expect(await mockPage.locator('.bench-head').evaluate((e) => e.getBoundingClientRect().top)).toBe(0);
+    expect(await mockPage.evaluate(() => window.scrollY)).toBe(0);
+  });
+});
+
 test.describe('Top bar', () => {
   test('shows healthy API / live status pills', async ({ mockPage }) => {
     const top = mockPage.locator('header.bench-top');

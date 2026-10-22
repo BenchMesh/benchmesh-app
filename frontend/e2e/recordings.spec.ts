@@ -115,7 +115,7 @@ test.describe('Recorder', () => {
     expect(await mockPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(400);
 
     // scrolled to the end, the last panel ends above the dock
-    await mockPage.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
+    await mockPage.locator('.bench-body').evaluate((e) => e.scrollTo(0, e.scrollHeight));
     const last = mockPage.getByRole('article').last();
     const panelBottom = await last.evaluate((e) => e.getBoundingClientRect().bottom);
     const dockTop = await dock.evaluate((e) => e.getBoundingClientRect().top);
