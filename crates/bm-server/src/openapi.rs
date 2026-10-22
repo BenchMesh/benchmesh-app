@@ -80,6 +80,9 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("post", "/system/shutdown", "system", "Stop a headless BenchMesh (devices stop cleanly; start it again on the computer) → 202; 409 in the desktop app or while a flow runs"),
     ("get", "/system/autostart", "system", "Start with the computer (headless) → {supported, enabled, method, location, starts_at: boot|login, boot_command, note, reason, command}"),
     ("put", "/system/autostart", "system", "Start with the computer on or off {enabled} (headless only: 409 in the desktop app or a simulation) → as GET"),
+    ("get", "/system/update", "system", "Updates of a headless BenchMesh → {current, installed_as, can_install, replaces_itself, reason, checked_ms, latest: {version, notes, pub_date} | null, available, phase: idle|checking|downloading|installing|manual|failed, downloaded, total, error, command}"),
+    ("post", "/system/update/check", "system", "Read the latest published release (signed latest.json on GitHub) → as GET"),
+    ("post", "/system/update/install", "system", "Download the newer version, verify its signature and install it (AppImage, Windows, macOS: BenchMesh stops, installs and starts again; .deb: the apt command to run) → 202 as GET; 409 in the desktop app, built from source, a simulation, without a newer version or while a flow runs"),
     ("get", "/remote", "remote-access", "Remote access settings and state (this computer only) → {enabled, port, password_set, view_password_set, listening, error, urls, fingerprint, sessions: [{id, role: control|view, address, agent, since, last_seen}]}"),
     ("put", "/remote", "remote-access", "Switch remote access on or off {enabled, port?} (this computer only; on needs a password: 409; off ends every session) → as GET"),
     ("put", "/remote/password", "remote-access", "Set the remote access password {password} (at least 10 characters; this computer only; ends every session) → 204"),
@@ -111,10 +114,11 @@ const NOT_FROM_THE_UI: &[(&str, &str, &str)] = &[
     ("post", "/remote/logout", "Only for a remote browser session"),
     ("post", "/system/restart", "Stops every instrument: use Restart in Instruments - System"),
     ("post", "/system/shutdown", "Stops BenchMesh: use Shut down in Instruments - System"),
+    ("post", "/system/update/install", "Stops BenchMesh and installs a new version: use Install in Instruments - System"),
 ];
 
 const TAGS: &[(&str, &str)] = &[
-    ("system", "Service status, version, documentation; this computer's resources, and restart, shut down and start with the computer when headless"),
+    ("system", "Service status, version, documentation; this computer's resources, and restart, shut down, start with the computer and update when headless"),
     ("configuration", "Device configuration, drivers, port discovery"),
     ("instruments", "Instrument listing, classes, features"),
     ("instrument-control", "Read and set instrument operations"),
@@ -144,7 +148,7 @@ pub fn spec() -> Value {
         });
         if matches!(*method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
             && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
-            && !path.ends_with("/restart") && !path.ends_with("/shutdown")
+            && !path.ends_with("/restart") && !path.ends_with("/shutdown") && !path.starts_with("/system/update/")
         {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
         }

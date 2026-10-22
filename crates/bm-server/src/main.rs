@@ -22,7 +22,7 @@ use std::time::Duration;
 
 use bm_server::headless::{arg, password_from};
 use bm_server::run::ServerOptions;
-use bm_server::system::{autostart::Launch, Headless};
+use bm_server::system::{autostart::Launch, update::Install, Headless};
 
 fn absolute(p: &Path) -> PathBuf {
     std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf())
@@ -90,7 +90,7 @@ fn main() {
             ws_interval,
             simulate,
             data_dir,
-            headless: Some(Headless { launch }),
+            headless: Some(Headless { launch, install: Install::Source }),
         },
         password_from(&args),
     ));

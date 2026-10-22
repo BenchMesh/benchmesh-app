@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use bm_server::headless::{arg, password_from};
 use bm_server::run::ServerOptions;
-use bm_server::system::{autostart::Launch, Headless};
+use bm_server::system::{autostart::Launch, update::Install, Headless};
 
 use crate::{data_dir, env_path};
 
@@ -43,7 +43,7 @@ pub fn run(package: &tauri::PackageInfo) -> i32 {
             ws_interval: Duration::from_millis(200),
             data_dir: simulate.is_none().then(|| data.clone()),
             simulate,
-            headless: Some(Headless { launch }),
+            headless: Some(Headless { launch, install: Install::of_app() }),
         },
         password_from(&args),
     )

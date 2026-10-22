@@ -33,6 +33,9 @@ tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring
 if-addrs = "0.15.0"
 ring = "0.17.14"
 sysinfo = { version = "0.36.1", default-features = false, features = ["system", "disk", "component"] }
+# headless updates: the desktop updater's signature check (`system/update.rs`)
+minisign-verify = "0.3.0"
+base64 = "0.22.1"
 
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }

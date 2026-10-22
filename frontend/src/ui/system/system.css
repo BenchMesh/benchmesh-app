@@ -11,3 +11,4 @@
 .sys-command code { display: block; max-width: 100%; padding: 6px 8px; border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
   background: var(--kit-ctl-hi); color: var(--kit-ink); font: 400 .68rem/1.35 var(--kit-font-num); white-space: pre-wrap; word-break: break-all; user-select: all; }
 @media (max-width: 420px) { .sys-meter { grid-template-columns: 1fr; gap: 4px; } }
+.sys-notes { white-space: pre-wrap; max-height: 12em; overflow: auto; }

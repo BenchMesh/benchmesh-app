@@ -185,7 +185,7 @@ export interface ApiMock {
   /** Virtual SCPI settings (`GET|PUT /scpi`). */
   scpi: { access: 'off' | 'read' | 'control'; base_port: number };
   /** Instruments - System (`/system...`): headless or the desktop app, start with the computer, and every POST / PUT. */
-  system: { headless: boolean; autostart: boolean; requests: RecordedRequest[] };
+  system: { headless: boolean; autostart: boolean; requests: RecordedRequest[]; latest: string; checked: boolean; installing: boolean };
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -405,6 +405,20 @@ async function handleSystem(route: Route, api: ApiMock, segs: string[]) {
     s.autostart = JSON.parse(req.postData() ?? '{}').enabled === true;
     return json(route, autostart());
   }
+  // updates: version 0.1.7 installed as an AppImage; `latest` is what GitHub offers
+  const update = () => ({
+    current: '0.1.7', installed_as: s.headless ? 'AppImage' : 'desktop app', can_install: s.headless, replaces_itself: s.headless,
+    reason: s.headless ? null : 'the desktop app offers new versions when it starts', checked_ms: s.checked ? Date.now() : null,
+    latest: s.checked ? { version: s.latest, notes: 'Headless updates from the System tab', pub_date: '2026-10-23T10:00:00Z' } : null,
+    available: s.checked && s.latest !== '0.1.7', phase: s.installing ? 'installing' : 'idle', downloaded: 0, total: null, error: null, command: null,
+  });
+  if (path === '/system/update' && method === 'GET') return json(route, update());
+  if (path === '/system/update/check' && method === 'POST') { s.checked = true; return json(route, update()); }
+  if (path === '/system/update/install' && method === 'POST') {
+    if (!s.headless) return json(route, { detail: 'the desktop app offers new versions when it starts' }, 409);
+    s.installing = true;
+    return json(route, update(), 202);
+  }
   if ((path === '/system/restart' || path === '/system/shutdown') && method === 'POST') {
     if (!s.headless) return json(route, desktop, 409);
     return json(route, { action: segs[1] }, 202);
@@ -425,7 +439,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
     samples: new Map(),
     remote: { session: { principal: 'local' }, enabled: false, password_set: false, sessions: [], requests: [] },
     scpi: { access: 'off', base_port: 5025 },
-    system: { headless: false, autostart: false, requests: [] },
+    system: { headless: false, autostart: false, requests: [], latest: '0.1.7', checked: false, installing: false },
   };
 
   await page.route(

@@ -21,6 +21,10 @@ const autostart = (over: Partial<Autostart> = {}): Autostart => ({
 
 beforeEach(() => {
   vi.spyOn(api, 'getAutostart').mockResolvedValue(autostart())
+  vi.spyOn(api, 'getUpdate').mockResolvedValue({
+    current: '0.1.15', installed_as: 'AppImage', can_install: true, replaces_itself: true, reason: null, checked_ms: null,
+    latest: null, available: false, phase: 'idle', downloaded: 0, total: null, error: null, command: null,
+  })
 })
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 

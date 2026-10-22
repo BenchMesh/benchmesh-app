@@ -251,7 +251,7 @@ const RUN_KEY: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
 const RUN_VALUE: &str = "BenchMeshHeadless";
 
 /// One word of a Windows command line (the rules programs' C runtime parses with).
-fn windows_word(a: &str) -> String {
+pub(crate) fn windows_word(a: &str) -> String {
     if !a.is_empty() && !a.contains([' ', '\t', '"']) {
         return a.to_string();
     }

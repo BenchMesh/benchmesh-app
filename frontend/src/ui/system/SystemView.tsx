@@ -10,72 +10,21 @@ import { useViewOnly } from '../remote/RemoteProvider'
 import { ApiError } from '../automation/client'
 import * as api from './client'
 import type { Autostart, SystemInfo } from './client'
-import { formatBytes, formatDuration, levelOf, percentOf, temperatureLevel, type Level } from './format'
+import { formatBytes, formatDuration, percentOf, temperatureLevel, type Level } from './format'
+import { CopyCommand, Meter, TwoPress } from './parts'
+import { UpdateGroup } from './UpdateGroup'
 import './system.css'
 
 const POLL_MS = 2000
 const COMEBACK_MS = 90_000
 
-type Phase = 'running' | 'restarting' | 'late' | 'stopped'
-
-function Meter({ label, percent, text, level }: { label: string; percent: number; text: string; level?: Level }) {
-  const l = level ?? levelOf(percent)
-  return (
-    <div className="sys-meter" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percent)} data-level={l}>
-      <span className="kit-label">{label}</span>
-      <span className="sys-meter__bar"><i style={{ width: `${percent}%` }} /></span>
-      <span className="sys-meter__text">{text}</span>
-    </div>
-  )
-}
+type Phase = 'running' | 'restarting' | 'updating' | 'late' | 'stopped'
 
 function Fact({ label, value, level }: { label: string; value: React.ReactNode; level?: Level }) {
   return (
     <div className="bench-metric">
       <dt className="kit-label">{label}</dt>
       <dd className="bench-metric__value" data-state={level && level !== 'ok' ? level : undefined}>{value}</dd>
-    </div>
-  )
-}
-
-/** Anything that stops the instruments takes a second press within 4 s. */
-function TwoPress({ label, confirmLabel, onConfirm, disabled, danger }: {
-  label: string; confirmLabel: string; onConfirm: () => Promise<void>; disabled?: boolean; danger?: boolean
-}) {
-  const [armed, setArmed] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
-  useEffect(() => () => clearTimeout(timer.current), [])
-  const press = async () => {
-    clearTimeout(timer.current)
-    if (!armed) {
-      setArmed(true)
-      timer.current = setTimeout(() => setArmed(false), 4000)
-      return
-    }
-    setArmed(false)
-    setBusy(true)
-    try { await onConfirm() } finally { setBusy(false) }
-  }
-  return (
-    <button type="button" className={`bench-btn${danger ? ' bench-btn--danger' : ''}${armed ? ' sys-armed' : ''}`} disabled={disabled || busy} aria-busy={busy} onClick={() => void press()}>
-      {armed ? confirmLabel : label}
-    </button>
-  )
-}
-
-function CopyCommand({ command }: { command: string }) {
-  const [copied, setCopied] = useState<boolean | null>(null)
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(command); setCopied(true) } catch { setCopied(false) }
-    setTimeout(() => setCopied(null), 2000)
-  }
-  return (
-    <div className="sys-command">
-      <code>{command}</code>
-      <button type="button" className="bench-btn" onClick={() => void copy()}>
-        {copied ? 'Copied' : copied === false ? 'Copy failed - select the text' : 'Copy command'}
-      </button>
     </div>
   )
 }
@@ -143,9 +92,9 @@ export function SystemView() {
     return () => { clearTimeout(first); clearInterval(t) }
   }, [phase, load])
 
-  // after Restart: reload once a new BenchMesh answers (a remote browser then signs in again)
+  // after Restart / an update: reload once a new BenchMesh answers (a remote browser then signs in again)
   useEffect(() => {
-    if (phase !== 'restarting') return
+    if (phase !== 'restarting' && phase !== 'updating') return
     const since = Date.now()
     const t = setInterval(async () => {
       try {
@@ -170,12 +119,19 @@ export function SystemView() {
     }
   }
 
-  if (phase === 'stopped' || phase === 'restarting' || phase === 'late') {
+  const startedMs = info?.process.started_ms ?? null
+  const onInstalling = useCallback(() => {
+    before.current = startedMs
+    setPhase('updating')
+  }, [startedMs])
+
+  if (phase !== 'running') {
     return (
       <section className="bench-page" aria-label="System" data-testid="system-view">
         <h3 className="settings-view__section-title">System</h3>
         <div className="bench-group" role="status">
           {phase === 'restarting' && <><span className="kit-label">Restarting…</span><p className="bench-hint">Waiting for BenchMesh to answer again; this page reloads by itself.</p></>}
+          {phase === 'updating' && <><span className="kit-label">Installing the update…</span><p className="bench-hint">BenchMesh stops, installs the new version and starts it; this page reloads by itself.</p></>}
           {phase === 'late' && <><span className="kit-label">BenchMesh did not come back</span><p className="bench-hint">It has not answered for 90 s: check the computer it runs on.</p></>}
           {phase === 'stopped' && <><span className="kit-label">BenchMesh is stopped</span><p className="bench-hint">Start it again on the computer it runs on.</p></>}
         </div>
@@ -234,6 +190,7 @@ export function SystemView() {
             )}
           </div>
           {info.headless && <AutostartGroup viewOnly={viewOnly} />}
+          <UpdateGroup viewOnly={viewOnly} onInstalling={onInstalling} />
         </>
       )}
     </section>

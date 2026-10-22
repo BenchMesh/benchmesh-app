@@ -58,6 +58,11 @@ impl RunningServer {
         self.system.requested().await
     }
 
+    /// The verified update to install once stopped (after `Action::Update`).
+    pub fn staged_update(&self) -> Option<crate::system::update::Staged> {
+        self.system.updater.staged()
+    }
+
     /// Remote access: set its password and switch it on (headless start with a password).
     pub fn set_remote_password(&self, password: &str) -> Result<(), String> {
         if let Some(why) = crate::remote::password::refusal(password) {

@@ -1,7 +1,7 @@
 /**
  * Instruments → System (ai_context/HEADLESS.md): the computer's resources for everyone; for a
  * headless BenchMesh used from a remote browser Restart, Shut down (two presses) and Start with
- * this computer; a view-only session only looks; the desktop app explains how to run headless.
+ * this computer, Check for updates and Install; a view-only session only looks; the desktop app explains how to run headless.
  */
 import { test, expect } from './fixtures/base';
 import type { Page } from '@playwright/test';
@@ -45,6 +45,20 @@ test.describe('System, headless from a remote browser', () => {
     expect(api.system.requests.map((r) => `${r.method} ${r.path}`)).toEqual(['POST /system/restart']);
   });
 
+  test('checks for a new version and installs it on the second press', async ({ mockPage, api }) => {
+    api.system.latest = '0.1.8';
+    const section = await openSystem(mockPage);
+    const updates = section.getByRole('group', { name: 'Updates' });
+    await expect(updates.getByText('Installed: BenchMesh 0.1.7 (AppImage).')).toBeVisible();
+    await updates.getByRole('button', { name: 'Check for updates' }).click();
+    await expect(updates.getByText('BenchMesh 0.1.8 is available (published 2026-10-23).')).toBeVisible();
+    await updates.getByRole('button', { name: 'Install 0.1.8 and restart' }).click();
+    expect(api.system.requests.map((r) => `${r.method} ${r.path}`)).toEqual(['POST /system/update/check']);
+    await section.getByRole('button', { name: 'Press again: stop, install, start' }).click();
+    await expect(section.getByText('Installing the update…')).toBeVisible();
+    expect(api.system.requests.map((r) => `${r.method} ${r.path}`)).toEqual(['POST /system/update/check', 'POST /system/update/install']);
+  });
+
   test('shuts down on the second press', async ({ mockPage, api }) => {
     const section = await openSystem(mockPage);
     await section.getByRole('button', { name: 'Shut down' }).click();
@@ -64,6 +78,7 @@ test.describe('System, view only', () => {
     await expect(section.getByRole('button', { name: 'Restart' })).toBeDisabled();
     await expect(section.getByRole('button', { name: 'Shut down' })).toBeDisabled();
     await expect(section.getByRole('switch', { name: 'Start with this computer' })).toBeDisabled();
+    await expect(section.getByRole('button', { name: 'Check for updates' })).toBeDisabled();
   });
 });
 
@@ -74,5 +89,8 @@ test.describe('System, desktop app', () => {
     await expect(section.getByRole('button', { name: 'Restart' })).toHaveCount(0);
     await expect(section.getByRole('switch')).toHaveCount(0);
     await expect(section.getByRole('link', { name: 'Headless BenchMesh' })).toHaveAttribute('href', 'https://benchmesh.online/docs/headless');
+    const updates = section.getByRole('group', { name: 'Updates' });
+    await updates.getByRole('button', { name: 'Check for updates' }).click();
+    await expect(updates.getByText('BenchMesh is up to date.')).toBeVisible();
   });
 });

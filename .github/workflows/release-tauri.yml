@@ -162,8 +162,9 @@ jobs:
             ### Headless (any OS, e.g. a Raspberry Pi next to the bench)
             `benchmesh --headless --remote-password '<at least 10 characters>'` runs BenchMesh without a
             window; use it from a browser on another computer (the addresses are printed). Instruments →
-            System shows the computer's resources, restarts or shuts BenchMesh down and makes it start with
-            the computer. See https://benchmesh.online/docs/headless
+            System shows the computer's resources, restarts or shuts BenchMesh down, makes it start with
+            the computer and installs new versions (Check for updates; the AppImage, Windows and macOS
+            update themselves, a .deb gets the apt command). See https://benchmesh.online/docs/headless
 
             User data stays in `~/.benchmesh` (config.yaml, recordings.db, flows).
           releaseDraft: true

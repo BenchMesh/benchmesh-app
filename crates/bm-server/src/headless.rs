@@ -8,8 +8,9 @@
 //! ```
 //! The password may come from `BENCHMESH_REMOTE_PASSWORD` instead (not shown in process lists).
 //! The process then runs until Ctrl-C / SIGTERM or until the UI asks it (Instruments - System) to
-//! shut down or restart; a restart starts the same command line again (Unix: in place, keeping
-//! the process id, so systemd / launchd keep tracking it).
+//! shut down, restart or update; a restart starts the same command line again (Unix: in place,
+//! keeping the process id, so systemd / launchd keep tracking it), an update installs the
+//! verified new version first (`system/update.rs`).
 
 use crate::run::{start, RunningServer, ServerOptions};
 use crate::system::Action;
@@ -57,11 +58,34 @@ pub fn run(opts: ServerOptions, remote_password: Option<String>) -> i32 {
         }
     };
     let action = rt.block_on(wait(&server));
+    let staged = server.staged_update();
     eprintln!("stopping devices…");
     server.stop();
     match action {
-        Some(Action::Restart) => restart(),
+        Some(Action::Restart) => restart(None),
+        Some(Action::Update) => update(staged),
         _ => 0,
+    }
+}
+
+/// Install the verified update; start the new version (Windows: the installer's helper does).
+/// When installing fails the old version starts again.
+fn update(staged: Option<crate::system::update::Staged>) -> i32 {
+    let Some(staged) = staged else {
+        eprintln!("update: nothing downloaded");
+        return restart(None);
+    };
+    eprintln!("installing BenchMesh {}…", staged.version);
+    match crate::system::update::apply(&staged) {
+        Ok(Some(program)) => restart(Some(program)),
+        Ok(None) => {
+            eprintln!("the installer starts BenchMesh {} when it has finished", staged.version);
+            0
+        }
+        Err(e) => {
+            eprintln!("update: {e} - starting the installed version again");
+            restart(None)
+        }
     }
 }
 
@@ -113,9 +137,10 @@ pub async fn shutdown_signal() {
     }
 }
 
-/// The same program with the same arguments and environment, after everything was released.
-fn restart() -> i32 {
-    let exe = match std::env::current_exe() {
+/// The same program (or `program`, the updated one) with the same arguments and environment,
+/// after everything was released.
+fn restart(program: Option<std::path::PathBuf>) -> i32 {
+    let exe = match program.map(Ok).unwrap_or_else(std::env::current_exe) {
         Ok(e) => e,
         Err(e) => {
             eprintln!("restart: {e}");

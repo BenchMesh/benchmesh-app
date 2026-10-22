@@ -63,3 +63,28 @@ export const restart = () => request<{ action: string }>('POST', '/system/restar
 export const shutdown = () => request<{ action: string }>('POST', '/system/shutdown')
 export const getAutostart = () => request<Autostart>('GET', '/system/autostart')
 export const setAutostart = (enabled: boolean) => request<Autostart>('PUT', '/system/autostart', { enabled })
+
+/** `GET /system/update`: updates of a headless BenchMesh. */
+export interface UpdateState {
+  current: string
+  /** AppImage, Windows installer, macOS app, .deb package, built from source, desktop app */
+  installed_as: string
+  can_install: boolean
+  /** stops, installs and starts again by itself (else: `command` to run) */
+  replaces_itself: boolean
+  /** why it cannot install */
+  reason: string | null
+  checked_ms: number | null
+  latest: { version: string; notes: string | null; pub_date: string | null } | null
+  available: boolean
+  phase: 'idle' | 'checking' | 'downloading' | 'installing' | 'manual' | 'failed'
+  downloaded: number
+  total: number | null
+  error: string | null
+  /** `.deb`: the command that installs the verified download */
+  command: string | null
+}
+
+export const getUpdate = () => request<UpdateState>('GET', '/system/update')
+export const checkUpdate = () => request<UpdateState>('POST', '/system/update/check')
+export const installUpdate = () => request<UpdateState>('POST', '/system/update/install')

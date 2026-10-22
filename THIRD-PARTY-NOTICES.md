@@ -85,6 +85,11 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT
 - **URL**: https://github.com/GuillaumeGomez/sysinfo
 
+### minisign-verify, base64 (bm-server: headless updates in Instruments - System)
+- **License**: MIT (minisign-verify); MIT OR Apache-2.0 (base64)
+- **URL**: https://github.com/jedisct1/rust-minisign-verify, https://github.com/marshallpierce/rust-base64
+- Verifies a downloaded update's signature with the updater's public key before it is installed (the same crates the desktop app's updater uses).
+
 ### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
 - **License**: Apache-2.0 OR MIT (used under MIT)
 - **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace

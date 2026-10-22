@@ -4,9 +4,10 @@
 //! after from the browser. In the desktop app the window owns the process: these answer 409.
 
 pub mod autostart;
+pub mod update;
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -27,6 +28,8 @@ pub enum Action {
     Restart,
     /// Stop cleanly and exit.
     Shutdown,
+    /// Stop cleanly, install the downloaded update (`update::Updater::staged`) and start it.
+    Update,
 }
 
 /// Running headless: the process may restart / stop itself and register itself to start with
@@ -36,6 +39,8 @@ pub struct Headless {
     /// How to start this program headless again (the autostart entry); `None` for a simulation,
     /// which never starts with the computer.
     pub launch: Option<autostart::Launch>,
+    /// How this program was installed (how it updates itself).
+    pub install: update::Install,
 }
 
 impl Default for System {
@@ -52,7 +57,8 @@ pub struct System {
     data_dir: Option<PathBuf>,
     headless: Option<Headless>,
     started_ms: i64,
-    action: watch::Sender<Option<Action>>,
+    action: Arc<watch::Sender<Option<Action>>>,
+    pub updater: Arc<update::Updater>,
 }
 
 impl System {
@@ -61,7 +67,8 @@ impl System {
         // the first CPU figure is a difference to this one
         probe.refresh_cpu_usage();
         refresh_own_process(&mut probe);
-        System { probe: Mutex::new(probe), data_dir, headless, started_ms: now_ms(), action: watch::channel(None).0 }
+        let updater = Arc::new(update::Updater::new(headless.as_ref().map(|h| h.install.clone()), data_dir.as_deref()));
+        System { probe: Mutex::new(probe), data_dir, headless, started_ms: now_ms(), action: Arc::new(watch::channel(None).0), updater }
     }
 
     pub fn is_headless(&self) -> bool {
@@ -165,6 +172,9 @@ pub fn routes() -> Router<S> {
         .route("/system/restart", post(restart))
         .route("/system/shutdown", post(shutdown))
         .route("/system/autostart", get(get_autostart).put(put_autostart))
+        .route("/system/update", get(get_update))
+        .route("/system/update/check", post(check_update))
+        .route("/system/update/install", post(install_update))
 }
 
 async fn get_system(State(s): State<S>) -> Json<Value> {
@@ -200,10 +210,36 @@ async fn shutdown(State(s): State<S>) -> Response {
     act(s, Action::Shutdown).await
 }
 
+async fn get_update(State(s): State<S>) -> Json<Value> {
+    Json(s.system.updater.json())
+}
+
+async fn check_update(State(s): State<S>) -> Json<Value> {
+    Json(s.system.updater.check().await)
+}
+
+/// Download, verify and - for an installation that replaces itself - stop, install and start
+/// the new version (202; follow `GET /system/update`).
+async fn install_update(State(s): State<S>) -> Response {
+    if let Some(r) = refused_while_running(&s) {
+        return r;
+    }
+    let action = s.system.action.clone();
+    match s.system.updater.start_install(move |_| {
+        action.send_replace(Some(Action::Update));
+    }) {
+        Ok(()) => {
+            eprintln!("system: update requested from the UI");
+            (StatusCode::ACCEPTED, Json(s.system.updater.json())).into_response()
+        }
+        Err(why) => detail(StatusCode::CONFLICT, why),
+    }
+}
+
 fn autostart_json(s: &S) -> Value {
     match &s.system.headless {
-        Some(Headless { launch: Some(l) }) => autostart::status(l).json(),
-        Some(Headless { launch: None }) => autostart::Status::unsupported(SIMULATION).json(),
+        Some(Headless { launch: Some(l), .. }) => autostart::status(l).json(),
+        Some(Headless { launch: None, .. }) => autostart::Status::unsupported(SIMULATION).json(),
         None => autostart::Status::unsupported(DESKTOP).json(),
     }
 }
@@ -218,8 +254,8 @@ async fn put_autostart(State(s): State<S>, body: Option<Json<Value>>) -> Respons
         return detail(StatusCode::BAD_REQUEST, "expected {\"enabled\": true|false}");
     };
     let launch = match &s.system.headless {
-        Some(Headless { launch: Some(l) }) => l.clone(),
-        Some(Headless { launch: None }) => return detail(StatusCode::CONFLICT, SIMULATION),
+        Some(Headless { launch: Some(l), .. }) => l.clone(),
+        Some(Headless { launch: None, .. }) => return detail(StatusCode::CONFLICT, SIMULATION),
         None => return detail(StatusCode::CONFLICT, DESKTOP),
     };
     let r = tokio::task::spawn_blocking(move || if enabled { autostart::enable(&launch) } else { autostart::disable() }).await;
@@ -261,7 +297,7 @@ mod tests {
     #[tokio::test]
     async fn a_headless_process_hears_the_request() {
         let launch = autostart::Launch { program: "/opt/benchmesh".into(), args: vec!["--headless".into()] };
-        let s = std::sync::Arc::new(System::new(None, Some(Headless { launch: Some(launch) })));
+        let s = std::sync::Arc::new(System::new(None, Some(Headless { launch: Some(launch), install: update::Install::Source })));
         let waiting = tokio::spawn({
             let s = s.clone();
             async move { s.requested().await }

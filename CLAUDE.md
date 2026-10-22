@@ -80,7 +80,11 @@ and `benchmesh-server` run without a window, used through remote access; `--remo
 host, OS, cores, uptime, temperature, load, processor / memory / disk meters and BenchMesh's own use for everyone;
 headless only **Restart** (same command line; Unix `exec` in place) and **Shut down** (exit 0), two presses, refused
 while a flow runs, and **Start with this computer** (`system/autostart.rs`: systemd user service + linger command on
-Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation). Releases include Linux
+Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation), and **Updates**
+(`system/update.rs`, UI `UpdateGroup.tsx`): Check for updates reads the signed `latest.json`; Install (two presses)
+downloads this installation's file to `<data dir>/updates/`, verifies the minisign signature with the updater key
+(same as `tauri.conf.json`, a test keeps them equal), then stops and replaces the AppImage / `.app` in place or runs the
+Windows installer silently, and starts again; a `.deb` gets the `sudo apt install` command. Releases include Linux
 ARM64 (Raspberry Pi 4/5, `ubuntu-22.04-arm` runner); CI tests the desktop app on ARM and the server's system code on
 Windows and macOS.
 
@@ -284,6 +288,7 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 | `API_PORT` | `bm-server` loopback port (default 57666; `--port`); other computers use remote access |
 | `BENCHMESH_ONLINE` / `BENCHMESH_ONLINE_URL` | `off` disables the community status / its base URL |
 | `BENCHMESH_URL` | server address for the MCP stdio bridge |
+| `BENCHMESH_UPDATE_URL` | headless updates: another `latest.json` address (staging; the signature key stays fixed) |
 | `BENCHMESH_REMOTE_PASSWORD` | headless: remote access password at start (as `--remote-password`, not shown in process lists) |
 | `BENCHMESH_NATIVE_WAYLAND` | `1`: run the app on native Wayland instead of XWayland |
 | `BM_WS_INTERVAL` | registry WebSocket push interval in seconds |

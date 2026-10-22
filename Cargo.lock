@@ -358,6 +358,7 @@ name = "bm-server"
 version = "0.1.14"
 dependencies = [
  "axum",
+ "base64 0.22.1",
  "bm-devicedef",
  "bm-driver",
  "bm-store",
@@ -366,6 +367,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "if-addrs",
+ "minisign-verify",
  "rcgen",
  "regex",
  "reqwest",
