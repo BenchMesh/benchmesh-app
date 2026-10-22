@@ -26,7 +26,10 @@ export default defineConfig({
   },
   preview: {
     port: 52893,
-    strictPort: true
+    strictPort: true,
+    // E2E tests mock the API in the browser: what they leave unmocked (polls, WebSockets) is
+    // answered 404 here instead of being forwarded to a backend that is not running
+    proxy: process.env.BENCHMESH_E2E ? {} : proxy,
   },
   build: {
     rollupOptions: {

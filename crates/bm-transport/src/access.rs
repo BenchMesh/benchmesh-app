@@ -39,6 +39,7 @@ pub fn explain(e: io::Error, port: Port, path: &str) -> io::Error {
 mod tests {
     use super::*;
 
+    #[cfg(target_os = "linux")]
     fn denied() -> io::Error {
         io::Error::from_raw_os_error(13)
     }
