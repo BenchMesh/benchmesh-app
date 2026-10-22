@@ -66,6 +66,7 @@ impl Bench {
             recordings_db: None,
             simulate: None,
             data_dir: Some(dir.clone()),
+            headless: None,
         })
         .unwrap();
         let st = local(server.addr, "GET", "/remote", None);

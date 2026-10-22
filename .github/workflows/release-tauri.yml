@@ -59,6 +59,8 @@ jobs:
         include:
           - os: ubuntu-22.04
             args: '--bundles deb,appimage'
+          - os: ubuntu-22.04-arm  # 64-bit ARM: Raspberry Pi 4 / 5 with 64-bit Raspberry Pi OS, ARM servers
+            args: '--bundles deb,appimage'
           - os: windows-latest
             args: '--bundles nsis'
           - os: macos-latest
@@ -126,6 +128,8 @@ jobs:
             - **macOS, Intel:** `BenchMesh_<version>_x64.dmg`
             - **Linux (x64), any distribution:** `BenchMesh_<version>_amd64.AppImage`
             - **Debian / Ubuntu:** `BenchMesh_<version>_amd64.deb`
+            - **Linux 64-bit ARM (Raspberry Pi 4 / 5 with 64-bit Raspberry Pi OS):** `BenchMesh_<version>_arm64.deb`,
+              `BenchMesh_<version>_aarch64.AppImage`
 
             The installers are not code-signed yet, so the operating system warns on first start.
 
@@ -152,7 +156,14 @@ jobs:
             menu (and the dock shows its icon). USB-TMC instruments (oscilloscopes, generators) need one
             udev rule and serial instruments the `dialout` group - the app shows the command to copy, or
             see https://benchmesh.online/docs/linux
-            `.deb`: `sudo apt install ./BenchMesh_*_amd64.deb` (updates come from the releases page).
+            `.deb`: `sudo apt install ./BenchMesh_*_amd64.deb` (`_arm64.deb` on a Raspberry Pi; updates come
+            from the releases page).
+
+            ### Headless (any OS, e.g. a Raspberry Pi next to the bench)
+            `benchmesh --headless --remote-password '<at least 10 characters>'` runs BenchMesh without a
+            window; use it from a browser on another computer (the addresses are printed). Instruments →
+            System shows the computer's resources, restarts or shuts BenchMesh down and makes it start with
+            the computer. See https://benchmesh.online/docs/headless
 
             User data stays in `~/.benchmesh` (config.yaml, recordings.db, flows).
           releaseDraft: true

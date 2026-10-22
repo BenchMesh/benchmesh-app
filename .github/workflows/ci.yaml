@@ -62,8 +62,13 @@ jobs:
 
   # The desktop app crate (not a default member): its unit tests need the WebKitGTK packages, and
   # its build checks the bundled resources exist (an empty UI directory is enough for the tests).
+  # Also on 64-bit ARM (the Raspberry Pi build of the release), natively on GitHub's ARM runner.
   desktop-app:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -91,6 +96,8 @@ jobs:
 
   # Port discovery has Windows (SetupAPI) and macOS (IORegistry) code: build, lint and test the
   # transport crate natively there, and run the real enumeration once (no instruments attached).
+  # The server's headless system code (start with the computer: Run key / LaunchAgent, restart)
+  # differs per OS too: lint the server there and run its system tests and the headless process test.
   transport-platforms:
     strategy:
       fail-fast: false
@@ -117,3 +124,12 @@ jobs:
 
       - name: Enumerate ports
         run: cargo run -q -p bm-transport --example ports
+
+      - name: Clippy (bm-server)
+        run: cargo clippy -p bm-server --all-targets -- -D warnings
+
+      - name: Tests (bm-server system, headless process)
+        run: |
+          cargo test -p bm-server --lib system::
+          cargo test -p bm-server --lib headless::
+          cargo test -p bm-server --test headless

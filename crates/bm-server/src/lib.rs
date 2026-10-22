@@ -28,6 +28,8 @@ pub mod recordings;
 pub mod remote;
 pub mod run;
 pub mod scpi;
+pub mod headless;
+pub mod system;
 
 /// For the desktop app's `main`: the elevated Windows driver-install run (see `bm_transport::winusb`).
 pub use bm_transport::winusb::helper_main as winusb_helper_main;
@@ -73,6 +75,8 @@ pub struct AppState {
     pub remote: Arc<remote::Remote>,
     /// Virtual SCPI instruments on this computer (`scpi/`).
     pub scpi: Arc<scpi::Scpi>,
+    /// This computer's resources; restart / shut down / autostart when headless (`system/`).
+    pub system: Arc<system::System>,
 }
 
 pub(crate) type S = Arc<AppState>;
@@ -128,7 +132,8 @@ fn routes(state: &S) -> Router<S> {
         .merge(recordings::routes())
         .merge(automation::routes())
         .merge(remote::routes())
-        .merge(scpi::routes());
+        .merge(scpi::routes())
+        .merge(system::routes());
     if let Some(ui) = &state.ui_dir {
         r = r.nest_service("/ui", ServiceBuilder::new().map_request(fresh_ui_request).map_response(unstored_ui_response).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }

@@ -7,11 +7,12 @@
  * - Miscellaneous: App settings (skin, start screen, history retention)
  * - Metrics: how busy each instrument's connection is
  * - Connectors: virtual SCPI instruments for VISA programs and the Python package (only in the app on this computer)
+ * - System: the computer's resources; restart, shut down and start with the computer when headless
  * - Remote access: control the bench from other computers (only in the app on this computer)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse, VscPlug } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse, VscPlug, VscServer } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
 import { MetricsView } from './MetricsView';
@@ -21,9 +22,10 @@ import type { Instrument } from '../types';
 import { RemoteSettings } from '../remote/RemoteSettings';
 import { useRemote } from '../remote/RemoteProvider';
 import { ConnectorsView } from '../connectors/ConnectorsView';
+import { SystemView } from '../system/SystemView';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'remote';
+type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'system' | 'remote';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -94,6 +96,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
     { id: 'metrics', label: 'Metrics', icon: VscPulse },
     ...(local ? [{ id: 'connectors', label: 'Connectors', icon: VscPlug }] : []),
+    { id: 'system', label: 'System', icon: VscServer },
     ...(remoteSettings ? [{ id: 'remote', label: 'Remote access', icon: VscRemote }] : []),
   ] as const;
 
@@ -175,6 +178,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
         {activeTab === 'metrics' && <MetricsView instruments={instruments} />}
 
         {activeTab === 'connectors' && local && <ConnectorsView />}
+
+        {activeTab === 'system' && <SystemView />}
 
         {activeTab === 'remote' && remoteSettings && <RemoteSettings />}
       </div>

@@ -32,6 +32,7 @@ rcgen = { version = "0.14.7", default-features = false, features = ["ring"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring"] }
 if-addrs = "0.15.0"
 ring = "0.17.14"
+sysinfo = { version = "0.36.1", default-features = false, features = ["system", "disk", "component"] }
 
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }

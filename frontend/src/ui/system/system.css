@@ -1,0 +1,13 @@
+/* Instruments - System: resource meters and the command boxes (kit tokens: every skin). */
+.sys-meter { display: grid; grid-template-columns: 90px minmax(80px, 1fr) minmax(0, auto); align-items: center; gap: 10px; min-width: 0; }
+.sys-meter__bar { position: relative; height: 8px; border: 1px solid var(--kit-panel-edge); border-radius: 4px; background: var(--kit-ctl-hi); overflow: hidden; }
+.sys-meter__bar i { position: absolute; inset: 0 auto 0 0; background: var(--kit-ok); transition: width .4s ease; }
+.sys-meter[data-level="warn"] .sys-meter__bar i { background: var(--kit-warn); }
+.sys-meter[data-level="alert"] .sys-meter__bar i { background: var(--kit-alert); }
+.sys-meter__text { font: 600 .8rem/1.2 var(--kit-font-num); color: var(--kit-ink); white-space: nowrap; }
+.bench-metric__value[data-state="alert"] { color: var(--kit-alert); }
+.sys-armed { color: var(--kit-panel); background: var(--kit-alert); border-color: var(--kit-alert); }
+.sys-command { display: grid; gap: 6px; justify-items: start; }
+.sys-command code { display: block; max-width: 100%; padding: 6px 8px; border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  background: var(--kit-ctl-hi); color: var(--kit-ink); font: 400 .68rem/1.35 var(--kit-font-num); white-space: pre-wrap; word-break: break-all; user-select: all; }
+@media (max-width: 420px) { .sys-meter { grid-template-columns: 1fr; gap: 4px; } }

@@ -55,6 +55,7 @@ fn bench(name: &str, access: &str) -> Bench {
         simulate: Some(repo().join("captures/20261016-203514")),
         ws_interval: Duration::from_millis(200),
         data_dir: Some(dir.clone()),
+        headless: None,
     })
     .unwrap();
     let b = Bench { server: Some(server), dir, base };

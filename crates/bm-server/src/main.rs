@@ -1,27 +1,31 @@
-//! benchmesh-server - BenchMesh API + UI server (headless / lab server).
+//! benchmesh-server - BenchMesh API + UI server, headless (no window; `ai_context/HEADLESS.md`).
 //!
 //! ```text
-//! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--port N]
-//! benchmesh-server remote-password      # password from stdin; switches remote access on
+//! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--port N] [--data-dir DIR]
+//!                  [--remote-password PASSWORD]    # switches remote access on (hash kept)
+//! benchmesh-server remote-password                # password from stdin; switches remote access on
 //! ```
-//! Defaults: `$BENCHMESH_CONFIG` or `~/.benchmesh/config.yaml`; `$BENCHMESH_DEVICES` or
-//! `./devices`; UI `frontend/dist` if present; `127.0.0.1:$API_PORT` (57666). Other computers
-//! reach it only through remote access (HTTPS + password on port 57667,
-//! `ai_context/REMOTE_ACCESS.md`); without a browser on this computer, set the password with
-//! `remote-password` (or use an SSH tunnel to port 57666 and the UI's settings).
-//! Ctrl-C stops all devices cleanly (definitions' on_disconnect steps run).
+//! Defaults: `$BENCHMESH_CONFIG` or `<data dir>/config.yaml`; `$BENCHMESH_DEVICES` or
+//! `./devices`; UI `frontend/dist` if present; `127.0.0.1:$API_PORT` (57666); data dir
+//! `$BENCHMESH_DATA_DIR` or `~/.benchmesh`. Other computers reach it only through remote access
+//! (HTTPS + password on port 57667, `ai_context/REMOTE_ACCESS.md`); the password may also come
+//! from `$BENCHMESH_REMOTE_PASSWORD`. Remote browsers see the computer's resources and may
+//! restart or shut it down, and make it start with the computer (Instruments - System).
+//! Ctrl-C / SIGTERM stops all devices cleanly (definitions' on_disconnect steps run).
 //! `--simulate captures/<session>` (or `$BENCHMESH_SIMULATE`) replays recorded instrument
 //! traffic instead of opening ports - UI work and demos without hardware.
 //! `benchmesh-server mcp` bridges stdio to a running server's MCP endpoint (`$BENCHMESH_URL`,
 //! default `http://127.0.0.1:57666`) for AI clients that start a process.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use bm_server::run::{start, ServerOptions};
+use bm_server::headless::{arg, password_from};
+use bm_server::run::ServerOptions;
+use bm_server::system::{autostart::Launch, Headless};
 
-fn arg(args: &[String], flag: &str) -> Option<String> {
-    args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1).cloned())
+fn absolute(p: &Path) -> PathBuf {
+    std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf())
 }
 
 fn main() {
@@ -34,20 +38,21 @@ fn main() {
         let url = std::env::var("BENCHMESH_URL").unwrap_or_else(|_| "http://127.0.0.1:57666".into());
         std::process::exit(bm_server::mcp::stdio_bridge(&url));
     }
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from).unwrap_or_default();
+    let given_data_dir = arg(&args, "--data-dir").or_else(|| std::env::var("BENCHMESH_DATA_DIR").ok()).map(PathBuf::from);
+    let home_data = given_data_dir.clone().unwrap_or_else(|| home.join(".benchmesh"));
     if args.get(1).map(String::as_str) == Some("remote-password") {
-        let dir = std::env::var("BENCHMESH_DATA_DIR").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from(&home).join(".benchmesh"));
-        std::process::exit(remote_password(dir));
+        std::process::exit(remote_password(home_data));
     }
     let config = arg(&args, "--config")
         .or_else(|| std::env::var("BENCHMESH_CONFIG").ok())
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(&home).join(".benchmesh/config.yaml"));
+        .unwrap_or_else(|| home_data.join("config.yaml"));
     let devices_dir = arg(&args, "--devices")
         .or_else(|| std::env::var("BENCHMESH_DEVICES").ok())
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("devices"));
-    let ui_dir = arg(&args, "--ui").map(PathBuf::from).or_else(|| Some(PathBuf::from("frontend/dist")));
+    let ui_dir = arg(&args, "--ui").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("frontend/dist"));
     let port = arg(&args, "--port").or_else(|| std::env::var("API_PORT").ok()).unwrap_or_else(|| "57666".into());
     let ws_interval = std::env::var("BM_WS_INTERVAL")
         .ok()
@@ -56,41 +61,39 @@ fn main() {
         .unwrap_or(Duration::from_millis(200));
 
     let simulate = arg(&args, "--simulate").or_else(|| std::env::var("BENCHMESH_SIMULATE").ok()).map(PathBuf::from);
-    let data_dir = std::env::var("BENCHMESH_DATA_DIR").ok().map(PathBuf::from);
     // A simulation must not write into the user's real data unless a data dir is given.
-    let data_dir = match (&simulate, data_dir) {
+    let data_dir = match (&simulate, given_data_dir) {
         (Some(_), None) => None,
         (_, Some(d)) => Some(d),
-        (None, None) => Some(PathBuf::from(&home).join(".benchmesh")),
+        (None, None) => Some(home_data),
     };
-    let recordings_db = data_dir.as_ref().map(|d| d.join("recordings.db"));
-    let server = match start(ServerOptions {
-        config: config.clone(),
-        devices_dir,
-        ui_dir,
-        listen: vec![format!("127.0.0.1:{port}")],
-        recordings_db,
-        ws_interval,
-        simulate: simulate.clone(),
-        data_dir,
-    }) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("{e}");
-            std::process::exit(1);
-        }
-    };
-    for w in &server.warnings {
-        eprintln!("warning: {w}");
+    // what "start with the computer" runs: this server with the same files, wherever it starts from
+    let mut launch_args = vec!["--config".to_string(), absolute(&config).display().to_string(), "--devices".into(), absolute(&devices_dir).display().to_string()];
+    launch_args.extend(["--ui".into(), absolute(&ui_dir).display().to_string(), "--port".into(), port.clone()]);
+    if let Some(d) = &data_dir {
+        launch_args.extend(["--data-dir".into(), absolute(d).display().to_string()]);
     }
-    eprintln!("BenchMesh server on {} (listening {}) - config {}", server.url(), server.addr, config.display());
+    let program = std::env::current_exe().unwrap_or_else(|_| PathBuf::from(&args[0]));
+    // a simulation never starts with the computer
+    let launch = simulate.is_none().then_some(Launch { program, args: launch_args });
     if let Some(s) = &simulate {
         eprintln!("SIMULATION: instruments replayed from {} (no hardware is used; recordings in memory)", s.display());
     }
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("signal runtime");
-    rt.block_on(shutdown_signal());
-    eprintln!("stopping devices…");
-    server.stop();
+    eprintln!("config {}", config.display());
+    std::process::exit(bm_server::headless::run(
+        ServerOptions {
+            config,
+            devices_dir,
+            ui_dir: Some(ui_dir),
+            listen: vec![format!("127.0.0.1:{port}")],
+            recordings_db: data_dir.as_ref().map(|d| d.join("recordings.db")),
+            ws_interval,
+            simulate,
+            data_dir,
+            headless: Some(Headless { launch }),
+        },
+        password_from(&args),
+    ));
 }
 
 /// `benchmesh-server remote-password`: read the password from stdin (one line, e.g.
@@ -117,29 +120,5 @@ fn remote_password(data_dir: PathBuf) -> i32 {
             eprintln!("{e}");
             1
         }
-    }
-}
-
-/// Ctrl-C or SIGTERM: both stop the devices cleanly. A device thread finishes its current
-/// exchange first; killing it mid-read leaves USBTMC instruments one reply behind.
-async fn shutdown_signal() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-        match signal(SignalKind::terminate()) {
-            Ok(mut term) => {
-                tokio::select! {
-                    _ = tokio::signal::ctrl_c() => {}
-                    _ = term.recv() => {}
-                }
-            }
-            Err(_) => {
-                let _ = tokio::signal::ctrl_c().await;
-            }
-        }
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = tokio::signal::ctrl_c().await;
     }
 }

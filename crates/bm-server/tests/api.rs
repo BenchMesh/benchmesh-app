@@ -120,6 +120,7 @@ fn fixture(name: &str) -> Fixture {
         community: Default::default(),
         remote: Default::default(),
         scpi: Default::default(),
+        system: Default::default(),
     });
     let f = Fixture { state, dir };
     // wait until both devices are connected and polled

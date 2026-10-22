@@ -36,6 +36,7 @@ fn starts_falls_back_to_a_free_port_and_stops() {
         recordings_db: None,
         simulate: None,
         data_dir: None,
+        headless: None,
     })
     .unwrap();
     assert_ne!(server.addr.to_string(), taken, "fell back to the next address");
@@ -60,6 +61,7 @@ fn bad_definitions_dir_is_reported() {
         recordings_db: None,
         simulate: None,
         data_dir: None,
+        headless: None,
     })
     .err()
     .unwrap();

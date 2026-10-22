@@ -75,6 +75,11 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("put", "/automation/mcp", "automation", "Set MCP access {access}"),
     ("get", "/mcp", "ai-assistant", "MCP endpoint: 405 (no server stream; POST JSON-RPC)"),
     ("post", "/mcp", "ai-assistant", "MCP endpoint (Streamable HTTP, JSON responses): initialize, tools/list, tools/call"),
+    ("get", "/system", "system", "This computer and the BenchMesh process → {host, os, arch, cpus, uptime_s, load: [1, 5, 15 min] | null, cpu_percent, memory: {total, used}, process: {pid, memory, cpu_percent, started_ms}, disk: {path, total, available} (the data directory's) | null, temperature_c | null, headless, version} (bytes)"),
+    ("post", "/system/restart", "system", "Restart a headless BenchMesh: devices stop cleanly, the process starts again with the same command line (remote sessions sign in again) → 202; 409 in the desktop app or while a flow runs"),
+    ("post", "/system/shutdown", "system", "Stop a headless BenchMesh (devices stop cleanly; start it again on the computer) → 202; 409 in the desktop app or while a flow runs"),
+    ("get", "/system/autostart", "system", "Start with the computer (headless) → {supported, enabled, method, location, starts_at: boot|login, boot_command, note, reason, command}"),
+    ("put", "/system/autostart", "system", "Start with the computer on or off {enabled} (headless only: 409 in the desktop app or a simulation) → as GET"),
     ("get", "/remote", "remote-access", "Remote access settings and state (this computer only) → {enabled, port, password_set, view_password_set, listening, error, urls, fingerprint, sessions: [{id, role: control|view, address, agent, since, last_seen}]}"),
     ("put", "/remote", "remote-access", "Switch remote access on or off {enabled, port?} (this computer only; on needs a password: 409; off ends every session) → as GET"),
     ("put", "/remote/password", "remote-access", "Set the remote access password {password} (at least 10 characters; this computer only; ends every session) → 204"),
@@ -104,10 +109,12 @@ const NOT_FROM_THE_UI: &[(&str, &str, &str)] = &[
     ("get", "/remote/login", "Only on the remote access address (HTTPS, port 57667)"),
     ("post", "/remote/login", "Only on the remote access address (HTTPS, port 57667)"),
     ("post", "/remote/logout", "Only for a remote browser session"),
+    ("post", "/system/restart", "Stops every instrument: use Restart in Instruments - System"),
+    ("post", "/system/shutdown", "Stops BenchMesh: use Shut down in Instruments - System"),
 ];
 
 const TAGS: &[(&str, &str)] = &[
-    ("system", "Service status, version, documentation"),
+    ("system", "Service status, version, documentation; this computer's resources, and restart, shut down and start with the computer when headless"),
     ("configuration", "Device configuration, drivers, port discovery"),
     ("instruments", "Instrument listing, classes, features"),
     ("instrument-control", "Read and set instrument operations"),
@@ -137,6 +144,7 @@ pub fn spec() -> Value {
         });
         if matches!(*method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
             && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
+            && !path.ends_with("/restart") && !path.ends_with("/shutdown")
         {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
         }
@@ -177,7 +185,7 @@ mod tests {
     /// Every `.route("path", method(...))` in the router source must be documented.
     #[test]
     fn every_router_route_is_documented() {
-        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs"), include_str!("remote/mod.rs"), include_str!("scpi/mod.rs")];
+        let sources = [include_str!("lib.rs"), include_str!("recordings.rs"), include_str!("automation/mod.rs"), include_str!("remote/mod.rs"), include_str!("scpi/mod.rs"), include_str!("system/mod.rs")];
         let mut in_router = BTreeSet::new();
         for src in sources {
             for line in src.lines().filter(|l| l.trim_start().starts_with(".route(\"")) {

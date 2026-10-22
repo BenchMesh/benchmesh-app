@@ -22,6 +22,9 @@
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 //! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
 //!   clients that start a process (Claude Desktop; `bm_server::mcp::stdio_bridge`).
+//! - `benchmesh --headless [--remote-password P] [--port N] [--data-dir D] [--config F]`: no
+//!   window - the server alone, used from other computers through remote access, on every OS
+//!   (`headless.rs`, `bm_server::headless`, `ai_context/HEADLESS.md`).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -34,12 +37,13 @@ use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 #[cfg(target_os = "linux")]
 mod desktop_entry;
+mod headless;
 mod links;
 mod update;
 
 struct Server(Mutex<Option<RunningServer>>);
 
-fn env_path(var: &str) -> Option<PathBuf> {
+pub(crate) fn env_path(var: &str) -> Option<PathBuf> {
     std::env::var_os(var).map(PathBuf::from)
 }
 
@@ -48,7 +52,7 @@ fn mcp_base_url() -> String {
     std::env::var("BENCHMESH_URL").unwrap_or_else(|_| "http://127.0.0.1:57666".into())
 }
 
-fn data_dir() -> PathBuf {
+pub(crate) fn data_dir() -> PathBuf {
     env_path("BENCHMESH_DATA_DIR").unwrap_or_else(|| {
         let home = env_path("HOME").or_else(|| env_path("USERPROFILE")).unwrap_or_else(|| PathBuf::from("."));
         home.join(".benchmesh")
@@ -105,6 +109,10 @@ fn main() {
     if std::env::args().any(|a| a == "--mcp") {
         std::process::exit(bm_server::mcp::stdio_bridge(&mcp_base_url()));
     }
+    let context = tauri::generate_context!();
+    if std::env::args().any(|a| a == "--headless") {
+        std::process::exit(headless::run(context.package_info()));
+    }
     #[cfg(target_os = "linux")]
     prefer_x11_for_keep_on_top();
     // an AppImage installs no desktop entry: without one the dock shows a generic icon
@@ -134,6 +142,8 @@ fn main() {
                 simulate: env_path("BENCHMESH_SIMULATE"),
                 ws_interval: Duration::from_millis(200),
                 data_dir: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.clone()),
+                // the window owns the process: closing it stops BenchMesh
+                headless: None,
             })?;
             for w in &server.warnings {
                 eprintln!("warning: {w}");
@@ -152,7 +162,7 @@ fn main() {
                 .build()?;
             Ok(())
         })
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("failed to start BenchMesh");
 
     app.run(|handle, event| {

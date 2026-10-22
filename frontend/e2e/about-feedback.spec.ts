@@ -65,6 +65,7 @@ test.describe('About and feedback', () => {
     expect(await open('Instruments', 'Instruments', 'settings-tab-remote'), 'Remote access').toEqual([]);
     expect(await open('Instruments', 'Instruments', 'settings-tab-metrics'), 'Metrics').toEqual([]);
     expect(await open('Instruments', 'Instruments', 'settings-tab-connectors'), 'Connectors').toEqual([]);
+    expect(await open('Instruments', 'Instruments', 'settings-tab-system'), 'System').toEqual([]);
     expect(await open('Recording', 'Recordings'), 'Recordings').toEqual([]);
   });
 });

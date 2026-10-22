@@ -42,6 +42,9 @@ is local-only until it is classified):
   `GET /usbtmc-devices`
 - `recordings`: `/recordings/**`, `/ws/recordings`
 - `automation`: `/automation/**` except the parts below
+- `system`: `/system/**` - the computer's resources; for a headless BenchMesh restart, shut down
+  and start with the computer (`ai_context/HEADLESS.md`: headless, the browser is the only way to
+  look after it). A view-only session sees the resources only.
 - `admin` (local only): remote access settings (`/remote`, `/remote/password`,
   `/remote/sessions/**`), `/mcp` and `/automation/mcp` (AI clients get control only from this
   computer), `PUT /automation/assistant` (API keys), `POST /usbtmc-devices/driver` (an
@@ -66,6 +69,7 @@ makes the panel bodies `inert`, and offers no park control or new recording.
 | A stolen or forgotten session | Random 256-bit token; only its SHA-256 is kept (memory only: a restart signs everyone out); idle timeout 12 h, at most 7 days; logout; the app lists sessions and disconnects one or all; changing the password or switching remote access off ends every session, including open WebSockets |
 | Remote switches outputs on while someone works at the bench | The top bar of the app shows **Remote: N** while anyone is connected (with addresses) and a one-click **Disconnect all and switch off**. Energising controls still need two presses, flows need `arm` |
 | A remote user widens their own access | Remote access, the password, MCP, assistant keys and the Windows driver install are `admin`: only from the app on this computer |
+| A remote user stops or re-registers BenchMesh (headless) | Restart / Shut down need a control session, two presses, and are refused while a flow runs; start with the computer only ever runs BenchMesh's own executable with the options it was started with (no command from the request), as the user BenchMesh runs as, without administrator rights |
 | A remote user reads secrets | Assistant API keys are never returned (only hints); the password hash and TLS key are never served |
 | Local malware or other users of this computer | Out of scope: the loopback listener is as before (another program running as you can already drive the instruments) |
 | Simulation | Works the same with in-memory settings, certificate and sessions |

@@ -170,10 +170,8 @@ impl Remote {
         }
         let result = (|| -> Result<Listening, String> {
             let tls = self.tls()?;
-            let std = std::net::TcpListener::bind(("0.0.0.0", s.port)).map_err(|e| format!("cannot listen on port {}: {e}", s.port))?;
-            std.set_nonblocking(true).map_err(|e| e.to_string())?;
             let _enter = rt.enter();
-            let tcp = tokio::net::TcpListener::from_std(std).map_err(|e| e.to_string())?;
+            let tcp = listen_after_close(s.port).map_err(|e| format!("cannot listen on port {}: {e}", s.port))?;
             let addr = tcp.local_addr().map_err(|e| e.to_string())?;
             let (listener, accept) = net::tls_listener(tcp, tls.acceptor.clone()).map_err(|e| e.to_string())?;
             let svc = app.clone().into_make_service_with_connect_info::<Peer>();
@@ -227,6 +225,13 @@ impl Remote {
         Ok(())
     }
 
+    /// Remote access is on with exactly this password (a headless start with the same password
+    /// changes nothing: no new hash, sessions and listener stay).
+    pub fn is_on_with(&self, password: &str) -> bool {
+        let s = self.settings.lock().unwrap();
+        s.enabled && s.password.as_ref().is_some_and(|h| password::verify(h, password))
+    }
+
     /// Set the password (ends every session) - also used by `benchmesh-server remote-password`.
     pub fn set_password(&self, hash: PasswordHash, enable: bool) -> Result<(), String> {
         let s = {
@@ -261,6 +266,28 @@ impl Remote {
             "sessions": self.sessions.list(now_ms()),
         })
     }
+}
+
+/// [`listen_any`], waiting up to 2 s for a listener just closed by [`Remote::close`]: its tasks
+/// are aborted, and the runtime drops their socket a moment later.
+fn listen_after_close(port: u16) -> std::io::Result<tokio::net::TcpListener> {
+    let deadline = Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        match listen_any(port) {
+            Err(e) if e.kind() == std::io::ErrorKind::AddrInUse && Instant::now() < deadline => std::thread::sleep(std::time::Duration::from_millis(50)),
+            r => return r,
+        }
+    }
+}
+
+/// Every interface, `port`. On Unix with SO_REUSEADDR, as tokio's own listeners: a restarted
+/// server binds again at once although the connections it closed still linger (TIME_WAIT).
+fn listen_any(port: u16) -> std::io::Result<tokio::net::TcpListener> {
+    let socket = tokio::net::TcpSocket::new_v4()?;
+    #[cfg(unix)]
+    socket.set_reuseaddr(true)?;
+    socket.bind(SocketAddr::from(([0, 0, 0, 0], port)))?;
+    socket.listen(1024)
 }
 
 // ---- the network gate -----------------------------------------------------------------

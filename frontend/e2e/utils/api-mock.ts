@@ -133,7 +133,7 @@ export const mockOpenApi = {
 
 const API_PREFIXES = [
   '/instruments', '/drivers', '/config', '/devices', '/serial-ports', '/usbtmc-devices',
-  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote', '/scpi',
+  '/status', '/version', '/metrics', '/recordings', '/openapi.json', '/openapi.yaml', '/ai', '/remote', '/scpi', '/system',
 ];
 
 export interface RecordedRequest { method: string; path: string; body?: string | null }
@@ -184,6 +184,8 @@ export interface ApiMock {
   remote: MockRemote;
   /** Virtual SCPI settings (`GET|PUT /scpi`). */
   scpi: { access: 'off' | 'read' | 'control'; base_port: number };
+  /** Instruments - System (`/system...`): headless or the desktop app, start with the computer, and every POST / PUT. */
+  system: { headless: boolean; autostart: boolean; requests: RecordedRequest[] };
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -374,6 +376,42 @@ async function handleRemote(route: Route, api: ApiMock, segs: string[]) {
   return json(route, { detail: 'Not found' }, 404);
 }
 
+const GIB = 1024 ** 3;
+
+/** This computer (ai_context/HEADLESS.md): a Raspberry Pi with a warm processor and a busy memory. */
+async function handleSystem(route: Route, api: ApiMock, segs: string[]) {
+  const req = route.request();
+  const method = req.method();
+  const s = api.system;
+  const path = '/' + segs.join('/');
+  if (method !== 'GET') s.requests.push({ method, path, body: req.postData() });
+  const desktop = { detail: 'this BenchMesh runs in the desktop app: close the app window to stop it' };
+  const autostart = () => ({
+    supported: s.headless, enabled: s.autostart, method: s.headless ? 'systemd user service' : null,
+    location: s.headless ? '/home/pi/.config/systemd/user/benchmesh.service' : null, starts_at: s.headless ? 'login' : null,
+    boot_command: s.headless ? 'sudo loginctl enable-linger "$USER"' : null, note: s.headless ? 'Starts when you log in. To start at power-on without logging in, run the command once.' : null,
+    reason: s.headless ? null : desktop.detail, command: s.headless ? '/usr/bin/benchmesh --headless' : null,
+  });
+  if (path === '/system' && method === 'GET') {
+    return json(route, {
+      host: 'benchpi', os: 'Linux 12 Debian GNU/Linux 12 (bookworm)', arch: 'aarch64', cpus: 4, uptime_s: 93784, load: [0.42, 0.3, 0.25],
+      cpu_percent: 12.5, memory: { total: 4 * GIB, used: 3.1 * GIB }, process: { pid: 812, memory: 84 * 1024 ** 2, cpu_percent: 1.4, started_ms: Date.now() - 3_600_000 },
+      disk: { path: '/home/pi/.benchmesh', total: 29 * GIB, available: 21 * GIB }, temperature_c: 61.2, headless: s.headless, version: '0.1.7',
+    });
+  }
+  if (path === '/system/autostart' && method === 'GET') return json(route, autostart());
+  if (path === '/system/autostart' && method === 'PUT') {
+    if (!s.headless) return json(route, desktop, 409);
+    s.autostart = JSON.parse(req.postData() ?? '{}').enabled === true;
+    return json(route, autostart());
+  }
+  if ((path === '/system/restart' || path === '/system/shutdown') && method === 'POST') {
+    if (!s.headless) return json(route, desktop, 409);
+    return json(route, { action: segs[1] }, 202);
+  }
+  return json(route, { detail: 'Not found' }, 404);
+}
+
 /** Install the API mock on `page` and return its handle. */
 export async function setupApiMocks(page: Target): Promise<ApiMock> {
   const api: ApiMock = {
@@ -387,6 +425,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
     samples: new Map(),
     remote: { session: { principal: 'local' }, enabled: false, password_set: false, sessions: [], requests: [] },
     scpi: { access: 'off', base_port: 5025 },
+    system: { headless: false, autostart: false, requests: [] },
   };
 
   await page.route(
@@ -423,6 +462,8 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
           return handleRemote(route, api, segs);
         case 'scpi':
           return handleScpi(route, api);
+        case 'system':
+          return handleSystem(route, api, segs);
         case 'status':
           return json(route, { devices_total: api.instruments.length, connected: 2, disconnected: 1 });
         case 'openapi.json':

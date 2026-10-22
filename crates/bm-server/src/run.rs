@@ -28,6 +28,9 @@ pub struct ServerOptions {
     pub ws_interval: Duration,
     /// Flows and automation settings (`flows/`, `automation.json`); `None` = in memory.
     pub data_dir: Option<PathBuf>,
+    /// Running without an app window: the UI may restart / shut down this process and make it
+    /// start with the computer (`system/`). `None` in the desktop app.
+    pub headless: Option<crate::system::Headless>,
 }
 
 pub struct RunningServer {
@@ -36,6 +39,7 @@ pub struct RunningServer {
     recordings: Arc<crate::recordings::Recordings>,
     remote: Arc<crate::remote::Remote>,
     scpi: Arc<crate::scpi::Scpi>,
+    system: Arc<crate::system::System>,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
     thread: Option<std::thread::JoinHandle<()>>,
     /// Problems with individual config entries (devices skipped at start).
@@ -47,6 +51,27 @@ impl RunningServer {
     pub fn url(&self) -> String {
         let host = if self.addr.ip().is_unspecified() { "127.0.0.1".to_string() } else { self.addr.ip().to_string() };
         format!("http://{host}:{}", self.addr.port())
+    }
+
+    /// Completes with what the UI asked a headless server to do (restart / shut down).
+    pub async fn requested(&self) -> crate::system::Action {
+        self.system.requested().await
+    }
+
+    /// Remote access: set its password and switch it on (headless start with a password).
+    pub fn set_remote_password(&self, password: &str) -> Result<(), String> {
+        if let Some(why) = crate::remote::password::refusal(password) {
+            return Err(why);
+        }
+        if self.remote.is_on_with(password) {
+            return Ok(());
+        }
+        self.remote.set_password(crate::remote::password::hash(password), true)
+    }
+
+    /// Remote access settings and state (addresses, certificate fingerprint).
+    pub fn remote_status(&self) -> serde_json::Value {
+        self.remote.status()
     }
 
     /// Stop serving, then stop every device (runs the definitions' on_disconnect steps).
@@ -121,6 +146,7 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         automation: crate::automation::Automation::new(devices.clone(), recordings.clone(), opts.data_dir.clone()),
         remote: Arc::new(crate::remote::Remote::new(opts.data_dir.clone())),
         scpi: Arc::new(crate::scpi::Scpi::new(opts.data_dir.clone())),
+        system: Arc::new(crate::system::System::new(opts.data_dir.clone(), opts.headless.clone())),
     });
     // community status of the models (website, read-only); a simulation stays offline
     if opts.simulate.is_none() {
@@ -150,6 +176,7 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let remote = state.remote.clone();
     let scpi = state.scpi.clone();
+    let system = state.system.clone();
     // virtual SCPI instruments: their ports open now if they are switched on
     scpi.attach(Arc::downgrade(&state), rt.handle().clone());
     // remote access: the network listener opens now if it is switched on, or later from the UI
@@ -167,5 +194,5 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
             });
         })
         .map_err(|e| e.to_string())?;
-    Ok(RunningServer { addr, devices, recordings, remote, scpi, shutdown: Some(tx), thread: Some(thread), warnings })
+    Ok(RunningServer { addr, devices, recordings, remote, scpi, system, shutdown: Some(tx), thread: Some(thread), warnings })
 }

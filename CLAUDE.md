@@ -72,6 +72,18 @@ shows **Remote - view only**, panel bodies `inert`, no park or new recording (`u
 Headless: `benchmesh-server remote-password` (stdin). Future online accounts map onto the same
 principals/scopes (see the contract).
 
+**Headless** (contract `ai_context/HEADLESS.md`): `benchmesh --headless` (the desktop app's executable, every OS)
+and `benchmesh-server` run without a window, used through remote access; `--remote-password` (or
+`BENCHMESH_REMOTE_PASSWORD`) switches it on and the hash is kept, `--port`, `--data-dir`, `--config`. Shared runner
+`crates/bm-server/src/headless.rs`, the app's part `crates/benchmesh-app/src/headless.rs`. Instruments → **System**
+(`frontend/src/ui/system/`, API `/system/**`, scope `system`, `crates/bm-server/src/system/`, resources via `sysinfo`):
+host, OS, cores, uptime, temperature, load, processor / memory / disk meters and BenchMesh's own use for everyone;
+headless only **Restart** (same command line; Unix `exec` in place) and **Shut down** (exit 0), two presses, refused
+while a flow runs, and **Start with this computer** (`system/autostart.rs`: systemd user service + linger command on
+Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation). Releases include Linux
+ARM64 (Raspberry Pi 4/5, `ubuntu-22.04-arm` runner); CI tests the desktop app on ARM and the server's system code on
+Windows and macOS.
+
 **Automation, assistant, MCP** (contract `ai_context/AUTOMATION.md`): flows are JSON documents
 (`benchmesh.flow/v1`: params, setup / steps / cleanup-always-runs; steps set, read, wait, let,
 if, repeat, sweep, check, log, prompt, record, stop; CEL expressions) validated against the
@@ -201,7 +213,7 @@ code; the definitions' `ui_component` is not used by the UI.
 | `bench/ParkingStrip.tsx`, `bench/parking.ts` | parked instruments (`ai_context/PARKING.md`): park control in the panel header (asks twice with an output on, disabled while the running flow uses the instrument), slim strip left of the rack with presence dot and name, sheet with details and Unpark |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden / channel layout of multi-channel panels (side by side or stacked), persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
 | `bench/BenchLayout.tsx`, `bench/TitleBar.tsx` | shell: a fixed head of two rows (only the content below it, `.bench-body`, scrolls) - the **title bar** (brand, version on its baseline, **Arrange** as an app control, then on Windows/Linux the window controls minimize / maximize / close; the bar drags the window, a double press maximizes) and the top bar (API / live / run / Remote on the left, drawer buttons on the right) - **Arrange** mode (drag, ◀ ▶, width, channels ⇆ / ⇅, hide), drawers (Instruments config, Request log; they open below the head, which stays usable: a menu button switches the open drawer). The desktop app's main window has no OS title bar on Windows and Linux (`decorations(false)` in `benchmesh-app` main.rs, permissions `capabilities/main-window.json`); macOS keeps its native title bar and the UI shows no window controls there (`desktop.ts` `hasOwnWindowControls`) |
-| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), **Connectors** (`connectors/`: virtual SCPI access, addresses with MATLAB / PyVISA / LabVIEW code, the Python package; this computer only), Remote access; request log |
+| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), **System** (`system/`: resources; restart, shut down, start with the computer when headless), **Connectors** (`connectors/`: virtual SCPI access, addresses with MATLAB / PyVISA / LabVIEW code, the Python package; this computer only), Remote access; request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx` |
 | `kit/brand.ts`, `kit/BrandMark.tsx` | the logo ("Readout": seven-segment b, ghost segments, amber decimal point): one geometry, colours on dark / on light; `BrandMark` follows the skin (`--kit-brand-*`) or takes fixed colours (website). `node scripts/logo/build.mjs` writes `docs/static/logo/*.svg`, `frontend/public/favicon.svg` and the app icons (`crates/benchmesh-app/icons`, via Inkscape + `cargo tauri icon`); a test fails when they are stale |
 | `about/` | title-bar version (`GET /version`, `version.ts`) and the **Feedback** drawer (`AboutView.tsx`: version, Copy version, GitHub issues links, contact email support@benchmesh.online with Copy email). External pages open by name (`links.tsx`): in the desktop app the system browser (or mail app) via the `open_page` command (fixed list, `crates/benchmesh-app/src/links.rs`, capability `links.json`), in a browser a new tab |
@@ -272,6 +284,7 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 | `API_PORT` | `bm-server` loopback port (default 57666; `--port`); other computers use remote access |
 | `BENCHMESH_ONLINE` / `BENCHMESH_ONLINE_URL` | `off` disables the community status / its base URL |
 | `BENCHMESH_URL` | server address for the MCP stdio bridge |
+| `BENCHMESH_REMOTE_PASSWORD` | headless: remote access password at start (as `--remote-password`, not shown in process lists) |
 | `BENCHMESH_NATIVE_WAYLAND` | `1`: run the app on native Wayland instead of XWayland |
 | `BM_WS_INTERVAL` | registry WebSocket push interval in seconds |
 
@@ -279,7 +292,7 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 
 `.github/workflows/README.md`: `ci.yaml` (frontend lint/tests/build, Rust clippy/tests/definition
 validation, transport on Windows and macOS), `e2e-tests.yml`, `release-tauri.yml` (tag `vX.Y.Z`
--> draft release for all platforms; publish with `gh release edit vX.Y.Z --draft=false`).
+-> draft release for all platforms incl. Linux ARM64; publish with `gh release edit vX.Y.Z --draft=false`).
 
 ## Guidelines
 

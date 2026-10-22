@@ -11,6 +11,9 @@ pub enum Scope {
     Configuration,
     Recordings,
     Automation,
+    /// The computer: resources, restart / shut down and start with the computer of a headless
+    /// server (headless, everything is done remotely).
+    System,
     /// Remote access itself, MCP, assistant keys, the Windows driver install: this computer only.
     Admin,
 }
@@ -26,6 +29,7 @@ pub fn of(method: &Method, path: &str) -> Scope {
         ["config"] | ["devices", ..] | ["serial-ports"] => Scope::Configuration,
         ["usbtmc-devices"] if method == Method::GET => Scope::Configuration,
         ["recordings", ..] | ["ws", "recordings"] => Scope::Recordings,
+        ["system", ..] => Scope::System,
         ["automation", "mcp"] => Scope::Admin,
         ["automation", "assistant"] if method != Method::GET => Scope::Admin,
         ["automation", ..] => Scope::Automation,
@@ -65,6 +69,9 @@ mod tests {
         assert_eq!(s("DELETE", "/remote/sessions"), Scope::Admin);
         assert_eq!(s("GET", "/remote/session"), Scope::Instruments);
         assert_eq!(s("PUT", "/scpi"), Scope::Admin, "virtual SCPI ports are set up on this computer only");
+        assert_eq!(s("GET", "/system"), Scope::System);
+        assert_eq!(s("POST", "/system/restart"), Scope::System, "headless, the browser is the only way to restart");
+        assert_eq!(s("PUT", "/system/autostart"), Scope::System);
         assert_eq!(s("GET", "/something-new"), Scope::Admin, "unknown routes are local-only");
     }
 

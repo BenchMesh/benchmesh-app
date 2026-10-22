@@ -81,6 +81,10 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **URL**: https://github.com/rustls/tokio-rustls, https://github.com/rustls/rcgen, https://github.com/qnighy/yasna.rs, https://github.com/time-rs/time, https://github.com/messense/if-addrs
 - The HTTPS listener of remote access, its self-signed certificate, and the computer's network addresses shown in the app. Password hashing and session tokens use `ring` (above).
 
+### sysinfo (bm-server: this computer's resources in Instruments - System)
+- **License**: MIT
+- **URL**: https://github.com/GuillaumeGomez/sysinfo
+
 ### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
 - **License**: Apache-2.0 OR MIT (used under MIT)
 - **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace
