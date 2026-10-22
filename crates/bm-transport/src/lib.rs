@@ -22,6 +22,7 @@ use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink, TcpLink};
 use bm_driver::actor::Attempt;
 use bm_driver::engine::Transport;
 
+pub mod access;
 pub mod discover;
 pub mod identity;
 pub mod lock;
@@ -230,7 +231,7 @@ impl SerialTransport {
             .flow_control(flow)
             .timeout(Duration::from_millis(100))
             .open()
-            .map_err(io::Error::from)?;
+            .map_err(|e| access::explain(io::Error::from(e), access::Port::Serial, &ep.path))?;
         let required = link.modem_control == ModemControl::Required;
         let dtr = set_line(link.dtr, |v| port.write_data_terminal_ready(v));
         let rts = set_line(link.rts, |v| port.write_request_to_send(v));
@@ -290,6 +291,37 @@ impl Transport for SerialTransport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A file this user may not open (mode 000), or None when the user may anyway (root).
+    #[cfg(target_os = "linux")]
+    fn forbidden_node(name: &str) -> Option<std::path::PathBuf> {
+        use std::os::unix::fs::PermissionsExt;
+        let p = std::env::temp_dir().join(format!("bm-access-{}-{name}", std::process::id()));
+        std::fs::write(&p, b"").unwrap();
+        std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o000)).unwrap();
+        if std::fs::OpenOptions::new().read(true).write(true).open(&p).is_ok() {
+            let _ = std::fs::remove_file(&p);
+            return None;
+        }
+        Some(p)
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn a_port_linux_refuses_says_what_to_do() {
+        let links: [(Link, &str); 2] = [
+            (Link::Usbtmc(serde_json::from_value(serde_json::json!({})).unwrap()), access::USB_HELP),
+            (Link::Serial(serde_json::from_value(serde_json::json!({"baud": 9600})).unwrap()), access::SERIAL_HELP),
+        ];
+        for (i, (link, help)) in links.into_iter().enumerate() {
+            let Some(node) = forbidden_node(&i.to_string()) else { return };
+            let path = node.to_string_lossy().to_string();
+            let err = open(&link, &Endpoint { path: path.clone(), ..Default::default() }).err().expect("refused");
+            let _ = std::fs::remove_file(&node);
+            let msg = err.to_string();
+            assert!(msg.contains(&path) && msg.ends_with(help), "{msg}");
+        }
+    }
 
     #[test]
     fn tcp_targets_get_the_link_port_unless_they_name_one() {

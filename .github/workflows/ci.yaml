@@ -60,6 +60,35 @@ jobs:
       - name: Validate device definitions
         run: cargo run -q -p bm-devicedef -- validate devices
 
+  # The desktop app crate (not a default member): its unit tests need the WebKitGTK packages, and
+  # its build checks the bundled resources exist (an empty UI directory is enough for the tests).
+  desktop-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Clippy (benchmesh-app)
+        run: |
+          mkdir -p frontend/dist
+          cargo clippy -p benchmesh-app --all-targets -- -D warnings
+
+      - name: Tests (benchmesh-app)
+        run: cargo test -p benchmesh-app
+
   # Port discovery has Windows (SetupAPI) and macOS (IORegistry) code: build, lint and test the
   # transport crate natively there, and run the real enumeration once (no instruments attached).
   transport-platforms:

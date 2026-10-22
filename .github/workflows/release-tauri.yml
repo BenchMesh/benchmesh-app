@@ -146,8 +146,10 @@ jobs:
             FTDI) are supported by current macOS - older versions may need the chip vendor's driver.
 
             ### Linux
-            AppImage: `chmod +x BenchMesh_*.AppImage` and run it. Serial instruments need your user in
-            the `dialout` group (`sudo usermod -aG dialout $USER`, then log out and in).
+            AppImage: `chmod +x BenchMesh_*.AppImage` and run it; it adds itself to the applications
+            menu (and the dock shows its icon). USB-TMC instruments (oscilloscopes, generators) need one
+            udev rule and serial instruments the `dialout` group - the app shows the command to copy, or
+            see https://benchmesh.online/docs/linux
             `.deb`: `sudo apt install ./BenchMesh_*_amd64.deb` (updates come from the releases page).
 
             User data stays in `~/.benchmesh` (config.yaml, recordings.db, flows).

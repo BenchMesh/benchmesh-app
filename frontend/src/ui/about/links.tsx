@@ -5,7 +5,7 @@
  */
 import React from 'react'
 
-export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'docs-scpi' | 'docs-python' | 'email'
+export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'docs-scpi' | 'docs-python' | 'linux-usb' | 'linux-serial' | 'email'
 
 export const PAGE_URLS: Record<Page, string> = {
   issues: 'https://github.com/MarkoVcode/BenchMesh/issues',
@@ -14,6 +14,9 @@ export const PAGE_URLS: Record<Page, string> = {
   docs: 'https://benchmesh.online/docs',
   'docs-scpi': 'https://benchmesh.online/docs/scpi',
   'docs-python': 'https://benchmesh.online/docs/python',
+  // the help links in the server's "no permission" messages (bm-transport access.rs)
+  'linux-usb': 'https://benchmesh.online/docs/linux#usb-permissions',
+  'linux-serial': 'https://benchmesh.online/docs/linux#serial-permissions',
   email: 'mailto:support@benchmesh.online',
 }
 

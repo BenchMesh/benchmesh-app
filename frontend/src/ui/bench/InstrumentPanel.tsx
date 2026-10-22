@@ -18,6 +18,7 @@ import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
 import { useParkControl } from './parking'
 import { offlineReason } from './offline'
+import { ProblemText } from './AccessFix'
 import { useRun } from '../automation/RunProvider'
 import { useViewOnly } from '../remote/RemoteProvider'
 
@@ -231,7 +232,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
       {!online && !folded && (
         <div className="bench-panel__offline" role="status">
           Offline - reconnecting
-          {offlineReason(instrument.health) && <span className="bench-panel__offline-why">{offlineReason(instrument.health)}</span>}
+          {offlineReason(instrument.health) && <ProblemText className="bench-panel__offline-why" text={offlineReason(instrument.health)!} />}
         </div>
       )}
       {showConsole && !folded && (

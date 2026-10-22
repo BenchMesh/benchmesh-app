@@ -115,7 +115,10 @@ pub fn open(path: &str) -> io::Result<Session<NusbPipe>> {
         .find(|i| is_usbtmc(i.class(), i.subclass()))
         .map(|i| i.interface_number())
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no USBTMC interface"))?;
-    let device = info.open().wait().map_err(|e| io::Error::other(format!("open {path}: {e}")))?;
+    let device = info.open().wait().map_err(|e| match e.kind() {
+        nusb::ErrorKind::PermissionDenied => crate::access::explain(e.into(), crate::access::Port::Usb, path),
+        _ => io::Error::other(format!("open {path}: {e}")),
+    })?;
     #[cfg(target_os = "linux")]
     let iface = device.detach_and_claim_interface(number).wait();
     #[cfg(not(target_os = "linux"))]

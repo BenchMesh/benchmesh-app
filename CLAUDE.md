@@ -120,7 +120,11 @@ of a fixed `port`/`device`; the instrument is then found on whatever port it is 
 every reconnect, on Linux/Windows/macOS without udev rules or admin rights.
 On Windows a USBTMC instrument without a usable driver gets **Install driver** (drawer / Detect):
 the server re-runs its executable elevated (`--install-winusb`, `bm_transport::winusb`) to bind
-Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. `POST /devices/detect`
+Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. On Linux a port the user may not open
+(`/dev/usbtmcN` belongs to root, serial ports to `dialout`) fails with "no permission to use <port> … - see
+<help URL>" (`bm_transport::access`); the panel and Detect show the fixing command with Copy and a "How to fix" link
+(`bench/AccessFix.tsx`) to https://benchmesh.online/docs/linux#usb-permissions / #serial-permissions (the website's
+`/docs/linux`, same commands in its `src/lib/linux.ts`). `POST /devices/detect`
 identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
 them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
 lists what the OS reports.
@@ -211,7 +215,9 @@ window), keep-on-top and close; in a browser a popup. While its window lives it 
 heartbeat (`bench/detach.ts`) and the bench leaves the panel out (never drawn twice) and lists it
 under "In own windows"; closing (or a crash) brings it back. Closing the main window closes the
 app. On Linux Wayland the app runs through XWayland (`GDK_BACKEND=x11`) because Wayland does not
-allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out.
+allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out. Run as an AppImage, the app writes its desktop entry
+and icon for the user at start (`~/.local/share/applications/benchmesh.desktop`, `benchmesh-app` `desktop_entry.rs`):
+docks match the window (class / app id `benchmesh`) to it, otherwise newer GNOME shows a generic icon.
 
 **Instrument console** (panel header, console icon): an optional pane at the bottom of the panel
 showing what is sent to (→) and received from (←) the instrument, plus port events (•), from

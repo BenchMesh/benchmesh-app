@@ -10,6 +10,7 @@ import {
   type DetectedPort, type DetectProgress, type DetectResponse,
 } from './detect';
 import { InstallDriverButton } from './InstallDriverButton';
+import { ProblemText } from '../bench/AccessFix';
 
 interface DetectViewProps {
   apiBase: string;
@@ -181,7 +182,7 @@ export function DetectView({ apiBase, configured, onChanged }: DetectViewProps) 
                 </div>
                 {pending && <PortProgress p={pr} />}
                 {cert && <div className={`detect__cert${cert.warn ? ' detect__cert--warn' : ''}`}>{cert.text}</div>}
-                {p.error && <div className="detect__muted">{p.error}</div>}
+                {p.error && <div className="detect__muted"><ProblemText text={p.error} /></div>}
                 {installable.has(p.port) && <InstallDriverButton apiBase={apiBase} device={p.port} onInstalled={detect} />}
                 {st?.error && <div className="instrument-config__inline-error">{st.error}</div>}
               </li>

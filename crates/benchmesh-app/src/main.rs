@@ -12,6 +12,8 @@
 //!   OWON load is returned to local mode).
 //! - Instrument panels can be detached into their own undecorated windows (`panel-*`, opened
 //!   by the UI; capability `capabilities/panels.json`). Closing the main window closes them too.
+//! - Linux AppImage: writes its desktop entry and icon for the user at start (`desktop_entry.rs`),
+//!   so docks show the BenchMesh icon and the applications menu lists it.
 //! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
 //!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
 //! - Updates: one check per start, offered by the UI (`update.rs`). Feedback / releases pages
@@ -30,6 +32,8 @@ use std::time::Duration;
 use bm_server::run::{start, RunningServer, ServerOptions};
 use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
+#[cfg(target_os = "linux")]
+mod desktop_entry;
 mod links;
 mod update;
 
@@ -103,6 +107,9 @@ fn main() {
     }
     #[cfg(target_os = "linux")]
     prefer_x11_for_keep_on_top();
+    // an AppImage installs no desktop entry: without one the dock shows a generic icon
+    #[cfg(target_os = "linux")]
+    desktop_entry::install_for_appimage();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(update::PendingState::default())

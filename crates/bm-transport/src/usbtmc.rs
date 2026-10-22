@@ -53,7 +53,7 @@ impl UsbTmcTransport {
     /// exchange unanswered (verified 2026-10-17). Interrupted sessions are avoided instead
     /// (graceful shutdown); proper abort/resync needs the userspace USBTMC transport.
     pub fn open(path: &str) -> io::Result<Self> {
-        let file = OpenOptions::new().read(true).write(true).open(path)?;
+        let file = OpenOptions::new().read(true).write(true).open(path).map_err(|e| crate::access::explain(e, crate::access::Port::Usb, path))?;
         Ok(UsbTmcTransport { file, buf: vec![0; MAX_MESSAGE], timeout_ms: 0, notes: Vec::new() })
     }
 

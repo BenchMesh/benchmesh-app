@@ -31,6 +31,8 @@ pub mod scpi;
 
 /// For the desktop app's `main`: the elevated Windows driver-install run (see `bm_transport::winusb`).
 pub use bm_transport::winusb::helper_main as winusb_helper_main;
+/// What to do when Linux refuses an instrument's port (the app opens its help pages by name).
+pub use bm_transport::access as access_help;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};

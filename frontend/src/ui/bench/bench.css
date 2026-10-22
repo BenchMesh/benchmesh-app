@@ -137,6 +137,12 @@ html, body { background: var(--kit-ground); }
 }
 .bench-panel__offline:has(.bench-panel__offline-why) { border-radius: 10px; padding: 6px 12px; }
 .bench-panel__offline-why { font: 400 .72rem/1.3 var(--kit-font-label); letter-spacing: 0; text-transform: none; color: var(--kit-ink-2); }
+/* a refused port (AccessFix.tsx): the command, Copy and the help link take clicks inside the label */
+.access-fix { display: grid; gap: 6px; justify-items: start; text-align: left; pointer-events: auto; font-style: normal; }
+.access-fix__command { display: block; max-width: 100%; padding: 6px 8px; border: 1px solid var(--kit-panel-edge); border-radius: var(--kit-r-ctl);
+  background: var(--kit-ctl-hi); color: var(--kit-ink); font: 400 .68rem/1.35 var(--kit-font-num); white-space: pre-wrap; word-break: break-all; user-select: all; }
+.access-fix__row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.access-fix__after { color: var(--kit-ink-3); }
 
 /* ---- class panels ----------------------------------------------------------------- */
 .bench-psu { display: grid; gap: 12px; min-width: 0; align-items: start; }
