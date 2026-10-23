@@ -44,7 +44,10 @@ cargo run -p bm-server -- --config captures/bench-config.yaml        # API + UI 
 cargo run -p bm-server -- --config captures/bench-config.yaml --simulate captures/20261016-203514  # no hardware
 ./target/debug/bm-probe --config captures/bench-config.yaml verify    # bench check (read-only)
 cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchmesh-app)
+cargo clean                                  # target/ keeps every rebuild's artifacts: clean now and then
 ```
+
+Debug builds carry line tables only, dependencies no debug info (`[profile.dev]` in `Cargo.toml`): keeps `target/` small.
 
 
 **Open source and the official distribution** (contract `ai_context/OPEN_CORE.md`): this repository is the whole

@@ -25,3 +25,12 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time",
 rusqlite = { version = "0.40", features = ["bundled"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 tower-http = { version = "0.6", features = ["fs", "set-header"] }
+
+# Debug builds keep file:line for panics and backtraces but no full debug info, and none for
+# dependencies: binaries several times smaller (target/ grows by every rebuild; `cargo clean` or
+# `cargo sweep` now and then).
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
