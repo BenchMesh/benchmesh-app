@@ -9,7 +9,8 @@ use std::time::Duration;
 
 use bm_server::headless::{arg, password_from};
 use bm_server::run::ServerOptions;
-use bm_server::system::{autostart::Launch, update::Install, Headless};
+use bm_server::extension::{Extensions, Host};
+use bm_server::system::{autostart::Launch, Headless};
 
 use crate::{data_dir, env_path};
 
@@ -33,6 +34,11 @@ pub fn run(package: &tauri::PackageInfo) -> i32 {
     let port = arg(&args, "--port").unwrap_or_else(|| "57666".into());
     let simulate = env_path("BENCHMESH_SIMULATE");
     let launch = simulate.is_none().then(|| launch(&args));
+    let data_dir = simulate.is_none().then(|| data.clone());
+    let extensions = Extensions {
+        distribution: benchmesh_extensions::DISTRIBUTION,
+        list: benchmesh_extensions::server(&Host { data_dir: data_dir.clone(), headless: true }),
+    };
     bm_server::headless::run(
         ServerOptions {
             config,
@@ -41,9 +47,10 @@ pub fn run(package: &tauri::PackageInfo) -> i32 {
             listen: vec![format!("127.0.0.1:{port}")],
             recordings_db: simulate.is_none().then(|| data.join("recordings.db")),
             ws_interval: Duration::from_millis(200),
-            data_dir: simulate.is_none().then(|| data.clone()),
+            data_dir,
             simulate,
-            headless: Some(Headless { launch, install: Install::of_app() }),
+            headless: Some(Headless { launch }),
+            extensions,
         },
         password_from(&args),
     )

@@ -67,6 +67,7 @@ impl Bench {
             simulate: None,
             data_dir: Some(dir.clone()),
             headless: None,
+            extensions: Default::default(),
         })
         .unwrap();
         let st = local(server.addr, "GET", "/remote", None);

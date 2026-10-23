@@ -12,17 +12,6 @@
     },
     "withGlobalTauri": true
   },
-  "plugins": {
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwNUM5RjY1NjRDMDIwQTUKUldTbElNQmtaWjljc0dZY2diRXNlZkVXYmJ4R1dSRCtPK2hTZ2hOQjJsZ2dXTlR0cTFFT1o2aEUK",
-      "endpoints": [
-        "https://github.com/MarkoVcode/BenchMesh/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
-    }
-  },
   "bundle": {
     "active": true,
     "targets": [
@@ -42,7 +31,6 @@
     "resources": {
       "../../devices/": "devices/",
       "../../frontend/dist/": "ui/"
-    },
-    "createUpdaterArtifacts": true
+    }
   }
 }

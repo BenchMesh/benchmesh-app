@@ -5,7 +5,7 @@ import { apiBaseUrl } from '../../api/base'
 export interface AppVersion {
   /** e.g. `0.1.7` */
   version: string
-  /** e.g. `BenchMesh 0.1.7` */
+  /** e.g. `BenchMesh 0.1.7`, or `BenchMesh 0.1.7 (community build)` for a build of the open-source repository */
   display: string
 }
 
@@ -15,8 +15,10 @@ export async function fetchVersion(): Promise<AppVersion | null> {
     if (!r.ok) return null
     const v = await r.json()
     const version = String(v.releaseVersion ?? v.version ?? '')
-    const display = v.displayVersion ?? (version ? `BenchMesh ${version}` : '')
-    return display ? { version, display } : null
+    const name = v.displayVersion ?? (version ? `BenchMesh ${version}` : '')
+    if (!name) return null
+    // the official distribution names itself plainly; a build from source says so (issue reports)
+    return { version, display: v.distribution === 'community' ? `${name} (community build)` : name }
   } catch {
     return null
   }

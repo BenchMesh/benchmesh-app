@@ -16,6 +16,10 @@ describe('version', () => {
   it('reads the release version from /version', async () => {
     answer({ releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7' })
     expect(await fetchVersion()).toEqual({ version: '0.1.7', display: 'BenchMesh 0.1.7' })
+    answer({ releaseVersion: '0.1.16', version: '0.1.16', displayVersion: 'BenchMesh 0.1.16', distribution: 'community' })
+    expect(await fetchVersion()).toEqual({ version: '0.1.16', display: 'BenchMesh 0.1.16 (community build)' })
+    answer({ releaseVersion: '0.1.16', version: '0.1.16', displayVersion: 'BenchMesh 0.1.16', distribution: 'official' })
+    expect(await fetchVersion()).toEqual({ version: '0.1.16', display: 'BenchMesh 0.1.16' })
   })
   it('is null when the server does not answer', async () => {
     answer({}, 500)
@@ -30,7 +34,7 @@ describe('About and feedback', () => {
     answer({ version: '0.1.7' })
     render(<AboutView />)
     expect(await screen.findByTestId('app-version')).toHaveTextContent('BenchMesh 0.1.7')
-    expect(screen.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/MarkoVcode/BenchMesh/issues/new')
+    expect(screen.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/BenchMesh/benchmesh-app/issues/new')
     expect(screen.getByRole('link', { name: 'See open issues' })).toHaveAttribute('href', PAGE_URLS.issues)
     expect(screen.getByText(PAGE_URLS.issues)).toBeInTheDocument()
   })

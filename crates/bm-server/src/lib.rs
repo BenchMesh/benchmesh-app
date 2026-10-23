@@ -18,6 +18,7 @@ pub mod automation;
 pub mod community;
 pub mod config;
 pub mod detect;
+pub mod extension;
 pub mod ai;
 pub mod devices;
 pub mod guard;
@@ -77,9 +78,12 @@ pub struct AppState {
     pub scpi: Arc<scpi::Scpi>,
     /// This computer's resources; restart / shut down / autostart when headless (`system/`).
     pub system: Arc<system::System>,
+    /// What the distribution adds (`extension.rs`): routes, its name in `/version`.
+    pub extensions: extension::Extensions,
 }
 
-pub(crate) type S = Arc<AppState>;
+/// The state every route handler gets (extensions' routes too).
+pub type S = Arc<AppState>;
 
 /// The API + UI for the loopback listener: requests are `Principal::Local`; other web sites
 /// are refused (guard.rs).
@@ -134,6 +138,9 @@ fn routes(state: &S) -> Router<S> {
         .merge(remote::routes())
         .merge(scpi::routes())
         .merge(system::routes());
+    for e in &state.extensions.list {
+        r = r.merge(e.routes());
+    }
     if let Some(ui) = &state.ui_dir {
         r = r.nest_service("/ui", ServiceBuilder::new().map_request(fresh_ui_request).map_response(unstored_ui_response).service(ServeDir::new(ui).append_index_html_on_directories(true)));
     }
@@ -162,7 +169,8 @@ fn unstored_ui_response<B>(mut resp: Response<B>) -> Response<B> {
     resp
 }
 
-pub(crate) fn detail(code: StatusCode, msg: impl Into<String>) -> Response {
+/// An error response: `{"detail": msg}` (extensions answer the same way).
+pub fn detail(code: StatusCode, msg: impl Into<String>) -> Response {
     (code, Json(json!({"detail": msg.into()}))).into_response()
 }
 
@@ -221,12 +229,14 @@ async fn status(State(s): State<S>) -> Json<Value> {
     Json(json!({"devices_total": total, "connected": connected, "disconnected": disconnected, "parked": parked}))
 }
 
-async fn version() -> Json<Value> {
+async fn version(State(s): State<S>) -> Json<Value> {
     let v = env!("CARGO_PKG_VERSION");
     let release = option_env!("BENCHMESH_RELEASE").unwrap_or(v);
     Json(json!({
         "releaseVersion": release, "applicationName": "BenchMesh", "displayVersion": format!("BenchMesh {release}"),
-        "version": v, "description": "Lab Instrument Control System", "name": "BenchMesh", "error": null
+        "version": v, "description": "Lab Instrument Control System", "name": "BenchMesh", "error": null,
+        // `community`: built from the open-source repository; the official build names itself
+        "distribution": s.extensions.distribution,
     }))
 }
 

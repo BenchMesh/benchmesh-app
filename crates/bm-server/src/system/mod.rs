@@ -2,9 +2,10 @@
 //! System tab, and - when BenchMesh runs headless, without an app window - restart, shut down and
 //! start with the computer, so a bench computer reached only through remote access can be looked
 //! after from the browser. In the desktop app the window owns the process: these answer 409.
+//! An extension of the distribution (`extension.rs`) may hand the process over the same way, e.g.
+//! to install a new version once it has stopped (`System::hand_over`).
 
 pub mod autostart;
-pub mod update;
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -21,15 +22,37 @@ use tokio::sync::watch;
 
 use crate::{detail, S};
 
+/// What the headless process does once it has stopped cleanly, after a hand-over.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AfterStop {
+    /// Start the same command line again, with this program instead of the running one if given.
+    Restart(Option<PathBuf>),
+    /// Exit with this code.
+    Exit(i32),
+}
+
+/// Runs after the devices were stopped and everything was released.
+pub type HandOver = Arc<dyn Fn() -> AfterStop + Send + Sync>;
+
 /// What the UI asked the headless process to do.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone)]
 pub enum Action {
     /// Stop cleanly and start again with the same command line.
     Restart,
     /// Stop cleanly and exit.
     Shutdown,
-    /// Stop cleanly, install the downloaded update (`update::Updater::staged`) and start it.
-    Update,
+    /// Stop cleanly, then let an extension decide (`System::hand_over`).
+    HandOver(HandOver),
+}
+
+impl std::fmt::Debug for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Action::Restart => "Restart",
+            Action::Shutdown => "Shutdown",
+            Action::HandOver(_) => "HandOver",
+        })
+    }
 }
 
 /// Running headless: the process may restart / stop itself and register itself to start with
@@ -39,8 +62,6 @@ pub struct Headless {
     /// How to start this program headless again (the autostart entry); `None` for a simulation,
     /// which never starts with the computer.
     pub launch: Option<autostart::Launch>,
-    /// How this program was installed (how it updates itself).
-    pub install: update::Install,
 }
 
 impl Default for System {
@@ -58,7 +79,6 @@ pub struct System {
     headless: Option<Headless>,
     started_ms: i64,
     action: Arc<watch::Sender<Option<Action>>>,
-    pub updater: Arc<update::Updater>,
 }
 
 impl System {
@@ -67,8 +87,7 @@ impl System {
         // the first CPU figure is a difference to this one
         probe.refresh_cpu_usage();
         refresh_own_process(&mut probe);
-        let updater = Arc::new(update::Updater::new(headless.as_ref().map(|h| h.install.clone()), data_dir.as_deref()));
-        System { probe: Mutex::new(probe), data_dir, headless, started_ms: now_ms(), action: Arc::new(watch::channel(None).0), updater }
+        System { probe: Mutex::new(probe), data_dir, headless, started_ms: now_ms(), action: Arc::new(watch::channel(None).0) }
     }
 
     pub fn is_headless(&self) -> bool {
@@ -79,7 +98,7 @@ impl System {
     pub async fn requested(&self) -> Action {
         let mut rx = self.action.subscribe();
         loop {
-            if let Some(a) = *rx.borrow_and_update() {
+            if let Some(a) = rx.borrow_and_update().clone() {
                 return a;
             }
             if rx.changed().await.is_err() {
@@ -94,6 +113,12 @@ impl System {
         }
         self.action.send_replace(Some(a));
         Ok(())
+    }
+
+    /// Stop the headless process cleanly and run `then` (the desktop app: refused, its window owns
+    /// the process).
+    pub fn hand_over(&self, then: HandOver) -> Result<(), &'static str> {
+        self.request(Action::HandOver(then))
     }
 
     /// Resources of this computer and of the BenchMesh process.
@@ -172,9 +197,6 @@ pub fn routes() -> Router<S> {
         .route("/system/restart", post(restart))
         .route("/system/shutdown", post(shutdown))
         .route("/system/autostart", get(get_autostart).put(put_autostart))
-        .route("/system/update", get(get_update))
-        .route("/system/update/check", post(check_update))
-        .route("/system/update/install", post(install_update))
 }
 
 async fn get_system(State(s): State<S>) -> Json<Value> {
@@ -182,8 +204,8 @@ async fn get_system(State(s): State<S>) -> Json<Value> {
     Json(tokio::task::spawn_blocking(move || sys.snapshot()).await.unwrap_or_else(|_| json!({})))
 }
 
-/// A flow switches outputs and cleans up after itself: never stopped from under it.
-fn refused_while_running(s: &S) -> Option<Response> {
+/// A flow switches outputs and cleans up after itself: never stopped from under it (409).
+pub fn refused_while_running(s: &S) -> Option<Response> {
     let state = s.automation.run_status(u64::MAX)["state"].as_str().unwrap_or("idle").to_string();
     matches!(state.as_str(), "running" | "waiting" | "cleanup")
         .then(|| detail(StatusCode::CONFLICT, "a flow is running: stop it first (its cleanup switches off what it switched on)"))
@@ -193,7 +215,7 @@ async fn act(s: S, a: Action) -> Response {
     if let Some(r) = refused_while_running(&s) {
         return r;
     }
-    match s.system.request(a) {
+    match s.system.request(a.clone()) {
         Ok(()) => {
             eprintln!("system: {a:?} requested from the UI");
             (StatusCode::ACCEPTED, Json(json!({"action": format!("{a:?}").to_lowercase()}))).into_response()
@@ -208,32 +230,6 @@ async fn restart(State(s): State<S>) -> Response {
 
 async fn shutdown(State(s): State<S>) -> Response {
     act(s, Action::Shutdown).await
-}
-
-async fn get_update(State(s): State<S>) -> Json<Value> {
-    Json(s.system.updater.json())
-}
-
-async fn check_update(State(s): State<S>) -> Json<Value> {
-    Json(s.system.updater.check().await)
-}
-
-/// Download, verify and - for an installation that replaces itself - stop, install and start
-/// the new version (202; follow `GET /system/update`).
-async fn install_update(State(s): State<S>) -> Response {
-    if let Some(r) = refused_while_running(&s) {
-        return r;
-    }
-    let action = s.system.action.clone();
-    match s.system.updater.start_install(move |_| {
-        action.send_replace(Some(Action::Update));
-    }) {
-        Ok(()) => {
-            eprintln!("system: update requested from the UI");
-            (StatusCode::ACCEPTED, Json(s.system.updater.json())).into_response()
-        }
-        Err(why) => detail(StatusCode::CONFLICT, why),
-    }
 }
 
 fn autostart_json(s: &S) -> Value {
@@ -290,21 +286,30 @@ mod tests {
     #[test]
     fn the_desktop_app_cannot_be_restarted_from_the_ui() {
         let s = System::new(None, None);
-        assert_eq!(s.request(Action::Restart), Err(DESKTOP));
+        assert_eq!(s.request(Action::Restart).unwrap_err(), DESKTOP);
+        assert_eq!(s.hand_over(std::sync::Arc::new(|| AfterStop::Exit(0))).unwrap_err(), DESKTOP);
         assert!(s.action.borrow().is_none());
     }
 
     #[tokio::test]
     async fn a_headless_process_hears_the_request() {
         let launch = autostart::Launch { program: "/opt/benchmesh".into(), args: vec!["--headless".into()] };
-        let s = std::sync::Arc::new(System::new(None, Some(Headless { launch: Some(launch), install: update::Install::Source })));
+        let s = std::sync::Arc::new(System::new(None, Some(Headless { launch: Some(launch) })));
         let waiting = tokio::spawn({
             let s = s.clone();
             async move { s.requested().await }
         });
         tokio::task::yield_now().await;
         s.request(Action::Shutdown).unwrap();
-        assert_eq!(waiting.await.unwrap(), Action::Shutdown);
+        assert!(matches!(waiting.await.unwrap(), Action::Shutdown));
+    }
+
+    #[tokio::test]
+    async fn an_extension_hands_the_headless_process_over() {
+        let s = System::new(None, Some(Headless { launch: None }));
+        s.hand_over(std::sync::Arc::new(|| AfterStop::Restart(Some("/opt/new/benchmesh".into())))).unwrap();
+        let Action::HandOver(then) = s.requested().await else { panic!("not a hand-over") };
+        assert_eq!(then(), AfterStop::Restart(Some("/opt/new/benchmesh".into())));
     }
 
     #[test]

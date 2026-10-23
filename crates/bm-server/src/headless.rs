@@ -8,12 +8,13 @@
 //! ```
 //! The password may come from `BENCHMESH_REMOTE_PASSWORD` instead (not shown in process lists).
 //! The process then runs until Ctrl-C / SIGTERM or until the UI asks it (Instruments - System) to
-//! shut down, restart or update; a restart starts the same command line again (Unix: in place,
-//! keeping the process id, so systemd / launchd keep tracking it), an update installs the
-//! verified new version first (`system/update.rs`).
+//! shut down or restart; a restart starts the same command line again (Unix: in place, keeping
+//! the process id, so systemd / launchd keep tracking it). An extension of the distribution may
+//! take over once everything has stopped (`system::System::hand_over`), e.g. to install a new
+//! version first.
 
 use crate::run::{start, RunningServer, ServerOptions};
-use crate::system::Action;
+use crate::system::{Action, AfterStop};
 
 /// The command line value of `flag` (`--flag value`).
 pub fn arg(args: &[String], flag: &str) -> Option<String> {
@@ -58,34 +59,15 @@ pub fn run(opts: ServerOptions, remote_password: Option<String>) -> i32 {
         }
     };
     let action = rt.block_on(wait(&server));
-    let staged = server.staged_update();
     eprintln!("stopping devices…");
     server.stop();
     match action {
         Some(Action::Restart) => restart(None),
-        Some(Action::Update) => update(staged),
-        _ => 0,
-    }
-}
-
-/// Install the verified update; start the new version (Windows: the installer's helper does).
-/// When installing fails the old version starts again.
-fn update(staged: Option<crate::system::update::Staged>) -> i32 {
-    let Some(staged) = staged else {
-        eprintln!("update: nothing downloaded");
-        return restart(None);
-    };
-    eprintln!("installing BenchMesh {}…", staged.version);
-    match crate::system::update::apply(&staged) {
-        Ok(Some(program)) => restart(Some(program)),
-        Ok(None) => {
-            eprintln!("the installer starts BenchMesh {} when it has finished", staged.version);
-            0
-        }
-        Err(e) => {
-            eprintln!("update: {e} - starting the installed version again");
-            restart(None)
-        }
+        Some(Action::HandOver(then)) => match then() {
+            AfterStop::Restart(program) => restart(program),
+            AfterStop::Exit(code) => code,
+        },
+        Some(Action::Shutdown) | None => 0,
     }
 }
 

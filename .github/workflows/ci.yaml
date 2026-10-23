@@ -86,13 +86,13 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Clippy (benchmesh-app)
+      - name: Clippy (benchmesh-app, benchmesh-extensions)
         run: |
           mkdir -p frontend/dist
-          cargo clippy -p benchmesh-app --all-targets -- -D warnings
+          cargo clippy -p benchmesh-app -p benchmesh-extensions --all-targets -- -D warnings
 
-      - name: Tests (benchmesh-app)
-        run: cargo test -p benchmesh-app
+      - name: Tests (benchmesh-app, benchmesh-extensions)
+        run: cargo test -p benchmesh-app -p benchmesh-extensions
 
   # Port discovery has Windows (SetupAPI) and macOS (IORegistry) code: build, lint and test the
   # transport crate natively there, and run the real enumeration once (no instruments attached).

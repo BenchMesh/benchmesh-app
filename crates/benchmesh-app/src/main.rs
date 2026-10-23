@@ -16,8 +16,9 @@
 //!   so docks show the BenchMesh icon and the applications menu lists it.
 //! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
 //!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
-//! - Updates: one check per start, offered by the UI (`update.rs`). Feedback / releases pages
-//!   open in the system browser by name (`links.rs`, capability `capabilities/links.json`).
+//! - What the distribution adds (the official build: app updates; nothing when built from this
+//!   repository) comes from `benchmesh-extensions` (`ai_context/OPEN_CORE.md`). Feedback / releases
+//!   pages open in the system browser by name (`links.rs`, capability `capabilities/links.json`).
 //! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 //! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
@@ -32,6 +33,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;
 
+use bm_server::extension::{Extensions, Host};
 use bm_server::run::{start, RunningServer, ServerOptions};
 use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
@@ -39,7 +41,6 @@ use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 mod desktop_entry;
 mod headless;
 mod links;
-mod update;
 
 struct Server(Mutex<Option<RunningServer>>);
 
@@ -118,10 +119,9 @@ fn main() {
     // an AppImage installs no desktop entry: without one the dock shows a generic icon
     #[cfg(target_os = "linux")]
     desktop_entry::install_for_appimage();
-    let app = tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .manage(update::PendingState::default())
-        .invoke_handler(tauri::generate_handler![update::update_check, update::update_install, update::update_open_page, links::open_page])
+    let builder = benchmesh_extensions::desktop(tauri::Builder::default(), std::sync::Arc::new(stop_server));
+    let app = builder
+        .invoke_handler(tauri::generate_handler![links::open_page])
         // the main window owns the app: closing it closes detached instrument windows too
         .on_window_event(|window, event| {
             if window.label() == "main" && matches!(event, WindowEvent::Destroyed) {
@@ -132,6 +132,12 @@ fn main() {
             let resources = app.path().resource_dir()?;
             let data = data_dir();
             std::fs::create_dir_all(&data)?;
+            // a simulation keeps everything in memory
+            let user_data = env_path("BENCHMESH_SIMULATE").is_none().then(|| data.clone());
+            let extensions = Extensions {
+                distribution: benchmesh_extensions::DISTRIBUTION,
+                list: benchmesh_extensions::server(&Host { data_dir: user_data.clone(), headless: false }),
+            };
             let server = start(ServerOptions {
                 config: env_path("BENCHMESH_CONFIG").unwrap_or_else(|| data.join("config.yaml")),
                 devices_dir: env_path("BENCHMESH_DEVICES").unwrap_or_else(|| resources.join("devices")),
@@ -141,9 +147,10 @@ fn main() {
                 recordings_db: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.join("recordings.db")),
                 simulate: env_path("BENCHMESH_SIMULATE"),
                 ws_interval: Duration::from_millis(200),
-                data_dir: env_path("BENCHMESH_SIMULATE").is_none().then(|| data.clone()),
+                data_dir: user_data,
                 // the window owns the process: closing it stops BenchMesh
                 headless: None,
+                extensions,
             })?;
             for w in &server.warnings {
                 eprintln!("warning: {w}");
@@ -167,13 +174,19 @@ fn main() {
 
     app.run(|handle, event| {
         if let RunEvent::Exit = event {
-            if let Some(server) = handle.state::<Server>().0.lock().unwrap().take() {
-                eprintln!("stopping devices…");
-                server.stop();
-                eprintln!("stopped");
-            }
+            stop_server(handle);
         }
     });
+}
+
+/// Stop the embedded server and every device (their on_disconnect steps run); once.
+fn stop_server(handle: &tauri::AppHandle) {
+    let server = handle.try_state::<Server>().and_then(|s| s.0.lock().unwrap().take());
+    if let Some(server) = server {
+        eprintln!("stopping devices…");
+        server.stop();
+        eprintln!("stopped");
+    }
 }
 
 #[cfg(test)]

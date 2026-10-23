@@ -14,7 +14,7 @@ import { getClassDescription } from '../instrumentClasses'
 import { SkinProvider } from '../kit'
 import { TitleBar } from './TitleBar'
 import { RecorderDock } from '../recording/RecorderDock'
-import { UpdatePrompt } from '../update/UpdatePrompt'
+import { extensions } from '../../extensions'
 import { RunIndicator, RunProvider } from '../automation/RunProvider'
 import { RemoteProvider } from '../remote/RemoteProvider'
 import { RemoteBadge } from '../remote/RemoteBadge'
@@ -111,7 +111,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
 
   return (
     <div className="bench" style={{ '--bench-top-h': `${topHeight}px` } as React.CSSProperties}>
-      <UpdatePrompt />
+      {extensions.root.map((Root, i) => <Root key={i} />)}
       <div ref={top} className="bench-head">
         <TitleBar version={version?.version} onAbout={() => setDrawer('about')}
           arranging={arranging} canArrange={instruments.length > 0} onArrange={() => setArranging((a) => !a)} />

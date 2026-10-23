@@ -31,6 +31,8 @@ pub struct ServerOptions {
     /// Running without an app window: the UI may restart / shut down this process and make it
     /// start with the computer (`system/`). `None` in the desktop app.
     pub headless: Option<crate::system::Headless>,
+    /// What the distribution adds (`extension.rs`); none in the open-source build.
+    pub extensions: crate::extension::Extensions,
 }
 
 pub struct RunningServer {
@@ -56,11 +58,6 @@ impl RunningServer {
     /// Completes with what the UI asked a headless server to do (restart / shut down).
     pub async fn requested(&self) -> crate::system::Action {
         self.system.requested().await
-    }
-
-    /// The verified update to install once stopped (after `Action::Update`).
-    pub fn staged_update(&self) -> Option<crate::system::update::Staged> {
-        self.system.updater.staged()
     }
 
     /// Remote access: set its password and switch it on (headless start with a password).
@@ -152,7 +149,11 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
         remote: Arc::new(crate::remote::Remote::new(opts.data_dir.clone())),
         scpi: Arc::new(crate::scpi::Scpi::new(opts.data_dir.clone())),
         system: Arc::new(crate::system::System::new(opts.data_dir.clone(), opts.headless.clone())),
+        extensions: opts.extensions.clone(),
     });
+    for e in &state.extensions.list {
+        eprintln!("extension: {}", e.name());
+    }
     // community status of the models (website, read-only); a simulation stays offline
     if opts.simulate.is_none() {
         let c = state.community.clone();

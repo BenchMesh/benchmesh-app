@@ -63,27 +63,10 @@ computer. Without a systemd user manager (Linux) the tab says so.
 
 ## Updates
 
-The desktop app offers new versions itself at start (Tauri updater, modal). Headless there is no
-window for that, so Instruments - System - **Updates** does it (`crates/bm-server/src/system/update.rs`,
-UI `frontend/src/ui/system/UpdateGroup.tsx`): **Check for updates** reads the same signed
-`latest.json` of the latest *published* GitHub release; **Install <version> and restart** (two
-presses, refused while a flow runs) downloads this installation's file (`latest.json` key
-`<linux|windows|darwin>-<arch>-<appimage|nsis|app|deb>`) into `<data dir>/updates/`, verifies its
-minisign signature with the updater's public key (the same as `tauri.conf.json`; a test keeps them
-equal; an unsigned or altered download is deleted and never installed), then:
-
-| Installed as | Update |
-|---|---|
-| Linux AppImage (`$APPIMAGE`) | BenchMesh stops, the AppImage file is replaced in place (old one kept as `<file>.previous`), the new one starts with the same arguments (Unix `exec`: same process id, systemd keeps tracking it) |
-| Windows (installer) | BenchMesh stops; a detached helper waits, runs the signed installer silently (`/S`) and starts `benchmesh.exe` with the same arguments |
-| macOS app | BenchMesh stops, the `.app` bundle is replaced (old one kept as `<bundle>.previous`) and started |
-| Linux `.deb` (executable under `/usr`) | downloaded and verified only: the package manager owns the files; the tab shows `sudo apt install <data dir>/updates/BenchMesh_<v>_<arch>.deb` with Copy, then Restart |
-| built from source (`benchmesh-server`) / simulation / desktop app | check only, with the reason |
-
-When installing fails the old version starts again. The UI shows the download's progress and
-reloads once the new BenchMesh answers (remote browsers sign in again). For a computer looked after
-only remotely (a Raspberry Pi) the AppImage is the convenient choice: it updates itself.
-`BENCHMESH_UPDATE_URL` replaces the manifest's address (staging tests); the key cannot be changed.
+A build of this repository does not update itself: build the new version again. The official
+distribution adds **Updates** to this tab (Check for updates, Install, the signed download
+verified before it is installed) through its extension (`ai_context/OPEN_CORE.md`), which stops
+and restarts the headless process with `System::hand_over`.
 
 ## API (scope `system`, `crates/bm-server/src/system/`)
 
@@ -93,9 +76,6 @@ only remotely (a Raspberry Pi) the AppImage is the convenient choice: it updates
 | `POST /system/restart`, `POST /system/shutdown` | 202 `{action}`; 409 in the desktop app or while a flow runs |
 | `GET /system/autostart` | `{supported, enabled, method, location, starts_at: boot\|login, boot_command, note, reason, command}` |
 | `PUT /system/autostart` `{enabled}` | as GET; 400 without `enabled`, 409 in the desktop app or a simulation |
-| `GET /system/update` | `{current, installed_as, can_install, replaces_itself, reason, checked_ms, latest: {version, notes, pub_date} \| null, available, phase: idle\|checking\|downloading\|installing\|manual\|failed, downloaded, total, error, command}` |
-| `POST /system/update/check` | as GET, after reading the latest release |
-| `POST /system/update/install` | 202 as GET (follow `GET`); 409 when this installation cannot install, without a newer version, while one is under way or while a flow runs |
 
 Remote control sessions hold the `system` scope (headless, the browser is the only way to look
 after the computer); view-only sessions read `GET /system` only. Restart, shut down and install
@@ -109,5 +89,5 @@ are not sent from the API reference drawer (`x-no-try`).
 to the user (the udev rule / dialout group, https://benchmesh.online/docs/linux), run
 `benchmesh --headless --remote-password '...'` once, then switch **Start with this computer** on
 and run the linger command so it starts at power-on. The release builds ARM64 natively on
-GitHub's ARM runners (`release-tauri.yml`); CI builds and tests the desktop app on ARM on every
+GitHub's ARM runners (official release build); CI builds and tests the desktop app on ARM on every
 push.

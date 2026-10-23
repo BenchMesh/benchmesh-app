@@ -2,12 +2,17 @@
 //! `/openapi.json` and `/openapi.yaml`; the UI's API reference drawer renders it and sends
 //! requests). A test checks that every route registered in the router is documented here.
 //! Extensions for the reference: `x-websocket: true` (a WebSocket stream, not a request) and
-//! `x-no-try: <reason>` (cannot be sent from the UI of this computer).
+//! `x-no-try: <reason>` (cannot be sent from the UI of this computer). Routes added by the
+//! distribution's extensions (`extension.rs`) are described by the extensions themselves.
 
+use axum::extract::State;
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::{json, Map, Value};
+
+use crate::extension::ApiRoute;
+use crate::S;
 
 /// (method, path, tag, summary)
 pub const ROUTES: &[(&str, &str, &str, &str)] = &[
@@ -80,9 +85,6 @@ pub const ROUTES: &[(&str, &str, &str, &str)] = &[
     ("post", "/system/shutdown", "system", "Stop a headless BenchMesh (devices stop cleanly; start it again on the computer) → 202; 409 in the desktop app or while a flow runs"),
     ("get", "/system/autostart", "system", "Start with the computer (headless) → {supported, enabled, method, location, starts_at: boot|login, boot_command, note, reason, command}"),
     ("put", "/system/autostart", "system", "Start with the computer on or off {enabled} (headless only: 409 in the desktop app or a simulation) → as GET"),
-    ("get", "/system/update", "system", "Updates of a headless BenchMesh → {current, installed_as, can_install, replaces_itself, reason, checked_ms, latest: {version, notes, pub_date} | null, available, phase: idle|checking|downloading|installing|manual|failed, downloaded, total, error, command}"),
-    ("post", "/system/update/check", "system", "Read the latest published release (signed latest.json on GitHub) → as GET"),
-    ("post", "/system/update/install", "system", "Download the newer version, verify its signature and install it (AppImage, Windows, macOS: BenchMesh stops, installs and starts again; .deb: the apt command to run) → 202 as GET; 409 in the desktop app, built from source, a simulation, without a newer version or while a flow runs"),
     ("get", "/remote", "remote-access", "Remote access settings and state (this computer only) → {enabled, port, password_set, view_password_set, listening, error, urls, fingerprint, sessions: [{id, role: control|view, address, agent, since, last_seen}]}"),
     ("put", "/remote", "remote-access", "Switch remote access on or off {enabled, port?} (this computer only; on needs a password: 409; off ends every session) → as GET"),
     ("put", "/remote/password", "remote-access", "Set the remote access password {password} (at least 10 characters; this computer only; ends every session) → 204"),
@@ -114,11 +116,10 @@ const NOT_FROM_THE_UI: &[(&str, &str, &str)] = &[
     ("post", "/remote/logout", "Only for a remote browser session"),
     ("post", "/system/restart", "Stops every instrument: use Restart in Instruments - System"),
     ("post", "/system/shutdown", "Stops BenchMesh: use Shut down in Instruments - System"),
-    ("post", "/system/update/install", "Stops BenchMesh and installs a new version: use Install in Instruments - System"),
 ];
 
 const TAGS: &[(&str, &str)] = &[
-    ("system", "Service status, version, documentation; this computer's resources, and restart, shut down, start with the computer and update when headless"),
+    ("system", "Service status, version, documentation; this computer's resources, and restart, shut down and start with the computer when headless"),
     ("configuration", "Device configuration, drivers, port discovery"),
     ("instruments", "Instrument listing, classes, features"),
     ("instrument-control", "Read and set instrument operations"),
@@ -131,9 +132,24 @@ const TAGS: &[(&str, &str)] = &[
     ("websockets", "Real-time WebSocket streams"),
 ];
 
-pub fn spec() -> Value {
+/// The API's own routes (`ROUTES`, `NOT_FROM_THE_UI`) as extension routes are described.
+fn own_routes() -> impl Iterator<Item = ApiRoute> {
+    ROUTES.iter().map(|&(method, path, tag, summary)| ApiRoute {
+        method,
+        path,
+        tag,
+        summary,
+        body: matches!(method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
+            && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
+            && !path.ends_with("/restart") && !path.ends_with("/shutdown"),
+        no_try: NOT_FROM_THE_UI.iter().find(|(m, p, _)| *m == method && *p == path).map(|(_, _, reason)| *reason),
+    })
+}
+
+/// The specification of the API with the routes of `extensions`.
+pub fn spec(extensions: &[ApiRoute]) -> Value {
     let mut paths: Map<String, Value> = Map::new();
-    for (method, path, tag, summary) in ROUTES {
+    for ApiRoute { method, path, tag, summary, body, no_try } in own_routes().chain(extensions.iter().copied()) {
         let params: Vec<Value> = path
             .split('/')
             .filter_map(|seg| seg.strip_prefix('{').and_then(|s| s.strip_suffix('}')))
@@ -146,19 +162,16 @@ pub fn spec() -> Value {
                 "default": {"description": "Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
             }
         });
-        if matches!(*method, "post" | "put" | "patch") && !path.contains("/{value}") && !path.ends_with("/pause")
-            && !path.ends_with("/resume") && !path.ends_with("/stop") && !path.ends_with("/abort") && !path.ends_with("/continue")
-            && !path.ends_with("/restart") && !path.ends_with("/shutdown") && !path.starts_with("/system/update/")
-        {
+        if body {
             op["requestBody"] = json!({"content": {"application/json": {"schema": {"type": "object"}}}});
         }
         if path.starts_with("/ws/") {
             op["x-websocket"] = json!(true);
         }
-        if let Some((_, _, reason)) = NOT_FROM_THE_UI.iter().find(|(m, p, _)| m == method && p == path) {
+        if let Some(reason) = no_try {
             op["x-no-try"] = json!(reason);
         }
-        paths.entry(path.to_string()).or_insert_with(|| json!({}))[*method] = op;
+        paths.entry(path.to_string()).or_insert_with(|| json!({}))[method] = op;
     }
     json!({
         "openapi": "3.1.0",
@@ -171,12 +184,12 @@ pub fn spec() -> Value {
     })
 }
 
-pub async fn json() -> Json<Value> {
-    Json(spec())
+pub async fn json(State(s): State<S>) -> Json<Value> {
+    Json(spec(&s.extensions.api()))
 }
 
-pub async fn yaml() -> Response {
-    let text = serde_yaml_ng::to_string(&spec()).unwrap_or_default();
+pub async fn yaml(State(s): State<S>) -> Response {
+    let text = serde_yaml_ng::to_string(&spec(&s.extensions.api())).unwrap_or_default();
     ([(header::CONTENT_TYPE, "application/x-yaml")], text).into_response()
 }
 
@@ -212,7 +225,7 @@ mod tests {
 
     #[test]
     fn spec_is_valid_shape() {
-        let s = spec();
+        let s = spec(&[]);
         assert_eq!(s["openapi"], "3.1.0");
         let op = &s["paths"]["/instruments/{klass}/{id}/{ch}/{op}"]["get"];
         assert_eq!(op["parameters"].as_array().unwrap().len(), 4);
@@ -223,6 +236,19 @@ mod tests {
         assert!(s["paths"]["/mcp"]["get"]["x-no-try"].is_string());
         assert!(s["paths"]["/mcp"]["post"].get("x-no-try").is_none());
         assert!(s["paths"]["/status"]["get"].get("x-websocket").is_none());
+    }
+
+    #[test]
+    fn extension_routes_are_described_like_the_own_ones() {
+        let ext = ApiRoute { method: "post", path: "/system/example/{x}", tag: "system", summary: "An extension's route", body: false, no_try: Some("Stops BenchMesh") };
+        let s = spec(&[ext]);
+        let op = &s["paths"]["/system/example/{x}"]["post"];
+        assert_eq!(op["summary"], "An extension's route");
+        assert_eq!(op["parameters"][0]["name"], "x");
+        assert!(op.get("requestBody").is_none());
+        assert_eq!(op["x-no-try"], "Stops BenchMesh");
+        assert!(s["paths"]["/system/restart"]["post"].is_object(), "the own routes stay");
+        assert!(spec(&[])["paths"].get("/system/example/{x}").is_none());
     }
 
     #[test]

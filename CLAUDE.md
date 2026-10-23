@@ -14,7 +14,8 @@ BenchMesh is one cockpit for lab instruments: power supplies, multimeters, elect
 signal generators, oscilloscopes, LCR meters and spectrum analyzers, connected over USB, serial or
 LAN, controlled from one window, recorded on one shared timeline and automated with flows. It is
 a **Rust** server with a **React** UI, shipped as a **Tauri** desktop app for Windows, macOS and
-Linux. Working branch: `develop`. Public site: https://benchmesh.online (repo `../BenchMeshOnline`).
+Linux. Working branch: `develop`. Repository: `BenchMesh/benchmesh-app` (public, MIT; remote `origin`; the
+former `MarkoVcode/BenchMesh` is remote `legacy`). Public site: https://benchmesh.online (repo `../BenchMeshOnline`).
 
 Instruments are described by **declarative device definitions** (`devices/*.yaml`, shared parts
 in `devices/bases/`, spec `ai_context/migration/DEVICE_DSL.md`, class contracts
@@ -31,6 +32,7 @@ Python/Electron/Node-RED system it replaced is kept only in git (tag `legacy-pyt
 | `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
 | `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, virtual SCPI instruments (`scpi/`), UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`, 0600 with its journal: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
+| `benchmesh-extensions` | what a distribution adds to the app: stub here (adds nothing), replaced by the official build (`ai_context/OPEN_CORE.md`; not a default member) |
 | `bm-probe` | bench tool: `verify` (read-only) / `get` / `set` / `screenshot` against real instruments |
 | `benchmesh-app` | Tauri desktop app: embedded `bm-server` + webview (not a default member) |
 
@@ -45,10 +47,16 @@ cargo tauri dev  /  cargo tauri build        # desktop app (run in crates/benchm
 ```
 
 
-**App updates:** the desktop app checks once per start for a newer *published* GitHub release
-(signed `latest.json`, `crates/benchmesh-app/src/update.rs`) and the UI offers it in a modal
-(`frontend/src/ui/update/`). Releases are signed with the updater key (CI secrets
-`TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]`); losing that key means installed apps can no longer update.
+**Open source and the official distribution** (contract `ai_context/OPEN_CORE.md`): this repository is the whole
+application and builds without anything else (`cargo tauri build`: unsigned, no updater; `GET /version`
+`distribution: community`, About shows "(community build)"). The official installers are built by the private
+repository `BenchMesh/services` (local `../benchmesh-services`): it overlays its extensions on a checkout of a tag
+(stub crate `crates/benchmesh-extensions` -> its implementation, `frontend/src/extensions/index.ts`, a Tauri
+capability and config), signs (updater key, its CI secrets; losing it means installed apps can no longer update) and
+publishes the release here. App updates (desktop modal and headless Updates) and future online-service integrations
+live only there. Extension points: `bm_server::extension` (routes + OpenAPI, `System::hand_over` for headless
+stop-and-run), `benchmesh_extensions::{DISTRIBUTION, server, desktop}`, `frontend/src/extensions/contract.ts`
+(`root`, `systemGroups`). Never put private code, keys, release workflows or release notes in this repository.
 
 **Cross-site guard:** the loopback listener (127.0.0.1:57666, the app window) has no
 authentication, so `crates/bm-server/src/guard.rs` refuses what a foreign web page could make the
@@ -80,13 +88,9 @@ and `benchmesh-server` run without a window, used through remote access; `--remo
 host, OS, cores, uptime, temperature, load, processor / memory / disk meters and BenchMesh's own use for everyone;
 headless only **Restart** (same command line; Unix `exec` in place) and **Shut down** (exit 0), two presses, refused
 while a flow runs, and **Start with this computer** (`system/autostart.rs`: systemd user service + linger command on
-Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation), and **Updates**
-(`system/update.rs`, UI `UpdateGroup.tsx`): Check for updates reads the signed `latest.json`; Install (two presses)
-downloads this installation's file to `<data dir>/updates/`, verifies the minisign signature with the updater key
-(same as `tauri.conf.json`, a test keeps them equal), then stops and replaces the AppImage / `.app` in place or runs the
-Windows installer silently, and starts again; a `.deb` gets the `sudo apt install` command. Releases include Linux
-ARM64 (Raspberry Pi 4/5, `ubuntu-22.04-arm` runner); CI tests the desktop app on ARM and the server's system code on
-Windows and macOS.
+Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation); extensions add groups
+(the official build: **Updates**). Official releases include Linux ARM64 (Raspberry Pi 4/5); CI tests the desktop app
+on ARM and the server's system code on Windows and macOS.
 
 **Automation, assistant, MCP** (contract `ai_context/AUTOMATION.md`): flows are JSON documents
 (`benchmesh.flow/v1`: params, setup / steps / cleanup-always-runs; steps set, read, wait, let,
@@ -288,7 +292,6 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 | `API_PORT` | `bm-server` loopback port (default 57666; `--port`); other computers use remote access |
 | `BENCHMESH_ONLINE` / `BENCHMESH_ONLINE_URL` | `off` disables the community status / its base URL |
 | `BENCHMESH_URL` | server address for the MCP stdio bridge |
-| `BENCHMESH_UPDATE_URL` | headless updates: another `latest.json` address (staging; the signature key stays fixed) |
 | `BENCHMESH_REMOTE_PASSWORD` | headless: remote access password at start (as `--remote-password`, not shown in process lists) |
 | `BENCHMESH_NATIVE_WAYLAND` | `1`: run the app on native Wayland instead of XWayland |
 | `BM_WS_INTERVAL` | registry WebSocket push interval in seconds |
@@ -296,8 +299,9 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 ## CI and releases
 
 `.github/workflows/README.md`: `ci.yaml` (frontend lint/tests/build, Rust clippy/tests/definition
-validation, transport on Windows and macOS), `e2e-tests.yml`, `release-tauri.yml` (tag `vX.Y.Z`
--> draft release for all platforms incl. Linux ARM64; publish with `gh release edit vX.Y.Z --draft=false`).
+validation, transport on Windows and macOS), `e2e-tests.yml`. Releases: bump the version (`Cargo.toml`,
+`crates/benchmesh-app/tauri.conf.json`) on `develop`, tag `vX.Y.Z`, push; then the release workflow of
+`BenchMesh/services` builds the draft release here; publish with `gh release edit vX.Y.Z --draft=false -R BenchMesh/benchmesh-app`.
 
 ## Guidelines
 

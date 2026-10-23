@@ -56,6 +56,7 @@ fn bench(name: &str, access: &str) -> Bench {
         ws_interval: Duration::from_millis(200),
         data_dir: Some(dir.clone()),
         headless: None,
+        extensions: Default::default(),
     })
     .unwrap();
     let b = Bench { server: Some(server), dir, base };

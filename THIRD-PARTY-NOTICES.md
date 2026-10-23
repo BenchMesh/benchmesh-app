@@ -74,7 +74,6 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 ### reqwest, rustls with ring (bm-server: community status from the website)
 - **License**: MIT OR Apache-2.0 (reqwest, rustls); ring: Apache-2.0 AND ISC
 - **URL**: https://github.com/seanmonstar/reqwest, https://github.com/rustls/rustls, https://github.com/briansmith/ring
-- Already shipped with the desktop app through `tauri-plugin-updater`; now also a direct dependency of `bm-server`.
 
 ### tokio-rustls, rcgen (with yasna, time), if-addrs (bm-server: remote access over HTTPS)
 - **License**: MIT OR Apache-2.0 (tokio-rustls, rcgen, yasna, time); if-addrs: MIT OR BSD-3-Clause
@@ -85,15 +84,11 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - **License**: MIT
 - **URL**: https://github.com/GuillaumeGomez/sysinfo
 
-### minisign-verify, base64 (bm-server: headless updates in Instruments - System)
-- **License**: MIT (minisign-verify); MIT OR Apache-2.0 (base64)
-- **URL**: https://github.com/jedisct1/rust-minisign-verify, https://github.com/marshallpierce/rust-base64
-- Verifies a downloaded update's signature with the updater's public key before it is installed (the same crates the desktop app's updater uses).
-
-### tauri, tauri-build, tauri-plugin-updater (benchmesh-app)
+### tauri, tauri-build (benchmesh-app, benchmesh-extensions)
 - **License**: Apache-2.0 OR MIT (used under MIT)
-- **URL**: https://github.com/tauri-apps/tauri, https://github.com/tauri-apps/plugins-workspace
-- Desktop app shell; the updater checks for, verifies (minisign signature) and installs new versions.
+- **URL**: https://github.com/tauri-apps/tauri
+- Desktop app shell. The official distribution adds its own components (app updates) and lists
+  them in its own notices (`ai_context/OPEN_CORE.md`).
 
 ### tower, tokio-tungstenite, futures-util (test-only)
 - **License**: MIT / MIT / MIT OR Apache-2.0

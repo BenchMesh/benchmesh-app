@@ -37,6 +37,7 @@ fn starts_falls_back_to_a_free_port_and_stops() {
         simulate: None,
         data_dir: None,
         headless: None,
+        extensions: Default::default(),
     })
     .unwrap();
     assert_ne!(server.addr.to_string(), taken, "fell back to the next address");
@@ -62,8 +63,60 @@ fn bad_definitions_dir_is_reported() {
         simulate: None,
         data_dir: None,
         headless: None,
+        extensions: Default::default(),
     })
     .err()
     .unwrap();
     assert!(err.contains("device definitions"), "{err}");
+}
+
+/// An extension of the distribution (`extension.rs`): its routes are served and documented, and
+/// `/version` names the distribution.
+#[test]
+fn an_extension_adds_documented_routes_and_names_the_distribution() {
+    use std::sync::Arc;
+
+    use axum::routing::get as route_get;
+    use bm_server::extension::{ApiRoute, Extension, Extensions};
+
+    struct Hello;
+    impl Extension for Hello {
+        fn name(&self) -> &'static str {
+            "hello"
+        }
+        fn routes(&self) -> axum::Router<bm_server::S> {
+            axum::Router::new().route("/system/hello", route_get(|| async { "hello from an extension" }))
+        }
+        fn api(&self) -> Vec<ApiRoute> {
+            vec![ApiRoute { method: "get", path: "/system/hello", tag: "system", summary: "Says hello", body: false, no_try: None }]
+        }
+    }
+
+    let start_with = |extensions| {
+        start(ServerOptions {
+            config: std::env::temp_dir().join("none.yaml"),
+            devices_dir: repo().join("devices"),
+            ui_dir: None,
+            listen: vec!["127.0.0.1:0".into()],
+            ws_interval: Duration::from_millis(200),
+            recordings_db: None,
+            simulate: None,
+            data_dir: None,
+            headless: None,
+            extensions,
+        })
+        .unwrap()
+    };
+
+    let official = start_with(Extensions { distribution: "official", list: vec![Arc::new(Hello)] });
+    let hello = get(official.addr, "/system/hello");
+    assert!(hello.starts_with("HTTP/1.1 200") && hello.ends_with("hello from an extension"), "{hello}");
+    assert!(get(official.addr, "/openapi.json").contains(r#""summary":"Says hello""#));
+    assert!(get(official.addr, "/version").contains(r#""distribution":"official""#));
+    official.stop();
+
+    let community = start_with(Extensions::default());
+    assert!(get(community.addr, "/system/hello").starts_with("HTTP/1.1 404"));
+    assert!(get(community.addr, "/version").contains(r#""distribution":"community""#));
+    community.stop();
 }

@@ -12,13 +12,14 @@ import * as api from './client'
 import type { Autostart, SystemInfo } from './client'
 import { formatBytes, formatDuration, percentOf, temperatureLevel, type Level } from './format'
 import { CopyCommand, Meter, TwoPress } from './parts'
-import { UpdateGroup } from './UpdateGroup'
+import { extensions } from '../../extensions'
+import type { Stopping } from '../../extensions/contract'
 import './system.css'
 
 const POLL_MS = 2000
 const COMEBACK_MS = 90_000
 
-type Phase = 'running' | 'restarting' | 'updating' | 'late' | 'stopped'
+type Phase = 'running' | 'restarting' | 'handed-over' | 'late' | 'stopped'
 
 function Fact({ label, value, level }: { label: string; value: React.ReactNode; level?: Level }) {
   return (
@@ -92,9 +93,10 @@ export function SystemView() {
     return () => { clearTimeout(first); clearInterval(t) }
   }, [phase, load])
 
-  // after Restart / an update: reload once a new BenchMesh answers (a remote browser then signs in again)
+  // after Restart / an extension stopped BenchMesh: reload once a new BenchMesh answers (a remote
+  // browser then signs in again)
   useEffect(() => {
-    if (phase !== 'restarting' && phase !== 'updating') return
+    if (phase !== 'restarting' && phase !== 'handed-over') return
     const since = Date.now()
     const t = setInterval(async () => {
       try {
@@ -120,9 +122,11 @@ export function SystemView() {
   }
 
   const startedMs = info?.process.started_ms ?? null
-  const onInstalling = useCallback(() => {
+  const [stopping, setStopping] = useState<Stopping | null>(null)
+  const onStopping = useCallback((what: Stopping) => {
     before.current = startedMs
-    setPhase('updating')
+    setStopping(what)
+    setPhase('handed-over')
   }, [startedMs])
 
   if (phase !== 'running') {
@@ -131,7 +135,7 @@ export function SystemView() {
         <h3 className="settings-view__section-title">System</h3>
         <div className="bench-group" role="status">
           {phase === 'restarting' && <><span className="kit-label">Restarting…</span><p className="bench-hint">Waiting for BenchMesh to answer again; this page reloads by itself.</p></>}
-          {phase === 'updating' && <><span className="kit-label">Installing the update…</span><p className="bench-hint">BenchMesh stops, installs the new version and starts it; this page reloads by itself.</p></>}
+          {phase === 'handed-over' && stopping && <><span className="kit-label">{stopping.title}</span><p className="bench-hint">{stopping.hint} This page reloads by itself.</p></>}
           {phase === 'late' && <><span className="kit-label">BenchMesh did not come back</span><p className="bench-hint">It has not answered for 90 s: check the computer it runs on.</p></>}
           {phase === 'stopped' && <><span className="kit-label">BenchMesh is stopped</span><p className="bench-hint">Start it again on the computer it runs on.</p></>}
         </div>
@@ -190,7 +194,7 @@ export function SystemView() {
             )}
           </div>
           {info.headless && <AutostartGroup viewOnly={viewOnly} />}
-          <UpdateGroup viewOnly={viewOnly} onInstalling={onInstalling} />
+          {extensions.systemGroups.map((Group, i) => <Group key={i} viewOnly={viewOnly} onStopping={onStopping} />)}
         </>
       )}
     </section>

@@ -1,0 +1,11 @@
+[package]
+name = "benchmesh-extensions"
+description = "What a BenchMesh distribution adds to the open-source app: nothing in this build (see ai_context/OPEN_CORE.md)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-server = { path = "../bm-server" }
+tauri = { version = "2.12", features = [] }
