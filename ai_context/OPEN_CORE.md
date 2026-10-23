@@ -50,9 +50,9 @@ platform and publishes them as a draft release in this repository. Its CI also c
 Releasing: bump the version here (`Cargo.toml`, `crates/benchmesh-app/tauri.conf.json`) on
 `develop`, tag `vX.Y.Z`, push the tag; the release itself is started in the services repository.
 
-Official builds look for updates at `https://benchmesh.online/api/v1/update/latest.json` (the
-website forwards to the latest published release here) and at this repository's
-`releases/latest/download/latest.json`.
+Official builds look for updates only at `https://benchmesh.online/api/v1/update/latest.json`:
+the website serves the signed `latest.json` of the latest published release here from its cache,
+which this repository's `release` webhook refreshes when a release is published (hourly otherwise).
 
 ## Building your own
 
