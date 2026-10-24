@@ -5,5 +5,6 @@ describe('UI extensions of the open-source build', () => {
   it('adds nothing', () => {
     expect(extensions.root).toEqual([])
     expect(extensions.systemGroups).toEqual([])
+    expect(extensions.recordingViews).toEqual([])
   })
 })

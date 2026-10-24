@@ -1,15 +1,17 @@
 /**
  * Recordings drawer: the history (name, state, start, duration, series, samples) and one
- * recording's full chart with zoom/pan (decimated `/data`, re-queried for the zoomed range),
+ * recording's full chart with zoom/pan (decimated `/data`, re-queried for the zoomed range; or a
+ * view a distribution adds, `views.tsx`, re-queried for the range it shows),
  * rename / description, CSV export and delete (confirmed in the UI).
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { buildOption, chartSeries, mergeDetail } from './chartModel'
 import { exportUrl } from './client'
-import { ConfirmButton, dateTimeText, durationText, LazyChart, SeriesLegend, useChartTheme, useNow } from './charts'
+import { ConfirmButton, dateTimeText, durationText, SeriesLegend, useChartTheme, useNow } from './charts'
 import { elapsedOf } from './RecorderDock'
 import { RecordingsApi, useRecordings } from './RecordingsProvider'
 import { isActive, Recording, RecordingData } from './types'
+import { RecordingPlot, useRecordingView, ViewSwitch } from './views'
 import './recording.css'
 
 const STATE_TEXT: Record<string, string> = { recording: 'Recording', paused: 'Paused', stopped: 'Stopped' }
@@ -88,6 +90,7 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
   const [hidden, setHidden] = useState<Set<number>>(new Set())
   const [actionError, setActionError] = useState<string | null>(null)
   const theme = useChartTheme()
+  const choice = useRecordingView()
   const now = useNow(1000, isActive(recording))
   const { data, zoom, setZoom, error } = useHistoryData(rec, recording.id, reload)
   const series = useMemo(() => chartSeries(recording, data, undefined, theme.palette), [recording, data, theme])
@@ -118,7 +121,8 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
       <div className="rec-view__actions">
         <a className="bench-btn" href={exportUrl(recording.id)} download={`${recording.name}.csv`}>Export CSV</a>
         <button type="button" className="bench-btn" onClick={() => setReload((n) => n + 1)}>Reload</button>
-        {zoom && <button type="button" className="bench-btn" onClick={() => setZoom(null)}>Reset zoom</button>}
+        <ViewSwitch {...choice} />
+        {zoom && !choice.view && <button type="button" className="bench-btn" onClick={() => setZoom(null)}>Reset zoom</button>}
         {recording.state === 'recording' && <button type="button" className="bench-btn" onClick={() => act(rec.pause(recording.id))}>Pause</button>}
         {recording.state === 'paused' && <button type="button" className="bench-btn" onClick={() => act(rec.resume(recording.id))}>Resume</button>}
         {isActive(recording) && (
@@ -129,7 +133,8 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
       </div>
       {(error || actionError) && <span className="kit-error" role="alert">{error ?? actionError}</span>}
       <div className="rec-chart rec-chart--history">
-        <LazyChart option={option} label={`Chart of ${recording.name}`} onZoom={(from, to) => setZoom({ from, to })} />
+        <RecordingPlot view={choice.view} chart={{ option, label: `Chart of ${recording.name}`, onZoom: (from, to) => setZoom({ from, to }) }}
+          data={{ recording, series, hidden, live: false, onRange: (from, to) => setZoom({ from, to }) }} />
       </div>
       <SeriesLegend series={series} hidden={hidden}
         onToggle={(id) => setHidden((h) => { const n = new Set(h); if (n.has(id)) n.delete(id); else n.add(id); return n })} />

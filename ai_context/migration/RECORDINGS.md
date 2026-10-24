@@ -106,3 +106,8 @@ Server → client JSON messages:
   (so 0-5 V and 0-120 V share one chart legibly), alternating left/right; legend toggles series;
   tooltip shows all values at a time; live mode follows the newest data (last 10 min by default,
   "All" button). Series colours from a skin-aware palette (tokens).
+- **Other views**: a distribution may add ways to draw a recording (`extensions.recordingViews`,
+  `ai_context/OPEN_CORE.md`); the dock and the drawer then show a **Chart | <view>** switch
+  (remembered in `benchmesh:recording-view`, `frontend/src/ui/recording/views.tsx`), the view gets
+  the chart's series and asks the drawer for finer data of the range it shows (`onRange`). A view
+  that fails falls back to the chart. The open-source build adds none.

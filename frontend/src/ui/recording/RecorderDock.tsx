@@ -1,17 +1,19 @@
 /**
  * Recorder dock at the bottom of the main window. Collapsed: a bar with the active recordings
  * (REC mark, name, elapsed time, series count) and "+ New recording". Expanded: the selected
- * recording's live chart (last 10 minutes or all), its series legend, Pause/Resume and Stop.
+ * recording's live chart (last 10 minutes or all; or a view a distribution adds, `views.tsx`), its
+ * series legend, Pause/Resume and Stop.
  * Expanded state, height and selection are remembered per browser.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Selector } from '../kit'
 import { buildOption, chartSeries, LIVE_WINDOW_MS } from './chartModel'
-import { ConfirmButton, durationText, LazyChart, SeriesLegend, useChartTheme, useNow } from './charts'
+import { ConfirmButton, durationText, SeriesLegend, useChartTheme, useNow } from './charts'
 import { NewRecordingForm } from './NewRecordingForm'
 import { RecordingsApi, useRecordings } from './RecordingsProvider'
 import { useViewOnly } from '../remote/RemoteProvider'
 import { isActive, Recording, RecordingData } from './types'
+import { RecordingPlot, useRecordingView, ViewSwitch } from './views'
 import './recording.css'
 
 export const DOCK_STORAGE_KEY = 'benchmesh:recorder-dock'
@@ -144,16 +146,15 @@ function DockRecording({ rec, recording, now }: { rec: RecordingsApi; recording:
   const [busy, setBusy] = useState(false)
   const [removing, setRemoving] = useState<Set<number>>(new Set())
   const theme = useChartTheme()
+  const choice = useRecordingView()
   const data = useWindowData(rec, recording, all)
   const live = rec.live[recording.id]
   const series = useMemo(() => chartSeries(recording, data, live, theme.palette).filter((s) => !s.removed), [recording, data, live, theme])
   const lastT = Math.max(recording.last_t ?? 0, ...series.map((s) => s.points[s.points.length - 1]?.[0] ?? 0)) || now
-  const option = useMemo(() => buildOption({
-    series, theme, hidden,
-    // live window: the last 10 minutes, or from the start while the recording is younger
-    min: all ? undefined : Math.max(lastT - LIVE_WINDOW_MS, recording.started_at),
-    max: all ? undefined : lastT,
-  }), [series, theme, hidden, all, lastT])
+  // live window: the last 10 minutes, or from the start while the recording is younger
+  const min = all ? undefined : Math.max(lastT - LIVE_WINDOW_MS, recording.started_at)
+  const max = all ? undefined : lastT
+  const option = useMemo(() => buildOption({ series, theme, hidden, min, max }), [series, theme, hidden, min, max])
 
   const act = (p: Promise<unknown>) => {
     setBusy(true)
@@ -169,6 +170,7 @@ function DockRecording({ rec, recording, now }: { rec: RecordingsApi; recording:
         <h3 className="rec-live__name">{recording.name}</h3>
         <span className="rec-live__meta">every {recording.interval_s} s · {durationText(elapsedOf(recording, now))}</span>
         <div className="rec-live__actions">
+          <ViewSwitch {...choice} />
           <Selector label="Time window" value={all ? 'all' : '10m'} onChange={(v) => setAll(v === 'all')}
             options={[{ value: '10m', label: '10 min', title: 'Follow the last 10 minutes' }, { value: 'all', label: 'All', title: 'The whole recording' }]} />
           <button type="button" className="bench-btn" disabled={busy} aria-busy={busy}
@@ -180,7 +182,8 @@ function DockRecording({ rec, recording, now }: { rec: RecordingsApi; recording:
       {error && <span className="kit-error" role="alert">{error}</span>}
       <div className="rec-live__main">
         <div className="rec-chart">
-          <LazyChart option={option} label={`Live chart of ${recording.name}`} />
+          <RecordingPlot view={choice.view} chart={{ option, label: `Live chart of ${recording.name}` }}
+            data={{ recording, series, hidden, min, max, live: true }} />
         </div>
         <SeriesLegend series={series} hidden={hidden} removing={removing}
           onToggle={(id) => setHidden((h) => { const n = new Set(h); if (n.has(id)) n.delete(id); else n.add(id); return n })}
