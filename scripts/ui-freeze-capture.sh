@@ -21,6 +21,10 @@ pids=$(pgrep -d ' ' -x 'benchmesh|WebKitWebProces|WebKitNetworkPr' || true)
       printf '%s %-18s %s %s\n' "${t##*/}" "$(cat $t/comm 2>/dev/null)" "$(awk '{print $3}' $t/stat 2>/dev/null)" "$(cat $t/wchan 2>/dev/null)"
     done
   done
+  echo "== X windows of BenchMesh (to match the journal lines below)"
+  xwininfo -root -tree 2>/dev/null | grep -i '("benchmesh"' || echo "no X windows (native Wayland?)"
+  echo "== compositor: frames it never confirmed (GTK then stops drawing; frame_sync.rs)"
+  journalctl --since '-2 days' --no-pager 2>/dev/null | grep 'Frame has assigned frame counter' | tail -10
   echo "== API answering? (server side)"
   curl -s -m 3 -o /dev/null -w 'GET /version -> %{http_code} in %{time_total}s\n' http://127.0.0.1:57666/version || echo "no answer"
   if [ "$(id -u)" = 0 ] && command -v gdb >/dev/null; then

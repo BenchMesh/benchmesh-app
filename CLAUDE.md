@@ -240,7 +240,9 @@ window), keep-on-top and close; in a browser a popup. While its window lives it 
 heartbeat (`bench/detach.ts`) and the bench leaves the panel out (never drawn twice) and lists it
 under "In own windows"; closing (or a crash) brings it back. Closing the main window closes the
 app. On Linux Wayland the app runs through XWayland (`GDK_BACKEND=x11`) because Wayland does not
-allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out. Run as an AppImage, the app writes its desktop entry
+allow keep-on-top; `BENCHMESH_NATIVE_WAYLAND=1` opts out. Under X11 the app's windows do not wait for the compositor between
+frames (`benchmesh-app` `frame_sync.rs`): GNOME 42 sometimes never confirms a frame and the window's picture then
+stopped for good (journal "Frame has assigned frame counter but no frame drawn time"; check `scripts/frame-sync/check.sh`). Run as an AppImage, the app writes its desktop entry
 and icon for the user at start (`~/.local/share/applications/benchmesh.desktop`, `benchmesh-app` `desktop_entry.rs`):
 docks match the window (class / app id `benchmesh`) to it, otherwise newer GNOME shows a generic icon.
 

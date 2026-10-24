@@ -216,6 +216,8 @@ version = "0.1.16"
 dependencies = [
  "benchmesh-extensions",
  "bm-server",
+ "gdkx11",
+ "gtk",
  "serde",
  "serde_json",
  "tauri",

@@ -15,7 +15,9 @@
 //! - Linux AppImage: writes its desktop entry and icon for the user at start (`desktop_entry.rs`),
 //!   so docks show the BenchMesh icon and the applications menu lists it.
 //! - Linux/Wayland: windows cannot ask to stay on top under Wayland, so the app runs through
-//!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`.
+//!   XWayland (`GDK_BACKEND=x11`) unless `BENCHMESH_NATIVE_WAYLAND=1`. Under X11 the windows
+//!   do not wait for the compositor between frames (`frame_sync.rs`: GNOME 42 sometimes never
+//!   answers, and the window's picture stopped for good).
 //! - What the distribution adds (the official build: app updates; nothing when built from this
 //!   repository) comes from `benchmesh-extensions` (`ai_context/OPEN_CORE.md`). Feedback / releases
 //!   pages open in the system browser by name (`links.rs`, capability `capabilities/links.json`).
@@ -39,6 +41,8 @@ use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 #[cfg(target_os = "linux")]
 mod desktop_entry;
+#[cfg(target_os = "linux")]
+mod frame_sync;
 mod headless;
 mod links;
 
@@ -119,7 +123,10 @@ fn main() {
     // an AppImage installs no desktop entry: without one the dock shows a generic icon
     #[cfg(target_os = "linux")]
     desktop_entry::install_for_appimage();
-    let builder = benchmesh_extensions::desktop(tauri::Builder::default(), std::sync::Arc::new(stop_server));
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "linux")]
+    let builder = builder.plugin(frame_sync::plugin());
+    let builder = benchmesh_extensions::desktop(builder, std::sync::Arc::new(stop_server));
     let app = builder
         .invoke_handler(tauri::generate_handler![links::open_page])
         // the main window owns the app: closing it closes detached instrument windows too

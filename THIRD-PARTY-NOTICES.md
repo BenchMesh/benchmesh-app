@@ -90,6 +90,12 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - Desktop app shell. The official distribution adds its own components (app updates) and lists
   them in its own notices (`ai_context/OPEN_CORE.md`).
 
+### gtk, gdkx11 (benchmesh-app, Linux)
+- **License**: MIT
+- **URL**: https://github.com/gtk-rs/gtk3-rs
+- Bindings to GTK 3 / GDK X11 (already part of the Tauri shell on Linux); used to switch off
+  frame synchronisation of the app's windows (`frame_sync.rs`).
+
 ### tower, tokio-tungstenite, futures-util (test-only)
 - **License**: MIT / MIT / MIT OR Apache-2.0
 - **URL**: https://github.com/tower-rs/tower, https://github.com/snapview/tokio-tungstenite, https://github.com/rust-lang/futures-rs
