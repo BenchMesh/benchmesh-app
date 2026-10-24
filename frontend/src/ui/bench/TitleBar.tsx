@@ -9,16 +9,19 @@ interface Props {
   arranging: boolean
   canArrange: boolean
   onArrange: () => void
+  /** notices after the version (a distribution's `titleBadges`) */
+  badges?: React.ReactNode
 }
 
 const isControl = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest('button') != null
 
 /**
- * Row 1 of the bench: brand and version on the left ("v0.1.16"; a community build "v0.1.16 community"), the app's own title-bar controls (Arrange)
+ * Row 1 of the bench: brand and version on the left ("v0.1.16"; a community build "v0.1.16 community") with any
+ * badges a distribution adds after it, the app's own title-bar controls (Arrange)
  * on the right and, in the desktop app on Windows and Linux (no OS title bar), the window controls
  * after them. The bar moves the window; a double press maximizes or restores it.
  */
-export function TitleBar({ version, onAbout, arranging, canArrange, onArrange }: Props) {
+export function TitleBar({ version, onAbout, arranging, canArrange, onArrange, badges }: Props) {
   const own = hasOwnWindowControls()
   const [maximized, setMaximized] = useState(false)
   useEffect(() => (own ? watchMaximized(setMaximized) : undefined), [own])
@@ -38,6 +41,7 @@ export function TitleBar({ version, onAbout, arranging, canArrange, onArrange }:
             v{version.version}{!version.official && <span className="bench-title__build"> community</span>}
           </button>
         )}
+        {badges}
       </span>
       <span className="bench-title__drag" />
       <div className="bench-title__app">

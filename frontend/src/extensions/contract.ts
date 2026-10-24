@@ -49,6 +49,12 @@ export interface RecordingView {
   component: ComponentType<RecordingViewProps>
 }
 
+/** What a title-bar badge may do besides showing itself. */
+export interface TitleBadgeProps {
+  /** opens Instruments - System (where the groups a distribution adds live) */
+  openSystem: () => void
+}
+
 export interface UiExtensions {
   /** Rendered once in the main window, above the bench (dialogs such as an update offer). */
   root: ComponentType[]
@@ -56,4 +62,6 @@ export interface UiExtensions {
   systemGroups: ComponentType<SystemGroupProps>[]
   /** Views of a recording besides the chart; with none, the dock and the drawer show no switch. */
   recordingViews: RecordingView[]
+  /** Small notices after the version in the title bar (e.g. "Update available"); each draws nothing when it has nothing to say. */
+  titleBadges: ComponentType<TitleBadgeProps>[]
 }

@@ -25,7 +25,7 @@ import { ConnectorsView } from '../connectors/ConnectorsView';
 import { SystemView } from '../system/SystemView';
 import './settings.css';
 
-type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'system' | 'remote';
+export type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'system' | 'remote';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -34,6 +34,8 @@ interface SettingsViewProps {
   onAutoAddComplete?: () => void;
   /** Configured instruments (names for the Metrics tab). */
   instruments?: Instrument[];
+  /** The tab shown when the drawer opens. */
+  initialTab?: SettingsTab;
 }
 
 // History retention options in days
@@ -47,8 +49,8 @@ const RETENTION_OPTIONS = [
 const DEFAULT_RETENTION_DAYS = 3;
 const STORAGE_KEY_RETENTION = 'benchmesh:historyRetentionDays';
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpdated, autoAddInstrument, onAutoAddComplete, instruments }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('instruments');
+export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpdated, autoAddInstrument, onAutoAddComplete, instruments, initialTab = 'instruments' }) => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [historyRetention, setHistoryRetention] = useState<number>(() => {
     // Load from localStorage on mount
     try {

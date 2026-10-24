@@ -32,6 +32,18 @@ const bar = (props: Partial<React.ComponentProps<typeof TitleBar>> = {}) =>
   render(<TitleBar version={{ official: true, version: '0.1.8', display: 'BenchMesh 0.1.8' }} onAbout={() => {}} arranging={false} canArrange onArrange={() => {}} {...props} />)
 
 describe('TitleBar', () => {
+  it('shows the badges a distribution adds after the version, and they do not drag the window', () => {
+    const { win } = mockTauri()
+    const open = vi.fn()
+    bar({ badges: <button type="button" className="bench-title__badge" onClick={open}>Update available</button> })
+    const badge = screen.getByRole('button', { name: 'Update available' })
+    expect(screen.getByRole('button', { name: 'v0.1.8' }).nextElementSibling).toBe(badge)
+    fireEvent.mouseDown(badge, { button: 0, detail: 1 })
+    fireEvent.click(badge)
+    expect(open).toHaveBeenCalledOnce()
+    expect(win.startDragging).not.toHaveBeenCalled()
+  })
+
   it('a community build: "v<version> community"; none while the version is unknown', () => {
     const { unmount } = bar({ version: { official: false, version: '0.1.16', display: 'BenchMesh 0.1.16 (community build)' } })
     expect(screen.getByRole('button', { name: 'v0.1.16 community' })).toBeInTheDocument()

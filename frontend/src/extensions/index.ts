@@ -4,4 +4,4 @@
  */
 import type { UiExtensions } from './contract'
 
-export const extensions: UiExtensions = { root: [], systemGroups: [], recordingViews: [] }
+export const extensions: UiExtensions = { root: [], systemGroups: [], recordingViews: [], titleBadges: [] }

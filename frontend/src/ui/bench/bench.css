@@ -397,3 +397,13 @@ html, body { background: var(--kit-ground); }
 .bench-metric__value { margin: 0; font: 600 1rem/1.2 var(--kit-font-num); color: var(--kit-ink); }
 .bench-metric__value[data-state="ok"] { color: var(--kit-ok); }
 .bench-metric__value[data-state="warn"] { color: var(--kit-warn); }
+
+/* a distribution's notice after the version (extensions.titleBadges), e.g. "Update available" */
+.bench-title__badge {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 2px 8px; height: 20px;
+  font: 600 .7rem/1 var(--kit-font-label); letter-spacing: .02em; color: var(--kit-accent);
+  background: color-mix(in srgb, var(--kit-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--kit-accent) 45%, transparent); border-radius: 999px; cursor: pointer;
+}
+.bench-title__badge:hover, .bench-title__badge:focus-visible { background: color-mix(in srgb, var(--kit-accent) 22%, transparent); }
+.bench-title__badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }

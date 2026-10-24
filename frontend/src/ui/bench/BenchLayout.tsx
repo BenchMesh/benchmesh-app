@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'rea
 import '../kit/kit.css'
 import './bench.css'
 import { Instrument } from '../types'
-import { SettingsView } from '../drawers/SettingsView'
+import { SettingsView, type SettingsTab } from '../drawers/SettingsView'
 import { LogsPanel } from '../drawers/LogsPanel'
 import { Rack } from './Rack'
 import { ParkingStrip } from './ParkingStrip'
@@ -73,6 +73,9 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
   const [arranging, setArranging] = useState(false)
   const [drawer, setDrawer] = useState<DrawerKind>(initialDrawer)
   const [autoAdd, setAutoAdd] = useState(false)
+  // the Instruments drawer's first tab: its button opens the instruments, a title-bar badge the System tab
+  const [instrumentsTab, setInstrumentsTab] = useState<SettingsTab>('instruments')
+  const openInstruments = (tab: SettingsTab = 'instruments') => { setInstrumentsTab(tab); setDrawer('instruments') }
   const version = useAppVersion()
 
   // The layout follows the configured instruments: new ones appear, removed ones go.
@@ -114,7 +117,8 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
       {extensions.root.map((Root, i) => <Root key={i} />)}
       <div ref={top} className="bench-head">
         <TitleBar version={version} onAbout={() => setDrawer('about')}
-          arranging={arranging} canArrange={instruments.length > 0} onArrange={() => setArranging((a) => !a)} />
+          arranging={arranging} canArrange={instruments.length > 0} onArrange={() => setArranging((a) => !a)}
+          badges={extensions.titleBadges.map((Badge, i) => <Badge key={i} openSystem={() => openInstruments('system')} />)} />
         <header className="bench-top">
           <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>
           <span className="bench-pill" data-ok={wsDiag.ok}><i />{wsDiag.ok ? 'live' : wsDiag.msg}</span>
@@ -122,7 +126,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
           <RemoteBadge />
           <div className="bench-tools">
             <nav className="bench-actions" aria-label="Main">
-              <button type="button" className="bench-btn" aria-pressed={drawer === 'instruments'} onClick={() => setDrawer('instruments')}>Instruments</button>
+              <button type="button" className="bench-btn" aria-pressed={drawer === 'instruments'} onClick={() => openInstruments()}>Instruments</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'recordings'} onClick={() => setDrawer('recordings')}>Recording</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'automation'} onClick={() => setDrawer('automation')}>Automation</button>
               <button type="button" className="bench-btn" aria-pressed={drawer === 'log'} onClick={() => setDrawer('log')}>Log</button>
@@ -140,7 +144,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
           <div className="bench-empty">
             <h2>No instruments yet</h2>
             <p>Add the instruments on your bench; each one appears here as a panel for its class.</p>
-            <button type="button" className="bench-btn bench-btn--primary" onClick={() => { setAutoAdd(true); setDrawer('instruments') }}>Add instrument</button>
+            <button type="button" className="bench-btn bench-btn--primary" onClick={() => { setAutoAdd(true); openInstruments() }}>Add instrument</button>
           </div>
         ) : (
           <>
@@ -168,7 +172,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
 
       {drawer === 'instruments' && (
         <Drawer title="Instruments" onClose={() => setDrawer(null)}>
-          <SettingsView apiBase={apiBase} onConfigUpdated={onConfigUpdated} autoAddInstrument={autoAdd} onAutoAddComplete={() => setAutoAdd(false)} instruments={instruments} />
+          <SettingsView key={instrumentsTab} initialTab={instrumentsTab} apiBase={apiBase} onConfigUpdated={onConfigUpdated} autoAddInstrument={autoAdd} onAutoAddComplete={() => setAutoAdd(false)} instruments={instruments} />
         </Drawer>
       )}
       {drawer === 'recordings' && (
