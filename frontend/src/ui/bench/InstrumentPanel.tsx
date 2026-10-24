@@ -21,6 +21,7 @@ import { offlineReason } from './offline'
 import { ProblemText } from './AccessFix'
 import { useRun } from '../automation/RunProvider'
 import { useViewOnly } from '../remote/RemoteProvider'
+import { extensions } from '../../extensions'
 
 const CONSOLES_KEY = 'benchmesh:consoles'
 
@@ -181,6 +182,9 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
               <button type="button" className="bench-wbtn" aria-pressed={win.onTop.on} onClick={win.onTop.toggle}
                 aria-label="Keep on top" title={win.onTop.on ? 'Kept on top of other windows' : 'Keep on top of other windows'}><PinIcon /></button>
             )}
+            {!arrange && !viewOnly && extensions.panelActions.map((Action, i) => (
+              <Action key={i} instrumentId={instrument.id} klass={klass} name={instrument.name ?? instrument.id} online={online} />
+            ))}
             {!arrange && !viewOnly && <ParkButton instrument={instrument} registry={registry} onParked={win.onParked} />}
             <button type="button" className="bench-wbtn" onClick={win.onFold} aria-expanded={!folded}
               aria-label={folded ? 'Unfold' : 'Fold'} title={folded ? 'Unfold' : 'Fold to the header'}>{folded ? <UnfoldIcon /> : <FoldIcon />}</button>

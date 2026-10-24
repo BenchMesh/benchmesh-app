@@ -55,6 +55,18 @@ export interface TitleBadgeProps {
   openSystem: () => void
 }
 
+/** The instrument a panel-header button acts on. */
+export interface PanelActionProps {
+  /** the instrument's id (its config entry) */
+  instrumentId: string
+  /** the panel's class, e.g. `PSU` */
+  klass: string
+  /** the name the panel shows */
+  name: string
+  /** connected right now */
+  online: boolean
+}
+
 export interface UiExtensions {
   /** Rendered once in the main window, above the bench (dialogs such as an update offer). */
   root: ComponentType[]
@@ -64,4 +76,6 @@ export interface UiExtensions {
   recordingViews: RecordingView[]
   /** Small notices after the version in the title bar (e.g. "Update available"); each draws nothing when it has nothing to say. */
   titleBadges: ComponentType<TitleBadgeProps>[]
+  /** Buttons in every instrument panel's header, before Park (not while arranging, not in a view-only session). */
+  panelActions: ComponentType<PanelActionProps>[]
 }

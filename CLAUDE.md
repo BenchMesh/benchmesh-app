@@ -60,7 +60,7 @@ capability and config), signs (updater key, its CI secrets; losing it means inst
 publishes the release here. App updates (desktop modal and headless Updates) and future online-service integrations
 live only there. Extension points: `bm_server::extension` (routes + OpenAPI, `System::hand_over` for headless
 stop-and-run), `benchmesh_extensions::{DISTRIBUTION, server, desktop}`, `frontend/src/extensions/contract.ts`
-(`root`, `systemGroups`, `recordingViews`, `titleBadges`). Never put private code, keys, release workflows or release notes in this repository.
+(`root`, `systemGroups`, `recordingViews`, `titleBadges`, `panelActions`). Never put private code, keys, release workflows or release notes in this repository.
 
 **Cross-site guard:** the loopback listener (127.0.0.1:57666, the app window) has no
 authentication, so `crates/bm-server/src/guard.rs` refuses what a foreign web page could make the
