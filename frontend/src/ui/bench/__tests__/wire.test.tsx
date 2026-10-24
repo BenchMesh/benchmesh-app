@@ -99,7 +99,7 @@ describe('WireConsole', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     render(<WireConsole meta={{ instrument: 'rigol', klass: 'OSC', model: 'DHO804' }} />)
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByRole('status')).toHaveTextContent('Saved 3 lines')
+    expect(await screen.findByRole('status')).toHaveTextContent(/^3 lines - Downloaded benchmesh-console-rigol-.*\.txt$/)
     expect(urls.some((u) => u.endsWith('/devices/rigol/wire?after=0'))).toBe(true)
     expect(click).toHaveBeenCalledOnce()
     const text = await new Promise<string>((done) => {

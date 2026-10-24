@@ -68,7 +68,12 @@ test.describe('Recorder', () => {
     await drawer.getByRole('button', { name: 'Open Bench run' }).click();
     await expect(drawer.getByRole('heading', { name: 'Bench run' })).toBeVisible();
     await expect(drawer.getByText('Stopped', { exact: true })).toBeVisible();
-    await expect(drawer.getByRole('link', { name: 'Export CSV' })).toHaveAttribute('href', /\/recordings\/1\/export$/);
+    // a browser downloads the export by its address, under the recording's name
+    const download = mockPage.waitForEvent('download');
+    await drawer.getByRole('button', { name: 'Export CSV' }).click();
+    expect((await download).suggestedFilename()).toBe('Bench run.csv');
+    expect((await download).url()).toMatch(/\/recordings\/1\/export$/);
+    await expect(drawer.getByRole('status')).toHaveText('Downloaded Bench run.csv');
     await expect(drawer.getByRole('img', { name: 'Chart of Bench run' })).toBeVisible();
     await expect(drawer.getByRole('list', { name: 'Series' })).toContainText('Test PSU · VOUT');
   });

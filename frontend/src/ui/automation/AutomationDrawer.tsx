@@ -4,6 +4,7 @@
  * (assistant provider / key / model, MCP access). Contract: `ai_context/AUTOMATION.md`.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { saveFile, savedText } from '../files'
 import { ConfirmButton } from '../recording/charts'
 import '../recording/recording.css'
 import { AssistantPanel } from './AssistantPanel'
@@ -118,14 +119,12 @@ function FlowsTab({ onOpenSettings, onOpenRecordings }: { onOpenSettings: () => 
       leave('import a flow', () => loadDoc({ id: null, doc, saved: null }))
     } catch (e) { setMsg({ ok: false, text: `Import: ${errorText(e)}` }) }
   }
-  const exportFile = () => {
-    const blob = new Blob([JSON.stringify(cur.doc, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${(cur.doc.name || 'flow').replace(/[^\w.-]+/g, '_')}.json`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const exportFile = async () => {
+    try {
+      const name = `${(cur.doc.name || 'flow').replace(/[^\w.-]+/g, '_')}.json`
+      const text = savedText(await saveFile(name, { text: JSON.stringify(cur.doc, null, 2), type: 'application/json' }))
+      if (text) setMsg({ ok: true, text })
+    } catch (e) { setMsg({ ok: false, text: `Export: ${errorText(e)}` }) }
   }
 
   const runFlow = run.status.flow
@@ -171,7 +170,7 @@ function FlowsTab({ onOpenSettings, onOpenRecordings }: { onOpenSettings: () => 
             <button type="button" className="bench-btn bench-btn--primary" onClick={save} disabled={saving || errors || !dirty} aria-busy={saving}
               title={errors ? 'Fix the errors first' : undefined}>Save</button>
             <button type="button" className="bench-btn" onClick={() => loadDoc({ id: null, doc: { ...structuredClone(cur.doc), name: `${cur.doc.name} (copy)`.slice(0, 100) }, saved: null })}>Duplicate</button>
-            <button type="button" className="bench-btn" onClick={exportFile}>Export</button>
+            <button type="button" className="bench-btn" onClick={() => void exportFile()}>Export</button>
             {cur.id && (
               <ConfirmButton label="Delete" confirmLabel="Delete flow" question={`Delete “${cur.doc.name}”?`} danger
                 onConfirm={async () => { await client.deleteFlow(cur.id!); loadDoc(fresh()); void loadList() }} />

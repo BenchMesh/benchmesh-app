@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "links",
-  "description": "The UI (served by the embedded server on 127.0.0.1) opens the feedback and releases pages in the system browser by name (src/links.rs).",
+  "description": "The UI (served by the embedded server on 127.0.0.1) opens the feedback and releases pages in the system browser by name (src/links.rs) and saves files through the system Save dialog (src/save.rs).",
   "windows": ["main", "panel-*"],
   "remote": { "urls": ["http://127.0.0.1:*", "http://localhost:*"] },
-  "permissions": ["allow-open-page"]
+  "permissions": ["allow-open-page", "allow-save-file"]
 }

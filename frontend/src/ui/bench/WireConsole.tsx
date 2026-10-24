@@ -8,6 +8,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { apiBaseUrl } from '../../api/base'
 import { Selector } from '../kit'
 import { fetchVersion } from '../about/version'
+import { saveFile, savedText } from '../files'
 import { appendEntries, evidence, lineText, type EvidenceMeta, type WireEntry, type WireLine, type WireView } from './wire'
 
 const POLL_MS = 500
@@ -65,15 +66,6 @@ export function logFileName(instrument: string, at: Date): string {
   return `benchmesh-console-${instrument.replace(/[^\w.-]+/g, '_')}-${stamp}.txt`
 }
 
-function saveText(text: string, name: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
 async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
@@ -127,12 +119,13 @@ export function WireConsole({ meta }: { meta: EvidenceMeta }) {
   const save = async () => {
     try {
       const all = await fullLog(meta.instrument)
-      saveText(evidence({ ...meta, app }, all, view), logFileName(meta.instrument, new Date()))
-      setCopied(`Saved ${all.length} lines`)
+      const saved = await saveFile(logFileName(meta.instrument, new Date()), { text: evidence({ ...meta, app }, all, view) })
+      if (!saved) return
+      setCopied(`${all.length} lines - ${savedText(saved)}`)
     } catch (e) {
       setCopied(`Save failed: ${e instanceof Error ? e.message : e}`)
     }
-    setTimeout(() => setCopied(null), 2500)
+    setTimeout(() => setCopied(null), 6000)
   }
 
   return (

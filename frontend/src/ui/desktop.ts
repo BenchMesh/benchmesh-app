@@ -32,6 +32,14 @@ function tauri(): TauriGlobal | null {
   return t?.window && t?.webviewWindow ? t : null
 }
 
+type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
+
+/** The app's own commands (crates/benchmesh-app: `open_page`, `save_file`); null outside the desktop app. */
+export function invoker(): Invoke | null {
+  const core = (window as unknown as { __TAURI__?: { core?: { invoke?: Invoke } } }).__TAURI__?.core
+  return core?.invoke ? core.invoke.bind(core) : null
+}
+
 /** Running inside the BenchMesh desktop app. */
 export const isDesktop = () => tauri() != null
 

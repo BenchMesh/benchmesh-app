@@ -19,6 +19,7 @@ bm-server = { path = "../bm-server" }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tauri = { version = "2.12", features = [] }
+tauri-plugin-dialog = "2.8"
 tokio.workspace = true
 
 # frame_sync.rs: GTK windows on X11 do not wait for the compositor (frozen window under GNOME 42)

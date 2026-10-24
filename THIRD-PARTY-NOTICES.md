@@ -90,6 +90,12 @@ under MIT; pulled in by `serialport`) and `r-efi` (MIT OR Apache-2.0 OR LGPL-2.1
 - Desktop app shell. The official distribution adds its own components (app updates) and lists
   them in its own notices (`ai_context/OPEN_CORE.md`).
 
+### tauri-plugin-dialog, tauri-plugin-fs, tauri-plugin, rfd (benchmesh-app)
+- **License**: Apache-2.0 OR MIT (used under MIT) / rfd: MIT
+- **URL**: https://github.com/tauri-apps/plugins-workspace, https://github.com/PolyMeilex/rfd
+- The system's Save dialog for files the UI saves (recording CSV, flow JSON, console log;
+  `save.rs`).
+
 ### gtk, gdkx11 (benchmesh-app, Linux)
 - **License**: MIT
 - **URL**: https://github.com/gtk-rs/gtk3-rs

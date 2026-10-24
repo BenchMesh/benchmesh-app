@@ -6,6 +6,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { buildOption, chartSeries, mergeDetail } from './chartModel'
+import { saveFile, savedText } from '../files'
 import { exportUrl } from './client'
 import { ConfirmButton, dateTimeText, durationText, SeriesLegend, useChartTheme, useNow } from './charts'
 import { elapsedOf } from './RecorderDock'
@@ -96,6 +97,8 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
   const series = useMemo(() => chartSeries(recording, data, undefined, theme.palette), [recording, data, theme])
   const option = useMemo(() => buildOption({ series, theme, hidden, zoom: { enabled: true, from: zoom?.from, to: zoom?.to } }), [series, theme, hidden, zoom])
   const act = (p: Promise<unknown>) => { setActionError(null); return p.catch((e) => setActionError(e instanceof Error ? e.message : String(e))) }
+  const [saved, setSaved] = useState<string | null>(null)
+  const exportCsv = () => { setSaved(null); return act(saveFile(`${recording.name}.csv`, { url: exportUrl(recording.id) }).then((r) => setSaved(savedText(r)))) }
 
   return (
     <div className="rec-view">
@@ -119,7 +122,7 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
         <div><dt>Samples</dt><dd>{recording.samples.toLocaleString()}</dd></div>
       </dl>
       <div className="rec-view__actions">
-        <a className="bench-btn" href={exportUrl(recording.id)} download={`${recording.name}.csv`}>Export CSV</a>
+        <button type="button" className="bench-btn" onClick={() => void exportCsv()}>Export CSV</button>
         <button type="button" className="bench-btn" onClick={() => setReload((n) => n + 1)}>Reload</button>
         <ViewSwitch {...choice} />
         {zoom && !choice.view && <button type="button" className="bench-btn" onClick={() => setZoom(null)}>Reset zoom</button>}
@@ -132,6 +135,7 @@ function RecordingView({ rec, recording, onBack }: { rec: RecordingsApi; recordi
           onConfirm={async () => { await rec.remove(recording.id); onBack() }} />
       </div>
       {(error || actionError) && <span className="kit-error" role="alert">{error ?? actionError}</span>}
+      {saved && <span className="bench-hint" role="status">{saved}</span>}
       <div className="rec-chart rec-chart--history">
         <RecordingPlot view={choice.view} chart={{ option, label: `Chart of ${recording.name}`, onZoom: (from, to) => setZoom({ from, to }) }}
           data={{ recording, series, hidden, live: false, onRange: (from, to) => setZoom({ from, to }) }} />

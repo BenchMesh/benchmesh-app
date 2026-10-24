@@ -4,6 +4,7 @@
  * crates/benchmesh-app/src/links.rs); a browser opens it in a new tab.
  */
 import React from 'react'
+import { invoker } from '../desktop'
 
 export type Page = 'issues' | 'new-issue' | 'releases' | 'docs' | 'docs-scpi' | 'docs-python' | 'headless' | 'linux-usb' | 'linux-serial' | 'macos-local-network' | 'macos-network-settings' | 'email'
 
@@ -26,13 +27,6 @@ export const PAGE_URLS: Record<Page, string> = {
 }
 
 export const SUPPORT_EMAIL = 'support@benchmesh.online'
-
-type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
-
-function invoker(): Invoke | null {
-  const core = (window as unknown as { __TAURI__?: { core?: { invoke?: Invoke } } }).__TAURI__?.core
-  return core?.invoke ? core.invoke.bind(core) : null
-}
 
 /** A link to `page`: the system browser in the desktop app, a new tab elsewhere. */
 export function PageLink({ page, className, children }: { page: Page; className?: string; children: React.ReactNode }) {

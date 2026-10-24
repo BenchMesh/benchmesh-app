@@ -21,6 +21,8 @@
 //! - What the distribution adds (the official build: app updates; nothing when built from this
 //!   repository) comes from `benchmesh-extensions` (`ai_context/OPEN_CORE.md`). Feedback / releases
 //!   pages open in the system browser by name (`links.rs`, capability `capabilities/links.json`).
+//! - Files the UI saves (recording CSV, flow JSON, console log) go through the system's Save
+//!   dialog (`save.rs`, same capability): the webview would drop them into Downloads silently.
 //! - Windows: the UI's "Install driver" (USBTMC instruments) starts this executable again
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 //! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
@@ -45,6 +47,7 @@ mod desktop_entry;
 mod frame_sync;
 mod headless;
 mod links;
+mod save;
 
 struct Server(Mutex<Option<RunningServer>>);
 
@@ -123,12 +126,12 @@ fn main() {
     // an AppImage installs no desktop entry: without one the dock shows a generic icon
     #[cfg(target_os = "linux")]
     desktop_entry::install_for_appimage();
-    let builder = tauri::Builder::default();
+    let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "linux")]
     let builder = builder.plugin(frame_sync::plugin());
     let builder = benchmesh_extensions::desktop(builder, std::sync::Arc::new(stop_server));
     let app = builder
-        .invoke_handler(tauri::generate_handler![links::open_page])
+        .invoke_handler(tauri::generate_handler![links::open_page, save::save_file])
         // the main window owns the app: closing it closes detached instrument windows too
         .on_window_event(|window, event| {
             if window.label() == "main" && matches!(event, WindowEvent::Destroyed) {
