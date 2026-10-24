@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { BrandMark } from '../kit'
+import type { AppVersion } from '../about/version'
 import { closeWindow, hasOwnWindowControls, minimizeWindow, startWindowDrag, toggleMaximizeWindow, watchMaximized } from '../desktop'
 
 interface Props {
-  version?: string
+  version?: AppVersion | null
   onAbout: () => void
   arranging: boolean
   canArrange: boolean
@@ -13,7 +14,7 @@ interface Props {
 const isControl = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest('button') != null
 
 /**
- * Row 1 of the bench: brand and version on the left, the app's own title-bar controls (Arrange)
+ * Row 1 of the bench: brand and version on the left ("v0.1.16"; a community build "v0.1.16 community"), the app's own title-bar controls (Arrange)
  * on the right and, in the desktop app on Windows and Linux (no OS title bar), the window controls
  * after them. The bar moves the window; a double press maximizes or restores it.
  */
@@ -32,7 +33,11 @@ export function TitleBar({ version, onAbout, arranging, canArrange, onArrange }:
       <span className="bench-title__brand">
         <BrandMark size={33} />
         <span className="bench-title__name">BenchMesh</span>
-        {version && <button type="button" className="bench-title__version" onClick={onAbout} title="About and feedback">v{version}</button>}
+        {version?.version && (
+          <button type="button" className="bench-title__version" onClick={onAbout} title="About and feedback">
+            v{version.version}{!version.official && <span className="bench-title__build"> community</span>}
+          </button>
+        )}
       </span>
       <span className="bench-title__drag" />
       <div className="bench-title__app">

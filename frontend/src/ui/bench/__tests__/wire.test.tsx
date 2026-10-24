@@ -52,7 +52,7 @@ describe('WireConsole', () => {
     const replies = [{ entries: [e(1, 'info', 'opened /dev/ttyUSB0'), e(2, 'tx', '*IDN?'), e(3, 'rx', 'TENMA 72-2540 V2.1')], next: 3, dropped: false }]
     vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
       const u = String(url)
-      const body = u.endsWith('/version') ? { displayVersion: 'BenchMesh 0.1.5' } : (replies.shift() ?? { entries: [], next: 3, dropped: false })
+      const body = u.endsWith('/version') ? { releaseVersion: '0.1.5', displayVersion: 'BenchMesh 0.1.5', distribution: 'official' } : (replies.shift() ?? { entries: [], next: 3, dropped: false })
       return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
     })
     const writeText = vi.fn().mockResolvedValue(undefined)

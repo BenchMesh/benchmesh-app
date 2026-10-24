@@ -113,7 +113,7 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
     <div className="bench" style={{ '--bench-top-h': `${topHeight}px` } as React.CSSProperties}>
       {extensions.root.map((Root, i) => <Root key={i} />)}
       <div ref={top} className="bench-head">
-        <TitleBar version={version?.version} onAbout={() => setDrawer('about')}
+        <TitleBar version={version} onAbout={() => setDrawer('about')}
           arranging={arranging} canArrange={instruments.length > 0} onArrange={() => setArranging((a) => !a)} />
         <header className="bench-top">
           <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>

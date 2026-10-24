@@ -29,9 +29,17 @@ afterEach(() => {
 })
 
 const bar = (props: Partial<React.ComponentProps<typeof TitleBar>> = {}) =>
-  render(<TitleBar version="0.1.8" onAbout={() => {}} arranging={false} canArrange onArrange={() => {}} {...props} />)
+  render(<TitleBar version={{ official: true, version: '0.1.8', display: 'BenchMesh 0.1.8' }} onAbout={() => {}} arranging={false} canArrange onArrange={() => {}} {...props} />)
 
 describe('TitleBar', () => {
+  it('a community build: "v<version> community"; none while the version is unknown', () => {
+    const { unmount } = bar({ version: { official: false, version: '0.1.16', display: 'BenchMesh 0.1.16 (community build)' } })
+    expect(screen.getByRole('button', { name: 'v0.1.16 community' })).toBeInTheDocument()
+    unmount()
+    bar({ version: null })
+    expect(screen.queryByRole('button', { name: /^v\d/ })).toBeNull()
+  })
+
   it('shows brand, version (opens About) and Arrange; no window controls in a browser', () => {
     const onAbout = vi.fn()
     const onArrange = vi.fn()

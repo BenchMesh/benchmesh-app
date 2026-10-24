@@ -13,6 +13,7 @@ import type { Autostart, SystemInfo } from './client'
 import { formatBytes, formatDuration, percentOf, temperatureLevel, type Level } from './format'
 import { CopyCommand, Meter, TwoPress } from './parts'
 import { extensions } from '../../extensions'
+import { useAppVersion } from '../about/version'
 import type { Stopping } from '../../extensions/contract'
 import './system.css'
 
@@ -67,6 +68,7 @@ function AutostartGroup({ viewOnly }: { viewOnly: boolean }) {
 
 export function SystemView() {
   const viewOnly = useViewOnly()
+  const version = useAppVersion()
   const [info, setInfo] = useState<SystemInfo | null>(null)
   /** when `info` arrived (for how long BenchMesh has been running) */
   const [received, setReceived] = useState(0)
@@ -170,7 +172,7 @@ export function SystemView() {
             {info.disk && <p className="bench-hint">Disk of the data folder {info.disk.path} (recordings grow there).</p>}
           </div>
           <div className="bench-group" role="group" aria-label="BenchMesh">
-            <span className="kit-label">BenchMesh {info.version}</span>
+            <span className="kit-label">BenchMesh{version?.official ? ` ${info.version}` : ''}</span>
             <dl className="bench-metrics">
               <Fact label="Running for" value={formatDuration((received - info.process.started_ms) / 1000)} />
               <Fact label="Memory" value={formatBytes(info.process.memory)} />

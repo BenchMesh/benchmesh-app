@@ -469,7 +469,7 @@ export async function setupApiMocks(page: Target): Promise<ApiMock> {
         case 'openapi.json':
           return json(route, mockOpenApi);
         case 'version':
-          return json(route, { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', name: 'BenchMesh' });
+          return json(route, { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', name: 'BenchMesh', distribution: 'community' });
         default:
           return json(route, { detail: 'Not mocked' }, 404);
       }

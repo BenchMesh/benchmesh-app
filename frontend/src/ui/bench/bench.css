@@ -35,6 +35,7 @@ html, body { background: var(--kit-ground); }
 .bench-title__name { font: 600 1.8rem/1 var(--kit-font-title); letter-spacing: .04em; color: var(--kit-ink); white-space: nowrap; }
 .bench-title__version { font: italic 400 .82rem/1 var(--kit-font-label); color: var(--kit-ink-3); background: none; border: 0; padding: 0 2px; margin-left: 2px; cursor: pointer; }
 .bench-title__version:hover, .bench-title__version:focus-visible { color: var(--kit-ink-2); text-decoration: underline; }
+.bench-title__build { font-style: normal; letter-spacing: .04em; }
 .bench-title__drag { flex: 1; min-width: 12px; }
 /* the app's own title-bar controls (VS Code pattern), apart from the window controls */
 .bench-title__app { display: flex; align-items: center; gap: 4px; padding-right: 14px; }

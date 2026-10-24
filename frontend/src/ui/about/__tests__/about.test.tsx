@@ -12,14 +12,20 @@ afterEach(() => {
   delete (window as { __TAURI__?: unknown }).__TAURI__
 })
 
+const OFFICIAL = { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', distribution: 'official' }
+const COMMUNITY = { ...OFFICIAL, distribution: 'community' }
+
 describe('version', () => {
-  it('reads the release version from /version', async () => {
-    answer({ releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7' })
-    expect(await fetchVersion()).toEqual({ version: '0.1.7', display: 'BenchMesh 0.1.7' })
-    answer({ releaseVersion: '0.1.16', version: '0.1.16', displayVersion: 'BenchMesh 0.1.16', distribution: 'community' })
-    expect(await fetchVersion()).toEqual({ version: '0.1.16', display: 'BenchMesh 0.1.16 (community build)' })
-    answer({ releaseVersion: '0.1.16', version: '0.1.16', displayVersion: 'BenchMesh 0.1.16', distribution: 'official' })
-    expect(await fetchVersion()).toEqual({ version: '0.1.16', display: 'BenchMesh 0.1.16' })
+  it('an official build has a release version', async () => {
+    answer(OFFICIAL)
+    expect(await fetchVersion()).toEqual({ official: true, version: '0.1.7', display: 'BenchMesh 0.1.7' })
+  })
+  it('a community build says so (the version: the last release it was built from)', async () => {
+    answer(COMMUNITY)
+    expect(await fetchVersion()).toEqual({ official: false, version: '0.1.7', display: 'BenchMesh 0.1.7 (community build)' })
+    // a server that does not say counts as a community build
+    answer({ releaseVersion: '0.1.7', version: '0.1.7' })
+    expect(await fetchVersion()).toEqual({ official: false, version: '0.1.7', display: 'BenchMesh 0.1.7 (community build)' })
   })
   it('is null when the server does not answer', async () => {
     answer({}, 500)
@@ -30,17 +36,37 @@ describe('version', () => {
 })
 
 describe('About and feedback', () => {
-  it('shows the version and links to the GitHub issues', async () => {
-    answer({ version: '0.1.7' })
+  it('official: shows the version, Copy version and where releases are', async () => {
+    answer(OFFICIAL)
     render(<AboutView />)
     expect(await screen.findByTestId('app-version')).toHaveTextContent('BenchMesh 0.1.7')
+    expect(screen.getByRole('button', { name: 'Copy version' })).toBeInTheDocument()
+    expect(screen.getByText(/looks for a newer release/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'GitHub releases' })).toBeInTheDocument()
+    expect(screen.getAllByText(/include the version above/)).toHaveLength(2)
+  })
+
+  it('community: no version, no release or update text', async () => {
+    answer(COMMUNITY)
+    render(<AboutView />)
+    expect(await screen.findByText(/you use a community build/)).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Version' })).toBeNull()
+    expect(screen.queryByTestId('app-version')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Copy version' })).toBeNull()
+    expect(screen.queryByText(/newer release|version above|0\.1\.7/)).toBeNull()
+    expect(screen.queryByRole('link', { name: 'GitHub releases' })).toBeNull()
+  })
+
+  it('links to the GitHub issues', async () => {
+    answer(COMMUNITY)
+    render(<AboutView />)
     expect(screen.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/BenchMesh/benchmesh-app/issues/new')
     expect(screen.getByRole('link', { name: 'See open issues' })).toHaveAttribute('href', PAGE_URLS.issues)
     expect(screen.getByText(PAGE_URLS.issues)).toBeInTheDocument()
   })
 
   it('offers the support email: a mail link and Copy email', async () => {
-    answer({ version: '0.1.7' })
+    answer(COMMUNITY)
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.assign(navigator, { clipboard: { writeText } })
     render(<AboutView />)
@@ -52,8 +78,8 @@ describe('About and feedback', () => {
     expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })
 
-  it('copies the version', async () => {
-    answer({ version: '0.1.7' })
+  it('copies the version (official)', async () => {
+    answer(OFFICIAL)
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.assign(navigator, { clipboard: { writeText } })
     render(<AboutView />)

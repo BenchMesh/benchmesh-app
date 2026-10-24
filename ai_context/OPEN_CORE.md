@@ -24,7 +24,11 @@ Rules:
 3. Extensions only use the extension points below. A new need means a new, small, documented
    extension point here first - it is public, so other distributions can use it too.
 4. A build of this repository calls itself `community`; the official build `official`.
-   `GET /version` `distribution`, and the About drawer shows "(community build)".
+   `GET /version` `distribution`. Only the official build is versioned: it shows its version in
+   the title bar, the Feedback drawer (with Copy version and where releases are) and Instruments -
+   System. A community build shows "v<version> community" in the title bar (the last release it was
+   built from) and no version anywhere else (`frontend/src/ui/about/version.ts`); the instrument
+   console's Copy / Save evidence names it "(community build)".
 
 ## Extension points
 

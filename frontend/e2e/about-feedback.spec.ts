@@ -1,5 +1,6 @@
 /**
- * About and feedback: the version in the top bar and the drawer with the GitHub issues links;
+ * About and feedback: the version in the top bar (a community build: "v<version> community", nothing
+ * else; the official build also in the drawer) and the drawer with the GitHub issues links;
  * and the drawer page standard - no drawer's text or controls touch the drawer's edges.
  */
 import { Page } from '@playwright/test';
@@ -36,12 +37,26 @@ async function touchingEdges(page: Page): Promise<string[]> {
 }
 
 test.describe('About and feedback', () => {
-  test('the top bar shows the version; the drawer links to GitHub issues', async ({ mockPage }) => {
-    const version = mockPage.getByRole('button', { name: 'v0.1.7' });
+  test('official build: the version in the top bar and in the drawer', async ({ mockPage }) => {
+    await mockPage.route('**/version', (route) => route.fulfill({ json: { releaseVersion: '0.1.7', version: '0.1.7', displayVersion: 'BenchMesh 0.1.7', distribution: 'official' } }));
+    await mockPage.reload();
+    const version = mockPage.getByRole('button', { name: 'v0.1.7', exact: true });
     await expect(version).toBeVisible();
     await version.click();
     const drawer = mockPage.getByRole('dialog', { name: 'About and feedback' });
     await expect(drawer.getByTestId('app-version')).toHaveText('BenchMesh 0.1.7');
+    await expect(drawer.getByRole('button', { name: 'Copy version' })).toBeVisible();
+  });
+
+  test('community build: "community" and the version only in the top bar; the drawer links to GitHub issues', async ({ mockPage }) => {
+    const version = mockPage.getByRole('button', { name: 'v0.1.7 community' });
+    await expect(version).toBeVisible();
+    await version.click();
+    const drawer = mockPage.getByRole('dialog', { name: 'About and feedback' });
+    await expect(drawer.getByText('Please mention that you use a community build.', { exact: false })).toBeVisible();
+    await expect(drawer.getByTestId('app-version')).toHaveCount(0);
+    await expect(drawer.getByRole('button', { name: 'Copy version' })).toHaveCount(0);
+    await expect(drawer.getByText(/0\.1\.7|newer release/)).toHaveCount(0);
     await expect(drawer.getByRole('link', { name: 'Report an issue' })).toHaveAttribute('href', 'https://github.com/BenchMesh/benchmesh-app/issues/new');
     await expect(drawer.getByRole('link', { name: 'See open issues' })).toHaveAttribute('href', 'https://github.com/BenchMesh/benchmesh-app/issues');
     await expect(drawer.getByRole('link', { name: 'support@benchmesh.online' })).toHaveAttribute('href', 'mailto:support@benchmesh.online');

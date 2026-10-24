@@ -1,4 +1,7 @@
-/** About and feedback drawer: the running version and where to send feedback and issue reports. */
+/**
+ * About and feedback drawer: where to send feedback and issue reports; the official build also its
+ * version and releases (a community build is not versioned: `version.ts`).
+ */
 import React, { useState } from 'react'
 import { PageLink, PAGE_URLS, SUPPORT_EMAIL } from './links'
 import { useAppVersion } from './version'
@@ -15,14 +18,16 @@ export function AboutView() {
   }
   return (
     <div className="bench-page" data-testid="about-view">
-      <section className="bench-group" aria-label="Version">
-        <span className="kit-label">Version</span>
-        <div className="bench-group__row">
-          <p className="bench-about__version" data-testid="app-version">{v ? v.display : 'unknown (the server does not answer)'}</p>
-          {v && <button type="button" className="bench-btn" onClick={() => void copy('version', v.display)}>{copied === 'version' ? 'Copied' : 'Copy version'}</button>}
-        </div>
-        <p className="bench-hint">The desktop app looks for a newer release at every start and offers it. All releases: <PageLink page="releases">GitHub releases</PageLink>.</p>
-      </section>
+      {v?.official && (
+        <section className="bench-group" aria-label="Version">
+          <span className="kit-label">Version</span>
+          <div className="bench-group__row">
+            <p className="bench-about__version" data-testid="app-version">{v.display}</p>
+            <button type="button" className="bench-btn" onClick={() => void copy('version', v.display)}>{copied === 'version' ? 'Copied' : 'Copy version'}</button>
+          </div>
+          <p className="bench-hint">The desktop app looks for a newer release at every start and offers it. All releases: <PageLink page="releases">GitHub releases</PageLink>.</p>
+        </section>
+      )}
       <section className="bench-group" aria-label="Feedback">
         <span className="kit-label">Feedback and issue reports</span>
         <p className="bench-hint">For now, please send feedback, ideas and issue reports through GitHub issues (writing one needs a free GitHub account).</p>
@@ -32,7 +37,7 @@ export function AboutView() {
         </div>
         <p className="bench-hint"><code>{PAGE_URLS.issues}</code></p>
         <p className="bench-hint">
-          Please include the version above. For an instrument problem, open the panel's console (the console icon in the panel
+          {v?.official ? 'Please include the version above.' : v ? 'Please mention that you use a community build.' : ''} For an instrument problem, open the panel's console (the console icon in the panel
           header), press Copy or Save and add the text to the issue: it carries the instrument, its model, its identify reply and
           what was sent and received.
         </p>
@@ -43,7 +48,7 @@ export function AboutView() {
           <PageLink page="email" className="bench-about__email">{SUPPORT_EMAIL}</PageLink>
           <button type="button" className="bench-btn" onClick={() => void copy('email', SUPPORT_EMAIL)}>{copied === 'email' ? 'Copied' : 'Copy email'}</button>
         </div>
-        <p className="bench-hint">Questions and anything that does not fit an issue report. Please include the version above.</p>
+        <p className="bench-hint">Questions and anything that does not fit an issue report.{v?.official && ' Please include the version above.'}</p>
       </section>
     </div>
   )
