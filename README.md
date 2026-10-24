@@ -45,14 +45,26 @@ Download the installer for your system from **[benchmesh.online/download](https:
 ## Build from source
 
 The current code is on the [`develop`](https://github.com/BenchMesh/benchmesh-app/tree/develop) branch (Rust + Tauri, React UI).
+You need Rust (stable, via [rustup](https://rustup.rs)), Node.js 20 or newer and, for the desktop app,
+the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your system (on Linux the
+WebKitGTK and GTK development packages).
 
 ```bash
+git clone https://github.com/BenchMesh/benchmesh-app.git && cd benchmesh-app
 cd frontend && npm ci && npm run build && cd -
 cargo run -p bm-server        # API + UI on http://localhost:57666/ui
 ```
 
-The desktop app: `cargo tauri dev` in `crates/benchmesh-app`; `cargo tauri build` there makes
-installers for your system. Contributor notes are in
+The desktop app needs the Tauri CLI (`cargo install tauri-cli --version "^2"`). Build the frontend
+first (as above): the app bundles what is in `frontend/dist`, and `cargo tauri build` does not build
+it for you. Then, in `crates/benchmesh-app`:
+
+```bash
+cargo tauri dev               # run the app
+cargo tauri build             # installers for your system in target/release/bundle/
+```
+
+Contributor notes are in
 [CLAUDE.md](https://github.com/BenchMesh/benchmesh-app/blob/develop/CLAUDE.md) and [CONTRIBUTING.md](https://github.com/BenchMesh/benchmesh-app/blob/develop/CONTRIBUTING.md).
 
 ## Open source and the official build
