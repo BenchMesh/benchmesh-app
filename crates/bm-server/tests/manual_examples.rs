@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use bm_devicedef::{load_catalog, Catalog, DeviceDef, RxMode, ValueKind};
+use bm_devicedef::{load_catalog, Catalog, DeviceDef, RxMode};
 use bm_driver::engine::Engine;
 use bm_driver::sim::SimTransport;
 use bm_driver::Error;
@@ -130,19 +130,6 @@ fn num(v: &Value) -> Option<f64> {
     }
 }
 
-fn type_ok(kind: ValueKind, values: &[String], v: &Value) -> bool {
-    match kind {
-        ValueKind::Si => v.get("si").is_some() || v.get("val").is_some(),
-        ValueKind::Number => v.is_number(),
-        ValueKind::Integer => v.as_i64().is_some() || v.as_f64().is_some_and(|f| f.fract() == 0.0),
-        ValueKind::Bool => v.is_boolean(),
-        ValueKind::Enum => v.as_str().is_some_and(|s| values.iter().any(|x| x == s)),
-        ValueKind::String => v.is_string(),
-        ValueKind::List => v.is_array(),
-        ValueKind::Bytes => true,
-    }
-}
-
 /// A value a setter must accept, from its `/methods` value spec.
 fn sample_value(def: &DeviceDef, cls: &str, op: &str) -> Option<String> {
     let o = &def.classes[cls].operations[op];
@@ -201,7 +188,7 @@ fn check(cat: &Catalog, ex: &Example) -> Vec<String> {
             for (key, spec) in &contract.status {
                 match u.status.get(key) {
                     None | Some(Value::Null) if spec.required => problems.push(format!("{cls} ch{ch} {key}: required, but null (reply example missing?)")),
-                    Some(v) if !v.is_null() && !type_ok(spec.kind, &spec.values, v) => {
+                    Some(v) if !v.is_null() && !spec.kind.accepts(&spec.values, v) => {
                         problems.push(format!("{cls} ch{ch} {key}: {v} is not a {:?}", spec.kind))
                     }
                     _ => {}

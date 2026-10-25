@@ -662,6 +662,23 @@ pub enum ValueKind {
     List,
 }
 
+impl ValueKind {
+    /// Whether `v` is a value of this kind (`values`: what an enum allows). A class contract's
+    /// check of a status value or an operation's result.
+    pub fn accepts(self, values: &[String], v: &serde_json::Value) -> bool {
+        match self {
+            ValueKind::Si => v.get("si").is_some() || v.get("val").is_some(),
+            ValueKind::Number => v.is_number(),
+            ValueKind::Integer => v.as_i64().is_some() || v.as_f64().is_some_and(|f| f.fract() == 0.0),
+            ValueKind::Bool => v.is_boolean(),
+            ValueKind::Enum => v.as_str().is_some_and(|s| values.iter().any(|x| x == s)),
+            ValueKind::String => v.is_string(),
+            ValueKind::List => v.is_array(),
+            ValueKind::Bytes => true,
+        }
+    }
+}
+
 /// One reply transformation. Unit steps are plain strings (`- trim`); others are maps
 /// (`- {split: {sep: ",", index: 2}}`).
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -901,4 +918,23 @@ pub struct OpSpec {
 pub enum Direction {
     Get,
     Set,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ValueKind;
+    use serde_json::json;
+
+    #[test]
+    fn a_kind_accepts_its_values_only() {
+        let on_off = ["ON".to_string(), "OFF".to_string()];
+        assert!(ValueKind::Enum.accepts(&on_off, &json!("ON")));
+        assert!(!ValueKind::Enum.accepts(&on_off, &json!("on")));
+        assert!(ValueKind::Si.accepts(&[], &json!({"si": {"number": "5.00", "symbol": "V"}, "val": 5.0})));
+        assert!(!ValueKind::Si.accepts(&[], &json!(5.0)));
+        assert!(ValueKind::Number.accepts(&[], &json!(1.5)) && !ValueKind::Number.accepts(&[], &json!("1.5")));
+        assert!(ValueKind::Integer.accepts(&[], &json!(3.0)) && !ValueKind::Integer.accepts(&[], &json!(3.5)));
+        assert!(ValueKind::Bool.accepts(&[], &json!(true)) && !ValueKind::Bool.accepts(&[], &json!("ON")));
+        assert!(ValueKind::List.accepts(&[], &json!([1, 2])) && ValueKind::String.accepts(&[], &json!("x")));
+    }
 }
