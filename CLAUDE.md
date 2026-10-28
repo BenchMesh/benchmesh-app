@@ -125,11 +125,18 @@ remote access with certificate pinning.
 **Website (BenchMeshOnline, `../BenchMeshOnline`):** the public instrument database is exported
 from the definitions (`cargo run -p bm-devicedef -- export devices --notes
 ai_context/website/instrument-notes.yaml`, schema `benchmesh.instruments/v1`, no wire details)
-by the site's `npm run sync`, which also copies the UI kit. At start the server reads the
-community status once (`GET {BENCHMESH_ONLINE_URL or https://benchmesh.online}/api/v1/status`,
-`benchmesh.status/v1`, `crates/bm-server/src/community.rs`; `BENCHMESH_ONLINE=off` disables it,
-simulations stay offline); `/catalog` merges it per model (`community`; an `awaiting` model users
-confirmed counts as `confirmed`) and Instruments → Supported shows it with the confirming versions.
+by the site's `npm run sync`, which also copies the UI kit. Community status (contract: the website's
+`docs/APP_INTEGRATION.md` §1, `benchmesh.status/v1`, `crates/bm-server/src/community.rs`): a build carries
+the status document of its day (`crates/bm-server/community-status.json`, refreshed by
+`scripts/community-status.sh` before a release); at start the server asks once, without credentials, for
+what changed since (`GET {BENCHMESH_ONLINE_URL or https://benchmesh.online}/api/v1/status?since=<its
+generated>`; `BENCHMESH_ONLINE=off` disables it, simulations stay offline) and merges the models over it;
+`issues` come only from that answer. `/catalog` and `/instruments` merge it per model (`community`; an
+`awaiting` model users confirmed counts as `confirmed`; `issue`: **Issue reported - investigation pending**,
+or **Fixed in X - update** / **- next release** when the fix is newer than the app, published or not per
+`/api/v1/update/latest.json`, asked only then): Instruments → Supported shows it with the confirming
+versions, the panel header shows the issue (`bench/issue.ts`). Offline: the snapshot, no issues. Linking,
+problem reports and "It works" confirmations are official-build only (benchmesh-services).
 
 **Parking** (contract `ai_context/PARKING.md`): `POST|DELETE /devices/{id}/park` sets `parked: true` in
 the config entry; the device thread closes the link (after `on_disconnect`), sends nothing and only checks
@@ -306,7 +313,8 @@ npm run test:e2e       # Playwright against a preview build with a mocked API (C
 
 `.github/workflows/README.md`: `ci.yaml` (frontend lint/tests/build, Rust clippy/tests/definition
 validation, transport on Windows and macOS), `e2e-tests.yml`. Releases: bump the version (`Cargo.toml`,
-`crates/benchmesh-app/tauri.conf.json`) on `develop`, tag `vX.Y.Z`, push; then the release workflow of
+`crates/benchmesh-app/tauri.conf.json`) and refresh the community status snapshot (`scripts/community-status.sh`)
+on `develop`, tag `vX.Y.Z`, push; then the release workflow of
 `BenchMesh/services` builds the draft release here; publish with `gh release edit vX.Y.Z --draft=false -R BenchMesh/benchmesh-app`.
 
 ## Guidelines

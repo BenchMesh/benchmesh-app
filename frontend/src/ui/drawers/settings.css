@@ -837,6 +837,8 @@
 .supported__model--awaiting i { color: var(--kit-warn); }
 .supported__model i.supported__ver { color: var(--kit-ink-3); }
 .supported__model i.supported__issues { color: var(--kit-alert); }
+.supported__model i.supported__issue--investigating { color: var(--kit-alert); }
+.supported__model i.supported__issue--fixed { color: var(--kit-accent); }
 
 /* Detect progress */
 .detect__summary { font: 400 10px/1 var(--kit-font-num); color: var(--kit-accent); margin-left: auto; }

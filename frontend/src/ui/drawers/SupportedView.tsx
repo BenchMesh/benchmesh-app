@@ -9,6 +9,7 @@ import {
   type Catalog, type CatalogFilter,
 } from './supported'
 import { getClassDescription } from '../instrumentClasses'
+import { issueHint, issueLabel } from '../bench/issue'
 import type { Support } from '../types'
 
 const STATUSES: Support[] = ['tested', 'confirmed', 'awaiting']
@@ -68,10 +69,12 @@ export function SupportedView({ apiBase }: { apiBase: string }) {
             <ul className="supported__models">
               {fam.models.map((m) => (
                 <li key={m.name} className={`supported__model supported__model--${m.support}`}
-                  title={[SUPPORT_HINT[m.support], communityText(m.community), m.note].filter(Boolean).join(' - ')}>
+                  title={[SUPPORT_HINT[m.support], communityText(m.community), m.issue && issueHint(m.issue), m.note].filter(Boolean).join(' - ')}>
                   {m.name}<i>{SUPPORT_LABEL[m.support]}</i>
                   {m.community?.status === 'confirmed' && !!m.community.versions?.length && <i className="supported__ver">v{m.community.versions[0].replace(/^v/, '')}</i>}
-                  {m.community?.status === 'issues' && <i className="supported__issues">issues reported</i>}
+                  {m.issue
+                    ? <i className={`supported__issue supported__issue--${m.issue.state}`} data-testid="supported-issue">{issueLabel(m.issue)}</i>
+                    : m.community?.status === 'issues' && <i className="supported__issues">issues reported</i>}
                 </li>
               ))}
             </ul>

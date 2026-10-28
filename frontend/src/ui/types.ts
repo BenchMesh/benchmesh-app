@@ -19,7 +19,15 @@ export type Instrument = {
   model?: string
   /** How far that model is known to work (ai_context/migration/coverage/README.md). */
   support?: Support
+  /** A problem users reported on the website (`bench/issue.ts`). */
+  issue?: CommunityIssue | null
 }
+
+/** A model's reported problem (bm-server `community.rs`): under investigation, or fixed in a newer
+ *  version (`available`: that version is published; null when it could not be read). */
+export type CommunityIssue =
+  | { state: 'investigating'; reports?: number; since?: string }
+  | { state: 'fixed'; fixed_in: string; available: boolean | null; reports?: number; since?: string }
 
 /** `tested` maintainers' bench · `confirmed` by a user's check · `awaiting` from the manual only. */
 export type Support = 'tested' | 'confirmed' | 'awaiting'

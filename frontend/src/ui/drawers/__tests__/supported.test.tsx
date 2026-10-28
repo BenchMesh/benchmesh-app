@@ -36,6 +36,7 @@ describe('community reports', () => {
     expect(communitySourceText(undefined)).toMatch(/not loaded/)
     expect(communitySourceText({ source: 'https://x/api/v1/status', fetched_at: 't', error: 'HTTP 500', models: 0 })).toMatch(/could not be loaded \(HTTP 500\)/)
     expect(communitySourceText({ source: 'https://x/api/v1/status', fetched_at: 't', error: null, models: 3 })).toMatch(/3 models loaded/)
+    expect(communitySourceText({ source: 'https://x/api/v1/status', fetched_at: 't', error: null, models: 1, issues: 2 })).toMatch(/1 model, 2 with a reported problem loaded/)
   })
 })
 
@@ -54,6 +55,21 @@ describe('SupportedView', () => {
     expect(screen.getByText('DL3031').textContent).toContain('issues reported')
     expect(screen.getByTestId('community-source').textContent).toMatch(/2 models loaded/)
     vi.restoreAllMocks()
+  })
+
+  it('flags models with a reported problem instead of the old issues mark', async () => {
+    const flagged: CatalogFamily[] = [{ ...families[1], models: [
+      { name: 'DL3021', support: 'awaiting', community: { status: 'issues', reports: 1 }, issue: { state: 'investigating', reports: 1 } },
+      { name: 'DL3031', support: 'awaiting', issue: { state: 'fixed', fixed_in: '0.1.20', available: false } }] }]
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ families: flagged,
+      models: { awaiting: 2 }, community: { source: 's', fetched_at: 't', error: null, models: 1, issues: 2 } }), { status: 200 })))
+    render(<SupportedView apiBase="/api" />)
+    const dl = await screen.findByText('DL3021')
+    expect(dl.textContent).toContain('Issue reported - investigation pending')
+    expect(dl.textContent).not.toContain('issues reported')
+    expect(dl.getAttribute('title')).toContain('looking into it')
+    expect(screen.getByText('DL3031').textContent).toContain('Fixed in 0.1.20 - next release')
+    expect(screen.getAllByTestId('supported-issue')).toHaveLength(2)
   })
 
   afterEach(() => vi.restoreAllMocks())

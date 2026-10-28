@@ -84,6 +84,15 @@ describe('panel header support status', () => {
     rerender(<RequestLogProvider><InstrumentPanel instrument={{ ...tenma, model: '72-2545', support: 'awaiting' }} klass="PSU" registry={registry} /></RequestLogProvider>)
     expect(screen.getByTestId('support-awaiting').textContent).toBe('awaiting confirmation')
   })
+  it('marks a reported problem: under investigation, or fixed in a newer version', () => {
+    const { rerender } = wrap(<InstrumentPanel instrument={{ ...tenma, model: '72-2540', support: 'tested' }} klass="PSU" registry={registry} />)
+    expect(screen.queryByTestId('community-issue')).toBeNull()
+    rerender(<RequestLogProvider><InstrumentPanel instrument={{ ...tenma, issue: { state: 'investigating', reports: 3 } }} klass="PSU" registry={registry} /></RequestLogProvider>)
+    expect(screen.getByTestId('community-issue').textContent).toBe('Issue reported - investigation pending')
+    expect(screen.getByTestId('community-issue').getAttribute('title')).toContain('3 user reports')
+    rerender(<RequestLogProvider><InstrumentPanel instrument={{ ...tenma, issue: { state: 'fixed', fixed_in: '0.1.20', available: true } }} klass="PSU" registry={registry} /></RequestLogProvider>)
+    expect(screen.getByTestId('community-issue').textContent).toBe('Fixed in 0.1.20 - update')
+  })
 })
 
 describe('instrument console', () => {

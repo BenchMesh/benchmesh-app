@@ -363,6 +363,26 @@ async fn catalog_lists_families_with_model_support() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn reported_problems_show_on_the_catalog_and_the_instruments() {
+    let f = fixture("issues");
+    let status = json!({"schema": "benchmesh.status/v1", "generated": "2026-10-28T00:00:00Z", "models": {}, "issues": {
+        "tenma_72": {"*": {"state": "investigating", "reports": 2, "since": "2026-10-27T10:00:00Z"}},
+        "owon_oel": {"*": {"state": "fixed", "fixed_in": "999.0.0", "reports": 1, "since": "2026-10-27T10:00:00Z"}}}});
+    f.state.community.set("test", bm_server::community::parse(&status));
+    let (_, v, _) = call(&f, "GET", "/catalog", None, None).await;
+    let tenma = v["families"].as_array().unwrap().iter().find(|f| f["driver"] == "tenma_72").unwrap();
+    assert!(tenma["models"].as_array().unwrap().iter().all(|m| m["issue"]["state"] == "investigating"), "`*`: every model");
+    assert_eq!(v["community"]["issues"], 2);
+    let (_, v, _) = call(&f, "GET", "/instruments", None, None).await;
+    let by_id = |id: &str| v.as_array().unwrap().iter().find(|i| i["id"] == id).unwrap().clone();
+    let load = by_id("l1");
+    assert_eq!(load["issue"]["state"], "fixed");
+    assert_eq!(load["issue"]["fixed_in"], "999.0.0");
+    assert_eq!(load["issue"]["available"], Value::Null, "the latest release was not read");
+    assert_eq!(by_id("t1")["issue"]["reports"], 2);
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn usbtmc_driver_install_validates_the_request() {
     let f = fixture("winusb");
     let (code, _, _) = call(&f, "POST", "/usbtmc-devices/driver", Some(json!({})), None).await;

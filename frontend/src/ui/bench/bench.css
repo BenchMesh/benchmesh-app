@@ -121,6 +121,8 @@ html, body { background: var(--kit-ground); }
 .bench-panel__name { font: 700 .74rem/1 var(--kit-font-num); color: var(--kit-ink-2); }
 .bench-panel__model { font: 400 .72rem/1 var(--kit-font-num); color: var(--kit-ink-3); }
 .bench-panel__support { font: 400 .62rem/1 var(--kit-font-num); letter-spacing: .04em; color: var(--kit-warn); border: 1px solid currentColor; border-radius: 3px; padding: 2px 5px; opacity: .85; }
+.bench-panel__issue { font: 400 .62rem/1 var(--kit-font-num); letter-spacing: .04em; color: var(--kit-alert); border: 1px solid currentColor; border-radius: 3px; padding: 2px 5px; opacity: .85; }
+.bench-panel__issue--fixed { color: var(--kit-accent); }
 .bench-panel__link { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font: 400 .7rem/1 var(--kit-font-num); color: var(--kit-ink-2); }
 .bench-panel__link i { width: 7px; height: 7px; border-radius: 50%; background: var(--kit-alert); }
 .bench-panel__link[data-online="true"] i { background: var(--kit-ok); }

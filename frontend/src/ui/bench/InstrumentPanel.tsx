@@ -18,6 +18,7 @@ import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
 import { useParkControl } from './parking'
 import { offlineReason } from './offline'
+import { issueHint, issueLabel } from './issue'
 import { ProblemText } from './AccessFix'
 import { useRun } from '../automation/RunProvider'
 import { useViewOnly } from '../remote/RemoteProvider'
@@ -167,6 +168,11 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
           <span className="bench-panel__support" data-testid="support-awaiting"
             title="Written from the manufacturer's manual and not yet confirmed on a real instrument. If something does not work, please tell us.">
             awaiting confirmation
+          </span>
+        )}
+        {instrument.issue && (
+          <span className={`bench-panel__issue bench-panel__issue--${instrument.issue.state}`} data-testid="community-issue" title={issueHint(instrument.issue)}>
+            {issueLabel(instrument.issue)}
           </span>
         )}
         <span className="bench-panel__link" data-online={online}><i />{online ? 'connected' : 'offline'}</span>

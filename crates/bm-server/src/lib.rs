@@ -282,8 +282,12 @@ fn instrument_list(s: &AppState, class_filter: Option<&str>) -> Vec<Value> {
         }
         item.insert("health".into(), h);
         if let Some(m) = &model {
+            let (_, support) = s.community.annotate(&def.id, &m.name, m.support.as_str());
             item.insert("model".into(), json!(m.name));
-            item.insert("support".into(), json!(m.support.as_str()));
+            item.insert("support".into(), json!(support));
+            if let Some(issue) = s.community.issue(&def.id, &m.name, community::APP_VERSION) {
+                item.insert("issue".into(), issue);
+            }
         }
         let classes: Vec<Value> = def
             .classes
@@ -470,7 +474,8 @@ async fn catalog(State(s): State<S>) -> Json<Value> {
                 .iter()
                 .map(|m| {
                     let (community, support) = s.community.annotate(&d.id, &m.name, m.support.as_str());
-                    json!({"name": m.name, "support": support, "note": m.note, "channels": m.channels, "community": community})
+                    let issue = s.community.issue(&d.id, &m.name, community::APP_VERSION);
+                    json!({"name": m.name, "support": support, "note": m.note, "channels": m.channels, "community": community, "issue": issue})
                 })
                 .collect();
             let docs: Vec<&String> = d.sources.iter().filter_map(|src| src.doc.as_ref()).collect();
