@@ -1,26 +1,22 @@
 /**
  * Instruments - System: the computer BenchMesh runs on (resources, temperature, uptime) and, when
  * BenchMesh runs headless (`benchmesh --headless`, no window, used through remote access),
- * Restart, Shut down and Start with this computer (contract `ai_context/HEADLESS.md`).
+ * Restart, Shut down and Start with this computer (contract `ai_context/HEADLESS.md`). This
+ * BenchMesh's version and its updates are on Instruments - About.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { MicroSwitch } from '../kit/controls'
 import { PageLink } from '../about/links'
 import { useViewOnly } from '../remote/RemoteProvider'
-import { ApiError } from '../automation/client'
 import * as api from './client'
 import type { Autostart, SystemInfo } from './client'
 import { formatBytes, formatDuration, percentOf, temperatureLevel, type Level } from './format'
 import { CopyCommand, Meter, TwoPress } from './parts'
 import { extensions } from '../../extensions'
-import { useAppVersion } from '../about/version'
-import type { Stopping } from '../../extensions/contract'
+import { ComebackNotice, useComeback } from './comeback'
 import './system.css'
 
 const POLL_MS = 2000
-const COMEBACK_MS = 90_000
-
-type Phase = 'running' | 'restarting' | 'handed-over' | 'late' | 'stopped'
 
 function Fact({ label, value, level }: { label: string; value: React.ReactNode; level?: Level }) {
   return (
@@ -68,25 +64,25 @@ function AutostartGroup({ viewOnly }: { viewOnly: boolean }) {
 
 export function SystemView() {
   const viewOnly = useViewOnly()
-  const version = useAppVersion()
   const [info, setInfo] = useState<SystemInfo | null>(null)
   /** when `info` arrived (for how long BenchMesh has been running) */
   const [received, setReceived] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [phase, setPhase] = useState<Phase>('running')
-  const before = useRef<number | null>(null)
+  const comeback = useComeback()
+  const { phase, setStarted } = comeback
 
   const load = useCallback(async () => {
     try {
       const s = await api.getSystem()
       setInfo(s)
+      setStarted(s.process.started_ms)
       setReceived(Date.now())
       setError(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
-  }, [])
+  }, [setStarted])
 
   useEffect(() => {
     if (phase !== 'running') return
@@ -95,52 +91,22 @@ export function SystemView() {
     return () => { clearTimeout(first); clearInterval(t) }
   }, [phase, load])
 
-  // after Restart / an extension stopped BenchMesh: reload once a new BenchMesh answers (a remote
-  // browser then signs in again)
-  useEffect(() => {
-    if (phase !== 'restarting' && phase !== 'handed-over') return
-    const since = Date.now()
-    const t = setInterval(async () => {
-      try {
-        const s = await api.getSystem()
-        if (s.process.started_ms !== before.current) window.location.reload()
-      } catch (e) {
-        if (e instanceof ApiError && e.status === 401) window.location.reload()
-        else if (Date.now() - since > COMEBACK_MS) setPhase('late')
-      }
-    }, 1000)
-    return () => clearInterval(t)
-  }, [phase])
-
   const act = async (what: 'restart' | 'shutdown') => {
     setActionError(null)
-    before.current = info?.process.started_ms ?? null
     try {
       await (what === 'restart' ? api.restart() : api.shutdown())
-      setPhase(what === 'restart' ? 'restarting' : 'stopped')
+      if (what === 'restart') comeback.restarting()
+      else comeback.stopped()
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e))
     }
   }
 
-  const startedMs = info?.process.started_ms ?? null
-  const [stopping, setStopping] = useState<Stopping | null>(null)
-  const onStopping = useCallback((what: Stopping) => {
-    before.current = startedMs
-    setStopping(what)
-    setPhase('handed-over')
-  }, [startedMs])
-
   if (phase !== 'running') {
     return (
       <section className="bench-page" aria-label="System" data-testid="system-view">
         <h3 className="settings-view__section-title">System</h3>
-        <div className="bench-group" role="status">
-          {phase === 'restarting' && <><span className="kit-label">Restarting…</span><p className="bench-hint">Waiting for BenchMesh to answer again; this page reloads by itself.</p></>}
-          {phase === 'handed-over' && stopping && <><span className="kit-label">{stopping.title}</span><p className="bench-hint">{stopping.hint} This page reloads by itself.</p></>}
-          {phase === 'late' && <><span className="kit-label">BenchMesh did not come back</span><p className="bench-hint">It has not answered for 90 s: check the computer it runs on.</p></>}
-          {phase === 'stopped' && <><span className="kit-label">BenchMesh is stopped</span><p className="bench-hint">Start it again on the computer it runs on.</p></>}
-        </div>
+        <ComebackNotice phase={phase} stopping={comeback.stopping} />
       </section>
     )
   }
@@ -172,7 +138,7 @@ export function SystemView() {
             {info.disk && <p className="bench-hint">Disk of the data folder {info.disk.path} (recordings grow there).</p>}
           </div>
           <div className="bench-group" role="group" aria-label="BenchMesh">
-            <span className="kit-label">BenchMesh{version?.official ? ` ${info.version}` : ''}</span>
+            <span className="kit-label">BenchMesh</span>
             <dl className="bench-metrics">
               <Fact label="Running for" value={formatDuration((received - info.process.started_ms) / 1000)} />
               <Fact label="Memory" value={formatBytes(info.process.memory)} />
@@ -196,7 +162,7 @@ export function SystemView() {
             )}
           </div>
           {info.headless && <AutostartGroup viewOnly={viewOnly} />}
-          {extensions.systemGroups.map((Group, i) => <Group key={i} viewOnly={viewOnly} onStopping={onStopping} />)}
+          {extensions.systemGroups.map((Group, i) => <Group key={i} viewOnly={viewOnly} onStopping={comeback.onStopping} />)}
         </>
       )}
     </section>

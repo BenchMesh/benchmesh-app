@@ -13,6 +13,9 @@ import { closePanelWindow, focusPanelWindow, openPanelWindow } from '../desktop'
 import { getClassDescription } from '../instrumentClasses'
 import { SkinProvider } from '../kit'
 import { TitleBar } from './TitleBar'
+import { StatusPill } from './StatusPill'
+import { apiStatus, readingsStatus } from './status'
+import type { WsDiag } from '../data'
 import { RecorderDock } from '../recording/RecorderDock'
 import { extensions } from '../../extensions'
 import { RunIndicator, RunProvider } from '../automation/RunProvider'
@@ -58,7 +61,7 @@ interface Props {
   apiBase: string
   loading: boolean
   error: string | null
-  wsDiag: { ok: boolean; msg: string }
+  wsDiag: WsDiag
   onConfigUpdated: () => void
 }
 
@@ -109,7 +112,6 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
     return p ? `${getClassDescription(p.klass)} · ${ins?.name ?? p.instrumentId}` : key
   }
 
-  const apiOk = !loading && !error
   const empty = !loading && !error && instruments.length === 0
 
   return (
@@ -118,10 +120,11 @@ function BenchShell({ instruments, registry, apiBase, loading, error, wsDiag, on
       <div ref={top} className="bench-head">
         <TitleBar version={version} onAbout={() => setDrawer('about')}
           arranging={arranging} canArrange={instruments.length > 0} onArrange={() => setArranging((a) => !a)}
-          badges={extensions.titleBadges.map((Badge, i) => <Badge key={i} openSystem={() => openInstruments('system')} />)} />
+          badges={extensions.titleBadges.map((Badge, i) => <Badge key={i} open={openInstruments} />)} />
         <header className="bench-top">
-          <span className="bench-pill" data-ok={apiOk}><i />{apiOk ? 'API' : error ? 'API unreachable' : 'connecting…'}</span>
-          <span className="bench-pill" data-ok={wsDiag.ok}><i />{wsDiag.ok ? 'live' : wsDiag.msg}</span>
+          <StatusPill {...apiStatus(loading, error)} />
+          <StatusPill {...readingsStatus(wsDiag.state)} />
+          {extensions.topBarStatus.map((Status, i) => <Status key={i} open={openInstruments} />)}
           <RunIndicator onOpen={() => setDrawer('automation')} />
           <RemoteBadge />
           <div className="bench-tools">

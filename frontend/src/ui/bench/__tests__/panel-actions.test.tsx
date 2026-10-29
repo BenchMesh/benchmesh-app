@@ -10,7 +10,7 @@ const seen: PanelActionProps[] = []
 
 vi.mock('../../../extensions', () => ({
   extensions: {
-    root: [], systemGroups: [], recordingViews: [], titleBadges: [],
+    root: [], systemGroups: [], aboutGroups: [], onlineGroups: [], topBarStatus: [], recordingViews: [], titleBadges: [],
     panelActions: [(p: PanelActionProps) => { seen.push(p); return <button type="button" aria-label="Report a problem" /> }],
   },
 }))

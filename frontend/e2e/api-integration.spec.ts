@@ -71,26 +71,26 @@ test.describe('Instrument list polling', () => {
     await expect(apiPill(page)).toHaveText('API unreachable');
   });
 
-  test('shows "connecting…" while the first request is pending', async ({ page }) => {
+  test('shows "API connecting…" while the first request is pending', async ({ page }) => {
     await page.route('**/instruments', () => { /* never answered */ });
     await page.goto('/ui/');
-    await expect(apiPill(page)).toHaveText('connecting…');
+    await expect(apiPill(page)).toHaveText('API connecting…');
     await expect(page.getByRole('heading', { name: 'No instruments yet' })).toHaveCount(0);
   });
 });
 
 test.describe('Registry WebSocket', () => {
-  test('shows "live" and keeps receiving updates', async ({ mockPage }) => {
+  test('shows "Readings" and keeps receiving updates', async ({ mockPage }) => {
     const pill = wsPill(mockPage);
-    await expect(pill).toHaveText('live');
-    // the stream is flagged stale after 1 s without data; it must stay live across updates
+    await expect(pill).toHaveText('Readings');
+    // the stream is flagged stale after 1 s without data; it must stay current across updates
     for (let i = 0; i < 3; i++) {
       await mockPage.waitForTimeout(700);
-      await expect(pill).toHaveText('live');
+      await expect(pill).toHaveText('Readings');
     }
   });
 
-  test('reports a failing connection and never shows "live"', async ({ page, api }) => {
+  test('reports a failing connection and never shows "Readings" as current', async ({ page, api }) => {
     void api;
     // replaces the fixture's WebSocket mock (init scripts run in order)
     await page.addInitScript(() => {
@@ -116,16 +116,16 @@ test.describe('Registry WebSocket', () => {
     });
     await page.goto('/ui/');
     const pill = wsPill(page);
-    await expect(pill).toHaveText(/disconnected|error|connecting…/);
+    await expect(pill).toHaveText(/Readings lost|Readings connecting…/);
     await expect(pill).toHaveAttribute('data-ok', 'false');
     // instruments are listed but none is online without registry data
     await expect(page.getByRole('article')).toHaveCount(3);
-    await expect(page.locator('.bench-panel__link').filter({ hasText: 'connected' })).toHaveCount(0);
+    await expect(page.locator('.bench-panel__led[data-state="ok"]')).toHaveCount(0);
   });
 
   test('flags the stream as stale when updates stop', async ({ mockPage }) => {
-    await expect(wsPill(mockPage)).toHaveText('live');
+    await expect(wsPill(mockPage)).toHaveText('Readings');
     await mockPage.evaluate(() => { (window as any).__registryPaused = true; });
-    await expect(wsPill(mockPage)).toHaveText('no data >1s');
+    await expect(wsPill(mockPage)).toHaveText('Readings stalled');
   });
 });

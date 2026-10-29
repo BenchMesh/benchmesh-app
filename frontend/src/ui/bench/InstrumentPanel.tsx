@@ -17,8 +17,9 @@ import { LcrPanel } from './panels/LcrPanel'
 import { SalPanel } from './panels/SalPanel'
 import { SignalScope } from '../recording/signal'
 import { useParkControl } from './parking'
-import { offlineReason } from './offline'
-import { issueHint, issueLabel } from './issue'
+import { linkLed, offlineReason } from './offline'
+import { Led } from './Led'
+import { IssueMark } from './IssueMark'
 import { ProblemText } from './AccessFix'
 import { useRun } from '../automation/RunProvider'
 import { useViewOnly } from '../remote/RemoteProvider'
@@ -161,6 +162,7 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
         }}
         onDoubleClick={(e) => { if (win && !(e.target as HTMLElement).closest('button, [role="group"]')) win.onFold() }}>
         {arrange && <span className="bench-panel__grip" aria-hidden="true" title="Drag to move">⠿</span>}
+        <Led {...linkLed(online, instrument.health)} className="bench-panel__led" />
         <h2 className="bench-panel__title">{title}</h2>
         <span className="bench-panel__name">{instrument.name ?? instrument.id}</span>
         <span className="bench-panel__model">{modelOf(idn)}</span>
@@ -171,11 +173,8 @@ export function InstrumentPanel({ instrument, klass, registry, arrange, win, sta
           </span>
         )}
         {instrument.issue && (
-          <span className={`bench-panel__issue bench-panel__issue--${instrument.issue.state}`} data-testid="community-issue" title={issueHint(instrument.issue)}>
-            {issueLabel(instrument.issue)}
-          </span>
+          <IssueMark issue={instrument.issue} testId="community-issue" />
         )}
-        <span className="bench-panel__link" data-online={online}><i />{online ? 'connected' : 'offline'}</span>
         {!arrange && (
           <button type="button" className={`bench-wbtn bench-panel__console-btn${showConsole ? ' bench-wbtn--on' : ''}`} onClick={toggleConsole}
             aria-pressed={showConsole} aria-label="Instrument console" title={showConsole ? 'Hide the console' : 'Show what is sent to and received from the instrument'}>

@@ -41,10 +41,10 @@ test.describe('Scrolling', () => {
 });
 
 test.describe('Top bar', () => {
-  test('shows healthy API / live status pills', async ({ mockPage }) => {
+  test('shows healthy API / Readings status pills', async ({ mockPage }) => {
     const top = mockPage.locator('header.bench-top');
     const pills = top.locator('.bench-pill');
-    await expect(pills).toHaveText(['API', 'live']);
+    await expect(pills).toHaveText(['API', 'Readings']);
     await expect(pills.nth(0)).toHaveAttribute('data-ok', 'true');
     await expect(pills.nth(1)).toHaveAttribute('data-ok', 'true');
   });

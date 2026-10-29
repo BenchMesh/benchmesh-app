@@ -1,7 +1,7 @@
 /**
  * The application version (`GET /version`): what the server, and so the app window, runs. Only
  * the official distribution is versioned (releases, updates): it shows its version in the title
- * bar, the Feedback drawer and Instruments - System. A community build (from the source code)
+ * bar, the Feedback drawer and Instruments - About. A community build (from the source code)
  * shows only "v<version> community" in the title bar - the last release it was built from.
  */
 import { useEffect, useState } from 'react'

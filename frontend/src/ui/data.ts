@@ -76,9 +76,14 @@ export function useInstruments(apiBase: string, refreshTrigger: number) {
   return { data, loading, error }
 }
 
+/** The registry stream: `connecting`, `open` (no data yet), `receiving`, `stale` (nothing for 1 s), `closed` (reconnecting). */
+export type StreamState = 'connecting' | 'open' | 'receiving' | 'stale' | 'closed'
+
+export interface WsDiag { state: StreamState, last: number | null }
+
 export function useRegistrySocket(apiBase: string) {
   const [registry, setRegistry] = useState<any>({})
-  const [wsDiag, setWsDiag] = useState<{ ok: boolean, msg: string, last: number | null }>({ ok: false, msg: 'connecting…', last: null })
+  const [wsDiag, setWsDiag] = useState<WsDiag>({ state: 'connecting', last: null })
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -88,28 +93,25 @@ export function useRegistrySocket(apiBase: string) {
       try {
         ws = new WebSocket(url)
       } catch {
-        setWsDiag({ ok: false, msg: 'ws create failed', last: wsDiag.last })
+        setWsDiag((d) => ({ ...d, state: 'closed' }))
         setTimeout(connect, 1000)
         return
       }
-      setWsDiag({ ok: false, msg: 'connecting…', last: wsDiag.last })
-      ws.onopen = () => setWsDiag((d) => ({ ...d, ok: true, msg: 'connected' }))
+      setWsDiag((d) => ({ ...d, state: 'connecting' }))
+      ws.onopen = () => setWsDiag((d) => ({ ...d, state: 'open' }))
       ws.onclose = () => {
-        setWsDiag((d) => ({ ...d, ok: false, msg: 'disconnected' }))
+        setWsDiag((d) => ({ ...d, state: 'closed' }))
         setTimeout(connect, 1000)
       }
-      ws.onerror = () => setWsDiag((d) => ({ ...d, ok: false, msg: 'error' }))
+      ws.onerror = () => setWsDiag((d) => ({ ...d, state: 'closed' }))
       ws.onmessage = (ev) => {
         try {
           const obj = JSON.parse(ev.data)
           setRegistry(obj)
-          const now = Date.now()
-          setWsDiag({ ok: true, msg: 'receiving', last: now })
+          setWsDiag({ state: 'receiving', last: Date.now() })
           if (aliveTimer) clearTimeout(aliveTimer)
-          aliveTimer = setTimeout(() => {
-            // if no updates in 1s, mark as stale
-            setWsDiag((d) => ({ ...d, ok: false, msg: 'no data >1s' }))
-          }, 1000)
+          // no update for 1 s: what the panels show may be old
+          aliveTimer = setTimeout(() => setWsDiag((d) => ({ ...d, state: 'stale' })), 1000)
         } catch {}
       }
     }

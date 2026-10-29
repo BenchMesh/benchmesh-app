@@ -25,11 +25,11 @@ export const test = base.extend<{ api: ApiMock; mockPage: Page }>({
   },
 });
 
-/** Open the bench and wait until `panels` panels are shown and the registry stream is live. */
+/** Open the bench and wait until `panels` panels are shown and the registry stream is current. */
 export async function gotoBench(page: Page, panels: number) {
   await page.goto('/ui/');
   await expect(page.getByRole('article')).toHaveCount(panels);
-  await expect(page.locator('header.bench-top')).toContainText('live');
+  await expect(page.locator('header.bench-top')).toContainText('Readings');
 }
 
 export { expect };

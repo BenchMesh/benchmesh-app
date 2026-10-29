@@ -69,9 +69,10 @@ computer. Without a systemd user manager (Linux) the tab says so.
 ## Updates
 
 A build of this repository does not update itself: build the new version again. The official
-distribution adds **Updates** to this tab (Check for updates, Install, the signed download
-verified before it is installed) through its extension (`ai_context/OPEN_CORE.md`), which stops
-and restarts the headless process with `System::hand_over`.
+distribution adds **Updates** to Instruments - About (Check for updates, Install, the signed
+download verified before it is installed) through its extension (`ai_context/OPEN_CORE.md`), which
+stops and restarts the headless process with `System::hand_over`; the tab waits and reloads like
+System does after Restart (`frontend/src/ui/system/comeback.tsx`).
 
 ## API (scope `system`, `crates/bm-server/src/system/`)
 

@@ -7,12 +7,14 @@
  * - Miscellaneous: App settings (skin, start screen, history retention)
  * - Metrics: how busy each instrument's connection is
  * - Connectors: virtual SCPI instruments for VISA programs and the Python package (only in the app on this computer)
+ * - Online: services of benchmesh.online a distribution adds (the official build: the BenchMesh account; none: no tab)
  * - System: the computer's resources; restart, shut down and start with the computer when headless
  * - Remote access: control the bench from other computers (only in the app on this computer)
+ * - About: this BenchMesh (build, version in the official build, its updates)
  */
 
 import React, { useState, useEffect } from 'react';
-import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse, VscPlug, VscServer } from 'react-icons/vsc';
+import { VscTools, VscGear, VscChecklist, VscRemote, VscPulse, VscPlug, VscServer, VscGlobe, VscInfo } from 'react-icons/vsc';
 import { InstrumentConfigView } from './InstrumentConfigView';
 import { SupportedView } from './SupportedView';
 import { MetricsView } from './MetricsView';
@@ -23,9 +25,11 @@ import { RemoteSettings } from '../remote/RemoteSettings';
 import { useRemote } from '../remote/RemoteProvider';
 import { ConnectorsView } from '../connectors/ConnectorsView';
 import { SystemView } from '../system/SystemView';
+import { AboutTab } from '../about/AboutTab';
+import { OnlineTab, hasOnlineTab } from '../online/OnlineTab';
 import './settings.css';
 
-export type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'system' | 'remote';
+export type SettingsTab = 'instruments' | 'supported' | 'miscellaneous' | 'metrics' | 'connectors' | 'online' | 'system' | 'remote' | 'about';
 
 interface SettingsViewProps {
   apiBase: string;
@@ -98,8 +102,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
     { id: 'miscellaneous', label: 'Miscellaneous', icon: VscGear },
     { id: 'metrics', label: 'Metrics', icon: VscPulse },
     ...(local ? [{ id: 'connectors', label: 'Connectors', icon: VscPlug }] : []),
+    ...(hasOnlineTab() ? [{ id: 'online', label: 'Online', icon: VscGlobe }] : []),
     { id: 'system', label: 'System', icon: VscServer },
     ...(remoteSettings ? [{ id: 'remote', label: 'Remote access', icon: VscRemote }] : []),
+    { id: 'about', label: 'About', icon: VscInfo },
   ] as const;
 
   return (
@@ -181,9 +187,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiBase, onConfigUpd
 
         {activeTab === 'connectors' && local && <ConnectorsView />}
 
+        {activeTab === 'online' && hasOnlineTab() && <OnlineTab />}
+
         {activeTab === 'system' && <SystemView />}
 
         {activeTab === 'remote' && remoteSettings && <RemoteSettings />}
+
+        {activeTab === 'about' && <AboutTab />}
       </div>
     </div>
   );

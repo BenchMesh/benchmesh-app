@@ -21,23 +21,26 @@ test.describe('Instrument panels', () => {
     await expect(dmm.locator('.bench-panel__model')).toHaveText('OWON XDM1041');
   });
 
-  test('connected instruments show "connected", the one without IDN shows "offline"', async ({ mockPage }) => {
-    await expect(mockPage.getByRole('article', { name: PANELS.psu }).locator('.bench-panel__link')).toHaveText('connected');
-    await expect(mockPage.getByRole('article', { name: PANELS.dmm }).locator('.bench-panel__link')).toHaveText('connected');
+  test('connected instruments light their LED green, the one without IDN red', async ({ mockPage }) => {
+    const psuLed = mockPage.getByRole('article', { name: PANELS.psu }).getByRole('img', { name: 'Connected' });
+    await expect(psuLed).toHaveAttribute('data-state', 'ok');
+    await expect(psuLed).toHaveAttribute('title', /answers BenchMesh/);
+    await expect(mockPage.getByRole('article', { name: PANELS.dmm }).getByRole('img', { name: 'Connected' })).toBeVisible();
     const lcr = mockPage.getByRole('article', { name: PANELS.lcr });
-    await expect(lcr.locator('.bench-panel__link')).toHaveText('offline');
+    await expect(lcr.getByRole('img', { name: 'Offline' })).toHaveAttribute('data-state', 'alert');
     await expect(lcr.getByText('Offline - reconnecting')).toBeVisible();
   });
 
   test('an instrument goes offline when it disappears from the registry', async ({ mockPage }) => {
-    const psuLink = mockPage.getByRole('article', { name: PANELS.psu }).locator('.bench-panel__link');
-    await expect(psuLink).toHaveText('connected');
+    const psuLed = mockPage.getByRole('article', { name: PANELS.psu }).locator('.bench-panel__led');
+    await expect(psuLed).toHaveAttribute('data-state', 'ok');
     await mockPage.evaluate(() => {
       const w = window as any;
       const { ['test-psu-1']: _gone, ...rest } = w.__registry;
       w.__pushRegistry(rest);
     });
-    await expect(psuLink).toHaveText('offline');
+    await expect(psuLed).toHaveAttribute('data-state', 'alert');
+    await expect(psuLed).toHaveAttribute('aria-label', 'Offline');
     await expect(mockPage.getByRole('spinbutton', { name: 'Voltage setpoint' })).toHaveAttribute('aria-disabled', 'true');
   });
 

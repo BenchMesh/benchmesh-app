@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Instrument } from '../types'
 import { getClassDescription } from '../instrumentClasses'
 import { ParkIcon } from './icons'
+import { Led, type LedState } from './Led'
 import { parkedState, ParkedState, presenceKind, useParking } from './parking'
 
 /** One line about a parked instrument's presence. */
@@ -18,9 +19,17 @@ export function presenceText(s: ParkedState): string {
 /** Short state for the tab's accessible name. */
 const PRESENCE_WORD = { checking: 'checking', instrument: 'attached', port: 'port attached, instrument unknown', absent: 'not found' } as const
 
+/** The presence LED: the instrument seen (green), only its port (amber: may be switched off), not found (red), checking (dark). */
+const PRESENCE_LED: Record<keyof typeof PRESENCE_WORD, LedState> = { checking: 'off', instrument: 'ok', port: 'warn', absent: 'alert' }
+
+function PresenceLed({ s }: { s: ParkedState }) {
+  const kind = presenceKind(s)
+  return <Led state={PRESENCE_LED[kind]} label={PRESENCE_WORD[kind]} title={`Parked. ${presenceText(s)}`} />
+}
+
 /**
  * Parked instruments, collected in a slim strip on the left of the bench (shown only while one
- * is parked): each with its presence dot and name. Opening the strip shows the details and
+ * is parked): each with its presence LED before its name. Opening the strip shows the details and
  * Unpark; the panels then return to their place on the bench.
  */
 export function ParkingStrip({ parked, registry }: { parked: Instrument[]; registry: any }) {
@@ -64,8 +73,7 @@ export function ParkingStrip({ parked, registry }: { parked: Instrument[]; regis
             <li key={i.id}>
               <button type="button" className="bench-parking__tab" onClick={() => setOpen(true)} title={`${name(i)} (parked): ${presenceText(s)}`}
                 aria-label={`${name(i)}, parked, ${PRESENCE_WORD[presenceKind(s)]}`}>
-                <i data-presence={presenceKind(s)} />
-                <span className="bench-parking__name">{name(i)}</span>
+                <span className="bench-parking__name"><PresenceLed s={s} />{name(i)}</span>
               </button>
             </li>
           )
@@ -88,8 +96,7 @@ export function ParkingStrip({ parked, registry }: { parked: Instrument[]; regis
               return (
                 <section key={i.id} className="bench-group bench-parking__item" aria-label={name(i)}>
                   <div className="bench-group__row">
-                    <span className="bench-parking__dot" data-presence={presenceKind(s)} aria-hidden="true" />
-                    <strong>{name(i)}</strong>
+                    <strong><PresenceLed s={s} />{name(i)}</strong>
                     <span className="bench-hint">{[i.model, i.classes.map((c) => getClassDescription(c.class)).join(', ')].filter(Boolean).join(' · ')}</span>
                   </div>
                   <span className="bench-hint" data-testid="presence">{presenceText(s)}</span>

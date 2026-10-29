@@ -91,7 +91,7 @@ describe('parking strip', () => {
   it('a serial port that is attached does not claim the instrument is there (it may be off)', () => {
     wrap(<ParkingStrip parked={[parked]} registry={{ tenma: { parked: { present: true, detail: '/dev/ttyACM0', of: 'port' } } }} />)
     const tab = screen.getByRole('button', { name: 'Tenma, parked, port attached, instrument unknown' })
-    expect(tab.querySelector('i')).toHaveAttribute('data-presence', 'port')
+    expect(tab.querySelector('.bench-led')).toHaveAttribute('data-state', 'warn')
     fireEvent.click(tab)
     expect(screen.getByTestId('presence')).toHaveTextContent('Port attached at /dev/ttyACM0. The instrument may be switched off')
   })
@@ -100,7 +100,7 @@ describe('parking strip', () => {
     reply = { status: 200, body: { id: 'tenma', parked: false } }
     wrap(<ParkingStrip parked={[parked]} registry={{ tenma: { parked: { present: false, detail: 'not attached: no serial port matches usb 0416:5011' } } }} />)
     const tab = screen.getByRole('button', { name: 'Tenma, parked, not found' })
-    expect(tab.querySelector('i')).toHaveAttribute('data-presence', 'absent')
+    expect(tab.querySelector('.bench-led')).toHaveAttribute('data-state', 'alert')
     fireEvent.click(tab)
     const sheet = screen.getByRole('dialog', { name: 'Parking' })
     expect(sheet).toHaveTextContent('Not found: not attached: no serial port matches usb 0416:5011')

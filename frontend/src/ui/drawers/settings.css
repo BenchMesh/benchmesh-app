@@ -353,7 +353,8 @@
 }
 
 .settings-view__tab {
-  flex: 1;
+  /* each tab its own width: a wrapped second row lines up left instead of stretching */
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -764,42 +765,6 @@
   cursor: pointer;
 }
 
-/* Detect section (top of the Instruments drawer) */
-.detect {
-  display: grid;
-  gap: 8px;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--kit-panel-edge);
-}
-.detect__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.detect__run--busy { color: var(--kit-accent); border-color: var(--kit-accent); animation: kit-await 1.2s ease-in-out infinite; }
-.detect__hint { font-size: 10px; color: var(--kit-ink-3); }
-.detect__empty { margin: 0; font-size: 11px; color: var(--kit-ink-3); }
-.detect__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.detect__row {
-  display: grid;
-  gap: 3px;
-  padding: 7px 9px;
-  background: var(--kit-ctl-hi);
-  border: 1px solid var(--kit-panel-edge);
-  border-radius: 4px;
-  min-width: 0;
-}
-.detect__main { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.detect__name { font-size: 12px; font-weight: 600; color: var(--kit-ink); overflow-wrap: anywhere; }
-.detect__product { font-weight: 400; color: var(--kit-ink-2); }
-.detect__action { flex: none; }
-.detect__done { font-size: 10px; color: var(--kit-ok); white-space: nowrap; }
-.detect__meta {
-  display: flex; flex-wrap: wrap; gap: 2px 12px;
-  font: 400 10px/1.3 var(--kit-font-num); color: var(--kit-ink-2); overflow-wrap: anywhere;
-}
-.detect__port { color: var(--kit-ink); }
-.detect__cert { font-size: 10px; color: var(--kit-ink-3); }
-.detect__cert--warn { color: var(--kit-warn); }
-.detect__muted { font-size: 10px; color: var(--kit-ink-3); font-style: italic; }
-
 /* Install driver (Windows USBTMC instruments without a usable driver) */
 .install-driver { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 4px; }
 
@@ -837,15 +802,5 @@
 .supported__model--awaiting i { color: var(--kit-warn); }
 .supported__model i.supported__ver { color: var(--kit-ink-3); }
 .supported__model i.supported__issues { color: var(--kit-alert); }
-.supported__model i.supported__issue--investigating { color: var(--kit-alert); }
-.supported__model i.supported__issue--fixed { color: var(--kit-accent); }
-
-/* Detect progress */
-.detect__summary { font: 400 10px/1 var(--kit-font-num); color: var(--kit-accent); margin-left: auto; }
-.detect__row--pending { border-style: dashed; }
-.detect__progress { display: flex; flex-direction: column; gap: 3px; }
-.detect__bar-track { height: 4px; border-radius: 2px; background: var(--kit-ctl); overflow: hidden; }
-.detect__bar-track i { display: block; height: 100%; background: var(--kit-accent); transition: width .3s ease; }
-.detect__current { font: 400 10px/1.3 var(--kit-font-num); color: var(--kit-ink-2); overflow-wrap: anywhere; }
 
 .instrument-config__field label .required { color: var(--kit-alert); margin-left: 2px; }

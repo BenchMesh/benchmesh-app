@@ -2,14 +2,14 @@
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { SystemGroupProps } from '../../../extensions/contract'
+import type { GroupProps } from '../../../extensions/contract'
 import { SystemView } from '../SystemView'
 import * as api from '../client'
 
 vi.mock('../../../extensions', () => ({
   extensions: {
     root: [],
-    systemGroups: [({ viewOnly, onStopping }: SystemGroupProps) => (
+    systemGroups: [({ viewOnly, onStopping }: GroupProps) => (
       <div role="group" aria-label="Example">
         <button type="button" disabled={viewOnly} onClick={() => onStopping({ title: 'Doing the example…', hint: 'BenchMesh stops and starts again.' })}>Go</button>
       </div>
