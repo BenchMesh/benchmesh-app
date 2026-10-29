@@ -9,52 +9,62 @@ use std::time::{Duration, Instant};
 use bm_devicedef::{Catalog, DeviceDef, Model};
 use bm_driver::actor::{fixed_connector, ActorConfig, Attempt, Connector, DeviceClient, DeviceHandle, Event, Parking, Presence};
 use bm_driver::wirelog::WireLog;
-use bm_transport::identity::Identity;
 use bm_transport::presence::{proves, Proves};
 use bm_transport::Endpoint;
 use serde_json::{json, Map, Value};
 
 use crate::config::{str_field, DeviceEntry};
+use crate::extension::Finder;
 
 /// Opens a transport for a configured device. Production: real serial/USBTMC;
 /// tests: simulators.
 pub type ConnectorFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Connector + Send + Sync>;
 
-/// Real ports: the entry's fixed `port`/`device`, or - with `match` - wherever the
-/// instrument is plugged in (re-resolved on every reconnect).
-pub fn hardware_connectors() -> ConnectorFactory {
-    Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {
+/// The port, device node or host an entry names, with its serial settings.
+fn endpoint(entry: &DeviceEntry) -> Endpoint {
+    Endpoint {
+        path: str_field(entry, "port").or_else(|| str_field(entry, "device")).or_else(|| str_field(entry, "host")).unwrap_or_default().to_string(),
+        baud: entry.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
+        format: str_field(entry, "serial").map(str::to_string),
+    }
+}
+
+/// The `finder` for an entry with `match`, if there is one.
+fn finder_for<'a>(finder: &'a Option<Arc<dyn Finder>>, entry: &DeviceEntry) -> Option<&'a Arc<dyn Finder>> {
+    finder.as_ref().filter(|_| entry.contains_key("match"))
+}
+
+/// Real ports: the `port`/`device`/`host` the entry names; with `match` and a finder (the
+/// official build) wherever the finder finds the instrument.
+pub fn hardware_connectors(finder: Option<Arc<dyn Finder>>) -> ConnectorFactory {
+    Arc::new(move |entry: &DeviceEntry, def: &DeviceDef| {
         // `def` is resolved for the entry's transport (`Devices::start`): it has one link
-        let link = def.link.single();
-        let ep = Endpoint {
-            path: str_field(entry, "port").or_else(|| str_field(entry, "device")).or_else(|| str_field(entry, "host")).unwrap_or_default().to_string(),
-            baud: entry.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
-            format: str_field(entry, "serial").map(str::to_string),
+        let Some(link) = def.link.single() else {
+            return Box::new(|| Err("the definition offers no single link for this entry".to_string()));
         };
-        let id = identity_of(entry);
-        Box::new(move || match &link {
-            Some(link) => bm_transport::attempts(link, &ep, id.as_ref()),
-            None => Err("the definition offers no single link for this entry".to_string()),
-        })
+        let ep = endpoint(entry);
+        match finder_for(&finder, entry) {
+            Some(f) => f.connector(entry, &link, &ep),
+            None => Box::new(move || Ok(bm_transport::attempts(&link, &ep))),
+        }
     })
 }
 
 /// Finds a parked device without talking to it (see [`Presence`]).
 pub type PresenceFactory = Arc<dyn Fn(&DeviceEntry, &DeviceDef) -> Presence + Send + Sync>;
 
-/// Real ports: port enumeration for USB instruments, a TCP connect for LAN instruments.
-pub fn hardware_presence() -> PresenceFactory {
-    Arc::new(|entry: &DeviceEntry, def: &DeviceDef| {
-        let link = def.link.single();
-        let ep = Endpoint {
-            path: str_field(entry, "port").or_else(|| str_field(entry, "device")).or_else(|| str_field(entry, "host")).unwrap_or_default().to_string(),
-            ..Default::default()
+/// Real ports: port enumeration for USB instruments, a TCP connect for LAN instruments; with
+/// `match` and a finder the finder looks.
+pub fn hardware_presence(finder: Option<Arc<dyn Finder>>) -> PresenceFactory {
+    Arc::new(move |entry: &DeviceEntry, def: &DeviceDef| {
+        let Some(link) = def.link.single() else {
+            return Box::new(|| Err("the definition offers no single link for this entry".to_string()));
         };
-        let id = identity_of(entry);
-        Box::new(move || match &link {
-            Some(link) => bm_transport::presence::presence(link, &ep, id.as_ref()),
-            None => Err("the definition offers no single link for this entry".to_string()),
-        })
+        let ep = endpoint(entry);
+        match finder_for(&finder, entry) {
+            Some(f) => f.presence(entry, &link, &ep),
+            None => Box::new(move || bm_transport::presence::presence(&link, &ep)),
+        }
     })
 }
 
@@ -90,11 +100,6 @@ fn recorded(mut connector: Connector, log: Arc<WireLog>) -> Connector {
             })
             .collect())
     })
-}
-
-/// The entry's `match` (validated by `config::validate_entry`).
-pub fn identity_of(entry: &DeviceEntry) -> Option<Identity> {
-    entry.get("match").and_then(|m| serde_json::from_value(m.clone()).ok())
 }
 
 /// Simulated instruments replaying a capture session (`captures/<session>/<device-id>.jsonl.gz`):
@@ -266,17 +271,15 @@ pub struct Devices {
     pub registry: Arc<Mutex<Registry>>,
     pub managed: Mutex<Vec<(String, Managed)>>,
     pub actor: ActorConfig,
-    /// Real ports exist (Detect probes them); false for simulations and tests.
+    /// Real ports exist (extensions may probe them); false for simulations and tests.
     pub hardware: bool,
     /// Wire logs by device id (kept across reconnects and restarts of the same id).
     pub wire: Mutex<BTreeMap<String, Arc<WireLog>>>,
-    /// The current / last Detect run (`/devices/detect`).
-    pub detect: Mutex<crate::detect::Job>,
 }
 
 impl Devices {
     pub fn new(catalog: Catalog, connectors: ConnectorFactory, actor: ActorConfig) -> Self {
-        Devices { catalog, connectors, presence: simulated_presence(), registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default(), detect: Default::default() }
+        Devices { catalog, connectors, presence: simulated_presence(), registry: Default::default(), managed: Mutex::new(Vec::new()), actor, hardware: false, wire: Default::default() }
     }
 
     pub fn driver_ids(&self) -> Vec<String> {

@@ -6,7 +6,7 @@
 //! - `GET  /instruments/{CLS}/{id}/{ch}/{op}` → `{"path","value"}`;
 //!   `POST /instruments/{CLS}/{id}/{ch}/{op}/{value}` → 204
 //! - `GET  /drivers`, `/drivers/{id}`, `/config`, `POST /config`, `POST /devices`,
-//!   `PUT|DELETE /devices/{id}`, `POST|DELETE /devices/{id}/park`, `POST /devices/detect`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
+//!   `PUT|DELETE /devices/{id}`, `POST|DELETE /devices/{id}/park`, `/serial-ports`, `/usbtmc-devices`, `/status`, `/version`
 //! - `WS   /ws/registry` → `{dev: {IDN, CLS: {status_chN: {...}, updated_chN: ms}}}` every interval
 //! - `/ui` static UI (`/docs` opens its API reference)
 //!
@@ -17,7 +17,6 @@
 pub mod automation;
 pub mod community;
 pub mod config;
-pub mod detect;
 pub mod extension;
 pub mod ai;
 pub mod devices;
@@ -116,7 +115,6 @@ fn routes(state: &S) -> Router<S> {
         .route("/config", get(get_config).post(post_config))
         .route("/devices", post(add_device))
         .route("/devices/{id}", put(update_device).delete(delete_device))
-        .route("/devices/detect", post(detect_devices).get(detect_status))
         .route("/devices/{id}/wire", get(wire_log).delete(clear_wire_log))
         .route("/devices/{id}/park", post(park_device).delete(unpark_device))
         .route("/serial-ports", get(serial_ports))
@@ -524,7 +522,7 @@ async fn post_config(State(s): State<S>, Json(body): Json<Value>) -> Response {
             Ok(e) => e,
             Err(r) => return *r,
         };
-        if let Err(m) = validate_entry(&e, &s.devices.driver_ids()) {
+        if let Err(m) = validate_entry(&e, &s.devices.driver_ids(), s.extensions.finder().as_deref()) {
             return detail(StatusCode::UNPROCESSABLE_ENTITY, m);
         }
         if entries.iter().any(|x: &DeviceEntry| str_field(x, "id") == str_field(&e, "id")) {
@@ -558,7 +556,7 @@ async fn add_device(State(s): State<S>, Json(body): Json<Value>) -> Response {
         Ok(e) => e,
         Err(r) => return *r,
     };
-    if let Err(m) = validate_entry(&e, &s.devices.driver_ids()) {
+    if let Err(m) = validate_entry(&e, &s.devices.driver_ids(), s.extensions.finder().as_deref()) {
         return detail(StatusCode::UNPROCESSABLE_ENTITY, m);
     }
     let id = str_field(&e, "id").unwrap_or_default().to_string();
@@ -587,7 +585,7 @@ async fn update_device(State(s): State<S>, Path(id): Path<String>, Json(body): J
     if str_field(&e, "id") != Some(id.as_str()) {
         return detail(StatusCode::BAD_REQUEST, format!("Config id {:?} doesn't match URL device_id '{id}'", str_field(&e, "id")));
     }
-    if let Err(m) = validate_entry(&e, &s.devices.driver_ids()) {
+    if let Err(m) = validate_entry(&e, &s.devices.driver_ids(), s.extensions.finder().as_deref()) {
         return detail(StatusCode::UNPROCESSABLE_ENTITY, m);
     }
     let mut all = s.devices.entries();
@@ -717,45 +715,6 @@ async fn clear_wire_log(State(s): State<S>, Path(id): Path<String>) -> Response 
     }
     s.devices.wire_log(&id).clear();
     StatusCode::NO_CONTENT.into_response()
-}
-
-// ---- discovery ----------------------------------------------------------------------
-
-/// Start identifying the instruments on the attached USB ports (identify queries only) in the
-/// background; `GET` shows its progress. A run in progress is not restarted.
-async fn detect_devices(State(s): State<S>) -> Response {
-    if !s.devices.hardware {
-        return Json(json!({"running": false, "elapsed_ms": 0, "ports": []})).into_response();
-    }
-    {
-        let mut job = s.devices.detect.lock().unwrap();
-        if job.running {
-            return Json(job.snapshot()).into_response();
-        }
-        *job = detect::Job { running: true, started: Some(std::time::Instant::now()), ..Default::default() };
-    }
-    let devs = s.devices.clone();
-    std::thread::spawn(move || {
-        let ports = detect::run(&devs);
-        let mut job = devs.detect.lock().unwrap();
-        job.elapsed_ms = job.started.map(|t| t.elapsed().as_millis() as u64).unwrap_or_default();
-        job.ports = ports;
-        job.running = false;
-    });
-    // the port list appears once the ports are enumerated (a few ms)
-    for _ in 0..20 {
-        if !s.devices.detect.lock().unwrap().ports.is_empty() {
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-    }
-    (StatusCode::ACCEPTED, Json(s.devices.detect.lock().unwrap().snapshot())).into_response()
-}
-
-/// The current or last Detect run: each port's progress (queued / probing with the probe on the
-/// wire and how many of its probes were tried / done with the result).
-async fn detect_status(State(s): State<S>) -> Json<Value> {
-    Json(s.devices.detect.lock().unwrap().snapshot())
 }
 
 fn excluded(q: &std::collections::HashMap<String, String>) -> Vec<String> {

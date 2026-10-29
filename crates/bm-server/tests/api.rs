@@ -277,38 +277,21 @@ async fn device_config_crud_persists_and_validates() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn devices_can_be_configured_by_identity_instead_of_a_port() {
+async fn this_build_opens_the_named_port_and_keeps_match_unfollowed() {
     let f = fixture("identity");
-    let xdm = json!({"id": "x1", "name": "XDM", "driver": "owon_oel", "transport": "serial",
-                     "match": {"usb": {"vid": "1a86", "pid": "7523", "revision": "0264"}, "idn_serial": "24512010"}});
-    let (code, v, _) = call(&f, "POST", "/devices", Some(xdm), None).await;
+    let m = json!({"usb": {"vid": "1a86", "pid": "7523", "revision": "0264"}, "idn_serial": "24512010"});
+    let bare = json!({"id": "x1", "name": "XDM", "driver": "owon_oel", "transport": "serial", "match": m});
+    let (code, v, _) = call(&f, "POST", "/devices", Some(bare), None).await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(v["detail"].as_str().unwrap().contains("does not find instruments by `match`"), "{v}");
+    // an entry written by the official build: its last port is opened, `match` survives
+    let hinted = json!({"id": "x1", "name": "XDM", "driver": "owon_oel", "transport": "serial", "port": "/dev/ttyUSB2", "match": m});
+    let (code, v, _) = call(&f, "POST", "/devices", Some(hinted), None).await;
     assert_eq!(code, StatusCode::OK, "{v}");
     assert!(std::fs::read_to_string(&f.state.config.path).unwrap().contains("idn_serial: '24512010'"));
-    let scope = json!({"id": "s1", "name": "Scope", "driver": "rigol_dho800", "transport": "usbtmc",
-                       "match": {"usb": {"vid": "1ab1", "pid": "044d", "serial": "DHO8A272907001"}}});
-    assert_eq!(call(&f, "POST", "/devices", Some(scope), None).await.0, StatusCode::OK);
-    for (bad, why) in [
-        (json!({"usb": {"vid": "1a86"}}), "invalid `match`"),
-        (json!({"usb": {"vid": "1a86", "pid": "7523", "revision": "26"}}), "4 hex digits"),
-        (json!({"usb": {"vid": "1a86", "pid": "7523"}, "colour": "red"}), "unknown field"),
-    ] {
-        let e = json!({"id": "bad", "name": "B", "driver": "owon_oel", "transport": "serial", "match": bad});
-        let (code, v, _) = call(&f, "POST", "/devices", Some(e), None).await;
-        assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
-        assert!(v["detail"].as_str().unwrap().contains(why), "{v}");
-    }
     let (code, v, _) = call(&f, "POST", "/devices", Some(json!({"id": "np", "name": "N", "driver": "owon_oel", "transport": "serial"})), None).await;
     assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
-    assert!(v["detail"].as_str().unwrap().contains("`port` or `match`"));
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn detect_lists_nothing_without_real_ports() {
-    let f = fixture("detect");
-    let (code, v, _) = call(&f, "POST", "/devices/detect", None, None).await;
-    assert_eq!(code, StatusCode::OK);
-    assert_eq!(v["ports"], json!([]), "simulated benches never probe hardware");
-    assert_eq!(v["running"], false);
+    assert!(v["detail"].as_str().unwrap().contains("needs `port`"));
 }
 
 #[tokio::test(flavor = "multi_thread")]

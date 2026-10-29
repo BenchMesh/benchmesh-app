@@ -1,13 +1,16 @@
 //! config.yaml: `{version: 1, devices: [{id, name, driver, model?, transport, port|device|host|match, baud?, serial?, parked?}]}`
 //! (`host`: `tcpip` instruments, `name-or-address[:port]`; `parked: true`: not connected, see
 //! `ai_context/PARKING.md`).
-//! `match` = the instrument's identity (`ai_context/migration/IDENTITY.md`); `port`/`device` is
-//! then only the last known port.
+//! `match` = the instrument's identity, followed only by a build with a finder
+//! (`extension::Finder`, the official build); `port`/`device` is then only the last known port.
+//! This build opens the `port`/`device` an entry names.
 //! Device entries are kept as raw JSON objects (unknown keys survive round trips).
 
 use std::path::{Path, PathBuf};
 
 use serde_json::{json, Map, Value};
+
+use crate::extension::Finder;
 
 #[derive(Debug, Clone)]
 pub struct ConfigFile {
@@ -47,7 +50,9 @@ pub fn str_field<'a>(d: &'a DeviceEntry, k: &str) -> Option<&'a str> {
 }
 
 /// Validate one device entry; returns a human-readable reason on failure.
-pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), String> {
+/// `finder` follows `match` (the official build); without one an entry needs its `port` /
+/// `device` and `match` is kept but not followed.
+pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String], finder: Option<&dyn Finder>) -> Result<(), String> {
     let id = str_field(d, "id").unwrap_or_default();
     if id.is_empty() || id.len() > 50 || !id.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c)) {
         return Err(format!("invalid device id {id:?} (1-50 chars: letters, digits, - _ .)"));
@@ -59,22 +64,18 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
     if d.get("parked").is_some_and(|p| !p.is_boolean()) {
         return Err("`parked` must be true or false".into());
     }
-    let identified = match d.get("match") {
-        None => false,
-        Some(m) => {
-            let id: bm_transport::identity::Identity =
-                serde_json::from_value(m.clone()).map_err(|e| format!("invalid `match`: {e}"))?;
-            let hex4 = |s: &str| s.len() == 4 && s.chars().all(|c| c.is_ascii_hexdigit());
-            if !hex4(&id.usb.vid) || !hex4(&id.usb.pid) || id.usb.revision.as_deref().is_some_and(|r| !hex4(r)) {
-                return Err("invalid `match`: usb vid, pid and revision are 4 hex digits".into());
-            }
-            true
-        }
+    let identified = match (d.get("match"), finder) {
+        (Some(m), Some(f)) => f.check(m).map(|_| true)?,
+        _ => false,
     };
+    let lan = matches!(str_field(d, "transport"), Some("tcpip" | "vxi11"));
+    if lan && d.get("match").is_some() {
+        return Err("`match` (USB identity) does not apply to a LAN device".into());
+    }
     match str_field(d, "transport").unwrap_or("serial") {
         "serial" => {
             if !identified && str_field(d, "port").unwrap_or_default().is_empty() {
-                return Err("serial device needs `port` or `match`".into());
+                return Err(needs("serial", "port", finder));
             }
             if let Some(b) = d.get("baud") {
                 const BAUDS: [u64; 10] = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400];
@@ -91,7 +92,7 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
         }
         "usbtmc" => {
             if !identified && str_field(d, "device").unwrap_or_default().is_empty() {
-                return Err("usbtmc device needs `device` or `match`".into());
+                return Err(needs("usbtmc", "device", finder));
             }
         }
         "tcpip" | "vxi11" => {
@@ -99,13 +100,18 @@ pub fn validate_entry(d: &DeviceEntry, known_drivers: &[String]) -> Result<(), S
             if host.is_empty() || host.chars().any(|c| c.is_whitespace() || c == '/') {
                 return Err("a LAN device needs `host` (name or address, optionally :port)".into());
             }
-            if identified {
-                return Err("`match` (USB identity) does not apply to a LAN device".into());
-            }
         }
         t => return Err(format!("unsupported transport {t:?} (serial, usbtmc, tcpip, vxi11)")),
     }
     Ok(())
+}
+
+/// What a USB entry without a usable path lacks.
+fn needs(transport: &str, field: &str, finder: Option<&dyn Finder>) -> String {
+    match finder {
+        Some(_) => format!("{transport} device needs `{field}` or `match`"),
+        None => format!("{transport} device needs `{field}` (this build does not find instruments by `match`)"),
+    }
 }
 
 #[cfg(test)]
@@ -120,14 +126,14 @@ mod tests {
     fn tcpip_entries_need_a_host_and_no_usb_identity() {
         let drivers = vec!["rigol_dp800".to_string()];
         let ok = entry(serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "192.168.1.50:5555"}));
-        assert!(validate_entry(&ok, &drivers).is_ok());
+        assert!(validate_entry(&ok, &drivers, None).is_ok());
         for bad in [
             serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip"}),
             serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "a b"}),
             serde_json::json!({"id": "psu", "driver": "rigol_dp800", "transport": "tcpip", "host": "h",
                                "match": {"usb": {"vid": "1ab1", "pid": "0e11"}}}),
         ] {
-            assert!(validate_entry(&entry(bad.clone()), &drivers).is_err(), "{bad}");
+            assert!(validate_entry(&entry(bad.clone()), &drivers, None).is_err(), "{bad}");
         }
     }
 
@@ -135,8 +141,36 @@ mod tests {
     fn parked_is_a_boolean() {
         let drivers = vec!["tenma_72".to_string()];
         let e = |p: serde_json::Value| entry(serde_json::json!({"id": "t", "driver": "tenma_72", "port": "/dev/ttyACM0", "parked": p}));
-        assert!(validate_entry(&e(serde_json::json!(true)), &drivers).is_ok());
-        assert!(validate_entry(&e(serde_json::json!(false)), &drivers).is_ok());
-        assert_eq!(validate_entry(&e(serde_json::json!("yes")), &drivers).unwrap_err(), "`parked` must be true or false");
+        assert!(validate_entry(&e(serde_json::json!(true)), &drivers, None).is_ok());
+        assert!(validate_entry(&e(serde_json::json!(false)), &drivers, None).is_ok());
+        assert_eq!(validate_entry(&e(serde_json::json!("yes")), &drivers, None).unwrap_err(), "`parked` must be true or false");
+    }
+
+    /// Accepts a `match` with `usb`, opens nothing.
+    struct Fake;
+    impl Finder for Fake {
+        fn check(&self, m: &Value) -> Result<(), String> {
+            m.get("usb").map(|_| ()).ok_or_else(|| "invalid `match`".to_string())
+        }
+        fn connector(&self, _: &DeviceEntry, _: &bm_devicedef::Link, _: &bm_transport::Endpoint) -> bm_driver::actor::Connector {
+            Box::new(|| Err("none".into()))
+        }
+        fn presence(&self, _: &DeviceEntry, _: &bm_devicedef::Link, _: &bm_transport::Endpoint) -> bm_driver::actor::Presence {
+            Box::new(|| Err("none".into()))
+        }
+    }
+
+    #[test]
+    fn match_replaces_the_port_only_with_a_finder() {
+        let drivers = vec!["owon_xdm".to_string()];
+        let m = json!({"usb": {"vid": "1a86", "pid": "7523"}});
+        let bare = entry(json!({"id": "x", "driver": "owon_xdm", "match": m}));
+        let err = validate_entry(&bare, &drivers, None).unwrap_err();
+        assert!(err.contains("needs `port`") && err.contains("`match`"), "{err}");
+        assert!(validate_entry(&bare, &drivers, Some(&Fake)).is_ok());
+        let hinted = entry(json!({"id": "x", "driver": "owon_xdm", "match": m, "port": "/dev/ttyUSB0"}));
+        assert!(validate_entry(&hinted, &drivers, None).is_ok(), "kept, the named port is opened");
+        let bad = entry(json!({"id": "x", "driver": "owon_xdm", "match": {}, "port": "/dev/ttyUSB0"}));
+        assert_eq!(validate_entry(&bad, &drivers, Some(&Fake)).unwrap_err(), "invalid `match`");
     }
 }

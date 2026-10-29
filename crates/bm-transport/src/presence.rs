@@ -1,5 +1,5 @@
 //! Is a parked instrument there? Found without a byte to the instrument: a USB instrument by
-//! port enumeration (its identity, or its fixed port), a LAN instrument by opening and closing
+//! port enumeration (its port listed or its device node there), a LAN instrument by opening and closing
 //! a TCP connection.
 //!
 //! What that proves differs by link ([`proves`]): a USBTMC device is the instrument's own USB
@@ -16,7 +16,6 @@ use std::time::Duration;
 use bm_devicedef::Link;
 
 use crate::discover::{self, PortKind};
-use crate::identity::Identity;
 use crate::{lock, port_kind, tcp_target, vxi11, Endpoint};
 
 /// How long a LAN presence check waits for the connection.
@@ -46,24 +45,16 @@ pub fn proves(link: &Link) -> Proves {
 }
 
 /// `Ok(where it is)` or `Err(why it is not found)`.
-pub fn presence(link: &Link, ep: &Endpoint, id: Option<&Identity>) -> Result<String, String> {
+pub fn presence(link: &Link, ep: &Endpoint) -> Result<String, String> {
     match link {
         Link::Tcp(t) => reachable(tcp_target(&ep.path, t.port)),
         Link::Vxi11(_) => reachable(vxi11::portmapper_target(&ep.path)),
         Link::Serial(_) | Link::Usbtmc(_) => {
             let kind = port_kind(link).expect("a USB link");
-            match id {
-                Some(id) => {
-                    let ports = discover::ports();
-                    let hint = Some(ep.path.as_str()).filter(|p| !p.is_empty());
-                    let found = id.candidates(kind, &ports, hint).first().map(|p| p.path.clone());
-                    found.ok_or_else(|| format!("not attached: no {} port matches {}", kind.as_str(), id.describe()))
-                }
-                None => attached(kind, &ep.path, |kind| match kind {
-                    PortKind::Serial => discover::serial_ports().into_iter().map(|p| p.device).collect(),
-                    PortKind::Usbtmc => discover::usbtmc_devices().into_iter().map(|d| d.device).collect(),
-                }),
-            }
+            attached(kind, &ep.path, |kind| match kind {
+                PortKind::Serial => discover::serial_ports().into_iter().map(|p| p.device).collect(),
+                PortKind::Usbtmc => discover::usbtmc_devices().into_iter().map(|d| d.device).collect(),
+            })
         }
     }
 }

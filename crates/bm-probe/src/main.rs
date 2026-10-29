@@ -63,9 +63,8 @@ struct Configured {
     id: String,
     driver: String,
     transport: Option<String>,
+    /// The port the entry names (`match` is not followed: bm-probe opens fixed ports only).
     endpoint: Endpoint,
-    /// `match`: found by identity on any port (see ai_context/migration/IDENTITY.md).
-    identity: Option<bm_transport::identity::Identity>,
 }
 
 fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
@@ -84,7 +83,6 @@ fn load_config(path: &PathBuf) -> Result<Vec<Configured>, String> {
                 baud: d.get("baud").and_then(|b| b.as_u64()).map(|b| b as u32),
                 format: s(d, "serial"),
             },
-            identity: d.get("match").and_then(|m| serde_yaml_ng::from_value(m.clone()).ok()),
         })
         .collect())
 }
@@ -93,7 +91,7 @@ fn connect(cat: &Catalog, dev: &Configured) -> Result<(Engine, Arc<DeviceDef>), 
     let def = cat.devices.get(&dev.driver).ok_or(format!("{}: no definition `{}`", dev.id, dev.driver))?.1.for_transport(dev.transport.as_deref());
     let def = Arc::new(def.map_err(|e| format!("{}: {e}", dev.id))?);
     let link = def.link.single().ok_or(format!("{}: no single link", dev.id))?;
-    let attempts = bm_transport::attempts(&link, &dev.endpoint, dev.identity.as_ref()).map_err(|e| format!("{}: {e}", dev.id))?;
+    let attempts = bm_transport::attempts(&link, &dev.endpoint);
     let mut errors = Vec::new();
     for a in attempts {
         let port = a.port.clone();
@@ -120,7 +118,7 @@ fn show(v: &Value) -> String {
 fn verify(cat: &Catalog, devs: &[&Configured], polls: usize, screenshots: bool) -> bool {
     let mut ok = true;
     for dev in devs {
-        let place = dev.identity.as_ref().map(|i| format!("[{}]", i.describe())).unwrap_or_else(|| dev.endpoint.path.clone());
+        let place = &dev.endpoint.path;
         println!("=== {} ({}) {place}", dev.id, dev.driver);
         let t0 = Instant::now();
         let (mut e, def) = match connect(cat, dev) {

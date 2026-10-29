@@ -1,6 +1,6 @@
 //! In-process port lock: one open transport per port, whatever the OS. Kernel USBTMC nodes
 //! can be opened twice (two interleaved conversations desync the instrument), and a port
-//! held by one instrument must not be probed by another's identity search or by Detect.
+//! held by one instrument must not be opened or probed for another.
 
 use std::collections::BTreeSet;
 use std::io;

@@ -29,7 +29,7 @@ Python/Electron/Node-RED system it replaced is kept only in git (tag `legacy-pyt
 |---|---|
 | `bm-devicedef` | DSL types (source of truth), validator, JSON Schema, `bm-devicedef validate` |
 | `bm-driver` | interpreter: framing, parsing, CEL, SI dicts, engine, per-device actor, sim transport |
-| `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry), instrument identity matching + in-process port lock (`ai_context/migration/IDENTITY.md`) |
+| `bm-transport` | serial (`serialport`), LAN (raw SCPI socket, VXI-11), USBTMC (Linux kernel driver; Windows/macOS: own USBTMC protocol over `nusb`, or an installed VISA loaded at run time), port discovery (Linux sysfs, Windows SetupAPI, macOS IORegistry) for the port lists, in-process port lock; opens the port an entry names (`ai_context/migration/IDENTITY.md`) |
 | `bm-server` | axum REST API, WebSockets, recordings v2 (one whole-second sampler from the registry, `/ws/recordings`), metrics, OpenAPI, virtual SCPI instruments (`scpi/`), UI; `benchmesh-server` binary |
 | `bm-store` | recordings database v2 (SQLite/WAL `~/.benchmesh/recordings.db`, 0600 with its journal: recordings, series, samples; contract `ai_context/migration/RECORDINGS.md`) |
 | `benchmesh-extensions` | what a distribution adds to the app: stub here (adds nothing), replaced by the official build (`ai_context/OPEN_CORE.md`; not a default member) |
@@ -53,14 +53,14 @@ Debug builds carry line tables only, dependencies no debug info (`[profile.dev]`
 **Open source and the official distribution** (contract `ai_context/OPEN_CORE.md`): this repository is the whole
 application and builds without anything else (`cargo tauri build`: unsigned, no updater; `GET /version`
 `distribution: community`; the title bar shows "v<version> community" and no version appears anywhere else - only the
-official build shows its version in Feedback and System). The official installers are built by the private
+official build shows its version in Feedback and Instruments → About). The official installers are built by the private
 repository `BenchMesh/services` (local `../benchmesh-services`): it overlays its extensions on a checkout of a tag
 (stub crate `crates/benchmesh-extensions` -> its implementation, `frontend/src/extensions/index.ts`, a Tauri
 capability and config), signs (updater key, its CI secrets; losing it means installed apps can no longer update) and
 publishes the release here. App updates (desktop modal and headless Updates) and future online-service integrations
 live only there. Extension points: `bm_server::extension` (routes + OpenAPI, `System::hand_over` for headless
 stop-and-run), `benchmesh_extensions::{DISTRIBUTION, server, desktop}`, `frontend/src/extensions/contract.ts`
-(`root`, `systemGroups`, `recordingViews`, `titleBadges`, `panelActions`). Never put private code, keys, release workflows or release notes in this repository.
+(`root`, `systemGroups`, `aboutGroups`, `onlineGroups`, `topBarStatus`, `recordingViews`, `titleBadges`, `panelActions`). Never put private code, keys, release workflows or release notes in this repository.
 
 **Cross-site guard:** the loopback listener (127.0.0.1:57666, the app window) has no
 authentication, so `crates/bm-server/src/guard.rs` refuses what a foreign web page could make the
@@ -93,8 +93,11 @@ anything else is refused (exit 2, `bm_server::headless::check_args`). Shared run
 host, OS, cores, uptime, temperature, load, processor / memory / disk meters and BenchMesh's own use for everyone;
 headless only **Restart** (same command line; Unix `exec` in place) and **Shut down** (exit 0), two presses, refused
 while a flow runs, and **Start with this computer** (`system/autostart.rs`: systemd user service + linger command on
-Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation); extensions add groups
-(the official build: **Updates**). Official releases include Linux ARM64 (Raspberry Pi 4/5); CI tests the desktop app
+Linux, LaunchAgent on macOS, Run key on Windows; never the password; not for a simulation); extensions add groups.
+Instruments → **About** (`about/AboutTab.tsx`): build, version (official only), docs and releases, groups a distribution
+adds (the official build: **Updates**); Instruments → **Online** (`online/OnlineTab.tsx`) only when a distribution adds
+groups (the official build: BenchMesh account and activity). A group may stop BenchMesh (`onStopping`): the tab waits
+and reloads (`system/comeback.tsx`). Official releases include Linux ARM64 (Raspberry Pi 4/5); CI tests the desktop app
 on ARM and the server's system code on Windows and macOS.
 
 **Automation, assistant, MCP** (contract `ai_context/AUTOMATION.md`): flows are JSON documents
@@ -133,10 +136,11 @@ the status document of its day (`crates/bm-server/community-status.json`, refres
 what changed since (`GET {BENCHMESH_ONLINE_URL or https://benchmesh.online}/api/v1/status?since=<its
 generated>`; `BENCHMESH_ONLINE=off` disables it, simulations stay offline) and merges the models over it;
 `issues` come only from that answer. `/catalog` and `/instruments` merge it per model (`community`; an
-`awaiting` model users confirmed counts as `confirmed`; `issue`: **Issue reported - investigation pending**,
-or **Fixed in X - update** / **- next release** when the fix is newer than the app, published or not per
-`/api/v1/update/latest.json`, asked only then): Instruments → Supported shows it with the confirming
-versions, the panel header shows the issue (`bench/issue.ts`). Offline: the snapshot, no issues. Linking,
+`awaiting` model users confirmed counts as `confirmed`; `issue`: a short mark, never longer than **Issue reported**
+(investigating), **Fix available** / **Fix coming** when the fix is newer than the app, published or not per
+`/api/v1/update/latest.json`, asked only then; hover, focus or a press shows its card - state, reports, since, what to
+do - `bench/issue.ts`, `bench/IssueMark.tsx`): Instruments → Supported shows it with the confirming versions, the
+panel header shows the issue. Offline: the snapshot, no issues. Linking,
 problem reports and "It works" confirmations are official-build only (benchmesh-services).
 
 **Parking** (contract `ai_context/PARKING.md`): `POST|DELETE /devices/{id}/park` sets `parked: true` in
@@ -146,22 +150,22 @@ parked instrument is never opened at start. Refused while the running flow uses 
 using a parked one is refused. UI: park icon before Fold, parked panels wait in the parking strip left of
 the rack (`bench/ParkingStrip.tsx`, `bench/parking.ts`) and return to their place when unparked.
 
-**Instrument identity:** a config entry may carry `match` (USB vid/pid + serial number or chip
-revision, port position as a tie-breaker, and the serial number from the identify reply) instead
-of a fixed `port`/`device`; the instrument is then found on whatever port it is plugged into, on
-every reconnect, on Linux/Windows/macOS without udev rules or admin rights.
-On Windows a USBTMC instrument without a usable driver gets **Install driver** (drawer / Detect):
+**Instruments are set up by hand:** a config entry names its `port` / `device` / `host`, picked in the Instruments
+drawer from what the OS reports. Finding instruments automatically - Detect and an entry's `match` (its identity,
+followed on whatever port it is plugged into) - is official-build only (extension point `bm_server::extension::Finder`,
+UI `instrumentsSections` / `identityField`): this build keeps `match` in an entry without following it and opens the
+port the entry names; an entry with `match` and no path is refused.
+On Windows a USBTMC instrument without a usable driver gets **Install driver** (Instruments drawer):
 the server re-runs its executable elevated (`--install-winusb`, `bm_transport::winusb`) to bind
 Microsoft's in-box WinUSB driver - the one admin prompt Windows requires. A port the OS refuses is explained (`bm_transport::access`,
 message ending " - see <help URL>"): Linux "Permission denied" (`/dev/usbtmcN` belongs to root, serial ports to
 `dialout`/`uucp`) and macOS 15+ "No route to host" to a LAN instrument (Local Network permission; the app bundle's
-`crates/benchmesh-app/Info.plist` gives the prompt's reason). The panel and Detect show the fix (`bench/AccessFix.tsx`):
+`crates/benchmesh-app/Info.plist` gives the prompt's reason); a serial port another program holds (busy, Windows
+"Access is denied") is named as in use by another program, on every OS. The panel shows the fix (`bench/AccessFix.tsx`):
 a command with Copy (Linux), **Open Local Network settings** (macOS desktop app), and "How to fix" to
 https://benchmesh.online/docs/linux#usb-permissions / #serial-permissions / docs/macos#local-network (same commands in
-the website's `src/lib/linux.ts`, section id in `src/lib/macos.ts`). `POST /devices/detect`
-identifies attached instruments (identify queries only) and the Instruments drawer adds or locks
-them. Contract: `ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports`
-lists what the OS reports.
+the website's `src/lib/linux.ts`, section id in `src/lib/macos.ts`). Ports and USBTMC per OS:
+`ai_context/migration/IDENTITY.md`; `cargo run -p bm-transport --example ports` lists what the OS reports.
 
 Bench/hardware notes and wire captures: `captures/` (golden transcripts replayed by the tests),
 `scripts/bench_setters.sh`, `scripts/bench_scope_setters.sh`, `ai_context/migration/device-notes/`.
@@ -203,8 +207,8 @@ devices:
 `driver` names the definition (`devices/<driver>.yaml`); `parked: true` keeps an instrument disconnected
 (see Parking); transports are `serial` (`port`, `baud`,
 `serial`), `usbtmc` (`device`) and `tcpip` (raw SCPI socket) / `vxi11` (`host`, optionally
-`:port`). Instead of `port`/`device` a USB entry may carry `match` (see Instrument identity); the
-UI's Instruments drawer and Detect write these entries (`crates/bm-server/src/config.rs`).
+`:port`). A USB entry may also carry `match`, which only the official build follows (see Instruments are set
+up by hand); the UI's Instruments drawer writes these entries (`crates/bm-server/src/config.rs`).
 
 ## Adding an instrument
 
@@ -230,10 +234,10 @@ code; the definitions' `ui_component` is not used by the UI.
 | `kit/` | instrument component kit with three skins in `kit.css` - **Reflective LCD** (default), LED segment, Cockpit glass - switched in Instruments → Miscellaneous (`drawers/SkinSetting.tsx`, `kit/skin.tsx`, stored in `localStorage` `benchmesh:skin`; canvases read colour tokens at draw time). Components: segment readout, digit-wise setpoint editor, arm-to-enable switch (two presses for anything that `energizes`), micro switch, annunciators, rotary dial, knob, 1-2-5 stepper, bargraph, sparkline, waveform preview, oscilloscope screen, spectrum screen, action button (momentary actions confirmed by a reported change). Fonts are bundled (B612, B612 Mono, Chakra Petch) - the desktop app runs offline |
 | `bench/profiles.ts` | features + methods → what a class panel shows (limits, decimals, modes, ranges, optional controls) |
 | `bench/panels/` | class panels (`PsuPanel`, `DmmPanel`, `EllPanel` - modes without a setpoint, Short (two presses); `AwgChannel` - frequency or period, amplitude as Vpp / Vrms / dBm / high-low levels, phase, ramp symmetry, load, pulse duty/width/edges, mode CW / MOD (AM/FM/PM: modulating wave, frequency, depth or deviation) / SWEEP (start, stop, time, spacing, trigger) / BURST (N cycles or infinite, period, trigger), each control only when the definition binds it: conversions in `bench/awgMath.ts`, values the instrument does not report tagged CALC; `OscPanel` - one screen for all channels, `LcrPanel` - primary/secondary readouts, function keys L/C/R/Z/DCR → secondary → SER/PAR, frequency/level, range/speed, open/short correction with a prompt, bias; `SalPanel` - spectrum screen (`kit/SpectrumScreen`: dB graticule, max-hold ghost, marker diamond, click to place), marker readout, annotation bar, soft-key groups FREQ/BW/AMPT/SWEEP/TRACE/MKR/TG; `GenericPanel`) |
-| `bench/ParkingStrip.tsx`, `bench/parking.ts` | parked instruments (`ai_context/PARKING.md`): park control in the panel header (asks twice with an output on, disabled while the running flow uses the instrument), slim strip left of the rack with presence dot and name, sheet with details and Unpark |
+| `bench/ParkingStrip.tsx`, `bench/parking.ts` | parked instruments (`ai_context/PARKING.md`): park control in the panel header (asks twice with an output on, disabled while the running flow uses the instrument), slim strip left of the rack with a presence LED before each name, sheet with details and Unpark. Status lights are `bench/Led.tsx`: a rectangular LED one capital letter tall (`1cap` of the text's font, bottom on its baseline; logical sizes, so it turns with vertical text), tooltip with the state - also before the class name in every panel header (connected green / offline red with why, `offline.ts` `linkLed`) |
 | `bench/layout.ts`, `Rack.tsx` | panel order / width (S, M, L, W) / hidden / channel layout of multi-channel panels (side by side or stacked), persisted in `localStorage` (`benchmesh:bench-layout`); columns follow the window width (300 px units) |
-| `bench/BenchLayout.tsx`, `bench/TitleBar.tsx` | shell: a fixed head of two rows (only the content below it, `.bench-body`, scrolls) - the **title bar** (brand, version on its baseline, a distribution's badges after it (`extensions.titleBadges`), **Arrange** as an app control, then on Windows/Linux the window controls minimize / maximize / close; the bar drags the window, a double press maximizes) and the top bar (API / live / run / Remote on the left, drawer buttons on the right) - **Arrange** mode (drag, ◀ ▶, width, channels ⇆ / ⇅, hide), drawers (Instruments config, Request log; they open below the head, which stays usable: a menu button switches the open drawer). The desktop app's main window has no OS title bar on Windows and Linux (`decorations(false)` in `benchmesh-app` main.rs, permissions `capabilities/main-window.json`); macOS keeps its native title bar and the UI shows no window controls there (`desktop.ts` `hasOwnWindowControls`) |
-| `drawers/` | Instruments drawer tabs: configuration (incl. **Detect**: `DetectView.tsx`, `detect.ts`), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), **System** (`system/`: resources; restart, shut down, start with the computer when headless), **Connectors** (`connectors/`: virtual SCPI access, addresses with MATLAB / PyVISA / LabVIEW code, the Python package; this computer only), Remote access; request log |
+| `bench/BenchLayout.tsx`, `bench/TitleBar.tsx` | shell: a fixed head of two rows (only the content below it, `.bench-body`, scrolls) - the **title bar** (brand, version on its baseline, a distribution's badges after it (`extensions.titleBadges`), **Arrange** as an app control, then on Windows/Linux the window controls minimize / maximize / close; the bar drags the window, a double press maximizes) and the top bar (statuses on the left - **API** (the server answers this window), **Readings** (the registry stream is current), a distribution's (`extensions.topBarStatus`, the official build: **Linked** / **Not linked**), each a `StatusPill` with its explanation as tooltip, texts in `bench/status.ts`, sentence case - then run / Remote; drawer buttons on the right) - **Arrange** mode (drag, ◀ ▶, width, channels ⇆ / ⇅, hide), drawers (Instruments config, Request log; they open below the head, which stays usable: a menu button switches the open drawer). The desktop app's main window has no OS title bar on Windows and Linux (`decorations(false)` in `benchmesh-app` main.rs, permissions `capabilities/main-window.json`); macOS keeps its native title bar and the UI shows no window controls there (`desktop.ts` `hasOwnWindowControls`) |
+| `drawers/` | Instruments drawer tabs: configuration (sections a distribution adds on top: `extensions.instrumentsSections`, the official build's Detect), Supported, Miscellaneous, **Metrics** (`MetricsView.tsx` + `metrics.ts`: per instrument link busy, exchanges/s, API latency from `/ws/metrics`, judged against limits), **System** (`system/`: resources; restart, shut down, start with the computer when headless), **Connectors** (`connectors/`: virtual SCPI access, addresses with MATLAB / PyVISA / LabVIEW code, the Python package; this computer only), **Online** (a distribution's only), Remote access, **About** (`about/AboutTab.tsx`); request log |
 | `recording/` | recordings v2 (`ai_context/migration/RECORDINGS.md`): `RecordingsProvider` (REST + `/ws/recordings`, live sample buffers; main and panel windows), recordable readings (`signal.tsx`: `SignalScope` + `Recordable`, kit `ContextMenu` on right-click / context-menu key, red dot when recorded), recorder dock (bottom of the main window, `benchmesh:recorder-dock`), recordings drawer (history, zoomable chart, rename, CSV export, delete). Saving a file (CSV, flow JSON, console log: `ui/files.ts`) asks where with the system's Save dialog in the desktop app (`benchmesh-app` `save.rs`, command `save_file`; the webview would drop it into Downloads silently) and downloads in a browser. Chart: `chartModel.ts` (one y-axis per series, colours `--kit-series-1..8`), ECharts core loaded lazily in `RecordingChart.tsx`; views a distribution adds (`extensions.recordingViews`) get a Chart / view switch (`views.tsx`) |
 | `kit/brand.ts`, `kit/BrandMark.tsx` | the logo ("Readout": seven-segment b, ghost segments, amber decimal point): one geometry, colours on dark / on light; `BrandMark` follows the skin (`--kit-brand-*`) or takes fixed colours (website). `node scripts/logo/build.mjs` writes `docs/static/logo/*.svg`, `frontend/public/favicon.svg` and the app icons (`crates/benchmesh-app/icons`, via Inkscape + `cargo tauri icon`); a test fails when they are stale |
 | `about/` | title-bar version (`GET /version`, `version.ts`) and the **Feedback** drawer (`AboutView.tsx`: version and Copy version in the official build only, GitHub issues links, contact email support@benchmesh.online with Copy email). External pages open by name (`links.tsx`): in the desktop app the system browser (or mail app) via the `open_page` command (fixed list, `crates/benchmesh-app/src/links.rs`, capability `links.json`), in a browser a new tab |

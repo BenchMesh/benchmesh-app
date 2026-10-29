@@ -110,18 +110,19 @@ pub fn start(opts: ServerOptions) -> Result<RunningServer, String> {
     let entries = cfg.load()?;
     let connectors = match &opts.simulate {
         Some(session) => simulated_connectors(session.clone()),
-        None => hardware_connectors(),
+        None => hardware_connectors(opts.extensions.finder()),
     };
     let mut devices = Devices::new(catalog, connectors, ActorConfig::default());
     devices.hardware = opts.simulate.is_none();
     if devices.hardware {
-        devices.presence = hardware_presence();
+        devices.presence = hardware_presence(opts.extensions.finder());
     }
     let devices = Arc::new(devices);
     let mut warnings = Vec::new();
+    let finder = opts.extensions.finder();
     for e in entries {
         let known = devices.driver_ids();
-        match validate_entry(&e, &known).and_then(|_| devices.start(e.clone())) {
+        match validate_entry(&e, &known, finder.as_deref()).and_then(|_| devices.start(e.clone())) {
             Ok(()) => {}
             Err(err) => warnings.push(format!("device {:?} not started: {err}", e.get("id"))),
         }

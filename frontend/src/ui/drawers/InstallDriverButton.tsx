@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { apiError } from './detect';
+import { apiError } from './apiError';
 import { useIsRemote } from '../remote/RemoteProvider';
 
 /** Windows re-enumerates the instrument after the driver change; lists are re-read after this. */

@@ -10,12 +10,11 @@
 //!   (split reads strand data on the device and desync the USBTMC tags; see the DGE
 //!   screenshot capture).
 //!
-//! Every open transport holds its port ([`lock`]); configured instruments are found by
-//! [`identity`] on whatever port they are plugged into ([`attempts`]). A parked instrument is
-//! only looked for ([`presence`]), never opened.
+//! Every open transport holds its port ([`lock`]); a configured instrument is opened on the
+//! port its entry names ([`attempts`]). A parked instrument is only looked for ([`presence`]),
+//! never opened.
 
 use std::io::{self, Read, Write};
-use std::sync::Arc;
 use std::time::Duration;
 
 use bm_devicedef::{Flow, LineState, Link, ModemControl, SerialLink, TcpLink};
@@ -24,7 +23,6 @@ use bm_driver::engine::Transport;
 
 pub mod access;
 pub mod discover;
-pub mod identity;
 pub mod lock;
 pub mod presence;
 pub mod usbtmc_nusb;
@@ -59,7 +57,7 @@ pub fn open(link: &Link, ep: &Endpoint) -> io::Result<Box<dyn Transport>> {
         Link::Usbtmc(_) => Box::new(UsbTmcTransport::open(&ep.path)?),
         #[cfg(not(target_os = "linux"))]
         Link::Usbtmc(_) => {
-            let msg = format!("{}: not a USBTMC instrument path (use Detect, a `usb:` path or a VISA resource)", ep.path);
+            let msg = format!("{}: not a USBTMC instrument path (use a `usb:` path from the port list or a VISA resource)", ep.path);
             return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
         }
         Link::Tcp(t) => Box::new(TcpTransport::open(t, ep)?),
@@ -97,27 +95,10 @@ pub fn port_kind(link: &Link) -> Option<discover::PortKind> {
     }
 }
 
-/// The ports to try for a configured instrument: its fixed path, or - with an identity -
-/// every attached port matching it (best first), each accepted only if the identify reply
-/// carries the identity's serial number. `ep.path` is then the last known port (a hint).
-pub fn attempts(link: &Link, ep: &Endpoint, id: Option<&identity::Identity>) -> Result<Vec<Attempt>, String> {
-    let attempt = |path: &str, accept: Option<bm_driver::actor::Accept>| {
-        let (link, ep) = (link.clone(), Endpoint { path: path.to_string(), ..ep.clone() });
-        Attempt { port: path.to_string(), open: Box::new(move || open(&link, &ep)), accept }
-    };
-    let Some(id) = id else {
-        return Ok(vec![attempt(&ep.path, None)]);
-    };
-    let kind = port_kind(link).ok_or("identity matching needs a USB link (serial or usbtmc)")?;
-    let ports = discover::ports();
-    let hint = Some(ep.path.as_str()).filter(|p| !p.is_empty());
-    let found = id.candidates(kind, &ports, hint);
-    if found.is_empty() {
-        return Err(format!("no free {} port matches {}", kind.as_str(), id.describe()));
-    }
-    let check = id.clone();
-    let accept: bm_driver::actor::Accept = Arc::new(move |idn: &str| check.check_idn(idn));
-    Ok(found.into_iter().map(|p| attempt(&p.path, Some(accept.clone()))).collect())
+/// The port to try for a configured instrument: the one its entry names.
+pub fn attempts(link: &Link, ep: &Endpoint) -> Vec<Attempt> {
+    let (link, ep2) = (link.clone(), ep.clone());
+    vec![Attempt { port: ep.path.clone(), open: Box::new(move || open(&link, &ep2)), accept: None }]
 }
 
 /// Raw socket to a LAN instrument (SCPI over TCP, usually port 5025 or 5555): a byte stream

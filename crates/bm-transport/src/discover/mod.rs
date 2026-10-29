@@ -1,5 +1,5 @@
-//! Port discovery: the configuration UI's port lists and the USB ports instruments are
-//! identified on ([`ports`], see `ai_context/migration/IDENTITY.md`).
+//! Port discovery: the configuration UI's port lists, and the USB ports with their USB
+//! information ([`ports`], see `ai_context/migration/IDENTITY.md`).
 //! Linux: `/dev` + sysfs (no libudev); Windows: SetupAPI; macOS: IORegistry. No rights needed.
 
 mod ids;

@@ -2,8 +2,8 @@
 //!
 //! The open-source build has no extensions: `benchmesh-server` and the desktop app built from this
 //! repository pass `Extensions::default()`. The official distribution adds its own (app updates,
-//! online services) at build time through the `benchmesh-extensions` crate, which the desktop app
-//! asks for them. An extension adds routes to the same API: they are served behind the same
+//! online services, finding instruments) at build time through the `benchmesh-extensions` crate,
+//! which the desktop app asks for them. An extension adds routes to the same API: they are served behind the same
 //! cross-site guard and remote gate, and their remote scope follows their path like every other
 //! route (`remote::scope`; an unclassified path is local-only).
 
@@ -12,7 +12,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
+use bm_devicedef::Link;
+use bm_driver::actor::{Connector, Presence};
+use bm_transport::Endpoint;
+use serde_json::Value;
 
+use crate::config::DeviceEntry;
 use crate::S;
 
 /// The distribution name of a build without extensions (`GET /version` `distribution`).
@@ -49,6 +54,23 @@ pub trait Extension: Send + Sync {
     fn routes(&self) -> Router<S>;
     /// Every route of `routes()`, for `/openapi.json`.
     fn api(&self) -> Vec<ApiRoute>;
+    /// Finds instruments by who they are; the open-source build has none.
+    fn finder(&self) -> Option<Arc<dyn Finder>> {
+        None
+    }
+}
+
+/// Finds a configured instrument by who it is (the entry's `match`) instead of the port it
+/// names. Without one (the open-source build) an instrument is opened only on the `port` /
+/// `device` its entry names, and `match` is not followed.
+pub trait Finder: Send + Sync {
+    /// Checks an entry's `match` (when it is added, changed or loaded).
+    fn check(&self, m: &Value) -> Result<(), String>;
+    /// The ports to try for an entry with `match`, asked again on every reconnect. `ep.path` is
+    /// the port the entry names (a hint, may be empty).
+    fn connector(&self, entry: &DeviceEntry, link: &Link, ep: &Endpoint) -> Connector;
+    /// Where an entry with `match` is attached, without a byte to the instrument (parking).
+    fn presence(&self, entry: &DeviceEntry, link: &Link, ep: &Endpoint) -> Presence;
 }
 
 impl fmt::Debug for dyn Extension {
@@ -75,5 +97,10 @@ impl Extensions {
     /// The documented routes of every extension.
     pub fn api(&self) -> Vec<ApiRoute> {
         self.list.iter().flat_map(|e| e.api()).collect()
+    }
+
+    /// The finder of the first extension that has one.
+    pub fn finder(&self) -> Option<Arc<dyn Finder>> {
+        self.list.iter().find_map(|e| e.finder())
     }
 }

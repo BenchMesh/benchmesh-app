@@ -52,26 +52,3 @@ describe('InstallDriverButton', () => {
     expect(onInstalled).not.toHaveBeenCalled()
   })
 })
-
-describe('Detect offers the driver', () => {
-  it('on a USBTMC row the server can give a driver', async () => {
-    const { DetectView } = await import('../DetectView')
-    const port = (path: string) => ({
-      port: path, kind: 'usbtmc', usb: null, configured_as: null, locked: false, instrument: null, match: null, certainty: null,
-      error: 'cannot open: Windows has no driver for this instrument. …',
-    })
-    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => String(url).endsWith('/devices/detect')
-      ? reply(200, { ports: [port('usb:1ab1:044d:DHO8A272907001'), port('usb:5345:1235:VISA-OWNED')] })
-      : reply(200, [
-        { device: 'usb:1ab1:044d:DHO8A272907001', name: 'x', note: 'no driver', driver_installable: true },
-        { device: 'usb:5345:1235:VISA-OWNED', name: 'y', note: 'other', driver_installable: false },
-      ]))
-    render(<DetectView apiBase="/api" configured={[]} onChanged={() => {}} />)
-    fireEvent.click(screen.getByTestId('detect-btn'))
-    await screen.findByRole('button', { name: 'Install driver' })
-    expect(screen.getAllByRole('button', { name: 'Install driver' })).toHaveLength(1)
-    const rows = screen.getAllByTestId('detect-row')
-    expect(rows[0].querySelector('[data-testid="install-driver"]')).not.toBeNull()
-    expect(rows[1].querySelector('[data-testid="install-driver"]')).toBeNull()
-  })
-})
