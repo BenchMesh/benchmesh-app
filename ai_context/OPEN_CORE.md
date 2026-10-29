@@ -12,7 +12,7 @@ built by the BenchMesh project from this repository plus a private repository,
 |---|---|---|
 | Application | everything: server, drivers, device definitions, UI, desktop app, headless, automation, MCP, remote access | only extensions through the points below |
 | App updates | - (a build from source is updated by building it again) | desktop updater (Tauri plugin) and headless updates (Instruments - System - Updates), the update addresses |
-| Online services | the public, read-only community status from benchmesh.online (`community.rs`) | integrations that need the BenchMesh online service (accounts, later) |
+| Online services | the public, read-only community status from benchmesh.online and its issue flags (`community.rs`) | integrations that need a BenchMesh account: linking, sending problem reports and following tickets, "It works" confirmations |
 | Build and release | local builds: `cargo build`, `cargo tauri build` (unsigned installers, no updater) | CI that builds, signs and publishes the official installers; the updater signing key; release notes |
 
 Rules:
