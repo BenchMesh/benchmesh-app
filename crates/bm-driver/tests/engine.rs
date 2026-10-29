@@ -735,3 +735,45 @@ fn parking_stops_the_reconnect_attempts_of_a_missing_instrument() {
     assert_eq!(*tries.lock().unwrap(), before, "no connect attempts while parked");
     h.stop();
 }
+
+#[test]
+fn raw_exchange_keeps_every_byte_with_its_timing() {
+    let state = Arc::new(Mutex::new((4.94, 0.988, false)));
+    let mut t = SimTransport::new(Box::new(tenma(state)));
+    t.latency = Duration::from_millis(30);
+    let log = t.log.clone();
+    let mut e = Engine::connect(def("tenma_72"), Box::new(t)).unwrap();
+    let wire = e.tx_frame("VSET1?");
+    assert_eq!(wire, b"VSET1?", "TENMA has no tx terminator");
+    let r = e.raw(&wire, Duration::from_millis(500), Duration::from_millis(20)).unwrap();
+    assert_eq!(r.bytes, b"04.94");
+    assert!(r.first_ms.unwrap() >= 25, "{r:?}");
+    // a reply nobody waited for is taken before the next write, not mixed into its reply
+    e.raw(b"ISET1?", Duration::ZERO, Duration::ZERO).unwrap();
+    std::thread::sleep(Duration::from_millis(50));
+    let r = e.raw(&wire, Duration::from_millis(500), Duration::from_millis(20)).unwrap();
+    assert_eq!((r.stale.as_slice(), r.bytes.as_slice()), (&b"0.988 "[..], &b"04.94"[..]));
+    assert!(e.take_pending(Duration::from_millis(10)).unwrap().is_empty());
+    // nothing comes back: the whole listen time, no bytes, the link stays usable
+    let r = e.raw(b"NOPE", Duration::from_millis(60), Duration::from_millis(20)).unwrap();
+    assert_eq!((r.bytes.len(), r.first_ms), (0, None));
+    assert!(!e.link_broken());
+    assert_eq!(e.get("PSU", "voltage", 1).unwrap().value()["si"]["number"], "4.94");
+    assert!(log.lock().unwrap().texts().contains(&"NOPE".to_string()));
+}
+
+#[test]
+fn a_job_runs_alone_on_the_engine_and_is_refused_without_a_link() {
+    let state = Arc::new(Mutex::new((4.94, 0.988, false)));
+    let connector = fixed_connector("sim", move || Ok(Box::new(SimTransport::new(Box::new(tenma(state.clone())))) as Box<dyn Transport>));
+    let (etx, erx) = channel();
+    let h = DeviceHandle::spawn("tenma", def("tenma_72"), connector, Box::new(move |e| etx.send(e).unwrap()), ActorConfig::default());
+    assert!(matches!(erx.recv_timeout(Duration::from_secs(2)).unwrap(), Event::Connected { .. }));
+    let c = h.client();
+    let idn = c.with_engine(Duration::from_secs(2), |e| (e.idn.clone(), e.raw(b"ISET1?", Duration::from_millis(200), Duration::from_millis(20)).map(|r| r.bytes))).unwrap();
+    assert_eq!(idn.0, "TENMA 72-2540 V2.1");
+    assert_eq!(idn.1.unwrap(), b"0.988 ");
+    c.park(true).unwrap();
+    assert!(matches!(c.with_engine(Duration::from_secs(2), |e| e.idn.clone()), Err(Error::Refused(m)) if m.contains("parked")));
+    h.stop();
+}

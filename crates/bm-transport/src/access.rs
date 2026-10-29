@@ -4,6 +4,9 @@
 //!   denied").
 //! - macOS 15 and later: an app needs the Local Network permission to reach instruments on the
 //!   LAN; without it a connection fails with "No route to host".
+//! - Every platform: a serial port another program has open (the maker's software, a VISA, a
+//!   terminal, another BenchMesh) is refused: "Device or resource busy" (Linux, macOS),
+//!   "Access is denied" (Windows, for a port that exists).
 //!
 //! The message ends with " - see <help page section>" (the UI turns it into a link and shows
 //! the fix).
@@ -54,8 +57,23 @@ pub fn explain(e: io::Error, port: Port, path: &str) -> io::Error {
     explained(&e, port, path, Platform::current()).unwrap_or(e)
 }
 
+/// A serial port refused because another program has it open (`serialport` keeps only the OS text).
+fn busy(e: &io::Error) -> bool {
+    let m = e.to_string().to_ascii_lowercase();
+    m.contains("resource busy") || m.contains("access is denied")
+}
+
 /// The explained error, or None when `e` on `platform` is not such a refusal.
 pub fn explained(e: &io::Error, port: Port, path: &str, platform: Platform) -> Option<io::Error> {
+    if port == Port::Serial && busy(e) {
+        return Some(io::Error::new(
+            io::ErrorKind::ResourceBusy,
+            format!(
+                "{path} is in use by another program (the instrument maker's software, a VISA such as NI-VISA, a \
+                 serial terminal, or another BenchMesh): close it and BenchMesh connects by itself"
+            ),
+        ));
+    }
     let msg = match (platform, port) {
         (Platform::Linux, Port::Usb) if e.kind() == io::ErrorKind::PermissionDenied => format!(
             "no permission to use {path}: Linux gives USB instruments to root only until a udev rule gives them \
@@ -105,6 +123,16 @@ mod tests {
         let m = explained(&e, Port::Network, "192.168.1.50:5025", Platform::Macos).unwrap().to_string();
         assert!(m.starts_with("192.168.1.50:5025: no route to host. "), "{m}");
         assert!(m.contains("Local Network") && m.ends_with(LOCAL_NETWORK_HELP), "{m}");
+    }
+
+    #[test]
+    fn a_serial_port_another_program_holds_is_explained_on_every_platform() {
+        for (os_text, platform) in [("Device or resource busy", Platform::Linux), ("Device or resource busy", Platform::Macos), ("Access is denied.", Platform::Other)] {
+            let e = explained(&io::Error::new(io::ErrorKind::NotFound, os_text), Port::Serial, "COM5", platform).unwrap();
+            assert_eq!(e.kind(), io::ErrorKind::ResourceBusy);
+            assert!(e.to_string().starts_with("COM5 is in use by another program"), "{e}");
+        }
+        assert!(explained(&io::Error::new(io::ErrorKind::NotFound, "No such file or directory"), Port::Serial, "COM5", Platform::Other).is_none());
     }
 
     #[test]

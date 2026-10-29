@@ -23,6 +23,10 @@ models:
   - {name: UTS3036T, match: "(?i)^UNI-T[^,]*,\\s*UTS3036T,", features: {SAL: {freq_range: {min: 9e3, max: 3.6e9}, tg: {min: -40, max: 0}}}}
   - {name: UTS3084B, match: "(?i)^UNI-T[^,]*,\\s*UTS3084B,", features: {SAL: {freq_range: {min: 9e3, max: 8.4e9}}}}
   - {name: UTS3084T, match: "(?i)^UNI-T[^,]*,\\s*UTS3084T,", features: {SAL: {freq_range: {min: 9e3, max: 8.4e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3015T+, match: "(?i)^UNI-T[^,]*,\\s*UTS3015T\\+,", note: "UTS3000T+ (current product page); frequency from the model number, tracking generator assumed like the T models", features: {SAL: {freq_range: {min: 9e3, max: 1.5e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3032T+, match: "(?i)^UNI-T[^,]*,\\s*UTS3032T\\+,", note: "UTS3000T+ (current product page); frequency from the model number, tracking generator assumed like the T models", features: {SAL: {freq_range: {min: 9e3, max: 3.2e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3036T+, match: "(?i)^UNI-T[^,]*,\\s*UTS3036T\\+,", note: "UTS3000T+ (current product page); frequency from the model number, tracking generator assumed like the T models", features: {SAL: {freq_range: {min: 9e3, max: 3.6e9}, tg: {min: -40, max: 0}}}}
+  - {name: UTS3084T+, match: "(?i)^UNI-T[^,]*,\\s*UTS3084T\\+,", note: "UTS3000T+ (current product page); frequency from the model number, tracking generator assumed like the T models", features: {SAL: {freq_range: {min: 9e3, max: 8.4e9}, tg: {min: -40, max: 0}}}}
 link:
   usbtmc: {}
   tcp: {port: 5025}

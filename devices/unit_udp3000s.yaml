@@ -10,12 +10,15 @@ sources:
   - {doc: "UDP3000S Series Programming Manual V1.1 (UDP3000S_Series_Programming_Manual_V1.1.pdf)", pages: "3-19, 42-49 (n / 49 footer)"}
   - {doc: "UDP3305S Series User Manual V1.1", pages: "§1.1 Product Series, §1.1.2 Specifications"}
   - {note: "IDN format `Uni-Trend,UDP3305S,<SN>,<fw>` from philpagel TestController (manual shows no example); ~0.2 s pacing used by community scripts (pnuding/udp3000s-control)"}
+  - {note: "USB device port: the manual's VISA string (0x0483::0x5740, STMicro's generic Virtual COM ID, the same in the UDP4303S manual) looks copied; community drivers (philpagel/UDP3305S.py: ASRL /dev/ttyUSB1, 9600 baud, LF, 0.2 s) and the UNI-T SDK's PL2303 driver ('applicable to the UDP3305S series') show a USB-serial port. So the serial link is the likely one for USB too; usbtmc is kept until hardware decides"}
 models:
   - {name: UDP3305S, match: "^Uni-Trend,UDP3305S,", note: "1 mV / 1 mA programming resolution"}
   - {name: UDP3305S-E, match: "^Uni-Trend,UDP3305S-E,", note: "10 mV / 1 mA programming resolution; reads back one voltage decimal fewer"}
+  - {name: UDP3305S-U, match: "^Uni-Trend,UDP3305S-U,", note: "on the current product page; assumed like UDP3305S (identify reply not seen)"}
 identify: idn
 link:
-  # USB-TMC (manual p.5: VISA "USB0::0x0483::0x5740::UDP51183557335E::INSTR")
+  # USB-TMC as the manual says (p.5: VISA "USB0::0x0483::0x5740::UDP51183557335E::INSTR"); the USB
+  # port is more likely a USB-serial chip (PL2303): then the serial link below is the one (see sources)
   usbtmc:
     vid: "0483"
     pid: "5740"
@@ -23,7 +26,8 @@ link:
       tx: {terminator: "\n"}
       rx: {mode: message, strip_trailing: "\r\n", timeout_ms: 1000}
       timing: {min_gap_ms: 50, gap_after_write_ms: 100}
-  # RS232 with a crossed cable; the baud rate is chosen in the menu (4800..128000, p.5)
+  # RS232 with a crossed cable, or the USB port's USB-serial chip; the baud rate is chosen in the
+  # menu (4800..128000, p.5)
   serial: {baud: 9600, format: 8N1, flow: none}
   # LAN socket port 5025 (p.5)
   tcp: {port: 5025}

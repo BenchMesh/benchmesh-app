@@ -83,6 +83,20 @@ pub struct Engine {
     pub silent_polls: u32,
     /// Exchange counters since connect (for metrics).
     pub stats: ExchangeStats,
+    /// An exchange lost the transport (an I/O error): the link has to be opened again.
+    broken: bool,
+}
+
+/// What came back to a raw write ([`Engine::raw`]): every byte until the listen time ran out or
+/// the line was quiet for the idle time after the first byte.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct RawReply {
+    /// What was already waiting on the line before the write (a late reply to an earlier command).
+    pub stale: Vec<u8>,
+    pub bytes: Vec<u8>,
+    /// From the write to the first and the last byte.
+    pub first_ms: Option<u64>,
+    pub last_ms: Option<u64>,
 }
 
 /// Wire-level counters (monotonic since connect).
@@ -131,6 +145,7 @@ impl Engine {
             settle_until: None,
             silent_polls: 0,
             stats: ExchangeStats::default(),
+            broken: false,
         };
         // a connect banner (tinySA / NanoVNA shells) must not become the identify reply
         e.drain()?;
@@ -398,6 +413,7 @@ impl Engine {
         if r.is_err() {
             self.stats.failures += 1;
         }
+        self.broken |= matches!(r, Err(Error::Io(_)));
         r
     }
 
@@ -478,6 +494,7 @@ impl Engine {
         if r.is_err() {
             self.stats.failures += 1;
         }
+        self.broken |= matches!(r, Err(Error::Io(_)));
         r
     }
 
@@ -515,6 +532,79 @@ impl Engine {
                 Err(e)
             }
         }
+    }
+
+    /// `text` as the engine sends a command: the definition's tx terminator appended.
+    pub fn tx_frame(&self, text: &str) -> Vec<u8> {
+        format!("{text}{}", self.def.framing.tx.terminator).into_bytes()
+    }
+
+    /// Diagnostics: write `wire` as it is (after the definition's gap) and keep everything that
+    /// comes back, without framing: until `listen` ran out, or the line was quiet for `idle`
+    /// once something arrived. Shows a reply that comes too late, ends differently than the
+    /// definition expects or brings more than one frame. Nothing is parsed or cached.
+    pub fn raw(&mut self, wire: &[u8], listen: Duration, idle: Duration) -> Result<RawReply, Error> {
+        let r = self.raw_inner(wire, listen, idle);
+        if matches!(r, Err(Error::Io(_))) {
+            self.broken = true;
+        }
+        r
+    }
+
+    fn raw_inner(&mut self, wire: &[u8], listen: Duration, idle: Duration) -> Result<RawReply, Error> {
+        let now = Instant::now();
+        if now < self.next_write {
+            sleep(self.next_write - now);
+        }
+        let stale = self.take_pending(Duration::from_millis(10))?;
+        self.t.write(wire).map_err(|e| Error::Io(e.to_string()))?;
+        let sent = Instant::now();
+        let deadline = sent + listen;
+        let mut out = RawReply { stale, ..RawReply::default() };
+        loop {
+            let now = Instant::now();
+            if now >= deadline {
+                break;
+            }
+            let wait = if out.bytes.is_empty() { deadline - now } else { idle.min(deadline - now) };
+            let chunk = self.t.read(wait).map_err(|e| Error::Io(e.to_string()))?;
+            if chunk.is_empty() {
+                if !out.bytes.is_empty() {
+                    break;
+                }
+                continue;
+            }
+            let at = sent.elapsed().as_millis() as u64;
+            out.first_ms.get_or_insert(at);
+            out.last_ms = Some(at);
+            out.bytes.extend_from_slice(&chunk);
+        }
+        self.next_write = Instant::now() + ms(self.def.framing.timing.min_gap_ms);
+        Ok(out)
+    }
+
+    /// Diagnostics: take what is waiting on the line (until it was quiet for `quiet`, at most
+    /// 2 s): bytes nothing asked for now - a reply that came after its command's timeout, a
+    /// message the instrument sent by itself. Taken, they cannot shift onto the next reply.
+    pub fn take_pending(&mut self, quiet: Duration) -> Result<Vec<u8>, Error> {
+        let mut out = Vec::new();
+        let limit = Instant::now() + Duration::from_secs(2);
+        while Instant::now() < limit {
+            let chunk = self.t.read(quiet).map_err(|e| {
+                self.broken = true;
+                Error::Io(e.to_string())
+            })?;
+            if chunk.is_empty() {
+                break;
+            }
+            out.extend_from_slice(&chunk);
+        }
+        Ok(out)
+    }
+
+    /// An exchange lost the transport (an I/O error): the link has to be opened again.
+    pub fn link_broken(&self) -> bool {
+        self.broken
     }
 
     /// Discard input until the line has been idle for `drain_idle_ms`.

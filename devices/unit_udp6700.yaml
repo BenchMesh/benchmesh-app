@@ -15,7 +15,7 @@ sources:
 models:
   - {name: UDP6720, match: "^UNI-?T,UDP6720,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 5.0}, power: {unit: W, max: 100.0}}}}}
   - {name: UDP6721, match: "^UNI-?T,UDP6721,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 60.0}, current: {unit: A, max: 8.0}, power: {unit: W, max: 180.0}}}}}
-  - {name: UDP6722, match: "^UNI-?T,UDP6722,", note: "Only in the programming manual's *IDN? example (PM p.20); ratings unknown, UDP6720 limits assumed"}
+  - {name: UDP6722, match: "^UNI-?T,UDP6722,", note: "Of the newer UDP6720 series (UDP6722/6723/6724: USB, LAN, RS-232/485, product page); only its RS-232 is covered here. *IDN? example UNIT,UDP6722,UNLICENSED,REV1.21 (PM p.20)", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 80.0}, current: {unit: A, max: 20.0}, power: {unit: W, max: 400.0}}}}}
   - {name: UDP6730, match: "^UNI-?T,UDP6730,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 40.0}, current: {unit: A, max: 30.0}, power: {unit: W, max: 360.0}}}}}
   - {name: UDP6731, match: "^UNI-?T,UDP6731,", features: {PSU: {absolute_limits: {voltage: {unit: V, max: 80.0}, current: {unit: A, max: 15.0}, power: {unit: W, max: 360.0}}}}}
 link:

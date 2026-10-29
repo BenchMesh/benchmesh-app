@@ -103,8 +103,12 @@ enum Request {
     Set { class: String, op: String, ch: u8, value: String, reply: Sender<Result<(), Error>> },
     /// Park (`true`) or unpark; answered once done.
     Park { parked: bool, reply: Sender<()> },
+    /// Run on the engine between polls ([`DeviceClient::with_engine`]); `Err` without a link.
+    Job(Job),
     Stop,
 }
+
+type Job = Box<dyn FnOnce(Result<&mut Engine, Error>) + Send>;
 
 #[derive(Debug, Clone)]
 pub struct ActorConfig {
@@ -221,6 +225,20 @@ impl DeviceClient {
         rx.recv_timeout(self.request_timeout).map_err(|_| Error::Timeout { partial: Vec::new() })
     }
 
+    /// Run `f` on the device's engine, alone on the link: between two polls, after the requests
+    /// queued before it, nothing else is sent meanwhile (diagnostics: exchanges outside the
+    /// definition's operations, [`Engine::raw`]). Waits up to `timeout` for the result; refused
+    /// like a get without a link (not connected, parked). The engine is not polled while `f`
+    /// runs, so keep it short.
+    pub fn with_engine<R: Send + 'static>(&self, timeout: Duration, f: impl FnOnce(&mut Engine) -> R + Send + 'static) -> Result<R, Error> {
+        let (reply, rx) = channel();
+        let job: Job = Box::new(move |e| {
+            let _ = reply.send(e.map(f));
+        });
+        self.send(Request::Job(job))?;
+        rx.recv_timeout(timeout).map_err(|_| Error::Timeout { partial: Vec::new() })?
+    }
+
     fn send(&self, r: Request) -> Result<(), Error> {
         self.pending.fetch_add(1, Ordering::SeqCst);
         self.tx.send(r).map_err(|_| {
@@ -248,6 +266,7 @@ fn refuse(r: Request, msg: impl Fn() -> Error) {
         Request::Set { reply, .. } => {
             let _ = reply.send(Err(msg()));
         }
+        Request::Job(job) => job(Err(msg())),
         Request::Park { .. } | Request::Stop => {}
     }
 }
@@ -323,7 +342,7 @@ fn run(mut d: Device, mut parked: bool, rx: Receiver<Request>, mut metrics: Metr
             let due = engine.next_due().unwrap_or(now + Duration::from_secs(1)).min(next_metrics);
             let wait = due.saturating_duration_since(now);
             let received = rx.recv_timeout(wait);
-            if matches!(received, Ok(Request::Get { .. } | Request::Set { .. })) {
+            if matches!(received, Ok(Request::Get { .. } | Request::Set { .. } | Request::Job(_))) {
                 pending.fetch_sub(1, Ordering::SeqCst); // Stop and Park are not counted (no queue metric)
             }
             metrics.queue_sample(pending.load(Ordering::SeqCst));
@@ -344,6 +363,12 @@ fn run(mut d: Device, mut parked: bool, rx: Receiver<Request>, mut metrics: Metr
                     let io = matches!(r, Err(Error::Io(_)));
                     let _ = reply.send(r);
                     if io {
+                        break End::Lost("transport error".to_string());
+                    }
+                }
+                Ok(Request::Job(job)) => {
+                    job(Ok(&mut engine));
+                    if engine.link_broken() {
                         break End::Lost("transport error".to_string());
                     }
                 }

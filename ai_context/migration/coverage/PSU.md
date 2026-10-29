@@ -403,7 +403,7 @@ Local: `DOC/unit_udp/doc/UDP3000S_Series_Programming_Manual_V1.1.pdf` (U3S, "n /
 - The -E model reads back with one fewer voltage decimal.
 
 **Link** (U3S p.5).
-- USBTMC **0483:5740**.
+- USBTMC **0483:5740** per the manual, doubtful: that is STMicro's generic Virtual COM ID (tinySA, NanoVNA), the UDP4303S manual prints the same string, and community drivers (philpagel/UDP3305S.py: `/dev/ttyUSB1`, 9600, LF, 0.2 s) plus the UNI-T SDK's PL2303 driver point to a USB-serial chip on the USB port. *Verify on hardware*; the serial link covers it meanwhile.
 - LAN VXI-11 / socket 5025.
 - RS232 (crossed cable; 9600 seen in the field).
 - Terminator **`\n`** both ways.
