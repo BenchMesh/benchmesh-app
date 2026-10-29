@@ -86,7 +86,8 @@ principals/scopes (see the contract).
 
 **Headless** (contract `ai_context/HEADLESS.md`): `benchmesh --headless` (the desktop app's executable, every OS)
 and `benchmesh-server` run without a window, used through remote access; `--remote-password` (or
-`BENCHMESH_REMOTE_PASSWORD`) switches it on and the hash is kept, `--port`, `--data-dir`, `--config`. Shared runner
+`BENCHMESH_REMOTE_PASSWORD`) switches it on and the hash is kept, `--port`, `--data-dir`, `--config`, `--simulate`;
+anything else is refused (exit 2, `bm_server::headless::check_args`). Shared runner
 `crates/bm-server/src/headless.rs`, the app's part `crates/benchmesh-app/src/headless.rs`. Instruments → **System**
 (`frontend/src/ui/system/`, API `/system/**`, scope `system`, `crates/bm-server/src/system/`, resources via `sysinfo`):
 host, OS, cores, uptime, temperature, load, processor / memory / disk meters and BenchMesh's own use for everyone;

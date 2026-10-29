@@ -27,9 +27,10 @@
 //!   elevated with `--install-winusb` (`bm_transport::winusb`); `main` hands that run over first.
 //! - `benchmesh --mcp`: no window - a stdio bridge to the running app's MCP endpoint for AI
 //!   clients that start a process (Claude Desktop; `bm_server::mcp::stdio_bridge`).
-//! - `benchmesh --headless [--remote-password P] [--port N] [--data-dir D] [--config F]`: no
-//!   window - the server alone, used from other computers through remote access, on every OS
-//!   (`headless.rs`, `bm_server::headless`, `ai_context/HEADLESS.md`).
+//! - `benchmesh --headless [--remote-password P] [--port N] [--data-dir D] [--config F]
+//!   [--simulate CAPTURE]`: no window - the server alone, used from other computers through
+//!   remote access, on every OS (`headless.rs`, `bm_server::headless`, `ai_context/HEADLESS.md`);
+//!   any other option is refused (exit 2).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 

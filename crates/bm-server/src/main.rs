@@ -3,6 +3,7 @@
 //! ```text
 //! benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--port N] [--data-dir DIR]
 //!                  [--remote-password PASSWORD]    # switches remote access on (hash kept)
+//!                  [--simulate CAPTURE]
 //! benchmesh-server remote-password                # password from stdin; switches remote access on
 //! ```
 //! Defaults: `$BENCHMESH_CONFIG` or `<data dir>/config.yaml`; `$BENCHMESH_DEVICES` or
@@ -16,13 +17,30 @@
 //! traffic instead of opening ports - UI work and demos without hardware.
 //! `benchmesh-server mcp` bridges stdio to a running server's MCP endpoint (`$BENCHMESH_URL`,
 //! default `http://127.0.0.1:57666`) for AI clients that start a process.
+//! Anything else on the command line is refused (exit 2 with the usage; `--help` prints it).
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use bm_server::headless::{arg, password_from};
+use bm_server::headless::{arg, password_from, refuse_bad_args};
 use bm_server::run::ServerOptions;
 use bm_server::system::{autostart::Launch, Headless};
+
+const USAGE: &str = "usage: benchmesh-server [--config FILE] [--devices DIR] [--ui DIR] [--port N] [--data-dir DIR]
+                        [--remote-password PASSWORD] [--simulate CAPTURE]
+       benchmesh-server remote-password [--data-dir DIR]   (the password on stdin)
+       benchmesh-server mcp                                (stdio bridge to a running server)";
+
+/// The options of a server run, and whether each takes a value.
+const OPTIONS: &[(&str, bool)] = &[
+    ("--config", true),
+    ("--devices", true),
+    ("--ui", true),
+    ("--port", true),
+    ("--data-dir", true),
+    ("--remote-password", true),
+    ("--simulate", true),
+];
 
 fn absolute(p: &Path) -> PathBuf {
     std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf())
@@ -37,6 +55,10 @@ fn main() {
     if args.get(1).map(String::as_str) == Some("mcp") {
         let url = std::env::var("BENCHMESH_URL").unwrap_or_else(|_| "http://127.0.0.1:57666".into());
         std::process::exit(bm_server::mcp::stdio_bridge(&url));
+    }
+    let known: &[(&str, bool)] = if args.get(1).map(String::as_str) == Some("remote-password") { &[("remote-password", false), ("--data-dir", true)] } else { OPTIONS };
+    if let Some(code) = refuse_bad_args(&args, known, USAGE) {
+        std::process::exit(code);
     }
     let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from).unwrap_or_default();
     let given_data_dir = arg(&args, "--data-dir").or_else(|| std::env::var("BENCHMESH_DATA_DIR").ok()).map(PathBuf::from);

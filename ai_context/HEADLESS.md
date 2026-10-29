@@ -20,6 +20,11 @@ benchmesh-server --remote-password '<at least 10 characters>'         # the serv
 | `--port N` | loopback port (default 57666) |
 | `--data-dir D` | user data (default `~/.benchmesh`, or `BENCHMESH_DATA_DIR`) |
 | `--config F` | instruments (default `<data dir>/config.yaml`) |
+| `--simulate CAPTURE` | replays a capture session (`captures/<session>`) instead of the instruments, also `BENCHMESH_SIMULATE`: no hardware is used, recordings, flows and settings stay in memory, and it never starts with the computer |
+
+Anything else on the command line (an unknown option, an option without its value) is refused with
+the usage and exit code 2, so a typo never starts a different BenchMesh than asked for; `--help`
+prints the usage.
 
 At start it prints the remote addresses (`https://<address>:57667/`) and the certificate
 fingerprint to compare with the browser's warning. Without a password it warns that no other

@@ -16,6 +16,48 @@
 use crate::run::{start, RunningServer, ServerOptions};
 use crate::system::{Action, AfterStop};
 
+/// Refuses a command line with anything this program does not know: an unknown option, an
+/// option without its value, a stray argument. `known`: each option and whether it takes a value.
+/// Ignoring them would run a different BenchMesh than asked for, silently (real instruments
+/// instead of a simulation, remote access off after a typo in `--remote-password`).
+pub fn check_args(args: &[String], known: &[(&str, bool)]) -> Result<(), String> {
+    let mut i = 1;
+    while i < args.len() {
+        let a = &args[i];
+        match known.iter().find(|(f, _)| f == a) {
+            Some((_, false)) => i += 1,
+            Some((f, true)) => match args.get(i + 1) {
+                Some(v) if !known.iter().any(|(k, _)| k == v) => i += 2,
+                _ => return Err(format!("{f} needs a value")),
+            },
+            None if a.starts_with('-') => return Err(format!("unknown option {a}")),
+            None => return Err(format!("unexpected argument {a}")),
+        }
+    }
+    Ok(())
+}
+
+/// `--help` or `-h` anywhere on the command line.
+pub fn wants_help(args: &[String]) -> bool {
+    args.iter().skip(1).any(|a| a == "--help" || a == "-h")
+}
+
+/// `--help`: the usage, exit 0; a command line [`check_args`] refuses: why and the usage on
+/// stderr, exit 2. None: go on.
+pub fn refuse_bad_args(args: &[String], known: &[(&str, bool)], usage: &str) -> Option<i32> {
+    if wants_help(args) {
+        println!("{usage}");
+        return Some(0);
+    }
+    match check_args(args, known) {
+        Ok(()) => None,
+        Err(why) => {
+            eprintln!("{why}\n\n{usage}");
+            Some(2)
+        }
+    }
+}
+
 /// The command line value of `flag` (`--flag value`).
 pub fn arg(args: &[String], flag: &str) -> Option<String> {
     args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1).cloned())
@@ -165,6 +207,24 @@ mod tests {
     fn the_password_comes_from_the_command_line() {
         assert_eq!(password_from(&args(&["benchmesh", "--headless", "--remote-password", "correct horse"])).as_deref(), Some("correct horse"));
         assert_eq!(arg(&args(&["x", "--port"]), "--port"), None, "a flag without its value");
+    }
+
+    #[test]
+    fn unknown_options_missing_values_and_stray_arguments_are_refused() {
+        let known = [("--headless", false), ("--port", true), ("--remote-password", true), ("--simulate", true)];
+        assert_eq!(check_args(&args(&["benchmesh", "--headless", "--port", "58000", "--simulate", "captures/x"]), &known), Ok(()));
+        assert_eq!(check_args(&args(&["benchmesh"]), &known), Ok(()));
+        assert_eq!(check_args(&args(&["benchmesh", "--headless", "--remote-pasword", "secret"]), &known).unwrap_err(), "unknown option --remote-pasword");
+        assert_eq!(check_args(&args(&["benchmesh", "--port=58000"]), &known).unwrap_err(), "unknown option --port=58000");
+        assert_eq!(check_args(&args(&["benchmesh", "--port"]), &known).unwrap_err(), "--port needs a value");
+        assert_eq!(check_args(&args(&["benchmesh", "--simulate", "--headless"]), &known).unwrap_err(), "--simulate needs a value", "a flag is not a value");
+        assert_eq!(check_args(&args(&["benchmesh", "--headless", "58000"]), &known).unwrap_err(), "unexpected argument 58000");
+        assert_eq!(check_args(&args(&["benchmesh", "--remote-password", "-starts-with-a-dash"]), &known), Ok(()), "a value may start with -");
+        assert!(wants_help(&args(&["benchmesh", "--headless", "-h"])));
+        assert!(!wants_help(&args(&["benchmesh", "--headless"])));
+        assert_eq!(refuse_bad_args(&args(&["b", "--nope"]), &known, "usage"), Some(2));
+        assert_eq!(refuse_bad_args(&args(&["b", "--help"]), &known, "usage"), Some(0));
+        assert_eq!(refuse_bad_args(&args(&["b", "--headless"]), &known, "usage"), None);
     }
 
     #[test]
